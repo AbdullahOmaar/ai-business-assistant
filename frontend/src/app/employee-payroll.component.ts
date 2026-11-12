@@ -1,14 +1,15 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleChanges, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecordTableColumn, type AbaRecordTableRow } from './shared/ui/aba-record-table.component';
 import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service';
 
 @Component({
   selector: 'aba-employee-payroll',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AbaRecordTableComponent],
   template: `
-    <section class="panel employee-panel" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
+    <section class="panel employee-panel" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" [attr.data-mobile-section]="mobileSection">
       <div class="section-head">
         <div>
           <h2>{{ t('الموظفون والمرتبات', 'Employees & payroll') }}</h2>
@@ -20,7 +21,19 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
       @if (error) { <p class="error" role="alert">{{ error }}</p> }
       @if (message) { <p class="notice success-notice" role="status">{{ message }}</p> }
 
-      <form class="employee-form" (ngSubmit)="saveEmployee()">
+      <nav class="mobile-hr-nav" [attr.aria-label]="t('التنقل داخل إدارة الموظفين والمرتبات', 'Employee and payroll sections')">
+        <button type="button" [class.active]="mobileSection === 'employees'" [attr.aria-current]="mobileSection === 'employees' ? 'page' : null" (click)="setMobileSection('employees')">{{ t('الموظفون', 'Employees') }}</button>
+        <button type="button" [class.active]="mobileSection === 'prepare'" [attr.aria-current]="mobileSection === 'prepare' ? 'page' : null" (click)="setMobileSection('prepare')">{{ t('تجهيز المرتب', 'Prepare pay') }}</button>
+        <button type="button" [class.active]="mobileSection === 'history'" [attr.aria-current]="mobileSection === 'history' ? 'page' : null" (click)="setMobileSection('history')">{{ t('سجل المرتبات', 'Payroll history') }}</button>
+      </nav>
+
+      <section class="employee-workspace" data-mobile-pane="employees">
+        <div class="employee-form-shell" [class.is-open]="employeeFormOpen">
+          <button #employeeFormToggle class="employee-form-toggle" type="button" [attr.aria-expanded]="employeeFormOpen" aria-controls="employee-profile-form" (click)="toggleEmployeeForm()">
+            <span>{{ employeeFormOpen ? t('إخفاء نموذج الموظف', 'Hide employee form') : editingEmployeeId ? t('متابعة تعديل الموظف', 'Continue editing employee') : t('نموذج موظف جديد', 'New employee form') }}</span>
+            <span aria-hidden="true">{{ employeeFormOpen ? '−' : '+' }}</span>
+          </button>
+          <form id="employee-profile-form" class="employee-form" (ngSubmit)="saveEmployee()">
         <label>{{ t('اسم الموظف', 'Employee name') }}
           <input name="employeeName" maxlength="160" autocomplete="off" required [disabled]="busy" [(ngModel)]="employeeName">
         </label>
@@ -50,45 +63,23 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
             <button class="secondary" type="button" (click)="cancelEmployeeEdit()">{{ t('إلغاء التعديل', 'Cancel edit') }}</button>
           }
         </div>
-      </form>
+          </form>
+        </div>
 
       <div class="employee-tools">
         <label>{{ t('البحث عن موظف', 'Search employees') }}
           <input name="employeeSearch" [placeholder]="t('الاسم أو الكود أو القسم أو البريد', 'Name, code, department or email')" [(ngModel)]="employeeSearch">
         </label>
-        <label>{{ t('فترة المرتبات', 'Payroll period') }}
-          <input name="payrollFilterPeriod" type="month" [(ngModel)]="payrollFilterPeriod" (change)="loadEmployeesAndPayroll()">
-        </label>
         <span class="count">{{ filteredEmployees.length }} {{ t('نتيجة', 'results') }}</span>
       </div>
 
-      @if (busy) { <p class="muted" role="status">{{ t('جارٍ تحميل البيانات…', 'Loading employee and payroll data…') }}</p> }
-      <div class="list">
-        @for (employee of filteredEmployees; track employee.id) {
-          <article class="list-row employee-row">
-            <div class="employee-mark" aria-hidden="true">♙</div>
-            <div class="grow">
-              <strong>{{ employee.name }}</strong>
-              <small>{{ employee.employee_code || t('بدون كود', 'No code') }}{{ employee.department ? ' · ' + employee.department : '' }}{{ employee.job_title ? ' · ' + employee.job_title : '' }}</small>
-              <small>{{ employee.email || t('بدون بريد', 'No email') }}{{ employee.phone ? ' · ' + employee.phone : '' }}</small>
-              <span class="status" [class.inactive]="!employee.is_active">{{ employee.is_active ? t('نشط', 'Active') : t('غير نشط', 'Inactive') }}</span>
-            </div>
-            <div class="actions">
-              <button class="secondary" type="button" (click)="editEmployee(employee)" [disabled]="busy">{{ t('تعديل', 'Edit') }}</button>
-              <button class="secondary" type="button" (click)="preparePayroll(employee)" [disabled]="busy || !employee.is_active">{{ t('تجهيز مرتب', 'Prepare payroll') }}</button>
-              <button class="secondary" type="button" (click)="toggleEmployeeActive(employee)" [disabled]="busy">{{ employee.is_active ? t('إيقاف', 'Deactivate') : t('إعادة تفعيل', 'Reactivate') }}</button>
-            </div>
-          </article>
-        }
-        @if (!filteredEmployees.length && !busy && !error) {
-          <p class="empty">{{ employeeSearch.trim() ? t('لا يوجد موظفون مطابقون للبحث.', 'No matching employees found.') : t('لم تتم إضافة موظفين بعد.', 'No employees have been added yet.') }}</p>
-        }
-      </div>
+      <aba-record-table [ariaLabel]="t('جدول الموظفين','Employees table')" [columns]="employeeTableColumns" [rows]="employeeTableRows" [loading]="busy && !employees.length" [loadingDescription]="t('جارٍ تحميل الموظفين…','Loading employees…')" [actionsHeading]="t('الإجراءات','Actions')" [emptyTitle]="t('لا يوجد موظفون','No employees yet')" [emptyDescription]="employeeSearch.trim() ? t('لا يوجد موظفون مطابقون للبحث.','No matching employees found.') : t('لم تتم إضافة موظفين بعد.','No employees have been added yet.')" (rowAction)="onEmployeeRecordAction($event)" />
+      </section>
 
-      <section class="payroll-section">
+      <section class="payroll-section payroll-preparation" data-mobile-pane="prepare">
         <div class="section-head">
           <div>
-            <h3>{{ editingPayrollId ? t('تعديل مسودة المرتب', 'Edit payroll draft') : t('تجهيز مرتب شهري', 'Prepare monthly payroll') }}</h3>
+            <h3 #prepareHeading tabindex="-1">{{ editingPayrollId ? t('تعديل مسودة المرتب', 'Edit payroll draft') : t('تجهيز مرتب شهري', 'Prepare monthly payroll') }}</h3>
             <p>{{ t('الصافي يُحسب على الخادم: الأساسي + البدلات + المكافآت − الخصومات. لا نفترض قواعد ضرائب أو تأمينات.', 'Net pay is calculated on the server: base + allowances + bonuses − deductions. No tax or insurance rules are assumed.') }}</p>
           </div>
         </div>
@@ -127,45 +118,28 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
         </div>
       </section>
 
-      <section class="payroll-section">
+      <section class="payroll-section payroll-history" data-mobile-pane="history">
         <div class="section-head">
           <div>
-            <h3>{{ t('سجل المرتبات', 'Payroll records') }}</h3>
+            <h3 #historyHeading tabindex="-1">{{ t('سجل المرتبات', 'Payroll records') }}</h3>
             <p>{{ t('تُسجّل عمليات الاعتماد والصرف في سجل النشاط، ولا يمكن صرف السجل مرتين.', 'Approvals and payments are audited; a record cannot be paid twice.') }}</p>
           </div>
           <span class="count">{{ payrollRecords.length }} {{ t('سجل', 'records') }}</span>
         </div>
-        <div class="list">
-          @for (payroll of payrollRecords; track payroll.id) {
-            <article class="list-row payroll-row">
-              <div class="employee-mark money-mark" aria-hidden="true">＄</div>
-              <div class="grow">
-                <strong>{{ payroll.employee_name }} · {{ payroll.period }} · {{ payroll.net_pay }} {{ currencyCode }}</strong>
-                <small>{{ t('أساسي', 'Base') }} {{ payroll.base_salary }} + {{ t('بدلات', 'allowances') }} {{ payroll.allowances }} + {{ t('مكافآت', 'bonuses') }} {{ payroll.bonuses }} − {{ t('خصومات', 'deductions') }} {{ payroll.deductions }}</small>
-                <span class="status" [class.inactive]="payroll.status !== 'paid'">{{ payrollStatusLabel(payroll.status) }}</span>
-                @if (payroll.status === 'paid' && payroll.paid_at) { <small>{{ t('وقت تسجيل الصرف', 'Payout recorded at') }} · {{ payroll.paid_at | date:'mediumDate' }}</small> }
-              </div>
-              <div class="actions">
-                @if (payroll.status === 'draft') {
-                  <button class="secondary" type="button" (click)="editPayroll(payroll)" [disabled]="busy || !!operationId">{{ t('تعديل المسودة', 'Edit draft') }}</button>
-                  <button class="secondary" type="button" (click)="approvePayroll(payroll)" [disabled]="busy || !!operationId">{{ t('اعتماد', 'Approve') }}</button>
-                }
-                @if (payroll.status === 'approved') {
-                  <button class="primary" type="button" (click)="payPayroll(payroll)" [disabled]="busy || !!operationId">{{ t('تسجيل الصرف داخل النظام', 'Record payout in app') }}</button>
-                }
-              </div>
-            </article>
-          }
-          @if (!payrollRecords.length && !busy && !error) {
-            <p class="empty">{{ t('لا توجد مرتبات في الفترة المحددة.', 'No payroll records for this period.') }}</p>
-          }
+        <div class="payroll-history-filter">
+          <label>{{ t('فترة المرتبات', 'Payroll period') }}
+            <input name="payrollFilterPeriod" type="month" [(ngModel)]="payrollFilterPeriod" (change)="loadEmployeesAndPayroll()">
+          </label>
         </div>
+        <aba-record-table [ariaLabel]="t('سجل المرتبات','Payroll history table')" [columns]="payrollTableColumns" [rows]="payrollTableRows" [loading]="busy && !payrollRecords.length" [loadingDescription]="t('جارٍ تحميل سجل المرتبات…','Loading payroll history…')" [emptyTitle]="t('لا توجد مرتبات','No payroll records')" [emptyDescription]="t('لا توجد مرتبات في الفترة المحددة.','No payroll records for this period.')" [actionsHeading]="t('الإجراءات','Actions')" (rowAction)="onPayrollRecordAction($event)" />
       </section>
     </section>
   `,
   styles: [`
     :host{display:block;min-width:0;color:var(--aba-color-text-primary,#172033)}
     .employee-panel{min-width:0;background:var(--aba-color-surface,#fff);border:1px solid var(--aba-color-border,#e5eaf1);border-radius:14px;padding:22px;margin-top:4px}
+    .mobile-hr-nav{display:none}
+    .employee-form-toggle{display:none}
     .section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;min-width:0}
     .section-head>div{min-width:0}
     .section-head h2{font-size:18px;margin:0 0 6px}
@@ -192,8 +166,10 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     .employee-form label,.payroll-form label,.employee-tools label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155)}
     input,select{width:100%;max-width:100%;min-width:0}
     .form-actions{display:flex;align-items:end;flex-wrap:wrap;gap:8px}
-    .employee-tools{display:grid;grid-template-columns:minmax(0,1fr) minmax(150px,220px) auto;gap:12px;align-items:end;margin:16px 0;min-width:0}
+    .employee-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;margin:16px 0;min-width:0}
     .employee-tools .count{justify-self:end}
+    .payroll-history-filter{display:grid;grid-template-columns:minmax(0,220px);gap:12px;align-items:end;margin:12px 0}
+    .employee-tools label,.payroll-history-filter label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155)}
     .payroll-section{margin-top:24px;padding-top:18px;border-top:1px solid var(--aba-color-border-subtle,#e5e7eb);min-width:0}
     .employee-row,.payroll-row{grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:12px;min-width:0}
     .employee-mark{display:grid;place-items:center;width:36px;height:36px;background:var(--aba-color-info-soft,#e0f2fe);color:var(--aba-color-info-text,#075985);border-radius:11px;font-weight:800}
@@ -205,10 +181,29 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     @media(max-width:600px){.section-head{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.section-head .count{justify-self:start}}
     @media(max-width:760px){
       .employee-panel{padding:15px;border-radius:13px}
+      .mobile-hr-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:0 0 16px;padding:5px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:13px;background:var(--aba-color-surface-subtle,#f8fafc)}
+      .mobile-hr-nav button{min-width:0;min-height:48px;padding:8px 5px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--aba-color-text-secondary,#475569);font-size:12px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
+      .mobile-hr-nav button.active{border-color:var(--aba-color-primary-border,#99f6e4);background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59)}
+      .mobile-hr-nav button:focus-visible,.employee-form-toggle:focus-visible{outline:3px solid var(--aba-color-focus-ring,#2563eb);outline-offset:2px}
+      .employee-form-shell{min-width:0;margin-bottom:14px;padding:10px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px;background:var(--aba-color-surface-subtle,#f8fafc)}
+      .employee-form-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:10px 12px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:10px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font-size:13px;font-weight:800;text-align:start}
+      .employee-form-toggle span:last-child{display:grid;flex:0 0 26px;width:26px;height:26px;place-items:center;border-radius:8px;background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59);font-size:19px}
+      .employee-form{display:none;margin:12px 0 2px}
+      .employee-panel .employee-form-shell:not(.is-open) .employee-form{display:none}
+      .employee-form-shell.is-open .employee-form{display:grid}
+      .employee-panel[data-mobile-section="employees"] [data-mobile-pane="prepare"],
+      .employee-panel[data-mobile-section="employees"] [data-mobile-pane="history"],
+      .employee-panel[data-mobile-section="prepare"] [data-mobile-pane="employees"],
+      .employee-panel[data-mobile-section="prepare"] [data-mobile-pane="history"],
+      .employee-panel[data-mobile-section="history"] [data-mobile-pane="employees"],
+      .employee-panel[data-mobile-section="history"] [data-mobile-pane="prepare"]{display:none}
+      .employee-row .actions,.payroll-row .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;justify-content:stretch}
+      .employee-row .actions button,.payroll-row .actions button{min-width:0;min-height:44px;padding:8px 9px;white-space:normal;overflow-wrap:anywhere}
+      .employee-row .actions button:nth-child(3){grid-column:1/-1}
       .section-head{align-items:flex-start}
       .notice{align-items:flex-start;flex-direction:column}
       .list-row{grid-template-columns:32px minmax(0,1fr);align-items:start}
-      .employee-tools{grid-template-columns:minmax(0,1fr)}
+      .employee-tools,.payroll-history-filter{grid-template-columns:minmax(0,1fr)}
       .employee-tools .count{justify-self:start}
       .employee-form,.payroll-form{grid-template-columns:minmax(0,1fr)}
       .employee-row,.payroll-row{grid-template-columns:32px minmax(0,1fr);align-items:start}
@@ -223,12 +218,18 @@ export class EmployeePayrollComponent implements OnChanges {
   @Input() language: 'ar' | 'en' = 'ar';
   @Output() payrollPaid = new EventEmitter<void>();
 
+  @ViewChild('employeeFormToggle') private employeeFormToggle?: ElementRef<HTMLButtonElement>;
+  @ViewChild('prepareHeading') private prepareHeading?: ElementRef<HTMLHeadingElement>;
+  @ViewChild('historyHeading') private historyHeading?: ElementRef<HTMLHeadingElement>;
+
   employees: EmployeeRecord[] = [];
   payrollRecords: EmployeePayrollRecord[] = [];
   busy = false;
   error = '';
   message = '';
   employeeSearch = '';
+  mobileSection: 'employees' | 'prepare' | 'history' = 'employees';
+  employeeFormOpen = false;
   editingEmployeeId: string | null = null;
   employeeName = '';
   employeeCode = '';
@@ -258,6 +259,8 @@ export class EmployeePayrollComponent implements OnChanges {
       this.clearEmployeeForm();
       this.cancelPayrollEdit();
       this.employeeSearch = '';
+      this.mobileSection = 'employees';
+      this.employeeFormOpen = false;
       this.payrollEmployeeId = '';
       this.payrollFilterPeriod = '';
       this.payrollPeriod = this.currentPeriod();
@@ -271,6 +274,17 @@ export class EmployeePayrollComponent implements OnChanges {
 
   t(arabic: string, english: string): string {
     return this.language === 'ar' ? arabic : english;
+  }
+
+  private focusAfterViewChange(target: 'employee-toggle' | 'prepare' | 'history'): void {
+    setTimeout(() => {
+      const element = target === 'employee-toggle'
+        ? this.employeeFormToggle?.nativeElement
+        : target === 'prepare'
+          ? this.prepareHeading?.nativeElement
+          : this.historyHeading?.nativeElement;
+      if (element?.isConnected && element.getClientRects().length > 0) element.focus();
+    }, 0);
   }
 
   private currentPeriod(): string {
@@ -290,6 +304,74 @@ export class EmployeePayrollComponent implements OnChanges {
       [employee.name, employee.employee_code, employee.email, employee.department, employee.job_title]
         .some(value => (value || '').toLocaleLowerCase().includes(query))
     );
+  }
+
+  setMobileSection(section: 'employees' | 'prepare' | 'history'): void {
+    this.mobileSection = section;
+  }
+
+  toggleEmployeeForm(): void {
+    this.employeeFormOpen = !this.employeeFormOpen;
+  }
+
+
+
+  formatPayrollPayoutDate(value: string | null | undefined): string {
+    if (!value || !Number.isFinite(Date.parse(value))) return '—';
+    return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en-GB', {
+      dateStyle: 'medium',
+    }).format(new Date(value));
+  }
+
+  get employeeTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'name',label:this.t('الموظف','Employee'),primary:true},
+    {key:'code',label:this.t('الكود','Code')},
+    {key:'department',label:this.t('القسم','Department')},
+    {key:'jobTitle',label:this.t('المسمى الوظيفي','Job title')},
+    {key:'contact',label:this.t('بيانات التواصل','Contact')},
+    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
+  ]; }
+  get employeeTableRows(): readonly AbaRecordTableRow[] { return this.filteredEmployees.map(employee=>({id:employee.id,cells:{
+    name:employee.name,code:employee.employee_code||'—',department:employee.department||'—',
+    jobTitle:employee.job_title||'—',contact:[employee.email,employee.phone].filter(Boolean).join(' · ')||'—',
+    status:employee.is_active?this.t('نشط','Active'):this.t('غير نشط','Inactive'),
+  },actions:[
+    {id:'edit',label:this.t('تعديل','Edit'),disabled:this.busy},
+    {id:'prepare',label:this.t('تجهيز مرتب','Prepare pay'),disabled:this.busy||!employee.is_active},
+    {id:'toggle',label:employee.is_active?this.t('إيقاف','Deactivate'):this.t('إعادة تفعيل','Reactivate'),disabled:this.busy},
+  ]})); }
+  get payrollTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'employee',label:this.t('الموظف','Employee'),primary:true},
+    {key:'period',label:this.t('الفترة','Period')},
+    {key:'base',label:this.t('الأساسي','Base'),kind:'numeric'},
+    {key:'additions',label:this.t('البدلات والمكافآت','Allowances & bonuses'),kind:'numeric'},
+    {key:'deductions',label:this.t('الخصومات','Deductions'),kind:'numeric'},
+    {key:'net',label:this.t('الصافي','Net pay'),kind:'numeric'},
+    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
+    {key:'payout',label:this.t('تاريخ الصرف','Payout date')},
+  ]; }
+  get payrollTableRows(): readonly AbaRecordTableRow[] { return this.payrollRecords.map(payroll=>({id:payroll.id,cells:{
+    employee:payroll.employee_name,period:payroll.period,base:`${payroll.base_salary} ${this.currencyCode}`,
+    additions:`${payroll.allowances} + ${payroll.bonuses} ${this.currencyCode}`,
+    deductions:`${payroll.deductions} ${this.currencyCode}`,net:`${payroll.net_pay} ${this.currencyCode}`,
+    status:this.payrollStatusLabel(payroll.status),payout:this.formatPayrollPayoutDate(payroll.paid_at),
+  },actions:payroll.status==='draft'?[
+    {id:'edit',label:this.t('تعديل المسودة','Edit draft'),disabled:this.busy||!!this.operationId},
+    {id:'approve',label:this.t('اعتماد','Approve'),disabled:this.busy||!!this.operationId},
+  ]:payroll.status==='approved'?[
+    {id:'pay',label:this.t('تسجيل الصرف داخل النظام','Record in-app payout'),disabled:this.busy||!!this.operationId},
+  ]:[]})); }
+  onEmployeeRecordAction(action:AbaRecordTableActionEvent):void {
+    const employee=this.filteredEmployees.find(item=>item.id===action.rowId); if(!employee)return;
+    if(action.actionId==='edit')this.editEmployee(employee);
+    else if(action.actionId==='prepare')this.preparePayroll(employee);
+    else if(action.actionId==='toggle')void this.toggleEmployeeActive(employee);
+  }
+  onPayrollRecordAction(action:AbaRecordTableActionEvent):void {
+    const payroll=this.payrollRecords.find(item=>item.id===action.rowId); if(!payroll||this.busy||this.operationId)return;
+    if(action.actionId==='edit'&&payroll.status==='draft')this.editPayroll(payroll);
+    else if(action.actionId==='approve'&&payroll.status==='draft')void this.approvePayroll(payroll);
+    else if(action.actionId==='pay'&&payroll.status==='approved')void this.payPayroll(payroll);
   }
 
   payrollStatusLabel(status: EmployeePayrollRecord['status']): string {
@@ -341,6 +423,8 @@ export class EmployeePayrollComponent implements OnChanges {
   }
 
   editEmployee(employee: EmployeeRecord): void {
+    this.mobileSection = 'employees';
+    this.employeeFormOpen = true;
     this.editingEmployeeId = employee.id;
     this.employeeName = employee.name;
     this.employeeCode = employee.employee_code || '';
@@ -355,6 +439,8 @@ export class EmployeePayrollComponent implements OnChanges {
 
   cancelEmployeeEdit(): void {
     this.clearEmployeeForm();
+    this.employeeFormOpen = false;
+    this.focusAfterViewChange('employee-toggle');
   }
 
   async saveEmployee(): Promise<void> {
@@ -393,6 +479,8 @@ export class EmployeePayrollComponent implements OnChanges {
       }
       if (this.businessId !== businessId) return;
       this.clearEmployeeForm();
+      this.employeeFormOpen = false;
+      this.focusAfterViewChange('employee-toggle');
       this.message = this.t('تم حفظ بيانات الموظف بنجاح.', 'Employee details saved successfully.');
       await this.loadEmployeesAndPayroll();
     } catch (error) {
@@ -423,6 +511,8 @@ export class EmployeePayrollComponent implements OnChanges {
 
   preparePayroll(employee: EmployeeRecord): void {
     if (!employee.is_active) return;
+    this.mobileSection = 'prepare';
+    this.focusAfterViewChange('prepare');
     this.payrollEmployeeId = employee.id;
     this.editingPayrollId = null;
     this.payrollPeriod = this.currentPeriod();
@@ -435,6 +525,8 @@ export class EmployeePayrollComponent implements OnChanges {
 
   editPayroll(record: EmployeePayrollRecord): void {
     if (record.status !== 'draft') return;
+    this.mobileSection = 'prepare';
+    this.focusAfterViewChange('prepare');
     this.editingPayrollId = record.id;
     this.payrollEmployeeId = record.employee_id;
     this.payrollPeriod = record.period;
@@ -487,6 +579,8 @@ export class EmployeePayrollComponent implements OnChanges {
       }
       if (this.businessId !== businessId) return;
       this.cancelPayrollEdit();
+      this.mobileSection = 'history';
+      this.focusAfterViewChange('history');
       await this.loadEmployeesAndPayroll();
     } catch (error) {
       if (this.businessId === businessId) this.error = this.errorMessage(error);

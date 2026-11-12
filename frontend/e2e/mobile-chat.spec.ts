@@ -689,8 +689,8 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     routeNetworkFailures.push(`${request.method()} ${new URL(request.url()).pathname}: ${request.failure()?.errorText ?? 'request failed'}`);
   });
 
-  const assertRouteSweep = async (width: number, language: 'ar' | 'en') => {
-    await page.setViewportSize({ width, height: 844 });
+  const assertRouteSweep = async (width: number, language: 'ar' | 'en', height = 844) => {
+    await page.setViewportSize({ width, height });
     const direction = language === 'ar' ? 'rtl' : 'ltr';
     await expect(page.locator('.shell')).toHaveAttribute('dir', direction);
     await expect(page.locator('html')).toHaveAttribute('dir', direction);
@@ -702,16 +702,28 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       const homeHeading = language === 'ar' ? 'الرئيسية' : 'Overview';
       const cardLabel = language === 'ar' ? ('cardAr' in destination ? destination.cardAr : destination.titleAr)
         : ('cardEn' in destination ? destination.cardEn : destination.titleEn);
-      await page.locator('.sidebar').getByRole('button', { name: homeNavLabel, exact: true }).click();
+      const homeButton = page.locator('.sidebar').getByRole('button', { name: homeNavLabel, exact: true });
+      await homeButton.focus();
+      await expect(homeButton).toBeFocused();
+      await page.keyboard.press('Enter');
       await expect(page.locator('.topbar-heading h1')).toHaveText(homeHeading);
       if (destination.tab !== 'overview') {
-        await page.locator('.module-directory-disclosure').evaluate(element => {
-          (element as HTMLDetailsElement).open = true;
-        });
+        const disclosure = page.locator('.module-directory-disclosure');
+        const disclosureSummary = disclosure.locator('summary');
+        await disclosureSummary.focus();
+        if (await disclosure.evaluate(element => (element as HTMLDetailsElement).open)) {
+          await page.keyboard.press('Enter');
+          await expect.poll(() => disclosure.evaluate(element => (element as HTMLDetailsElement).open)).toBe(false);
+        }
+        await page.keyboard.press('Enter');
+        await expect.poll(() => disclosure.evaluate(element => (element as HTMLDetailsElement).open)).toBe(true);
         const card = page.locator('.module-directory-grid > aba-quick-access-card')
           .filter({ has: page.locator('.aba-quick-access__copy > strong').getByText(cardLabel, { exact: true }) });
         await expect(card, destination.tab + ' must be listed for the OWNER').toHaveCount(1);
-        await card.locator('button').click();
+        const destinationButton = card.locator('button');
+        await destinationButton.focus();
+        await expect(destinationButton).toBeFocused();
+        await page.keyboard.press('Enter');
       }
       await expect(page.locator('.topbar-heading h1'), destination.tab + ' localized heading')
         .toHaveText(expectedTitle);
@@ -733,6 +745,60 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         await expect(page.locator('aba-mobile-app-header')).toBeVisible();
       } else {
         await expect(page.locator('.workspace-bar')).toBeVisible();
+      }
+      if (destination.tab === 'employees' && width <= 760) {
+        const labels = language === 'ar'
+          ? { nav: 'التنقل داخل إدارة الموظفين والمرتبات', employees: 'الموظفون', prepare: 'تجهيز المرتب', history: 'سجل المرتبات' }
+          : { nav: 'Employee and payroll sections', employees: 'Employees', prepare: 'Prepare pay', history: 'Payroll history' };
+        const hrNavigation = page.getByRole('navigation', { name: labels.nav });
+        await expect(hrNavigation).toBeVisible();
+        const employeeForm = page.locator('#employee-profile-form');
+        const formToggle = page.locator('.employee-form-toggle');
+        await expect(employeeForm, 'mobile employee form is collapsed by default').toBeHidden();
+        await expect(formToggle).toHaveAttribute('aria-expanded', 'false');
+        const employeesTab = hrNavigation.getByRole('button', { name: labels.employees, exact: true });
+        const prepareTab = hrNavigation.getByRole('button', { name: labels.prepare, exact: true });
+        const historyTab = hrNavigation.getByRole('button', { name: labels.history, exact: true });
+        const tabHeights = await hrNavigation.getByRole('button').evaluateAll(elements =>
+          elements.map(element => element.getBoundingClientRect().height));
+        expect(tabHeights.length).toBe(3);
+        for (const height of tabHeights) expect(height, 'mobile HR tabs retain 44px touch targets').toBeGreaterThanOrEqual(44);
+
+        // Exercise the same mobile HR flow with keyboard-only navigation.
+        await employeesTab.focus();
+        await expect(employeesTab).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expect(page.locator('[data-mobile-pane="employees"]')).toBeVisible();
+        await page.keyboard.press('Tab');
+        await expect(prepareTab).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expect(page.locator('[data-mobile-pane="prepare"]')).toBeVisible();
+        await expect(page.locator('[data-mobile-pane="employees"]')).toBeHidden();
+        await page.keyboard.press('Tab');
+        await expect(historyTab).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expect(page.locator('[data-mobile-pane="history"]')).toBeVisible();
+        await expect(page.locator('[data-mobile-pane="prepare"]')).toBeHidden();
+        await page.keyboard.press('Shift+Tab');
+        await expect(prepareTab).toBeFocused();
+        await page.keyboard.press('Shift+Tab');
+        await expect(employeesTab).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expect(page.locator('[data-mobile-pane="employees"]')).toBeVisible();
+        // Continue through the remaining two section controls in DOM order
+        // before reaching the employee form disclosure.
+        await page.keyboard.press('Tab');
+        await expect(prepareTab).toBeFocused();
+        await page.keyboard.press('Tab');
+        await expect(historyTab).toBeFocused();
+        await page.keyboard.press('Tab');
+        await expect(formToggle).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expect(employeeForm, 'mobile employee form opens on demand with keyboard').toBeVisible();
+        await expect(formToggle).toHaveAttribute('aria-expanded', 'true');
+        await page.keyboard.press('Enter');
+        await expect(employeeForm).toBeHidden();
+        await expect(formToggle).toHaveAttribute('aria-expanded', 'false');
       }
       if (destination.tab === 'customers' && width === 390 && language === 'en') {
         const mobileTitle = await page.locator('aba-mobile-app-header .page-copy h1').evaluate(element => {
@@ -828,6 +894,9 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     expect(desktopMetrics.documentWidth).toBeLessThanOrEqual(901);
   };
 
+  // A 195×422 CSS viewport approximates the available layout area at 200% zoom
+  // on a 390×844 device; it is not a substitute for browser/device zoom testing.
+  await assertRouteSweep(195, 'ar', 422);
   await assertRouteSweep(390, 'ar');
   // Complete all Arabic RTL widths before using the More-menu language action.
   await assertRouteSweep(360, 'ar');
@@ -839,10 +908,19 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   // The More menu is mobile-only; restore a phone viewport after the tablet/desktop sweeps.
   await page.setViewportSize({ width: 390, height: 844 });
   // The first More-menu action is the language toggle (Arabic -> English).
-  await page.locator('.sidebar').getByRole('button', { name: /المزيد من الأقسام/ }).click();
+  await moreTrigger.focus();
+  await expect(moreTrigger).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('navigation', { name: /أقسام إضافية|Additional sections/ })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#mobile-more-menu')).toHaveCount(0);
+  await expect(moreTrigger).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#mobile-more-menu')).toBeVisible();
   await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
   await page.keyboard.press('Escape');
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
+  await assertRouteSweep(195, 'en', 422);
   await assertRouteSweep(360, 'en');
   await assertRouteSweep(390, 'en');
   await assertRouteSweep(430, 'en');
@@ -1318,6 +1396,7 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   await moreTrigger.click();
   await menu.getByRole('button', { name: /Products & inventory/ }).click();
   await page.getByRole('heading', { name: /Products & inventory/ }).waitFor({ state: 'visible' });
+  await page.locator('details.aba-record-create > summary').click();
   await page.getByRole('checkbox', { name: /Track stock/ }).check();
   await expect(page.getByText(/Only workspace owners can set a positive opening stock quantity/)).toBeVisible();
   await expect(page.locator('input[name="productOpeningQuantity"]')).toHaveCount(0);

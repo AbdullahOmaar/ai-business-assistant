@@ -34,8 +34,10 @@ test('the UI exposes only delegated roles and keeps root management out of band'
   assert.match(source, /Read-only access: you can inspect workspace status/);
 });
 
-test('the user directory supports narrow-screen scrolling and mobile navigation', () => {
-  assert.match(source, /user-directory-table\{min-width:850px\}/);
+test('the user directory uses labeled mobile record cards and mobile navigation', () => {
+  assert.match(source, /user-directory-table\{min-width:0\}/);
+  assert.match(source, /\[attr\.data-label\]="t\('المستخدم', 'User'\)"/);
+  assert.match(source, /\.table-wrap tbody tr\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(source, /@media\(max-width:760px\)/);
 });
 
@@ -66,4 +68,42 @@ test('workspace directory distinguishes no matches from an empty or out-of-range
   assert.match(source, /No matching workspaces/);
   assert.match(source, /No workspaces on this page/);
   assert.match(source, /No workspaces are registered yet/);
+});
+
+
+test('Platform Admin business, membership, activity and user tables become labeled cards on phones', () => {
+  for (const label of [
+    "t('مساحة العمل', 'Workspace')",
+    "t('هوية المستخدم', 'User subject')",
+    "t('التاريخ', 'Timestamp')",
+    "t('المستخدم', 'User')",
+    "t('المستخدم المستهدف', 'Target user')",
+    "t('الإجراء', 'Action')",
+  ]) assert.ok(source.includes('[attr.data-label]="'+label+'"'), 'missing mobile column label: '+label);
+  assert.match(source, /\.table-wrap thead\{position:absolute;width:1px;height:1px/);
+  assert.match(source, /\.table-wrap tbody tr\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(source, /\.table-wrap tbody td::before\{content:attr\(data-label\)/);
+  assert.match(source, /\.user-directory-table\{min-width:0\}/);
+});
+
+
+test('Platform Admin announces SPA section changes to assistive technology', () => {
+  assert.match(source, /class="admin-visually-hidden admin-section-announcement" role="status" aria-live="polite" aria-atomic="true"/);
+  assert.match(source, /sectionAnnouncementFor\(section: AdminSection\): string/);
+  assert.match(source, /this\.sectionAnnouncement = this\.sectionAnnouncementFor\(section\)/);
+  assert.match(source, /this\.sectionAnnouncement = this\.sectionAnnouncementFor\('overview'\)/);
+  for (const label of [
+    'Opened Overview section',
+    'Opened Workspaces section',
+    'Opened Audit activity section',
+    'Opened Users and access section',
+    'Opened Permissions section',
+  ]) assert.ok(source.includes(label), 'missing accessible section announcement: '+label);
+  assert.match(source, /\.admin-visually-hidden\{/);
+});
+
+
+test('Platform Admin mobile table regions no longer advertise horizontal scrolling', () => {
+  assert.doesNotMatch(source, /horizontally scrollable table/);
+  assert.doesNotMatch(source, /جدول قابل للتمرير أفقيًا/);
 });

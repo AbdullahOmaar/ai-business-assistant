@@ -31,6 +31,27 @@ export const FEATURE_CATALOG = [
         detailAr: 'داخل مساحة العمل، اضغط Tab لإظهار رابط ينقلك مباشرة إلى المحتوى الرئيسي.',
         detailEn: 'In a signed-in workspace, press Tab to reveal a link that moves keyboard focus directly to the main content.',
       },
+      {
+        titleAr: 'التنقل على الشاشات اللوحية',
+        titleEn: 'Tablet navigation',
+        detailAr: 'على الشاشات بعرض 761 إلى 900 بكسل، تتحول القائمة الجانبية إلى شريط أيقونات مضغوط لتوفير مساحة للمحتوى. تظهر أسماء الأقسام عند المرور بالمؤشر، وتظل متاحة لقارئات الشاشة؛ مرّر داخل الشريط للوصول إلى بقية الأقسام.',
+        detailEn: 'At 761–900px widths, the sidebar becomes a compact icon rail to leave more room for content. Module names appear on hover and remain available to screen readers; scroll within the rail to reach the remaining sections.',
+      },
+      {
+        titleAr: 'جداول التقارير والمراجعة', titleEn: 'Reporting and review tables',
+        detailAr: 'أصبحت نتيجة التشغيل والملخص الضريبي وتقارير سلامة البيانات تعرض جداول واضحة مع إبقاء العملات منفصلة والمرتجعات والتخصيصات في تصنيفاتها الأصلية.',
+        detailEn: 'Operating result, tax summary, and data-integrity findings now use clear tables while preserving separate currencies and the original classification of returns and allocations.',
+      },
+      {
+        titleAr: 'شاشات التشغيل الأساسية', titleEn: 'Core operational record screens',
+        detailAr: 'تم توحيد عرض المدفوعات والمصروفات والجداول الدورية والإشعارات وسجل العمليات باستخدام مكوّن الجداول المشترك؛ مع حقول واضحة على الموبايل والبحث وحالات التحميل والفراغ.',
+        detailEn: 'Payments, expenses, recurring schedules, notifications, and activity log now share the record-table component, with labeled mobile fields, search, loading, and empty states.',
+      },
+      {
+        titleAr: 'جداول موحدة وإجراءات السجل', titleEn: 'Consistent record tables and actions',
+        detailAr: 'تعرض شاشات العملاء والمنتجات والموردين والمشتريات جداول موحدة على الشاشات الكبيرة وصفوفًا منظمة على الموبايل، مع بحث وحالات فارغة وإجراءات مرتبطة بالسجل. نماذج الإضافة واستيراد CSV قابلة للفتح عند الحاجة.',
+        detailEn: 'Customers, products, suppliers, and purchasing use consistent desktop tables and structured mobile record cards, with search, empty states, and row-specific actions. Create forms and CSV imports open only when needed.',
+      },
     ],
   },
   {
@@ -339,6 +360,17 @@ export const FEATURE_CATALOG = [
         titleEn: 'Controlled approval and payment',
         detailAr: 'يلزم اعتماد مالك مختلف عن منشئ المسودة. الصرف يسجل مصروف رواتب واحدًا ولا يسمح بصرف السجل مرتين.',
         detailEn: 'A different owner must approve the draft. Payment creates one linked Payroll expense and cannot be repeated.',
+      },
+      {
+        titleAr: 'جداول الموظفين والمرتبات', titleEn: 'Employee and payroll tables',
+        detailAr: 'دليل الموظفين وسجل المرتبات يعرضان أعمدة منظمة على الويب وكروت سجلات على الهاتف. بيانات الراتب لا تظهر في دليل الموظفين؛ تفاصيل التعويضات تظل داخل سجل المرتبات المخصص للمالك.',
+        detailEn: 'The employee directory and payroll history use structured desktop columns and mobile record cards. Salary is excluded from the employee directory; compensation details remain in the owner-only payroll history.',
+      },
+      {
+        titleAr: 'مساحات عمل مخصصة للهاتف',
+        titleEn: 'Task-focused mobile workspaces',
+        detailAr: 'على الهاتف، تنقّل بين دليل الموظفين وتجهيز المرتب وسجل المرتبات من شريط أقسام مستقل. نموذج الموظف يظل مغلقًا حتى تطلب إضافته أو تعديله.',
+        detailEn: 'On phones, switch between the employee directory, payroll preparation and payroll history using dedicated section navigation. The employee form stays collapsed until you add or edit a profile.',
       },
     ],
   },

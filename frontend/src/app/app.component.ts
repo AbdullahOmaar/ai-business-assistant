@@ -18,6 +18,7 @@ import { AbaCardComponent } from './shared/ui/aba-card.component';
 import { AbaMetricCardComponent } from './shared/ui/aba-metric-card.component';
 import { AbaQuickAccessCardComponent } from './shared/ui/aba-quick-access-card.component';
 import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
+import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecordTableColumn, type AbaRecordTableRow } from './shared/ui/aba-record-table.component';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 import { AbaMobileAppHeaderComponent } from './shared/ui/aba-mobile-app-header.component';
 import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
@@ -35,7 +36,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -329,9 +330,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (operationsError && operationsErrorTab === 'notifications') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'notifications') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'notifications' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                @if (notificationsLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الإشعارات…', 'Loading notifications…')" /> }
-                <div class="list-tools operations-search"><input name="notificationSearch" type="search" [attr.aria-label]="t('البحث في الإشعارات', 'Search notifications')" [placeholder]="t('ابحث بالعنوان أو المحتوى أو النوع أو الحالة…', 'Search by title, message, type or status…')" [(ngModel)]="notificationSearch"></div>
-                <div class="list">@for (item of filteredNotifications; track item.id) { <article class="list-row"><div class="invoice-mark">♢</div><div class="grow"><strong>{{ item.title }}</strong><small>{{ notificationKindLabel(item.kind) }} · {{ notificationStatusLabel(item.status) }}</small><small>{{ item.scheduled_at ? (item.scheduled_at | date:'medium') : t('بدون موعد محدد', 'Unscheduled') }} · {{ item.created_at ? (item.created_at | date:'short') : '' }}</small><p class="muted">{{ item.body }}</p></div></article> } @if (!filteredNotifications.length && !notificationsLoading) { <aba-state-message kind="empty" [description]="notificationSearch.trim() ? t('لا توجد إشعارات مطابقة للبحث.', 'No notifications match this search.') : t('قائمة الإشعارات فارغة.', 'Notification queue is empty.')" /> }</div>
+                <div class="list-tools operations-search aba-record-toolbar"><input name="notificationSearch" type="search" [attr.aria-label]="t('البحث في الإشعارات', 'Search notifications')" [placeholder]="t('ابحث بالعنوان أو المحتوى أو النوع أو الحالة…', 'Search by title, message, type or status…')" [(ngModel)]="notificationSearch"></div>
+                <aba-record-table [ariaLabel]="t('جدول الإشعارات','Notifications table')" [columns]="notificationTableColumns" [rows]="notificationTableRows" [loading]="notificationsLoading && !notifications.length" [loadingDescription]="t('جارٍ تحميل الإشعارات…', 'Loading notifications…')" [emptyTitle]="t('قائمة الإشعارات فارغة','Notification queue is empty')" [emptyDescription]="notificationSearch.trim() ? t('لا توجد إشعارات مطابقة للبحث.','No notifications match this search.') : t('لا توجد إشعارات حتى الآن.','No notifications yet.')" />
               </section>
             }
 
@@ -339,6 +339,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @if (tab === 'suppliers') {
               <section abaCard class="panel">
                 <aba-section-header [title]=" t('دليل الموردين', 'Supplier directory') " [description]=" t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') "><span class="count">{{ filteredSuppliers.length }} / {{ suppliers.length }}</span></aba-section-header>
+<details class="aba-record-create">
+                  <summary><span>{{ t('إضافة مورد', 'Add supplier') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
+                  <div class="aba-record-create__body">
                 <form #supplierForm="ngForm" class="inline-form" (ngSubmit)="supplierForm.valid && createSupplier()">
                   <input #supplierNameControl="ngModel" name="supplierName" required maxlength="160" [attr.aria-label]="t('اسم المورد', 'Supplier name')" [attr.aria-invalid]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'supplier-name-error' : null" [placeholder]="t('اسم المورد', 'Supplier name')" [(ngModel)]="supplierName">
                   <input #supplierEmailControl="ngModel" name="supplierEmail" type="email" maxlength="254" [attr.aria-label]="t('البريد الإلكتروني', 'Email')" [attr.aria-invalid]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'supplier-email-error' : null" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="supplierEmail">
@@ -352,12 +355,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     @if (supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted)) { <small id="supplier-email-error" class="field-error">{{ t('أدخل بريدًا إلكترونيًا صحيحًا أو اترك الحقل فارغًا.', 'Enter a valid email address or leave this field blank.') }}</small> }
                   </div>
                 }
+
+                  </div>
+                </details>
                 @if (operationsError && operationsErrorTab === 'suppliers') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'suppliers') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'suppliers' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                @if (suppliersLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الموردين…', 'Loading suppliers…')" /> }
-                <div class="list-tools operations-search"><input name="supplierSearch" type="search" [attr.aria-label]="t('البحث عن مورد', 'Search suppliers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف أو العنوان…', 'Search by name, email, phone or address…')" [(ngModel)]="supplierSearch"></div>
-                <div class="list">@for (supplier of filteredSuppliers; track supplier.id) { <article class="list-row"><div class="avatar">{{ supplier.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ supplier.name }}</strong><small>{{ supplier.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ supplier.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ supplier.address || '' }}</small></div></article> } @if (!filteredSuppliers.length && !suppliersLoading) { <aba-state-message kind="empty" [description]="supplierSearch.trim() ? t('لا توجد موردون مطابقون للبحث.', 'No suppliers match this search.') : t('لا يوجد موردون بعد.', 'No suppliers yet.')" /> }</div>
+                <div class="list-tools operations-search aba-record-toolbar"><input name="supplierSearch" type="search" [attr.aria-label]="t('البحث عن مورد', 'Search suppliers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف أو العنوان…', 'Search by name, email, phone or address…')" [(ngModel)]="supplierSearch"></div>
+                <aba-record-table [ariaLabel]="t('جدول الموردين', 'Suppliers table')" [columns]="supplierTableColumns" [rows]="supplierTableRows" [loading]="suppliersLoading && !suppliers.length" [loadingDescription]="t('جارٍ تحميل الموردين…', 'Loading suppliers…')" [emptyTitle]="t('لا يوجد موردون', 'No suppliers yet')" [emptyDescription]="supplierSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No suppliers match this search.') : t('أضف الموردين لتسهيل ربطهم بأوامر الشراء.', 'Add suppliers to link them to purchase orders.')" />
+
               </section>
             }
 
@@ -365,6 +371,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @if (tab === 'purchases') {
               <section abaCard class="panel">
                 <aba-section-header id="purchases-section-heading" tabindex="-1" [title]=" t('أوامر الشراء', 'Purchase orders') " [description]=" t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') "><span class="count">{{ filteredPurchaseOrders.length }} / {{ purchaseOrders.length }}</span></aba-section-header>
+<details class="aba-record-create">
+                  <summary><span>{{ t('إنشاء أمر شراء', 'Create purchase order') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
+                  <div class="aba-record-create__body">
                 <form #purchaseForm="ngForm" class="stack" (ngSubmit)="purchaseForm.valid && createPurchaseOrder()">
                   <label>{{ t('رقم أمر الشراء', 'Order number') }}<input #purchaseOrderNumberControl="ngModel" name="purchaseOrderNumber" required maxlength="64" [attr.aria-invalid]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'purchase-number-error' : null" [(ngModel)]="purchaseOrderNumber"></label>
                   <label>{{ t('المورد', 'Supplier') }}<select #purchaseSupplierControl="ngModel" name="purchaseSupplierId" required [attr.aria-invalid]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'purchase-supplier-error' : null" [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('اختر المورد', 'Choose supplier') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
@@ -381,12 +390,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     @if (purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted)) { <small id="purchase-unit-cost-error" class="field-error">{{ t('أدخل تكلفة وحدة تساوي صفرًا أو أكثر وبحد أقصى منزلتين عشريتين.', 'Enter a unit cost of zero or more with up to two decimal places.') }}</small> }
                   </div>
                 }
+
+                  </div>
+                </details>
                 @if (operationsError && operationsErrorTab === 'purchases') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'purchases') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'purchases' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                @if (purchasesLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل المشتريات…', 'Loading purchasing…')" /> }
-                <div class="list-tools operations-search"><input name="purchaseSearch" type="search" [attr.aria-label]="t('البحث في أوامر الشراء', 'Search purchase orders')" [placeholder]="t('ابحث برقم الأمر أو المورد أو المنتج أو الحالة…', 'Search by order, supplier, product or status…')" [(ngModel)]="purchaseSearch"></div>
-                <div class="list">@for (order of filteredPurchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ purchaseOrderStatusLabel(order.status) }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.status === 'draft' && order.lines.some(hasRemainingQuantity)) { <small class="muted">{{ t('أمر الشراء مسودة؛ لا يمكن تسجيل الاستلام قبل الاعتماد.', 'This order is a draft; receiving is unavailable until it is approved.') }}</small> } @if (business?.role === 'owner' && canReceivePurchaseOrder(order)) { <button class="secondary" type="button" (click)="requestPurchaseOrderReceipt(order, $event)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!filteredPurchaseOrders.length && !purchasesLoading) { <aba-state-message kind="empty" [description]="purchaseSearch.trim() ? t('لا توجد أوامر شراء مطابقة.', 'No purchase orders match this search.') : t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.')" /> }</div>
+                <div class="list-tools operations-search aba-record-toolbar"><input name="purchaseSearch" type="search" [attr.aria-label]="t('البحث في أوامر الشراء', 'Search purchase orders')" [placeholder]="t('ابحث برقم الأمر أو المورد أو المنتج أو الحالة…', 'Search by order, supplier, product or status…')" [(ngModel)]="purchaseSearch"></div>
+                <aba-record-table [ariaLabel]="t('جدول أوامر الشراء والاستلام', 'Purchase orders and receiving table')" [columns]="purchaseTableColumns" [rows]="purchaseTableRows" [loading]="purchasesLoading && !purchaseOrders.length" [loadingDescription]="t('جارٍ تحميل أوامر الشراء…', 'Loading purchase orders…')" [actionsHeading]="t('الإجراءات', 'Actions')" [emptyTitle]="t('لا توجد أوامر شراء', 'No purchase orders yet')" [emptyDescription]="purchaseSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No purchase orders match this search.') : t('أنشئ أمر شراء لربط المورد بالمنتجات والكميات المطلوبة.', 'Create a purchase order to connect a supplier with products and requested quantities.')" (rowAction)="onPurchaseRecordAction($event)" />
+
               </section>
             }
 
@@ -412,9 +424,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (operationsError && operationsErrorTab === 'recurring') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'recurring') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'recurring' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                @if (recurringLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الجداول…', 'Loading schedules…')" /> }
-                <div class="list-tools operations-search"><input name="recurringSearch" type="search" [attr.aria-label]="t('البحث في الجداول الدورية', 'Search recurring schedules')" [placeholder]="t('ابحث بالعميل أو الفاصل أو المنطقة الزمنية أو الحالة…', 'Search by customer, interval, timezone or state…')" [(ngModel)]="recurringSearch"></div>
-                <div class="list">@for (schedule of filteredRecurringSchedules; track schedule.id) { <article class="list-row"><div class="invoice-mark">↻</div><div class="grow"><strong>{{ schedule.customer_id ? customerNameForInvoice(schedule.customer_id) : t('عميل غير محدد', 'No customer assigned') }}</strong><small>{{ schedule.interval_days }} {{ t('يومًا', 'days') }} · {{ schedule.timezone }}</small><small>{{ schedule.next_run_at | date:'medium' }} · {{ schedule.is_active ? t('نشطة', 'Active') : t('متوقفة', 'Inactive') }}</small></div></article> } @if (!filteredRecurringSchedules.length && !recurringLoading) { <aba-state-message kind="empty" [description]="recurringSearch.trim() ? t('لا توجد جداول مطابقة للبحث.', 'No schedules match this search.') : t('لا توجد جداول بعد.', 'No schedules yet.')" /> }</div>
+                <div class="list-tools operations-search aba-record-toolbar"><input name="recurringSearch" type="search" [attr.aria-label]="t('البحث في الجداول الدورية', 'Search recurring schedules')" [placeholder]="t('ابحث بالعميل أو الفاصل أو المنطقة الزمنية أو الحالة…', 'Search by customer, interval, timezone or state…')" [(ngModel)]="recurringSearch"></div>
+                <aba-record-table [ariaLabel]="t('جدول الفواتير الدورية','Recurring schedules table')" [columns]="recurringTableColumns" [rows]="recurringTableRows" [loading]="recurringLoading && !recurringSchedules.length" [loadingDescription]="t('جارٍ تحميل الجداول الدورية…', 'Loading recurring schedules…')" [emptyTitle]="t('لا توجد جداول دورية','No recurring schedules')" [emptyDescription]="recurringSearch.trim() ? t('لا توجد جداول مطابقة للبحث.','No schedules match this search.') : t('لا توجد جداول بعد.','No schedules yet.')" />
               </section>
             }
 
@@ -452,15 +463,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (profitLoss) {
                   <p class="muted">{{ profitLoss.period.start_date || t('من بداية السجلات', 'From the beginning of records') }} — {{ profitLoss.period.end_date || t('حتى الآن', 'through today') }} · {{ profitLoss.period.timezone || 'UTC' }}</p>
                   <p class="muted"><strong>{{ t('أساس الإيراد:', 'Revenue basis:') }}</strong> {{ revenueBasisLabel(profitLoss.revenue_basis) }}</p>
-                  <div class="metric-grid">
-                    @for (row of profitLoss.currencies; track row.currency_code) {
-                      <article class="metric"><span>{{ t('الإيرادات (فواتير صادرة)', 'Revenue (issued invoices)') }}</span><strong>{{ row.revenue }} {{ row.currency_code }}</strong><small>{{ row.revenue_invoice_count }} {{ t('فاتورة', 'invoices') }}</small></article>
-                      <article class="metric"><span>{{ t('المرتجعات المعتمدة (من فواتير الفترة)', 'Approved returns (period invoices)') }}</span><strong>{{ row.approved_return_total }} {{ row.currency_code }}</strong><small>{{ row.approved_return_count }} {{ t('مرتجع', 'returns') }} · {{ t('تُعرض منفصلة ولا تُخصم من الإيراد', 'shown separately; not deducted from revenue') }}</small></article>
-                      <article class="metric"><span>{{ t('المصروفات المسجلة', 'Recorded expenses') }}</span><strong>{{ row.expenses }} {{ row.currency_code }}</strong><small>{{ row.expense_count }} {{ t('مصروف', 'expenses') }}</small></article>
-                      <article class="metric"><span>{{ t('النتيجة قبل تكلفة البضاعة', 'Result before cost of goods') }}</span><strong>{{ row.operating_result_before_cost_of_goods }} {{ row.currency_code }}</strong><small>{{ t('إيرادات الفواتير − المصروفات المسجلة', 'Invoice revenue − recorded expenses') }}</small></article>
-                    }
-                  </div>
-                  @if (!profitLoss.currencies.length) { <aba-state-message kind="empty" [description]="t('لا توجد فواتير صادرة أو مصروفات مسجلة في هذه الفترة.', 'No issued invoices or recorded expenses in this period.')" /> }
+                  <aba-record-table [ariaLabel]="t('جدول نتيجة التشغيل حسب العملة','Operating result by currency table')" [columns]="profitLossTableColumns" [rows]="profitLossTableRows" [emptyTitle]="t('لا توجد بيانات','No data')" [emptyDescription]="t('لا توجد بيانات مالية للفترة المحددة.','No financial data for this period.')" />
                   <div class="notice"><strong>{{ t('مهم قبل اعتبارها أرباحًا صافية', 'Important limitation') }}</strong><span>{{ t('هذا حساب مبدئي: لا يشمل تكلفة شراء البضاعة لأن تكلفة المنتج غير مرتبطة بعد بالمبيعات، كما أن الإيرادات تُحسب من الفواتير الصادرة لا من النقد المحصّل. لا يتم جمع العملات المختلفة.', 'This is a preliminary result: product purchase costs are not yet linked to sales, and revenue is based on issued invoices rather than cash collected. Different currencies are never combined.') }}</span></div>
                 }
                 <div class="divider"></div>
@@ -481,7 +484,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       }
                     </div>
                   }
-                  @if (agingReport.invoices.length) { <div class="list">@for (invoice of agingReport.invoices; track invoice.invoice_id) { <article class="list-row"><div class="grow"><strong>{{ invoice.invoice_number }} · {{ invoice.outstanding_amount }} {{ invoice.currency_code }}</strong><small>{{ agingBucketLabel(invoice.aging_bucket) }} · {{ invoice.due_date || t('بدون تاريخ استحقاق', 'No due date') }}@if (invoice.customer_link_missing) { · {{ t('عميل غير مرتبط — يلزم تدقيق يدوي', 'Missing customer link — manual review required') }} }</small></div></article> }</div> }
+                  <aba-record-table [ariaLabel]="t('جدول أعمار المديونيات','Receivables aging table')" [columns]="agingTableColumns" [rows]="agingTableRows" [emptyTitle]="t('لا توجد فواتير مستحقة','No outstanding invoices')" [emptyDescription]="t('لا توجد فواتير مستحقة في تاريخ التقرير.','No outstanding invoices as of the report date.')" />
                   @if (agingReport.limitations.length) { <div class="notice"><strong>{{ t('حدود التقرير', 'Report limitations') }}</strong>@for (limitation of agingReport.limitations; track limitation) { <p>{{ reportLimitationLabel(limitation) }}</p> }</div> }
                 }
               </section>
@@ -489,7 +492,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'customers') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('قائمة العملاء', 'Customer list') " [description]=" t('تقتصر السجلات على مساحة العمل المحددة.', 'Records are limited to the selected workspace.') "><span class="count">{{ customers.length }} {{ t('عميل', 'customers') }}</span></aba-section-header>
+                <aba-section-header [title]=" t('قائمة العملاء', 'Customer list') " [description]=" t('تقتصر السجلات على مساحة العمل المحددة.', 'Records are limited to the selected workspace.') "><span class="count">{{ filteredCustomers.length }} / {{ customers.length }} {{ t('عميل', 'customers') }}</span></aba-section-header>
+<details class="aba-record-create">
+                  <summary><span>{{ t('إضافة عميل جديد', 'Add new customer') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
+                  <div class="aba-record-create__body">
                 <form #customerForm="ngForm" class="inline-form" (ngSubmit)="customerForm.valid && createCustomer()">
                   <input #customerNameModel="ngModel" [attr.aria-label]="t('اسم العميل', 'Customer name')" name="customerName" [placeholder]="t('اسم العميل', 'Customer name')" required maxlength="160" [(ngModel)]="customerName" [attr.aria-invalid]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'customer-name-error' : null">
                   @if (customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted)) {
@@ -502,8 +508,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <input [attr.aria-label]="t('هاتف العميل', 'Customer phone')" name="customerPhone" maxlength="32" [placeholder]="t('الهاتف (اختياري)', 'Phone (optional)')" [(ngModel)]="customerPhone">
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة عميل', 'Add customer') }}</button>
                 </form>
+
+                  </div>
+                </details>
                 @if (customerMessage) { <aba-state-message [kind]="customerMessageKind" [description]="customerMessage" /> }
-                @if (business?.role === 'owner') { <section abaCard class="csv-import-panel" [attr.aria-label]="t('استيراد العملاء من CSV', 'CSV customer import')">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('استيراد العملاء من CSV', 'Import customers from CSV') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('استيراد العملاء من CSV', 'CSV customer import')">
                   <h3>{{ t('استيراد العملاء من CSV', 'Import customers from CSV') }}</h3>
                   <p>{{ t('اختَر ملف CSV يحتوي على name ويمكنه تضمين email وphone وaddress وnotes. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with name and optional email, phone, address, and notes. Preview does not save data.') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV للعملاء', 'Choose customer CSV file')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
@@ -523,12 +532,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     }
                   }
                   @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
-                </section> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
-                <div class="list-tools"><input name="customerSearch" type="search" [attr.aria-label]="t('البحث عن عميل', 'Search customers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف…', 'Search by name, email, or phone…')" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
-                <div class="list">
-                  @for (customer of filteredCustomers; track customer.id) { <article class="list-row customer-list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ customer.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ customerInvoiceCount(customer.id) }} {{ t('فاتورة مرتبطة', 'linked invoices') }}</small></div><button class="secondary" type="button" (click)="showCustomerInvoices(customer.id)">{{ t('عرض الفواتير', 'View invoices') }}</button><button class="secondary" type="button" (click)="loadCustomerStatement(customer)">{{ t('كشف الحساب', 'Statement') }}</button></article> }
-                  @if (!filteredCustomers.length) { <aba-state-message kind="empty" [description]="customerSearch ? t('لا توجد نتائج مطابقة للبحث.', 'No matching results.') : t('لا يوجد عملاء بعد. أضف أول عميل من النموذج أعلاه.', 'No customers yet. Add your first customer using the form above.')" /> }
-                </div>
+                </section></div></details> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
+                <div class="list-tools aba-record-toolbar"><input name="customerSearch" type="search" [attr.aria-label]="t('البحث عن عميل', 'Search customers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف…', 'Search by name, email, or phone…')" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
+                <aba-record-table [ariaLabel]="t('جدول العملاء', 'Customers table')" [columns]="customerTableColumns" [rows]="customerTableRows" [loading]="loading && !customers.length" [loadingDescription]="t('جارٍ تحميل العملاء…', 'Loading customers…')" [actionsHeading]="t('الإجراءات', 'Actions')" [emptyTitle]="t('لا يوجد عملاء', 'No customers yet')" [emptyDescription]="customerSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No customers match this search.') : t('أضف أول عميل لبدء ربطه بالفواتير.', 'Add your first customer to link them with invoices.')" (rowAction)="onCustomerRecordAction($event)" />
+
                 @if (statementVisible) {
                   <section abaCard class="panel statement-panel">
                     <aba-section-header [level]="3" [title]="t('كشف حساب العميل', 'Customer statement') + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t('الرصيد مفصول حسب العملة. هذا التقرير لا يستبدل دفتر أستاذ مزدوج القيد.', 'Balances stay separate by currency. This report is not a double-entry general ledger.')"><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('إغلاق', 'Close') }}</button></aba-section-header>
@@ -543,9 +550,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     @if (statementError) { <aba-state-message kind="error" [description]="statementError" /> }
                     @if (customerStatement) {
                       <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t('الرصيد', 'Balance') }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
-                      <div class="table-wrap audit-table-wrap" role="region" tabindex="0" [attr.aria-label]="t('كشف حساب العميل، جدول قابل للتمرير أفقيًا', 'Customer statement table, horizontally scrollable')"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('الحركة', 'Event') }}</th><th>{{ t('المرجع', 'Reference') }}</th><th>{{ t('مدين', 'Debit') }}</th><th>{{ t('دائن', 'Credit') }}</th><th>{{ t('الرصيد', 'Balance') }}</th></tr></thead><tbody>
-                        @for (event of customerStatement.items; track event.source_id + event.event_type) { <tr><td>{{ event.occurred_at | date:'short' }}</td><td>{{ customerStatementEventLabel(event.event_type) }}</td><td>{{ event.reference || event.source_id }}</td><td>{{ event.debit }} {{ event.currency_code }}</td><td>{{ event.credit }} {{ event.currency_code }}</td><td>{{ event.balance }} {{ event.currency_code }}</td></tr> }
-                      </tbody></table></div>
+                      <aba-record-table [ariaLabel]="t('كشف حساب العميل','Customer statement')" [columns]="customerStatementTableColumns" [rows]="customerStatementTableRows" [emptyTitle]="t('لا توجد حركات','No statement activity')" [emptyDescription]="t('لا توجد حركات مطابقة للفترة المحددة.','No statement activity matches the selected period.')" />
                       <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('التالي', 'Next') }}</button></div>
                       @for (limitation of customerStatement.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
                     }
@@ -556,7 +561,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'products') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('المنتجات والخدمات', 'Products & services') " [description]=" t('يتم حفظ الأسعار بدقة عشرية.', 'Prices are stored using decimal precision.') "><span class="count">{{ products.length }} {{ t('منتج', 'products') }}</span></aba-section-header>
+                <aba-section-header [title]=" t('المنتجات والخدمات', 'Products & services') " [description]=" t('يتم حفظ الأسعار بدقة عشرية.', 'Prices are stored using decimal precision.') "><span class="count">{{ filteredProducts.length }} / {{ products.length }} {{ t('منتج', 'products') }}</span></aba-section-header>
+<details class="aba-record-create">
+                  <summary><span>{{ t('إضافة منتج أو خدمة', 'Add product or service') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
+                  <div class="aba-record-create__body">
                 <form #productForm="ngForm" class="inline-form" (ngSubmit)="productForm.valid && createProduct()">
                   <label>{{ t('اسم المنتج', 'Product name') }}<input #productNameModel="ngModel" [attr.aria-label]="t('اسم المنتج', 'Product name')" name="productName" [placeholder]="t('اسم المنتج', 'Product name')" required [(ngModel)]="productName" [attr.aria-invalid]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'product-name-error' : null">
                     @if (productNameModel.invalid && (productNameModel.touched || productForm.submitted)) {
@@ -578,8 +586,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة منتج', 'Add product') }}</button>
                 </form>
+
+                  </div>
+                </details>
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
-                @if (business?.role === 'owner') { <section abaCard class="csv-import-panel" [attr.aria-label]="t('استيراد المنتجات من CSV', 'CSV product import')">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('استيراد المنتجات من CSV', 'Import products from CSV') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('استيراد المنتجات من CSV', 'CSV product import')">
                   <h3>{{ t('استيراد المنتجات من CSV', 'Import products from CSV') }}</h3>
                   <p>{{ t('اختَر ملف CSV يحتوي على sku وname وunit_price. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with sku, name and unit_price. Preview does not save any data.') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV', 'Choose CSV file')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
@@ -599,12 +610,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     }
                   }
                   @if (importMessage) { <aba-state-message [kind]="importMessageKind" [description]="importMessage" /> }
-                </section> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
-                <div class="list-tools"><input name="productSearch" type="search" [attr.aria-label]="t('البحث عن منتج', 'Search products')" [placeholder]="t('ابحث عن منتج أو رمز SKU…', 'Search products or SKU…')" [(ngModel)]="productSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
-                <div class="list">
-                  @for (product of filteredProducts; track product.id) { <article class="list-row"><div class="product-mark">◇</div><div class="grow"><strong>{{ product.name }}</strong><small>{{ product.is_stock_tracked ? t('المخزون: ', 'Stock: ') + (product.stock_quantity ?? '0') : t('خدمة / لا تتم متابعة المخزون', 'Service / no stock tracking') }}{{ product.sku ? ' · SKU ' + product.sku : '' }}</small></div><strong>{{ product.unit_price }} {{ business.currency_code }}</strong></article> }
-                  @if (!filteredProducts.length) { <aba-state-message kind="empty" [description]="productSearch ? t('لا توجد نتائج مطابقة للبحث.', 'No matching results.') : t('لا توجد منتجات بعد. أضف منتجًا أو خدمة من النموذج أعلاه.', 'No products yet. Add a product or service using the form above.')" /> }
-                </div>
+                </section></div></details> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
+                <div class="list-tools aba-record-toolbar"><input name="productSearch" type="search" [attr.aria-label]="t('البحث عن منتج', 'Search products')" [placeholder]="t('ابحث عن منتج أو رمز SKU…', 'Search products or SKU…')" [(ngModel)]="productSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
+                <aba-record-table [ariaLabel]="t('جدول المنتجات والمخزون', 'Products and inventory table')" [columns]="productTableColumns" [rows]="productTableRows" [loading]="loading && !products.length" [loadingDescription]="t('جارٍ تحميل المنتجات…', 'Loading products…')" [emptyTitle]="t('لا توجد منتجات', 'No products yet')" [emptyDescription]="productSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No products match this search.') : t('أضف منتجًا أو خدمة لبدء إدارة الكتالوج والمخزون.', 'Add a product or service to start managing the catalogue and stock.')" />
+
             </section>
             }
 
@@ -668,44 +677,6 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 } @else if (!filteredInvoices.length) {
                   <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId) ? t('لا توجد فواتير مطابقة للبحث والفلاتر.', 'No invoices match your search and filters.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ مسودة فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice draft.')" />
                 } @else {
-                  <div class="invoice-table-wrap" role="region" tabindex="0" aria-labelledby="invoice-table-caption">
-                    <table class="invoice-table">
-                      <caption id="invoice-table-caption">{{ t('قائمة الفواتير', 'Invoice list') }}</caption>
-                      <thead><tr>
-                        <th scope="col">{{ t('العميل', 'Customer') }}</th><th scope="col">{{ t('الفاتورة / التاريخ', 'Invoice / date') }}</th>
-                        <th scope="col">{{ t('القيمة', 'Amount') }}</th><th scope="col">{{ t('المتبقي', 'Remaining') }}</th>
-                        <th scope="col">{{ t('الحالة', 'Status') }}</th><th scope="col">{{ t('الإجراءات', 'Actions') }}</th>
-                      </tr></thead>
-                      <tbody>
-                        @for (invoice of filteredInvoices; track invoice.id) {
-                          <tr>
-                            <td class="invoice-customer"><strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong></td>
-                            <td class="invoice-reference"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoice.issue_date ? (invoice.issue_date | date:'mediumDate') : (invoice.created_at ? t('تاريخ الإنشاء: ', 'Created: ') + (invoice.created_at | date:'mediumDate') : t('التاريخ غير متاح', 'Date unavailable')) }}</small></td>
-                            <td class="invoice-money"><bdi dir="ltr">{{ invoice.total | number:'1.2-2' }} {{ invoice.currency_code }}</bdi></td>
-                            <td class="invoice-money">@if (invoice.status === 'issued' && invoice.outstanding_amount !== undefined) {
-                                  <bdi dir="ltr">{{ invoice.outstanding_amount | number:'1.2-2' }} {{ invoice.currency_code }}</bdi>
-                                } @else { — }</td>
-                            <td><span class="invoice-status-badge" [class.status-draft]="invoice.status === 'draft'" [class.status-issued]="invoice.status === 'issued'" [class.status-void]="invoice.status === 'void'">{{ invoiceStatusLabel(invoice.status) }}</span></td>
-                            <td><div class="invoice-actions">
-                              @if (invoice.status === 'draft') {
-                                <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button>
-                                @if (business?.role === 'owner') {
-                                  <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button>
-                                  <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button>
-                                }
-                              } @else if (invoice.status === 'issued') {
-                                <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button>
-                                @if (business?.role === 'owner') {
-                                  @if (hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> }
-                                  <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button>
-                                }
-                              }
-                            </div></td>
-                          </tr>
-                        }
-                      </tbody>
-                    </table>
-                  </div>
                   <div class="invoice-cards">
                     @for (invoice of filteredInvoices; track invoice.id) {
                       <article class="invoice-card">
@@ -805,11 +776,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (paymentRetryPending) { <p class="footnote" role="status">{{ t('هناك محاولة دفع نتيجتها غير مؤكدة. لا تغيّر البيانات؛ استخدم زر إعادة المحاولة بنفس الطلب.', 'A previous payment attempt has an uncertain outcome. Do not change its details; use Retry same payment.') }}</p> }
                 @if (paymentMessage) { <aba-state-message [kind]="paymentMessageKind" [description]="paymentMessage" /> }
                 <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
-                <div class="list-tools operations-search"><input name="paymentSearch" type="search" [attr.aria-label]="t('البحث في المدفوعات', 'Search payments')" [placeholder]="t('ابحث بالعميل أو المرجع أو طريقة الدفع أو حالة التخصيص…', 'Search by customer, reference, method or allocation state…')" [(ngModel)]="paymentSearch"></div>
-                <div class="list">
-                  @for (payment of filteredPayments; track payment.id) { <article class="list-row"><div class="payment-mark">↗</div><div class="grow"><strong>{{ payment.amount }} {{ payment.currency_code }}</strong><small>{{ customerNameForInvoice(payment.customer_id) }} · {{ payment.received_at | date:'medium' }} · {{ payment.method ? paymentMethodLabel(payment.method) : t('طريقة الدفع غير محددة', 'Payment method not specified') }}{{ payment.reference ? ' · ' + payment.reference : '' }}</small><small>{{ payment.allocations.length ? payment.allocations.length + ' ' + t('تخصيص للفاتورة', 'invoice allocations') : t('دفعة غير مخصصة', 'Unallocated payment') }}</small></div></article> }
-                  @if (!filteredPayments.length) { <aba-state-message kind="empty" [description]="paymentSearch.trim() ? t('لا توجد دفعات مطابقة للبحث.', 'No payments match this search.') : t('لا توجد دفعات مسجلة حتى الآن.', 'No payments have been recorded yet.')" /> }
-                </div>
+                <div class="list-tools operations-search aba-record-toolbar"><input name="paymentSearch" type="search" [attr.aria-label]="t('البحث في المدفوعات', 'Search payments')" [placeholder]="t('ابحث بالعميل أو المرجع أو طريقة الدفع أو حالة التخصيص…', 'Search by customer, reference, method or allocation state…')" [(ngModel)]="paymentSearch"></div>
+                <aba-record-table [ariaLabel]="t('جدول المدفوعات','Payments table')" [columns]="paymentTableColumns" [rows]="paymentTableRows" [loading]="paymentLoading && !payments.length" [loadingDescription]="t('جارٍ تحميل المدفوعات…', 'Loading payments…')" [emptyTitle]="t('لا توجد مدفوعات','No payments yet')" [emptyDescription]="paymentSearch.trim() ? t('لا توجد دفعات مطابقة للبحث.','No payments match this search.') : t('لا توجد دفعات مسجلة حتى الآن.','No payments have been recorded yet.')" />
                 @if (paymentsHasMore) { <button class="secondary" type="button" (click)="loadMorePayments()" [disabled]="paymentsLoadingMore">{{ paymentsLoadingMore ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل دفعات إضافية', 'Load more payments') }}</button> }
               </section>
             }
@@ -824,8 +792,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 </form>
                 @if (taxError) { <aba-state-message kind="error" [description]="taxError" /> }
                 @if (taxSummaryReport) {
-                  <div class="metric-grid">@for (entry of taxSummaryReport.currencies; track entry.currency_code) { <article class="metric"><span>{{ t('إجمالي الضريبة', 'Tax total') }} · {{ entry.currency_code }}</span><strong>{{ entry.tax_total }} {{ entry.currency_code }}</strong><small>{{ entry.invoice_count }} {{ t('فاتورة صادرة', 'issued invoices') }}</small></article> }</div>
-                  @if (!taxSummaryReport.currencies.length) { <aba-state-message kind="empty" [description]="t('لا توجد فواتير صادرة في الفترة المحددة.', 'No issued invoices in the selected period.')" /> }
+                  <aba-record-table [ariaLabel]="t('ملخص الضرائب حسب العملة','Tax summary by currency')" [columns]="taxTableColumns" [rows]="taxTableRows" [emptyTitle]="t('لا توجد بيانات ضريبية','No tax data')" [emptyDescription]="t('لا توجد فواتير صادرة في الفترة المحددة.','No issued invoices in the selected period.')" />
                   @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ reportLimitationLabel(limitation) }}</p> }
                 }
               </section>
@@ -880,11 +847,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <button class="secondary" type="button" (click)="auditAction=''; auditTargetType=''; loadAuditEvents(0)" [disabled]="auditLoading">{{ t('مسح الفلاتر', 'Clear filters') }}</button>
                 </form>
                 @if (auditError) { <aba-state-message kind="error" [description]="auditError" /> }
-                @if (auditLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل السجل…', 'Loading activity…')" /> }
-                @if (!auditLoading && !auditEvents.length && !auditError) { <aba-state-message kind="empty" [description]="t('لا توجد أحداث مطابقة للفلاتر.', 'No events match these filters.')" /> }
-                <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('سجل النشاط، جدول قابل للتمرير أفقيًا', 'Activity log table, horizontally scrollable')"><table><thead><tr><th>{{ t('التاريخ', 'Date') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('نوع السجل', 'Target') }}</th><th>{{ t('المعرّف', 'Record ID') }}</th><th>{{ t('المنفذ', 'Actor') }}</th></tr></thead><tbody>
-                  @for (event of auditEvents; track event.id) { <tr><td>{{ event.created_at ? (event.created_at | date:'short') : '—' }}</td><td>{{ auditActionLabel(event.action) }}</td><td>{{ auditTargetLabel(event.target_type) }}</td><td>{{ event.target_id || '—' }}</td><td>{{ event.actor_subject }}</td></tr> }
-                </tbody></table></div>
+                <aba-record-table [ariaLabel]="t('جدول سجل العمليات','Activity log table')" [columns]="auditTableColumns" [rows]="auditTableRows" [loading]="auditLoading && !auditEvents.length" [loadingDescription]="t('جارٍ تحميل سجل النشاط…', 'Loading activity log…')" [emptyTitle]="t('لا توجد أحداث','No activity yet')" [emptyDescription]="t('لا توجد أحداث مطابقة للفلاتر.','No events match these filters.')" />
                 <div class="inline-form"><span class="muted">{{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} / {{ auditTotal }}</span><button class="secondary" type="button" (click)="loadAuditEvents((auditOffset > 50 ? auditOffset - 50 : 0))" [disabled]="auditLoading || auditOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadAuditEvents(auditOffset + 50)" [disabled]="auditLoading || auditOffset + auditEvents.length >= auditTotal">{{ t('التالي', 'Next') }}</button></div>
               </section>
             }
@@ -945,20 +908,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (expenseSubmissionUncertain) {
                   <aba-state-message kind="error" [description]="t('تعذر تأكيد نتيجة الحفظ. لا تعِد الإرسال قبل تحديث القائمة ومراجعتها.', 'The save result is uncertain. Refresh and review the list before trying again.')" [actionLabel]="t('فحص قائمة المصروفات', 'Check expense list')" [actionDisabled]="loading" (action)="checkExpenseSubmissionOutcome()" />
                 }
-                <div class="list-tools operations-search"><input name="expenseSearch" type="search" [attr.aria-label]="t('البحث في المصروفات', 'Search expenses')" [placeholder]="t('ابحث بالتصنيف أو الوصف أو المورد أو المرجع…', 'Search by category, description, vendor or reference…')" [(ngModel)]="expenseSearch"></div>
-                <div class="list">
-                  @for (expense of filteredExpenses; track expense.id) {
-                    <article class="list-row">
-                      <div class="expense-mark" aria-hidden="true">−</div>
-                      <div class="grow">
-                        <strong>{{ expenseCategoryLabel(expense.category) }} · {{ expense.amount }} {{ expense.currency_code }}</strong>
-                        <small>{{ expense.description }} · {{ expense.incurred_at | date:'medium' }}</small>
-                        <small>{{ expense.vendor_name || t('بدون مورد', 'No vendor') }}{{ expense.reference ? ' · ' + expense.reference : '' }}</small>
-                      </div>
-                    </article>
-                  }
-                  @if (!filteredExpenses.length) { <aba-state-message kind="empty" [description]="expenseSearch.trim() ? t('لا توجد مصروفات مطابقة للبحث.', 'No expenses match this search.') : t('لم يتم تسجيل مصروفات بعد.', 'No expenses recorded yet.')" /> }
-                </div>
+                <div class="list-tools operations-search aba-record-toolbar"><input name="expenseSearch" type="search" [attr.aria-label]="t('البحث في المصروفات', 'Search expenses')" [placeholder]="t('ابحث بالتصنيف أو الوصف أو المورد أو المرجع…', 'Search by category, description, vendor or reference…')" [(ngModel)]="expenseSearch"></div>
+                <aba-record-table [ariaLabel]="t('جدول المصروفات','Expenses table')" [columns]="expenseTableColumns" [rows]="expenseTableRows" [loading]="loading && !expenses.length" [loadingDescription]="t('جارٍ تحميل المصروفات…', 'Loading expenses…')" [emptyTitle]="t('لا توجد مصروفات','No expenses yet')" [emptyDescription]="expenseSearch.trim() ? t('لا توجد مصروفات مطابقة للبحث.','No expenses match this search.') : t('لم يتم تسجيل مصروفات بعد.','No expenses recorded yet.')" />
               </section>
             }
 
@@ -975,9 +926,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     <article class="metric"><span>{{ t('تخصيصات بعملاء مختلفين', 'Customer-mismatched allocations') }}</span><strong>{{ dataIntegrityReport.customer_mismatched_allocations.total }}</strong></article>
                   </div>
                   <h3>{{ t('الفواتير غير المرتبطة', 'Unlinked issued invoices') }}</h3>
-                  <div class="list">@for (invoice of dataIntegrityReport.unlinked_issued_invoices.items; track invoice.invoice_id) { <article class="list-row"><div class="grow"><strong>{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</strong><small>{{ invoice.created_at ? (invoice.created_at | date:'short') : '—' }} · {{ invoice.invoice_id }}</small></div></article> }</div>
+                  <aba-record-table [ariaLabel]="t('الفواتير غير المرتبطة بعميل','Invoices without customer')" [columns]="integrityInvoiceColumns" [rows]="integrityInvoiceRows" [emptyTitle]="t('لا توجد فواتير غير مرتبطة','No unlinked invoices')" [emptyDescription]="t('لم يتم العثور على فواتير تحتاج مراجعة في هذه الفئة.','No invoices need review in this category.')" />
                   <h3>{{ t('تخصيصات المدفوعات التي تحتاج مراجعة', 'Payment allocations needing review') }}</h3>
-                  <div class="list">@for (item of dataIntegrityReport.currency_mismatched_allocations.items; track item.allocation_id) { <article class="list-row"><div class="grow"><strong>{{ item.invoice_number }} · {{ item.allocated_amount }} {{ item.payment_currency }}</strong><small>{{ t('عملة الفاتورة:', 'Invoice currency:') }} {{ item.invoice_currency }} · {{ t('مرجع الدفعة:', 'Payment reference:') }} {{ item.payment_reference || item.payment_id }}</small></div></article> } @for (item of dataIntegrityReport.customer_mismatched_allocations.items; track item.allocation_id) { <article class="list-row"><div class="grow"><strong>{{ item.invoice_number }} · {{ item.allocated_amount }} {{ item.invoice_currency }}</strong><small>{{ t('عميل الدفعة:', 'Payment customer:') }} {{ item.payment_customer_id || '—' }} · {{ t('عميل الفاتورة:', 'Invoice customer:') }} {{ item.invoice_customer_id || '—' }}</small></div></article> }</div>
+                  <aba-record-table [ariaLabel]="t('تخصيصات تحتاج مراجعة','Allocations requiring review')" [columns]="integrityAllocationColumns" [rows]="integrityAllocationRows" [emptyTitle]="t('لا توجد تخصيصات تحتاج مراجعة','No allocations need review')" [emptyDescription]="t('لم يتم العثور على تخصيصات غير متطابقة.','No mismatched allocations found.')" />
                   <div class="inline-form"><span class="muted">{{ t('الصفحة', 'Offset') }} {{ dataIntegrityReport.offset }} · {{ t('حد الصفحة', 'Page size') }} {{ dataIntegrityReport.limit }}</span><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset > 0 ? dataIntegrityReport.offset - dataIntegrityReport.limit : 0)" [disabled]="integrityLoading || dataIntegrityReport.offset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset + dataIntegrityReport.limit)" [disabled]="integrityLoading || dataIntegrityReport.offset + dataIntegrityReport.limit >= maxIntegrityTotal">{{ t('التالي', 'Next') }}</button></div>
                 }
               </section>
@@ -1091,7 +1042,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
     }
     .mobile-version-row{display:none}
     .invoice-preview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px;background:var(--aba-color-surface-subtle,#f8fafc)}.invoice-preview>div{display:flex;flex-direction:column;gap:4px;min-width:0}.invoice-preview span{font-size:12px;color:var(--aba-color-text-secondary,#64748b)}.invoice-preview strong{font-size:15px;overflow-wrap:anywhere;font-variant-numeric:tabular-nums}.invoice-preview .total{grid-column:1/-1;border-top:1px solid #cbd5e1;padding-top:10px}
-    .version-pill{display:inline-flex;align-items:center;justify-content:center;padding:6px 9px;border:1px solid #cbd5e1;border-radius:999px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-muted,#334155);font-size:11px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}.statement-panel{min-width:0;max-width:100%;overflow:hidden}.statement-panel .section-head>div{min-width:0;overflow-wrap:anywhere}.statement-panel .table-wrap{width:100%;max-width:100%;min-width:0;overflow-x:auto;overflow-y:hidden;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}.statement-panel .table-wrap table{width:100%;min-width:680px;border-collapse:collapse;table-layout:auto}.statement-panel .table-wrap th,.statement-panel .table-wrap td{padding:10px 12px;text-align:start;white-space:nowrap;border-bottom:1px solid #edf0f5;font-size:12px}.statement-panel .table-wrap td:nth-child(3){max-width:220px;overflow-wrap:anywhere;white-space:normal}
+    .version-pill{display:inline-flex;align-items:center;justify-content:center;padding:6px 9px;border:1px solid #cbd5e1;border-radius:999px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-muted,#334155);font-size:11px;font-weight:800;white-space:nowrap;font-variant-numeric:tabular-nums}.statement-panel{min-width:0;max-width:100%;overflow:hidden}.statement-panel .section-head>div{min-width:0;overflow-wrap:anywhere}.statement-panel .aba-record-table{min-width:0;width:100%}
     @media(max-width:380px){.nav-item{font-size:9px}.nav-item .nav-icon{width:25px;height:25px;flex-basis:25px}.sidebar{padding-inline:3px}.main{padding-inline:11px}.metric{padding:10px}.metric>span{font-size:10px}}
     /* Refined mobile navigation dock: thumb-friendly, RTL-aware, and never an app bar. */
     @media(max-width:760px){
@@ -1287,33 +1238,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
     .invoice-filter{display:grid;gap:5px;min-width:0;color:var(--aba-color-text-secondary,#475569);font-size:11px;font-weight:500}
     .invoice-filter select{width:100%;min-width:0;font-weight:400}
     .invoice-export,.invoice-load-more-customers{min-height:40px;white-space:nowrap;padding:8px 11px}
-    .invoice-table-wrap{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px}
-    .invoice-table{width:100%;min-width:820px;border-collapse:collapse;table-layout:auto}
-    .invoice-table caption{padding:10px 13px;text-align:start;color:var(--aba-color-text-secondary,#64748b);font-size:11px;font-weight:700}
-    .invoice-table th,.invoice-table td{padding:12px 13px;text-align:start;vertical-align:middle;border-bottom:1px solid var(--aba-color-border-subtle,#e2e8f0);overflow-wrap:anywhere}
-    .invoice-table th{background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#475569);font-size:11px;font-weight:800;white-space:nowrap}
-    .invoice-table th:nth-child(3),.invoice-table th:nth-child(4){text-align:end}
-    .invoice-table-wrap:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:2px}
-    .invoice-table tbody tr:last-child td{border-bottom:0}
-    .invoice-table tbody tr:hover{background:var(--aba-color-surface-subtle,#f8fafc)}
-    .invoice-customer{min-width:170px}
-    .invoice-customer strong{display:block;font-size:13px;line-height:1.5;color:var(--aba-color-text-primary,#172033);overflow-wrap:anywhere}
-    .invoice-reference{min-width:150px}
-    .invoice-reference strong,.invoice-reference small{display:block}
-    .invoice-reference strong{font-size:12px;font-variant-numeric:tabular-nums}
-    .invoice-reference small{margin-top:3px;color:var(--aba-color-text-secondary,#64748b);font-size:10px}
-    .invoice-money{min-width:115px;text-align:end!important;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
     .invoice-status-badge{display:inline-flex;align-items:center;justify-content:center;min-height:26px;padding:4px 9px;border:1px solid var(--aba-color-border,#d0d5dd);border-radius:999px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#475569);font-size:11px;font-weight:800;white-space:nowrap}
     .invoice-status-badge.status-draft{border-color:#d0d5dd;background:#f2f4f7;color:#344054}
     .invoice-status-badge.status-issued{border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}
     .invoice-status-badge.status-void{border-color:#fecaca;background:#fef2f2;color:#b42318}
     .invoice-actions{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:6px;min-width:0}
     .invoice-actions button{min-height:34px;padding:6px 9px;font-size:11px;white-space:nowrap}
-    .invoice-cards{display:none}
     .invoice-list-state{padding:18px;border:1px dashed var(--aba-color-border,#d0d5dd);border-radius:12px;color:var(--aba-color-text-secondary,#64748b);text-align:center}
     
     
-    .invoice-table-wrap{display:none}
     .invoice-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px;margin-top:12px}
     .invoice-card{display:grid;gap:12px;min-width:0;padding:13px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:14px;background:var(--aba-color-surface,#fff)}
     .invoice-card-header{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
@@ -1344,6 +1277,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
     @media(max-width:1050px){.invoice-controls{grid-template-columns:minmax(0,1fr) minmax(130px,170px) minmax(170px,220px)}.invoice-export,.invoice-load-more-customers{grid-column:1/-1;justify-self:end}}
     @media(max-width:760px){
       .invoice-cards{grid-template-columns:minmax(0,1fr)}
+      .invoice-card .invoice-actions button{min-height:44px}
       .invoice-card{padding:12px;gap:11px}
       .invoice-card-header{gap:8px}
       .invoice-cards .invoice-status-badge{max-width:108px;white-space:normal}
@@ -1663,10 +1597,6 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.invoiceStatusLabel(invoice.status);
   }
 
-  customerInvoiceCount(customerId: string): number {
-    return this.invoices.filter(invoice => invoice.customer_id === customerId).length;
-  }
-
   showCustomerInvoices(customerId: string): void {
     this.invoiceFilterCustomerId = customerId;
     this.setTab('invoices');
@@ -1674,6 +1604,79 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get filteredCustomers(): Customer[] {
     return filterCustomers(this.customers, this.customerSearch);
+  }
+
+  get customerTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'name',label:this.t('العميل','Customer'),primary:true},
+    {key:'email',label:this.t('البريد الإلكتروني','Email')},
+    {key:'phone',label:this.t('الهاتف','Phone')},
+  ]; }
+  get customerTableRows(): readonly AbaRecordTableRow[] { return this.filteredCustomers.map(customer=>({
+    id:customer.id,cells:{name:customer.name,email:customer.email||this.t('غير مسجل','Not provided'),phone:customer.phone||this.t('غير مسجل','Not provided')},
+    actions:[{id:'invoices',label:this.t('عرض الفواتير','View invoices')},{id:'statement',label:this.t('كشف الحساب','Statement')}],
+  })); }
+  get productTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'name',label:this.t('المنتج / الخدمة','Product / service'),primary:true},
+    {key:'sku',label:'SKU'},
+    {key:'price',label:this.t('سعر الوحدة','Unit price'),kind:'numeric'},
+    {key:'tracking',label:this.t('نوع الصنف','Item type'),kind:'status'},
+    {key:'stock',label:this.t('الكمية المتاحة','Stock quantity'),kind:'numeric'},
+  ]; }
+  get productTableRows(): readonly AbaRecordTableRow[] { return this.filteredProducts.map(product=>({
+    id:product.id,cells:{
+      name:product.name,sku:product.sku||'—',
+      price:`${product.unit_price} ${product.currency_code||this.business?.currency_code||''}`.trim(),
+      tracking:product.is_stock_tracked?this.t('مخزني','Stock tracked'):this.t('خدمة / غير مخزني','Service / non-stock'),
+      stock:product.is_stock_tracked?String(product.stock_quantity??0):this.t('غير منطبق','Not applicable'),
+    },
+  })); }
+  get supplierTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'name',label:this.t('المورد','Supplier'),primary:true},
+    {key:'email',label:this.t('البريد الإلكتروني','Email')},
+    {key:'phone',label:this.t('الهاتف','Phone')},
+    {key:'address',label:this.t('العنوان','Address')},
+    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
+  ]; }
+  get supplierTableRows(): readonly AbaRecordTableRow[] { return this.filteredSuppliers.map(supplier=>({
+    id:supplier.id,cells:{
+      name:supplier.name,email:supplier.email||this.t('غير مسجل','Not provided'),
+      phone:supplier.phone||this.t('غير مسجل','Not provided'),
+      address:supplier.address||this.t('غير مسجل','Not provided'),
+      status:supplier.is_active?this.t('نشط','Active'):this.t('غير نشط','Inactive'),
+    },
+  })); }
+  get purchaseTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'order',label:this.t('رقم الأمر','Order no.'),primary:true},
+    {key:'supplier',label:this.t('المورد','Supplier')},
+    {key:'products',label:this.t('الأصناف','Items')},
+    {key:'received',label:this.t('المستلم / المطلوب','Received / ordered')},
+    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
+    {key:'total',label:this.t('الإجمالي','Total'),kind:'numeric'},
+  ]; }
+  get purchaseTableRows(): readonly AbaRecordTableRow[] { return this.filteredPurchaseOrders.map(order=>({
+    id:order.id,cells:{
+      order:order.order_number,supplier:this.supplierNameFor(order.supplier_id),
+      products:this.purchaseOrderProductsSummary(order),received:this.purchaseOrderReceivedSummary(order),
+      status:this.purchaseOrderStatusLabel(order.status),total:`${order.total} ${order.currency_code}`,
+    },
+    actions:this.business?.role==='owner'&&this.canReceivePurchaseOrder(order)?[{id:'receive',label:this.t('استلام المتبقي','Receive remaining')}]:[],
+  })); }
+  purchaseOrderProductsSummary(order:PurchaseOrder):string {
+    return order.lines.map(line=>`${this.productNameFor(line.product_id)} × ${line.quantity}`).join(' · ')||'—';
+  }
+  purchaseOrderReceivedSummary(order:PurchaseOrder):string {
+    return order.lines.map(line=>`${line.received_quantity}/${line.quantity}`).join(' · ')||'—';
+  }
+  onCustomerRecordAction(action:AbaRecordTableActionEvent):void {
+    const customer=this.filteredCustomers.find(item=>item.id===action.rowId); if(!customer)return;
+    if(action.actionId==='invoices')this.showCustomerInvoices(customer.id);
+    if(action.actionId==='statement')this.loadCustomerStatement(customer);
+  }
+  onPurchaseRecordAction(action:AbaRecordTableActionEvent):void {
+    if(action.actionId!=='receive'||this.business?.role!=='owner')return;
+    const order=this.purchaseOrders.find(item=>item.id===action.rowId);
+    if(!order||!this.canReceivePurchaseOrder(order))return;
+    this.requestPurchaseOrderReceipt(order,action.anchor);
   }
 
   get filteredProducts(): Product[] {
@@ -1718,6 +1721,135 @@ export class AppComponent implements OnInit, OnDestroy {
     return filterPayments(this.payments, this.paymentSearch, id => this.customerNameForInvoice(id), method => this.paymentMethodLabel(method));
   }
 
+
+  get paymentTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'customer',label:this.t('العميل','Customer'),primary:true},
+    {key:'amount',label:this.t('المبلغ','Amount'),kind:'numeric'},
+    {key:'received',label:this.t('تاريخ الاستلام','Received at')},
+    {key:'method',label:this.t('طريقة الدفع','Method')},
+    {key:'reference',label:this.t('المرجع','Reference')},
+    {key:'allocation',label:this.t('التخصيص','Allocation'),kind:'status'},
+  ]; }
+  get paymentTableRows(): readonly AbaRecordTableRow[] { return this.filteredPayments.map(item=>({id:item.id,cells:{
+    customer:this.customerNameForInvoice(item.customer_id),amount:`${item.amount} ${item.currency_code}`,
+    received:this.formatRecordDate(item.received_at),method:item.method?this.paymentMethodLabel(item.method):this.t('غير محددة','Not specified'),
+    reference:item.reference||'—',allocation:item.allocations.length?`${item.allocations.length} ${this.t('تخصيصات','allocations')}`:this.t('غير مخصصة','Unallocated'),
+  }})); }
+  get expenseTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'date',label:this.t('التاريخ','Date')},
+    {key:'description',label:this.t('الوصف','Description'),primary:true},
+    {key:'category',label:this.t('التصنيف','Category'),kind:'status'},
+    {key:'vendor',label:this.t('المورد','Vendor')},
+    {key:'reference',label:this.t('المرجع','Reference')},
+    {key:'amount',label:this.t('المبلغ','Amount'),kind:'numeric'},
+  ]; }
+  get expenseTableRows(): readonly AbaRecordTableRow[] { return this.filteredExpenses.map(item=>({id:item.id,cells:{
+    date:this.formatRecordDate(item.incurred_at),description:item.description,category:this.expenseCategoryLabel(item.category),
+    vendor:item.vendor_name||this.t('بدون مورد','No vendor'),reference:item.reference||'—',amount:`${item.amount} ${item.currency_code}`,
+  }})); }
+  get recurringTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'customer',label:this.t('العميل','Customer'),primary:true},
+    {key:'interval',label:this.t('التكرار','Interval')},
+    {key:'nextRun',label:this.t('التشغيل التالي','Next run')},
+    {key:'timezone',label:this.t('المنطقة الزمنية','Timezone')},
+    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
+  ]; }
+  get recurringTableRows(): readonly AbaRecordTableRow[] { return this.filteredRecurringSchedules.map(item=>({id:item.id,cells:{
+    customer:item.customer_id?this.customerNameForInvoice(item.customer_id):this.t('غير محدد','Not assigned'),
+    interval:`${item.interval_days} ${this.t('يوم','days')}`,nextRun:this.formatRecordDate(item.next_run_at),timezone:item.timezone,
+    status:item.is_active?this.t('نشطة','Active'):this.t('متوقفة','Inactive'),
+  }})); }
+  get notificationTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'title',label:this.t('الإشعار','Notification'),primary:true},
+    {key:'kind',label:this.t('النوع','Type'),kind:'status'},
+    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
+    {key:'scheduled',label:this.t('موعد الإرسال','Scheduled')},
+    {key:'created',label:this.t('تاريخ الإنشاء','Created')},
+    {key:'body',label:this.t('المحتوى','Message')},
+  ]; }
+  get notificationTableRows(): readonly AbaRecordTableRow[] { return this.filteredNotifications.map(item=>({id:item.id,cells:{
+    title:item.title,kind:this.notificationKindLabel(item.kind),status:this.notificationStatusLabel(item.status),
+    scheduled:item.scheduled_at?this.formatRecordDate(item.scheduled_at):this.t('غير مجدول','Unscheduled'),created:this.formatRecordDate(item.created_at,'short'),body:item.body,
+  }})); }
+  get auditTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'date',label:this.t('التاريخ','Date')},
+    {key:'action',label:this.t('العملية','Action'),primary:true},
+    {key:'target',label:this.t('نوع السجل','Target')},
+    {key:'recordId',label:this.t('المعرّف','Record ID')},
+    {key:'actor',label:this.t('المنفذ','Actor')},
+  ]; }
+  get auditTableRows(): readonly AbaRecordTableRow[] { return this.auditEvents.map(item=>({id:item.id,cells:{
+    date:this.formatRecordDate(item.created_at,'short'),action:this.auditActionLabel(item.action),target:this.auditTargetLabel(item.target_type),
+    recordId:item.target_id||'—',actor:item.actor_subject||'—',
+  }})); }
+
+
+  get agingTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'invoice',label:this.t('رقم الفاتورة','Invoice'),primary:true},
+    {key:'outstanding',label:this.t('المتبقي','Outstanding'),kind:'numeric'},
+    {key:'bucket',label:this.t('عمر المديونية','Aging bucket'),kind:'status'},
+    {key:'dueDate',label:this.t('تاريخ الاستحقاق','Due date')},
+    {key:'customer',label:this.t('حالة العميل','Customer link'),kind:'status'},
+  ]; }
+  get agingTableRows(): readonly AbaRecordTableRow[] { return (this.agingReport?.invoices||[]).map(invoice=>({id:invoice.invoice_id,cells:{
+    invoice:invoice.invoice_number,outstanding:`${invoice.outstanding_amount} ${invoice.currency_code}`,
+    bucket:this.agingBucketLabel(invoice.aging_bucket),dueDate:invoice.due_date?this.formatRecordDate(invoice.due_date,'date'):this.t('بدون تاريخ استحقاق','No due date'),
+    customer:invoice.customer_link_missing?this.t('غير مرتبط — مراجعة يدوية','Missing — manual review'):this.t('مرتبط','Linked'),
+  }})); }
+  get profitLossTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'currency',label:this.t('العملة','Currency'),primary:true},
+    {key:'revenue',label:this.t('الإيرادات','Revenue'),kind:'numeric'},
+    {key:'returns',label:this.t('المرتجعات المعتمدة','Approved returns'),kind:'numeric'},
+    {key:'expenses',label:this.t('المصروفات','Expenses'),kind:'numeric'},
+    {key:'result',label:this.t('النتيجة قبل تكلفة البضاعة','Result before COGS'),kind:'numeric'},
+  ]; }
+  get profitLossTableRows(): readonly AbaRecordTableRow[] { return (this.profitLoss?.currencies||[]).map(row=>({id:row.currency_code,cells:{
+    currency:row.currency_code,revenue:`${row.revenue} · ${row.revenue_invoice_count} ${this.t('فاتورة','invoices')}`,
+    returns:`${row.approved_return_total} · ${row.approved_return_count} ${this.t('مرتجع','returns')}`,
+    expenses:`${row.expenses} · ${row.expense_count} ${this.t('مصروف','expenses')}`,
+    result:row.operating_result_before_cost_of_goods,
+  }})); }
+  get taxTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'currency',label:this.t('العملة','Currency'),primary:true},
+    {key:'tax',label:this.t('إجمالي الضريبة','Tax total'),kind:'numeric'},
+    {key:'count',label:this.t('الفواتير الصادرة','Issued invoices'),kind:'numeric'},
+  ]; }
+  get taxTableRows(): readonly AbaRecordTableRow[] { return (this.taxSummaryReport?.currencies||[]).map(row=>({id:row.currency_code,cells:{
+    currency:row.currency_code,tax:`${row.tax_total} ${row.currency_code}`,count:String(row.invoice_count),
+  }})); }
+  get integrityInvoiceColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'invoice',label:this.t('الفاتورة','Invoice'),primary:true},
+    {key:'total',label:this.t('الإجمالي','Total'),kind:'numeric'},
+    {key:'date',label:this.t('تاريخ الإنشاء','Created')},
+    {key:'record',label:this.t('معرّف السجل','Record ID')},
+  ]; }
+  get integrityInvoiceRows(): readonly AbaRecordTableRow[] { return (this.dataIntegrityReport?.unlinked_issued_invoices.items||[]).map(row=>({id:row.invoice_id,cells:{
+    invoice:row.invoice_number,total:`${row.total} ${row.currency_code}`,date:this.formatRecordDate(row.created_at,'short'),record:row.invoice_id,
+  }})); }
+  get integrityAllocationColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'invoice',label:this.t('الفاتورة','Invoice'),primary:true},
+    {key:'issue',label:this.t('نوع المراجعة','Review issue'),kind:'status'},
+    {key:'amount',label:this.t('المبلغ','Amount'),kind:'numeric'},
+    {key:'paymentCurrency',label:this.t('عملة الدفعة','Payment currency')},
+    {key:'invoiceCurrency',label:this.t('عملة الفاتورة','Invoice currency')},
+    {key:'customers',label:this.t('مطابقة العميل','Customer match')},
+    {key:'reference',label:this.t('مرجع الدفعة','Payment reference')},
+  ]; }
+  get integrityAllocationRows(): readonly AbaRecordTableRow[] {
+    const currency=(this.dataIntegrityReport?.currency_mismatched_allocations.items||[]).map(row=>({id:`currency-${row.allocation_id}`,cells:{
+      invoice:row.invoice_number,issue:this.t('اختلاف العملة','Currency mismatch'),
+      amount:`${row.allocated_amount} ${row.payment_currency}`,paymentCurrency:row.payment_currency,
+      invoiceCurrency:row.invoice_currency,customers:'—',reference:row.payment_reference||row.payment_id,
+    }}));
+    const customer=(this.dataIntegrityReport?.customer_mismatched_allocations.items||[]).map(row=>({id:`customer-${row.allocation_id}`,cells:{
+      invoice:row.invoice_number,issue:this.t('اختلاف العميل','Customer mismatch'),
+      amount:`${row.allocated_amount} ${row.invoice_currency}`,paymentCurrency:row.payment_currency,
+      invoiceCurrency:row.invoice_currency,
+      customers:`${this.t('عميل الدفعة:','Payment customer:')} ${row.payment_customer_id||'—'} · ${this.t('عميل الفاتورة:','Invoice customer:')} ${row.invoice_customer_id||'—'}`,
+      reference:row.payment_reference||row.payment_id,
+    }}));
+    return [...currency,...customer];
+  }
   exportCurrentList(): void {
     if (!this.business || this.business.role !== 'owner') return;
     let filename = '';
@@ -3073,13 +3205,13 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   supplierNameFor(id: string): string { return this.suppliers.find(item=>item.id===id)?.name || id.slice(0,8); }
   productNameFor(id: string): string { return this.products.find(item=>item.id===id)?.name || id.slice(0,8); }
-  requestPurchaseOrderReceipt(order: PurchaseOrder, event: MouseEvent): void {
+  requestPurchaseOrderReceipt(order: PurchaseOrder, event: MouseEvent | HTMLElement): void {
     if (!this.business || this.business.role !== 'owner' || !this.canReceivePurchaseOrder(order)) return;
     this.pendingInvoiceVoid = null;
     this.invoiceVoidError = '';
     this.pendingPurchaseReceipt = order;
     this.purchaseReceiptError = '';
-    this.confirmationReturnFocus = event.currentTarget as HTMLElement;
+    this.confirmationReturnFocus = event instanceof HTMLElement ? event : event.currentTarget as HTMLElement;
   }
 
   cancelPurchaseOrderReceipt(): void {
@@ -3272,6 +3404,46 @@ export class AppComponent implements OnInit, OnDestroy {
     if (tab === 'health' && this.business?.role === 'owner') void this.loadOperationalHealth();
   }
 
+
+
+  formatRecordDate(value: string | null | undefined, style: 'short' | 'medium' | 'date' = 'medium'): string {
+    if (!value) return '—';
+    const dateOnly = style === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+    const parsed = new Date(dateOnly ? `${value}T12:00:00` : value);
+    if (!Number.isFinite(parsed.getTime())) return '—';
+    const locale = this.language === 'ar' ? 'ar-EG' : 'en-GB';
+    const options: Intl.DateTimeFormatOptions = style === 'date'
+      ? { dateStyle: 'medium' }
+      : style === 'short'
+        ? { dateStyle: 'short', timeStyle: 'short' }
+        : { dateStyle: 'medium', timeStyle: 'short' };
+    return new Intl.DateTimeFormat(locale, options).format(parsed);
+  }
+
+  formatCustomerStatementDate(value: string | null | undefined): string {
+    if (!value || !Number.isFinite(Date.parse(value))) return '—';
+    return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en-GB', {
+      dateStyle: 'short', timeStyle: 'short',
+    }).format(new Date(value));
+  }
+
+  get customerStatementTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'date',label:this.t('التاريخ','Date')},
+    {key:'event',label:this.t('الحركة','Event'),primary:true},
+    {key:'reference',label:this.t('المرجع','Reference')},
+    {key:'debit',label:this.t('مدين','Debit'),kind:'numeric'},
+    {key:'credit',label:this.t('دائن','Credit'),kind:'numeric'},
+    {key:'balance',label:this.t('الرصيد','Balance'),kind:'numeric'},
+  ]; }
+  get customerStatementTableRows(): readonly AbaRecordTableRow[] { return (this.customerStatement?.items||[]).map((event,index)=>({
+    id:`${event.source_id}:${event.event_type}:${event.invoice_id||''}:${event.occurred_at}:${index}`,
+    cells:{
+      date:this.formatCustomerStatementDate(event.occurred_at),
+      event:this.customerStatementEventLabel(event.event_type),reference:event.reference||event.source_id,
+      debit:`${event.debit} ${event.currency_code}`,credit:`${event.credit} ${event.currency_code}`,
+      balance:`${event.balance} ${event.currency_code}`,
+    },
+  })); }
   get statementBalanceEntries(): Array<{ currency: string; balance: string }> {
     return Object.entries(this.customerStatement?.balances_by_currency || {}).map(([currency, balance]) => ({ currency, balance }));
   }

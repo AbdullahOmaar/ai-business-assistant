@@ -29,6 +29,12 @@ test('employee workflows expose localized create, edit, deactivate, search, and 
     assert.ok(component.includes(phrase), `Missing UI action: ${phrase}`);
   }
   assert.match(component, /employeeSearch/);
+  assert.match(component, /<aba-record-table \[ariaLabel\]="t\('جدول الموظفين'/);
+  assert.match(component, /<aba-record-table \[ariaLabel\]="t\('سجل المرتبات'/);
+  assert.match(component, /onEmployeeRecordAction\(\$event\)/);
+  assert.match(component, /onPayrollRecordAction\(\$event\)/);
+  assert.match(component, /formatPayrollPayoutDate\(payroll\.paid_at\)/);
+  assert.match(component, /Intl\.DateTimeFormat/);
   assert.match(component, /t\('الموظفون والمرتبات', 'Employees & payroll'\)/);
   assert.match(component, /Net pay is calculated on the server/);
   assert.match(component, /A different owner must approve the payroll draft/);
@@ -42,6 +48,29 @@ test('employee/payroll styles are component-local and responsive instead of rely
   assert.match(component, /\.list-row\{/);
   assert.match(component, /\.warning-notice\{/);
   assert.match(component, /@media\(max-width:760px\)/);
+});
+
+test('mobile HR is a task-based workspace while desktop retains the full workflow', () => {
+  assert.match(component, /data-mobile-section]="mobileSection"/);
+  assert.match(component, /class="mobile-hr-nav"/);
+  for (const pane of ['employees', 'prepare', 'history']) {
+    assert.ok(component.includes(`data-mobile-pane="${pane}"`), `missing mobile HR pane: ${pane}`);
+    assert.ok(component.includes(`setMobileSection('${pane}')`));
+  }
+  for (const fragment of [
+    'employeeFormOpen = false',
+    'class="employee-form-shell" [class.is-open]="employeeFormOpen"',
+    'aria-controls="employee-profile-form"',
+    'this.employeeFormOpen = true',
+    "this.mobileSection = 'prepare'",
+    "this.mobileSection = 'history'",
+    '@media(max-width:760px)',
+    '.employee-panel[data-mobile-section="employees"]',
+    'grid-template-columns:repeat(2,minmax(0,1fr))',
+    '.employee-panel .employee-form-shell:not(.is-open) .employee-form{display:none}',
+    '.employee-form{display:none;',
+    '.mobile-hr-nav{display:grid',
+  ]) assert.ok(component.includes(fragment), `missing mobile HR contract: ${fragment}`);
 });
 
 test('employee and payroll client methods use business-scoped API paths and never accept a client net-pay value', () => {
@@ -100,7 +129,7 @@ test('a successful payroll payment refreshes workspace data only for the same au
 
 
 test('payroll payout wording describes an in-app record and never implies a bank transfer', () => {
-  assert.match(component, /Record payout in app/);
+  assert.match(component, /Record in-app payout/);
   assert.match(component, /Payout recorded in the app/);
   assert.match(component, /No bank transfer is sent/);
   assert.match(component, /Payout recorded/);
@@ -152,13 +181,13 @@ test('owner-only payroll view stays behind its deferred loading boundary', () =>
 
 
 test('employee directory and payroll selector never expose base salary values', () => {
-  const directoryStart = component.indexOf('<div class="list">');
-  const directoryEnd = component.indexOf('<section class="payroll-section">', directoryStart);
+  const directoryStart = component.indexOf('get employeeTableRows()');
+  const directoryEnd = component.indexOf('get payrollTableColumns()', directoryStart);
   assert.ok(directoryStart >= 0 && directoryEnd > directoryStart);
   const directory = component.slice(directoryStart, directoryEnd);
   assert.doesNotMatch(directory, /monthly_salary|currencyCode/);
-  assert.match(directory, /<strong>\{\{ employee\.name \}\}<\/strong>/);
-  assert.match(directory, /employee\.employee_code \|\| t\('بدون كود', 'No code'\)/);
+  assert.ok(directory.includes('name:employee.name'));
+  assert.ok(directory.includes("code:employee.employee_code||'—'"));
 
   const selectorStart = component.indexOf('<select name="payrollEmployeeId"');
   const selectorEnd = component.indexOf('</select>', selectorStart);
@@ -173,3 +202,36 @@ test('employee directory and payroll selector never expose base salary values', 
   assert.match(component, /name="employeeMonthlySalary"/);
   assert.match(component, /\[\(ngModel\)\]="employeeMonthlySalary"/);
 });
+
+test('mobile payroll keeps its period filter with history and restores focus after workspace transitions', () => {
+  const toolsStart = component.indexOf('<div class="employee-tools">');
+  const toolsEnd = component.indexOf('</div>', toolsStart);
+  assert.ok(toolsStart >= 0 && toolsEnd > toolsStart);
+  assert.doesNotMatch(component.slice(toolsStart, toolsEnd), /payrollFilterPeriod/);
+  const historyStart = component.indexOf('data-mobile-pane="history"');
+  const historyEnd = component.indexOf('</section>', historyStart);
+  assert.ok(historyStart >= 0 && historyEnd > historyStart);
+  const history = component.slice(historyStart, historyEnd);
+  assert.match(history, /name="payrollFilterPeriod"/);
+  assert.match(component, /@ViewChild\('prepareHeading'\)/);
+  assert.match(component, /@ViewChild\('historyHeading'\)/);
+  assert.match(component, /focusAfterViewChange\('prepare'\)/);
+  assert.match(component, /focusAfterViewChange\('history'\)/);
+  assert.match(component, /focusAfterViewChange\('employee-toggle'\)/);
+  assert.match(component, /element\.focus\(\)/);
+  assert.match(component, /#employeeFormToggle/);
+});
+
+test('employee table action heading and remaining record loading descriptions respect Arabic locale', () => {
+  assert.match(component, /\[actionsHeading\]="t\('الإجراءات','Actions'\)"/);
+  for (const fragment of [
+    "[loadingDescription]=\"t('جارٍ تحميل الإشعارات…', 'Loading notifications…')\"",
+    "[loadingDescription]=\"t('جارٍ تحميل الجداول الدورية…', 'Loading recurring schedules…')\"",
+    "[loadingDescription]=\"t('جارٍ تحميل المدفوعات…', 'Loading payments…')\"",
+    "[loadingDescription]=\"t('جارٍ تحميل سجل النشاط…', 'Loading activity log…')\"",
+    "[loadingDescription]=\"t('جارٍ تحميل المصروفات…', 'Loading expenses…')\"",
+    "this.t('عميل الدفعة:','Payment customer:')",
+    "this.t('عميل الفاتورة:','Invoice customer:')",
+  ]) assert.ok(app.includes(fragment), 'missing localized record UX: '+fragment);
+});
+

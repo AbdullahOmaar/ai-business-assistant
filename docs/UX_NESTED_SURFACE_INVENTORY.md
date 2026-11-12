@@ -27,13 +27,13 @@
 
 ## UX finding disposition
 
-- **UX-01 contrast:** semantic tertiary text token and contrast regression coverage are present at source level; 64 repeated App Shell color declarations now reuse semantic tokens; info/success/danger/warning notice variants retain distinct semantic colors across App Shell, Platform Admin and Payroll; rendered screenshots remain NOT RUN.
-- **UX-02 More-menu focus:** source-level outside close, Escape, focus restoration and RTL/LTR positioning are covered; assistive-technology acceptance remains NOT RUN.
-- **UX-03 mobile viewport/keyboard:** NOT RUN; needs 360/390px browser and installed-PWA keyboard/safe-area evidence.
-- **UX-04 authenticated journeys:** BLOCKED / NOT RUN; no approved isolated synthetic environment and identities are available.
+- **UX-01 contrast:** semantic tertiary text token and contrast regression coverage are present at source level; 64 repeated App Shell color declarations reuse semantic tokens; info/success/danger/warning variants retain distinct semantic colors. Rendered route screenshots now cover 18 workspace destinations plus Platform Admin across RTL/LTR and responsive widths; a formal contrast/forced-colors visual audit remains NOT RUN.
+- **UX-02 More-menu focus:** source-level outside close, Escape, focus restoration and RTL/LTR positioning are covered; mocked browser E2E exercises Escape/focus restoration, and the HR mobile navigation now has keyboard-only section switching. Screen-reader/NVDA/VoiceOver acceptance remains NOT RUN.
+- **UX-03 mobile viewport/keyboard:** responsive route sweep PASS at 195/360/390/430/768/1280 CSS px in RTL/LTR with no horizontal document overflow; HR keyboard navigation and 44px section targets PASS. Physical installed-PWA keyboard/safe-area/landscape and full-product keyboard-only acceptance remain NOT RUN.
+- **UX-04 authenticated journeys:** synthetic OWNER Alpha and OWNER Beta onboarding/draft-invoice UI journeys completed; Beta UI did not expose Alpha customer/invoice. Direct authenticated cross-tenant API denial remains NOT RUN. Live STAFF journey remains BLOCKED because the normal application has no supported invitation/create-membership workflow; no SQL or role spoofing used.
 - **UX-05 module count:** addressed in source by deriving the Home directory count from `homeModuleCards.length`; the catalogue has 19 destinations, while the visible count is role- and platform-admin-availability-dependent.
 - **UX-06 duplicate version metadata:** do not change without rendered desktop/mobile evidence; NOT RUN.
-- **UX-07 reduced motion:** global reduced-motion CSS and shared-component fallbacks exist; forced-colors focus fallback also includes the native disclosure summary; rendered OS/browser and assistive-technology verification remain NOT RUN.
+- **UX-07 reduced motion:** global reduced-motion CSS and shared-component fallbacks exist; forced-colors focus fallback includes the native disclosure summary. Rendered OS/browser reduced-motion and forced-colors verification, plus assistive-technology acceptance, remain NOT RUN.
 - **UX-08 nested surfaces:** inventory above maps current major nested interactions and source tests. It does not certify every nested surface or browser behavior.
 
 ## Historical exact-head validation checkpoint — 2026-11-07 — `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`
@@ -509,3 +509,35 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - At all inspected sizes, document/body dimensions matched the viewport, scrollWidth equaled clientWidth, scrollHeight equaled clientHeight, and forced scrolling left scrollY at 0. No vertical scrollbar exists; the space below the card is balanced centering, not an overflow defect.
 - Added a focused Playwright guard to the existing mocked mobile OWNER journey for 360×800, 390×844, 1280×800 RTL and 390×844 LTR. It checks no horizontal/vertical document overflow and vertical centering. It does not submit real credentials or contact production identity/API services.
 - No CSS/auth behavior change was justified by this evidence. The source-only route sweep already covers the 18 OWNER workspace destinations; Platform Admin remains a separate identity/surface. Physical Android/PWA, full keyboard/screen-reader, high-contrast/200% zoom and authenticated second-tenant acceptance remain separate open gates.
+
+
+## November Phase 1 — HR mobile workspaces — 2026-11-12
+
+- The Employees & Payroll destination is part of the 18 OWNER workspace destinations in the existing responsive route sweep. Its previous phone treatment only stacked forms and controls; it did not provide a mobile-first workflow.
+- The mobile presentation is reorganized into three focused workspaces: Employees, Prepare pay, and Payroll history. The employee profile form is collapsed by default and opens on demand; editing an employee opens the directory/form, selecting Prepare payroll opens the preparation workspace, and saving a payroll draft returns the user to history.
+- Desktop continues to show the existing full employee and payroll workflow. Mobile-only panes do not change API calls, permission checks, server-side net-pay calculation, separate-owner approval, one-time in-app payout recording, or the existing salary privacy boundary.
+- The employee directory and payroll employee selector continue to omit base salary values. The Employees & Payroll destination remains owner-only.
+- Added structural HR UI regressions and rendered Playwright checks for mobile navigation, pane switching, disclosure state, and RTL/LTR route rendering at the existing phone viewport matrix.
+- **Exact-head validation:** GitHub Actions [run 43168710539](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43168710539) SUCCESS on `0f0f6801deb969009c4e7ac39eec887888f19a9e`; frontend unit tests, production build, dependency audit, backend container, backend accounting, frontend browser smoke and `all-checks-passed` all PASS. Authenticated API smoke SKIPPED by workflow condition. Browser JUnit: 22/22 PASS, 0 failures/errors/skips.
+- **Rendered route matrix:** all 18 OWNER workspace destinations were captured at 195/360/390/430/768/1280 CSS px in Arabic RTL and English LTR (216 route screenshots); Platform Admin Overview and Users & Access were separately captured at 360/390/430/768/1280px in both directions (20 screenshots). The 195×422 CSS viewport is a narrow-layout/200%-equivalent approximation for a 390×844 viewport, not actual browser zoom. No horizontal document overflow, route API/network failure, uncaught browser error or unresolved loading state was reported by the route sweep.
+- **HR keyboard acceptance:** all three mobile section controls retain at least 44px height; keyboard-only Enter/Tab/Shift+Tab navigation reaches Employees, Prepare pay and Payroll history in natural DOM order; the employee form disclosure opens/closes with Enter and preserves `aria-expanded` state. The form remains collapsed by default.
+- **Artifact:** [browser-smoke screenshots and JUnit](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43168710539/artifacts/13921421297). The 22/22 result includes mocked E2E flows; it does not prove live STAFF/API authorization or production behavior.
+- **Remaining acceptance:** physical Android Chrome/installed-PWA install-update-offline; actual browser zoom at 200%; full-product keyboard-only walkthrough beyond the tested HR controls; screen-reader/NVDA/VoiceOver; high-contrast/forced-colors rendered acceptance; direct authenticated cross-tenant API denial; live STAFF journey (BLOCKED by the absence of a supported invitation/create-membership workflow). Authenticated API smoke was skipped. Phase 1 remains PARTIALLY COMPLETE.
+
+
+## Platform Admin nested-surface accessibility follow-up — 2026-11-12
+
+- **Destination accounting:** the 19-entry Home catalogue consists of 18 workspace destinations plus the separately permissioned Platform Admin destination. The OWNER workspace sweep remains 18 routes; Platform Admin is tested with its own platform-admin identity rather than being forced into the workspace-owner session.
+- Expanded the mocked Platform Admin responsive route capture to all five internal surfaces: Overview, Workspaces, Audit activity, Users & access, and Permissions. Each surface is captured at 360, 390, 430, 768 and 1280 CSS px in both RTL and LTR (50 Platform Admin viewport captures; previously only Overview and Users were captured).
+- Added a persistent polite live-region announcement when keyboard or pointer navigation changes the active admin section. Revocation of Users visibility also announces the safe fallback to Overview.
+- Extended the Playwright keyboard path to Tab through and activate all five sections, checking the visible heading and matching announcement. This remains mocked browser evidence; it does not replace NVDA/VoiceOver or live platform-role verification.
+- No Platform Admin permission rules, identity, membership, API, data mutation, financial behavior, or backend changes.
+- Exact-head GitHub Actions validation is pending for the resulting branch candidate. Phase 1 remains PARTIALLY COMPLETE until manual screen-reader/high-contrast/actual-200%-zoom, physical Android/PWA and live role/tenant evidence is addressed.
+
+
+## E2E locator follow-up — 2026-11-12
+
+- Corrected the Arabic Permissions route selector to an exact accessible-name match after the expanded Platform Admin matrix showed the partial word also matches “Users & access”. The observed failure was strictly an E2E locator ambiguity; the UI and authorization behavior were not changed.
+- New exact-head CI evidence is required before the candidate can proceed to merge.
+
+- Keyboard-only Overview check now targets its actual in-section heading (Platform metrics / مؤشرات المنصة), not the page-level Admin center H1.

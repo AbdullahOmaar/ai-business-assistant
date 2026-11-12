@@ -9,6 +9,18 @@
 
 ---
 
+## November Phase 1 — HR mobile workspaces — 2026-11-12
+
+- **Branch:** `master/nov-2026-phase-1-ux-foundation` (continue on the one Owner-selected November branch).
+- **Work:** restructure the owner-only Employees & Payroll phone experience into Employees, Prepare pay and Payroll history workspaces. Collapse the employee profile form by default on mobile and open it on demand; route existing Edit employee / Prepare payroll / Edit draft actions to their relevant mobile workspace.
+- **Desktop:** retain the existing full workflow and simultaneous employee/preparation/history surfaces.
+- **Preserved contracts:** no backend/API/schema/data/financial/payroll-rule or authorization changes; server-side net pay, second-owner draft approval, one linked in-app Payroll expense on payout, no bank transfer, and owner-only salary data remain unchanged. Directory and employee selector do not expose base salary.
+- **Regression coverage:** structural HR UI assertions plus rendered mobile route checks for section navigation, pane visibility and collapsed/open employee form in Arabic RTL and English LTR at existing phone widths.
+- **Validation:** GitHub Actions run [43168710539](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43168710539) completed SUCCESS on exact code candidate `0f0f6801deb969009c4e7ac39eec887888f19a9e`: frontend unit tests, production build, dependency audit, backend container, backend accounting, frontend browser smoke and aggregate `all-checks-passed` all PASS; authenticated API smoke SKIPPED by workflow condition. Browser JUnit: 22/22 PASS, 0 failures/errors/skips. The rendered route sweep captured all 18 OWNER workspace destinations at 195/360/390/430/768/1280px in RTL/LTR (216 route screenshots), plus Platform Admin Overview/Users at 360/390/430/768/1280px in both directions (20 screenshots). The 195×422 CSS viewport approximates the available layout at 200% zoom on 390×844; it is not a substitute for actual browser/device zoom acceptance. HR now also has keyboard-only section navigation, natural Tab order through all three sections, keyboard disclosure open/close, and 44px minimum tab targets. Artifact: [phase1-browser-smoke](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43168710539/artifacts/13921421297). This remains mocked/rendered browser evidence, not live STAFF provisioning or direct authenticated cross-tenant API denial. Physical Android/PWA install/update/offline, full-product keyboard-only and screen-reader acceptance, high-contrast/actual 200% zoom, and live STAFF/second-tenant acceptance remain separate open gates.
+- **Disposition:** Phase 1 remains PARTIALLY COMPLETE until all full-product acceptance evidence is available. This is bundled on the active branch; do not open a docs-only or isolated small PR.
+
+---
+
 ## November Phase 1 — Arabic mobile heading typography — 2026-11-12
 
 - **Branch:** `master/nov-2026-phase-1-ux-foundation` (same Phase 1 branch name restored from merged main; no parallel Phase 1 branch).
@@ -3751,3 +3763,162 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Validation status:** the source and Playwright regressions are authored, not yet executed on this candidate. Local repository execution is unavailable in this environment. The active AIBA project instruction says **CircleCI ONLY**, while current repository/Notion governance selects GitHub Actions and the live workflow is GitHub Actions; CircleCI is retired and no CircleCI runner/connector is exposed here. This provider conflict is **BLOCKED / NOT RUN**; GitHub Actions was not substituted. Frontend unit, Playwright, build, dependency/security audit and exact-head CI are NOT RUN on this candidate.
 - **Delivery/safety:** this is a source/test-only UX shell change. No API, role policy, authorization, tenant, database/schema/migration, financial behavior, merge or deployment change. No PR is opened before the required exact-head validation policy is resolved.
 - **Disposition:** Phase 1 implementation has a concrete tablet UX improvement and expanded acceptance coverage, but is **IN PROGRESS / PARTIALLY COMPLETE** pending execution of the tests on the exact candidate and the remaining rendered/device/accessibility acceptance evidence.
+
+## 2026-11-12 — Phase 1 merge and Greptile P2 closeout
+
+- **Owner direction:** prioritize merging the November Phase 1 branch. PR [#391](https://github.com/AbdullahOmaar/ai-business-assistant/pull/391) was opened as the named exception to the ordinary substantial-outcome PR threshold; required technical gates remained enforced.
+- **Merge verified:** PR #391 CLOSED / MERGED at 2026-11-12T05:58:30Z. Merge commit and new `main` SHA: `d650721786ddc0ce3f3c9b1010f7a7e5eb4fccdd`. PR head: `5d6a80c287c45defc29e7b97e4f95ad5dc03f10a`.
+- **Exact-head CI:** GitHub Actions run [43164558730](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43164558730) completed SUCCESS on PR head `5d6a80c287c45defc29e7b97e4f95ad5dc03f10a`. All six substantive jobs and required `all-checks-passed` aggregate PASS. Authenticated API smoke was skipped by its explicit workflow condition. GitGuardian Security Checks and Greptile review completed successfully.
+- **Maintainer review:** full 17-path diff review recorded on PR #391 at exact head. A faulty ambiguous STAFF invoice assertion was corrected before CI.
+- **Post-merge review finding:** Greptile identified that the new tablet icon rail was not described in the in-app feature catalogue, despite AGENTS.md requiring the catalogue to reflect user-visible behavior. This follow-up adds concise Arabic/English guidance for the 761–900px icon rail, hover labels, screen-reader names and scrolling in `frontend/src/app/release-guide.ts`.
+- **Branch continuity:** GitHub automatically removed the merged head branch after merge. The same authorized November branch name was restored at the new main SHA `d650721786ddc0ce3f3c9b1010f7a7e5eb4fccdd`; all merged commits remain reachable from main. No new phase branch was created.
+- **Validation for this follow-up:** catalogue text only; no new release version or API/DB/financial behavior. This follow-up commit is not yet CI-validated. It remains on the same November branch and will be bundled with the next coherent product outcome rather than opening a documentation-only PR.
+- **Acceptance:** Phase 1 merge delivery is complete, but overall Phase 1 product acceptance remains PARTIALLY COMPLETE while full rendered 19-destination audit, screen-reader/keyboard, high-contrast/200% zoom, physical Android installed-PWA install/update/offline, direct authenticated cross-tenant API denial and STAFF live provisioning remain BLOCKED / NOT RUN.
+- **Deployment:** no Vercel deployment was requested or performed. Merge does not imply production release.
+
+- Browser-smoke follow-up: the mobile collapsed-form selector is strengthened against the global form display rule. Exact-head run [43168710539](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43168710539) PASS on code SHA `0f0f6801deb969009c4e7ac39eec887888f19a9e`; the rendered E2E verifies collapsed/open/collapsed state, keyboard section navigation and the 195px RTL/LTR route sweep.
+
+
+## 2026-11-12 — Shared record-screen foundation (Customers, Products, Suppliers, Purchasing)
+
+- Added a reusable semantic record-table component with localized columns, loading/empty states, row-specific actions and keyboard focus.
+- Replaced the four core module list-card layouts with structured records: Customers, Products & inventory, Suppliers, and Purchase orders. Desktop uses clear columns; phone layouts become labeled record cards instead of forcing horizontal scrolling.
+- Standardized search toolbars and status/quantity/financial columns. Create forms and owner-only CSV imports are progressively disclosed so records are the primary content.
+- Preserved contracts and side effects: no new product category/warehouse/valuation/COGS/AP fields, routes, APIs, schema, migrations, authorization changes or financial semantics. Purchase receiving remains Owner-only and uses the existing confirmation path for eligible approved/partially received orders.
+- Changes remain on the existing November Phase 1 branch. No PR, merge or deployment. Exact-head consolidated GitHub Actions validation follows this coherent batch.
+- Physical Android / installed-PWA, real screen-reader and live OWNER/STAFF/two-tenant acceptance remain separate gates.
+
+
+## 2026-11-12 — Core operations screen consistency batch
+
+- Extended the shared record-table presentation to Payments, Expenses, Recurring Invoice Schedules, Notifications, and the workspace Activity Log.
+- Each screen now exposes a consistent labeled record model, desktop table/mobile cards, semantic headers, loading/empty states and retains its existing search, pagination, and create workflow.
+- No payment allocation, expense posting, recurring execution, notification delivery, audit, or financial business logic was added or changed. Notification UI continues to disclose that actual delivery requires a configured provider and deployed worker.
+- Existing November Phase 1 branch only; no PR, merge, deployment, schema or database changes.
+- Exact-head consolidated validation and full rendered route audit remain pending.
+
+
+## 2026-11-12 — Reporting and integrity screen foundation
+
+- Standardized currency-separated operating result and tax summary into shared record tables.
+- Converted read-only data-integrity findings into distinct tables for unlinked invoices and mismatched payment allocations, preserving separate currency-mismatch and customer-mismatch labels.
+- No financial formula, report source, tax rule, allocation, or data mutation changed.
+- No schema/API/database changes; no PR, merge, or deployment.
+
+
+## 2026-11-12 — Record-table maintainer review follow-up
+
+- Reviewed the combined 10-path November branch diff in staged scope after it crossed the 800 changed-line review-planning threshold.
+- Removed duplicate loading/empty announcements where the shared table already owns those states (Notifications, Suppliers, Purchasing, Recurring, Reports, Taxes, Activity Log).
+- Kept previously loaded rows visible during background refresh for Notifications, Recurring Schedules and Activity Log; first-load spinner remains owned by the table.
+- No domain behavior, permissions, API, schema, database, financial semantics or deployment changes.
+- Exact-head unit/build/browser/security validation remains NOT RUN for this candidate; the non-primary SemaphoreCI status is FAILURE and is not treated as approved GitHub Actions evidence.
+
+
+## 2026-11-12 — HR and receivables-aging record screens
+
+- Employee directory and payroll history now use the shared responsive record table; the employee directory deliberately excludes monthly salary, while compensation details remain in the owner-only payroll history.
+- Existing employee edit/deactivate/prepare-pay actions and payroll edit/approve/in-app payout actions are preserved through row-action dispatch with existing status and busy guards.
+- Receivables aging invoice findings now use a labeled record table; currency-specific summaries and human-review warnings remain separate.
+- No payroll calculation, approval rule, payout semantics, expense posting, financial report formula, API/schema, or data changes.
+- Exact-head unit/build/browser/security validation remains NOT RUN; no PR, merge, or deployment.
+
+
+## 2026-11-12 — Platform Admin mobile data-grid batch
+
+- Reviewed all six Platform Admin data tables: currency/status summary, workspace directory, workspace memberships, platform activity, global user directory and platform-role audit.
+- Added localized per-cell labels and a phone layout that converts the five-column-plus data grids into readable record cards; compact summaries and memberships use the same labeled card treatment.
+- Preserved semantic table markup for assistive technology and desktop, existing row actions, exact-search and pagination behavior, read-only financial summaries, and server-owned platform permissions.
+- No API, role, authorization, tenant, identity, database, financial, or audit behavior changed.
+- Exact-head tests/build/browser/security validation remain deferred until the coherent November UX batch is assembled; no PR, merge or deployment.
+
+
+## 2026-11-12 — Invoice list single-layout cleanup
+
+- Reviewed the invoice destination end-to-end: search, status/customer filters, owner-only export, draft editor, status-dependent actions, server-returned payment allocations/outstanding balances, payment progress and incremental loading.
+- Removed a duplicate desktop invoice table that was permanently hidden by CSS; the existing rich invoice cards remain the single responsive presentation across desktop and phone, avoiding duplicated action markup that could drift.
+- Raised invoice-card action targets to 44px on phone widths. Existing invoice status, print, pay, issue and void guards remain unchanged.
+- No invoice calculations, payment/allocation semantics, API, schema, database, authorization, or financial behavior changed.
+- Exact-head consolidated validation remains deferred until the November UX batch closes; no PR, merge or deployment.
+
+
+- **Review correction:** updated the existing Platform Admin user-directory regression assertion from horizontal-scroll behavior to the new labeled-card mobile contract; the prior assertion would have failed after the intended layout change.
+
+
+- **Maintainer review correction:** preserved the prior localized medium-date presentation for paid payroll records in the new shared table; malformed/missing timestamps render as an em dash rather than a raw ISO string.
+
+
+## 2026-11-12 — Customer statement mobile record layout
+
+- Reviewed the nested Customer Statement surface inside Customers: retained date-range filters, per-currency balance cards, event labels, source references, debit/credit/balance values, pagination and report limitations.
+- Replaced its remaining horizontally scrolling six-column ledger with the shared semantic record table; phone widths render labeled transaction cards while desktop retains a structured table.
+- Each debit, credit and balance value continues to carry its own currency code; no opening-balance, allocation, financial formula or ledger semantics changed.
+- Added regression coverage for the shared table, localized event date, per-currency values, pagination and range limitations.
+- No API, schema, database, authorization or data changes. Exact-head consolidated validation remains pending; no PR, merge or deployment.
+
+
+- **Locale review correction:** use native Intl.DateTimeFormat for customer-statement and payroll dates instead of Angular formatDate with an unregistered ar-EG locale; Arabic/English formatting no longer depends on missing Angular locale registration.
+
+
+## 2026-11-12 — Record-table review corrections
+
+- Preserved locale-aware dates previously supplied by Angular date pipes for payments, expenses, recurring schedules, notifications, audit history, receivables aging and integrity findings.
+- Made customer-statement row keys unique across repeated payment-allocation events using invoice identity, occurrence time and page index.
+- Presentation/key stability only; no date-range, amount, currency, allocation, balance, payroll or posting semantics changed.
+- Consolidated exact-head validation remains pending for the full cross-screen batch.
+
+
+## 2026-11-12 — Phase 1 consolidated record-screen validation handoff
+
+- **Candidate:** `master/nov-2026-phase-1-ux-foundation`, current implementation head before this handoff: `b8539a7de633dd5cc080136b3edced11708b61f1`; base `main@d650721786ddc0ce3f3c9b1010f7a7e5eb4fccdd`.
+- **Regression follow-up:** commits `b402abb694b896fa02eec13095602f071f949e10` and `b8539a7de633dd5cc080136b3edced11708b61f1` update legacy source assertions to the shared semantic record-table contract, confirm loading/empty states at the shared component boundary, preserve Owner-only CSV/purchase receiving guards through the new row-action handler, and open the collapsed product-create disclosure before the STAFF browser test interacts with its controls.
+- **Static readback:** the changed source matchers were checked against the exact candidate blobs; all 13 focused source-pattern checks returned true. This is static source inspection only, not execution of Node tests, Angular build, Playwright, dependency audit, backend tests, or security scanning.
+- **Historical failure:** workflow run [43171122153](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43171122153) failed on older SHA `3864c8bb09e93c1a0d200e87191b0cf07741d680`: five unit assertions still expected pre-table markup, and the STAFF Playwright journey queried a checkbox inside the collapsed product-create disclosure. The above follow-up updates address those identified assumptions; current exact-head test results are not yet known.
+- **Exact-head validation:** current source head `b8539a7de633dd5cc080136b3edced11708b61f1` has zero GitHub Actions check-runs. One manual workflow-dispatch attempt was stopped because GitHub required sign-in and the browser sign-in card expired before exact branch/head verification; **no workflow was dispatched**. The legacy Semaphore status is retired/non-authoritative and is not counted as validation. Unit tests, build, browser smoke, dependency/security audit and aggregate check are **NOT RUN** on this exact head.
+- **Review planning:** the branch comparison against main is 32 commits ahead / 0 behind, 16 changed paths, +988 / -237 lines. The 15-path / 800-line staged-review threshold is crossed; the complete maintainer diff review must be performed in coherent path groups before any milestone PR. No PR is open.
+- **Acceptance still open:** physical Android Chrome / installed-PWA install-update-offline; full rendered 19-destination RTL/LTR sweep for the combined record-screen batch; full-product keyboard-only and screen-reader verification; actual high-contrast and 200% zoom; live STAFF provisioning/journey; direct authenticated second-tenant API denial.
+- **Delivery/safety:** no backend/API/schema/database/data, financial/payroll-rule, tenant/authorization, production, external-notification or deployment changes in this regression follow-up. No PR, merge or deployment. Phase 1 remains **PARTIALLY COMPLETE** pending exact-head validation and remaining acceptance evidence.
+
+
+## 2026-11-12 — Shared record-table accessibility follow-up
+
+- **Code candidate reviewed:** `629a3fa0e4451b75b7d76c0d7377de8ce67392b9` on `master/nov-2026-phase-1-ux-foundation`, based on `main@d650721786ddc0ce3f3c9b1010f7a7e5eb4fccdd`.
+- Primary record values now render as semantic row headers (`th scope="row"`); row action buttons receive contextual accessible names using the visible primary record value. Mobile record-card CSS now labels both data cells and row headers.
+- Added focused source-level regression assertions for row-header semantics, contextual action labels, and mobile header-label styling.
+- **Maintainer source-diff review:** reviewed the 16 changed paths as a coherent frontend UX batch (1,016 additions / 237 deletions at the code candidate). No backend/API/schema/database changes or new authorization, tenant, payroll-rule, payout, invoice, payment/allocation, inventory, tax, or financial semantics were found. Existing Owner-only purchase receiving and payroll action status/busy guards remain in place; employee directory still omits base salary. This is source review, not rendered/runtime acceptance.
+- **Static readback:** all eight focused source assertions for row headers, contextual action names, desktop/mobile styling and regression coverage returned true. This is not execution of Node tests or Angular compilation.
+- **Exact-head validation:** GitHub Actions check-runs and workflow runs are both zero on `629a3fa0e4451b75b7d76c0d7377de8ce67392b9`. Unit tests, Angular production build, Playwright, dependency/security audit and aggregate required check are **NOT RUN** on this exact head. Historical run [43168710539](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43168710539) passed on earlier SHA `0f0f6801deb969009c4e7ac39eec887888f19a9e`; it is not reusable for this candidate. No Vercel Preview deployment was found for the branch at this checkpoint.
+- **Remaining acceptance:** full rendered review of all 19 destinations in RTL/LTR at desktop/tablet/phone; keyboard-only and screen-reader verification beyond the tested HR controls; high-contrast/forced-colors and actual 200% browser zoom; physical Android Chrome and installed-PWA install/update/offline; live STAFF provisioning/journey (blocked by the lack of a supported invitation/create-membership workflow); direct authenticated second-tenant API denial. A 195px CSS viewport remains an approximation, not actual zoom/device evidence.
+- **Delivery/safety:** 37 commits ahead / 0 behind main, 16 changed paths, 1,016 additions / 237 deletions before this documentation checkpoint. No PR, merge, deployment, API, DB, data or external notification action. November Phase 1 remains **PARTIALLY COMPLETE**.
+
+
+## 2026-11-12 — Phase 1 exact-head CI and responsive route-capture checkpoint
+
+- **Candidate:** `a21044f01b238b9cfdb3fd4978f252024ea4b355` on `master/nov-2026-phase-1-ux-foundation`, base `main@d650721786ddc0ce3f3c9b1010f7a7e5eb4fccdd`; 44 commits ahead / 0 behind, 18 changed paths, +1,063 / -280.
+- **CI run:** [GitHub Actions run 43202288821](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43202288821) completed SUCCESS on this exact SHA. Required aggregate `all-checks-passed` = SUCCESS; GitGuardian = SUCCESS.
+- **Exact-head evidence:** Frontend unit tests **433 passed / 0 failed**; Angular production build PASS; frontend dependency audit PASS; Chromium Playwright **22/22 PASS**; backend container PASS; backend regression/accounting **283 passed** (23 warnings); disposable PostgreSQL migration/schema-drift checks PASS; offline migration SQL generation PASS; project knowledge validator PASS; Python dependency audit PASS. `authenticated-api-smoke` is **SKIPPED**, not PASS.
+- **Rendered capture inventory:** browser artifact contains 216 route screenshots: 18 workspace destinations × six CSS viewport widths (195, 360, 390, 430, 768, 1280) × RTL/LTR. Platform Admin Overview and Users & Access add 20 captures (five widths × RTL/LTR for each view). Selected 390px RTL/LTR and 195px RTL captures were inspected. The 195px viewport is only a narrow-layout approximation, not actual 200% browser zoom. The captures do not replace a complete manual visual/accessibility review of all destinations.
+- **CI regression repairs:** corrected the payment table loading binding to the existing `paymentLoading` state; updated stale source assertions for the shared semantic record table, responsive invoice cards and record-row projections; aligned the invoice-print assertion with the current card layout; updated the Platform Admin E2E cell locator to tolerate the mobile field-label prefix in its accessible name. No Platform Admin authorization behavior was changed.
+- **Maintainer review:** the complete 18-path frontend/test/docs diff was reviewed at this candidate. No backend/API/schema/database/data change, new role/tenant authorization rule, financial/payroll/payout rule, payment/allocation semantic, inventory/receiving semantic, or tax/COGS/AP/GL behavior was introduced. Existing Owner-only purchase receiving and payroll controls remain guarded. This source review plus CI does not establish physical-device or assistive-technology acceptance.
+- **Still open / NOT RUN:** manual keyboard-only and screen-reader review; high-contrast/forced-colors; actual 200% browser zoom; physical Android Chrome and installed-PWA install/update/offline; live STAFF provisioning/journey; authenticated second-tenant API denial (API smoke was skipped). No verified live account/tenant evidence is claimed.
+- **Delivery:** Draft PR [#392](https://github.com/AbdullahOmaar/ai-business-assistant/pull/392) is open for review and exact-head evidence only. No merge, Vercel deployment, production DB write, migration, external notification or live financial operation. November Phase 1 remains **PARTIALLY COMPLETE** pending the manual/device/role-tenant acceptance above and separate Owner decisions for merge/deployment.
+
+
+## 2026-11-12 — Platform Admin nested-screen accessibility and route audit
+
+- Reconciled the Home catalogue: 19 total destinations = 18 workspace routes plus the independently permissioned Platform Admin destination. The existing OWNER route sweep covers the 18 workspace destinations; Platform Admin has a separate mocked authenticated E2E journey.
+- Expanded Platform Admin E2E viewport coverage from Overview/Users to all five inner sections (Overview, Workspaces, Audit activity, Users & access, Permissions), at 360/390/430/768/1280 CSS px in RTL/LTR (50 captures).
+- Added a polite screen-reader live announcement for admin section navigation and for the safe Overview fallback after Users permission revocation.
+- Added keyboard-only Tab/Enter coverage across all five sections, including matching active section announcements and heading visibility.
+- No platform authorization, identity, membership, API, database, financial, payroll, or operational data changes.
+- Full exact-head validation and route artifact review are pending on the resulting candidate. Physical Android/PWA, actual 200% zoom, real screen-reader/high-contrast, live STAFF and authenticated cross-tenant denial remain open. No merge or deployment.
+
+
+## 2026-11-12 — Platform Admin route-audit E2E locator correction
+
+- Exact-head browser smoke on `92df2bc1dc5ea2a2b9a2cca13b629ab296e896ce` exercised 21/22 tests successfully; the expanded Platform Admin route matrix exposed an ambiguous Arabic accessible-name regex for Permissions (`/الصلاحيات/` also matched Users & access). This was a test-locator strict-mode failure, not an application behavior or permission failure.
+- Tightened only the Permissions navigation locator to anchored exact-name patterns in Arabic and English. No UI, authorization, role, API or data behavior changed.
+- This correction is part of the same Phase 1 Platform Admin accessibility/route audit batch. Re-run exact-head CI before merge; previous result remains failed and is not reusable for the new candidate.
+
+
+- **Follow-up before rerun:** aligned the keyboard-only Overview assertion with the actual section heading (“Platform metrics” / “مؤشرات المنصة”), rather than the page-level H1 (“Admin center”). This is a test expectation correction only; no app behavior changed.

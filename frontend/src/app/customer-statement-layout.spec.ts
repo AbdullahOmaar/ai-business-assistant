@@ -4,15 +4,21 @@ import test from 'node:test';
 
 const componentSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 
-test('customer statement keeps its wide ledger inside a touch-scrollable region', () => {
+test('customer statement preserves separate currency balances and uses the shared responsive record table', () => {
   assert.match(componentSource, /class="panel statement-panel"/);
-  assert.match(componentSource, /class="table-wrap audit-table-wrap" role="region" tabindex="0"[^>]*><table><thead>/);
-  assert.match(componentSource, /\.statement-panel\{[^}]*max-width:100%/);
-  assert.match(componentSource, /\.statement-panel \.table-wrap\{[^}]*overflow-x:auto/);
-  assert.match(componentSource, /\.statement-panel \.table-wrap table\{[^}]*min-width:680px/);
-  assert.match(componentSource, /\.statement-panel \.table-wrap th,\.statement-panel \.table-wrap td\{[^}]*white-space:nowrap/);
+  assert.match(componentSource, /<aba-record-table \[ariaLabel\]="t\('كشف حساب العميل'/);
+  assert.match(componentSource, /customerStatementTableColumns/);
+  assert.match(componentSource, /customerStatementTableRows/);
+  assert.match(componentSource, /balance:\x60\$\{event\.balance\} \$\{event\.currency_code\}\x60/);
+  assert.match(componentSource, /formatCustomerStatementDate\(event\.occurred_at\)/);
+  assert.match(componentSource, /Intl\.DateTimeFormat/);
+  assert.match(componentSource, /get statementBalanceEntries\(\)/);
+  assert.doesNotMatch(componentSource, /customer statement table, horizontally scrollable/);
 });
 
-test('long customer statement references can wrap without widening the page', () => {
-  assert.match(componentSource, /\.statement-panel \.table-wrap td:nth-child\(3\)\{[^}]*overflow-wrap:anywhere/);
+test('customer statement pagination and date-range limitations remain visible around the responsive records', () => {
+  assert.match(componentSource, /loadCustomerStatementPage\(statementOffset > 50 \? statementOffset - 50 : 0\)/);
+  assert.match(componentSource, /loadCustomerStatementPage\(statementOffset \+ 50\)/);
+  assert.match(componentSource, /Displayed balances sum movements inside the selected range only/);
+  assert.match(componentSource, /customerStatement\.limitations/);
 });
