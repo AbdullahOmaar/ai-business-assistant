@@ -38,6 +38,11 @@ export const FEATURE_CATALOG = [
         detailEn: 'At 761–900px widths, the sidebar becomes a compact icon rail to leave more room for content. Module names appear on hover and remain available to screen readers; scroll within the rail to reach the remaining sections.',
       },
       {
+        titleAr: 'جداول التقارير والمراجعة', titleEn: 'Reporting and review tables',
+        detailAr: 'أصبحت نتيجة التشغيل والملخص الضريبي وتقارير سلامة البيانات تعرض جداول واضحة مع إبقاء العملات منفصلة والمرتجعات والتخصيصات في تصنيفاتها الأصلية.',
+        detailEn: 'Operating result, tax summary, and data-integrity findings now use clear tables while preserving separate currencies and the original classification of returns and allocations.',
+      },
+      {
         titleAr: 'شاشات التشغيل الأساسية', titleEn: 'Core operational record screens',
         detailAr: 'تم توحيد عرض المدفوعات والمصروفات والجداول الدورية والإشعارات وسجل العمليات باستخدام مكوّن الجداول المشترك؛ مع حقول واضحة على الموبايل والبحث وحالات التحميل والفراغ.',
         detailEn: 'Payments, expenses, recurring schedules, notifications, and activity log now share the record-table component, with labeled mobile fields, search, loading, and empty states.',

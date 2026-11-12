@@ -3796,3 +3796,11 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - No payment allocation, expense posting, recurring execution, notification delivery, audit, or financial business logic was added or changed. Notification UI continues to disclose that actual delivery requires a configured provider and deployed worker.
 - Existing November Phase 1 branch only; no PR, merge, deployment, schema or database changes.
 - Exact-head consolidated validation and full rendered route audit remain pending.
+
+
+## 2026-11-12 — Reporting and integrity screen foundation
+
+- Standardized currency-separated operating result and tax summary into shared record tables.
+- Converted read-only data-integrity findings into distinct tables for unlinked invoices and mismatched payment allocations, preserving separate currency-mismatch and customer-mismatch labels.
+- No financial formula, report source, tax rule, allocation, or data mutation changed.
+- No schema/API/database changes; no PR, merge, or deployment.

@@ -467,14 +467,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (profitLoss) {
                   <p class="muted">{{ profitLoss.period.start_date || t('من بداية السجلات', 'From the beginning of records') }} — {{ profitLoss.period.end_date || t('حتى الآن', 'through today') }} · {{ profitLoss.period.timezone || 'UTC' }}</p>
                   <p class="muted"><strong>{{ t('أساس الإيراد:', 'Revenue basis:') }}</strong> {{ revenueBasisLabel(profitLoss.revenue_basis) }}</p>
-                  <div class="metric-grid">
-                    @for (row of profitLoss.currencies; track row.currency_code) {
-                      <article class="metric"><span>{{ t('الإيرادات (فواتير صادرة)', 'Revenue (issued invoices)') }}</span><strong>{{ row.revenue }} {{ row.currency_code }}</strong><small>{{ row.revenue_invoice_count }} {{ t('فاتورة', 'invoices') }}</small></article>
-                      <article class="metric"><span>{{ t('المرتجعات المعتمدة (من فواتير الفترة)', 'Approved returns (period invoices)') }}</span><strong>{{ row.approved_return_total }} {{ row.currency_code }}</strong><small>{{ row.approved_return_count }} {{ t('مرتجع', 'returns') }} · {{ t('تُعرض منفصلة ولا تُخصم من الإيراد', 'shown separately; not deducted from revenue') }}</small></article>
-                      <article class="metric"><span>{{ t('المصروفات المسجلة', 'Recorded expenses') }}</span><strong>{{ row.expenses }} {{ row.currency_code }}</strong><small>{{ row.expense_count }} {{ t('مصروف', 'expenses') }}</small></article>
-                      <article class="metric"><span>{{ t('النتيجة قبل تكلفة البضاعة', 'Result before cost of goods') }}</span><strong>{{ row.operating_result_before_cost_of_goods }} {{ row.currency_code }}</strong><small>{{ t('إيرادات الفواتير − المصروفات المسجلة', 'Invoice revenue − recorded expenses') }}</small></article>
-                    }
-                  </div>
+                  <aba-record-table [ariaLabel]="t('جدول نتيجة التشغيل حسب العملة','Operating result by currency table')" [columns]="profitLossTableColumns" [rows]="profitLossTableRows" [emptyTitle]="t('لا توجد بيانات','No data')" [emptyDescription]="t('لا توجد بيانات مالية للفترة المحددة.','No financial data for this period.')" />
                   @if (!profitLoss.currencies.length) { <aba-state-message kind="empty" [description]="t('لا توجد فواتير صادرة أو مصروفات مسجلة في هذه الفترة.', 'No issued invoices or recorded expenses in this period.')" /> }
                   <div class="notice"><strong>{{ t('مهم قبل اعتبارها أرباحًا صافية', 'Important limitation') }}</strong><span>{{ t('هذا حساب مبدئي: لا يشمل تكلفة شراء البضاعة لأن تكلفة المنتج غير مرتبطة بعد بالمبيعات، كما أن الإيرادات تُحسب من الفواتير الصادرة لا من النقد المحصّل. لا يتم جمع العملات المختلفة.', 'This is a preliminary result: product purchase costs are not yet linked to sales, and revenue is based on issued invoices rather than cash collected. Different currencies are never combined.') }}</span></div>
                 }
@@ -844,7 +837,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 </form>
                 @if (taxError) { <aba-state-message kind="error" [description]="taxError" /> }
                 @if (taxSummaryReport) {
-                  <div class="metric-grid">@for (entry of taxSummaryReport.currencies; track entry.currency_code) { <article class="metric"><span>{{ t('إجمالي الضريبة', 'Tax total') }} · {{ entry.currency_code }}</span><strong>{{ entry.tax_total }} {{ entry.currency_code }}</strong><small>{{ entry.invoice_count }} {{ t('فاتورة صادرة', 'issued invoices') }}</small></article> }</div>
+                  <aba-record-table [ariaLabel]="t('ملخص الضرائب حسب العملة','Tax summary by currency')" [columns]="taxTableColumns" [rows]="taxTableRows" [emptyTitle]="t('لا توجد بيانات ضريبية','No tax data')" [emptyDescription]="t('لا توجد فواتير صادرة في الفترة المحددة.','No issued invoices in the selected period.')" />
                   @if (!taxSummaryReport.currencies.length) { <aba-state-message kind="empty" [description]="t('لا توجد فواتير صادرة في الفترة المحددة.', 'No issued invoices in the selected period.')" /> }
                   @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ reportLimitationLabel(limitation) }}</p> }
                 }
@@ -981,9 +974,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     <article class="metric"><span>{{ t('تخصيصات بعملاء مختلفين', 'Customer-mismatched allocations') }}</span><strong>{{ dataIntegrityReport.customer_mismatched_allocations.total }}</strong></article>
                   </div>
                   <h3>{{ t('الفواتير غير المرتبطة', 'Unlinked issued invoices') }}</h3>
-                  <div class="list">@for (invoice of dataIntegrityReport.unlinked_issued_invoices.items; track invoice.invoice_id) { <article class="list-row"><div class="grow"><strong>{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</strong><small>{{ invoice.created_at ? (invoice.created_at | date:'short') : '—' }} · {{ invoice.invoice_id }}</small></div></article> }</div>
+                  <aba-record-table [ariaLabel]="t('الفواتير غير المرتبطة بعميل','Invoices without customer')" [columns]="integrityInvoiceColumns" [rows]="integrityInvoiceRows" [emptyTitle]="t('لا توجد فواتير غير مرتبطة','No unlinked invoices')" [emptyDescription]="t('لم يتم العثور على فواتير تحتاج مراجعة في هذه الفئة.','No invoices need review in this category.')" />
                   <h3>{{ t('تخصيصات المدفوعات التي تحتاج مراجعة', 'Payment allocations needing review') }}</h3>
-                  <div class="list">@for (item of dataIntegrityReport.currency_mismatched_allocations.items; track item.allocation_id) { <article class="list-row"><div class="grow"><strong>{{ item.invoice_number }} · {{ item.allocated_amount }} {{ item.payment_currency }}</strong><small>{{ t('عملة الفاتورة:', 'Invoice currency:') }} {{ item.invoice_currency }} · {{ t('مرجع الدفعة:', 'Payment reference:') }} {{ item.payment_reference || item.payment_id }}</small></div></article> } @for (item of dataIntegrityReport.customer_mismatched_allocations.items; track item.allocation_id) { <article class="list-row"><div class="grow"><strong>{{ item.invoice_number }} · {{ item.allocated_amount }} {{ item.invoice_currency }}</strong><small>{{ t('عميل الدفعة:', 'Payment customer:') }} {{ item.payment_customer_id || '—' }} · {{ t('عميل الفاتورة:', 'Invoice customer:') }} {{ item.invoice_customer_id || '—' }}</small></div></article> }</div>
+                  <aba-record-table [ariaLabel]="t('تخصيصات تحتاج مراجعة','Allocations requiring review')" [columns]="integrityAllocationColumns" [rows]="integrityAllocationRows" [emptyTitle]="t('لا توجد تخصيصات تحتاج مراجعة','No allocations need review')" [emptyDescription]="t('لم يتم العثور على تخصيصات غير متطابقة.','No mismatched allocations found.')" />
                   <div class="inline-form"><span class="muted">{{ t('الصفحة', 'Offset') }} {{ dataIntegrityReport.offset }} · {{ t('حد الصفحة', 'Page size') }} {{ dataIntegrityReport.limit }}</span><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset > 0 ? dataIntegrityReport.offset - dataIntegrityReport.limit : 0)" [disabled]="integrityLoading || dataIntegrityReport.offset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset + dataIntegrityReport.limit)" [disabled]="integrityLoading || dataIntegrityReport.offset + dataIntegrityReport.limit >= maxIntegrityTotal">{{ t('التالي', 'Next') }}</button></div>
                 }
               </section>
@@ -1859,6 +1852,61 @@ export class AppComponent implements OnInit, OnDestroy {
     date:item.created_at||'—',action:this.auditActionLabel(item.action),target:this.auditTargetLabel(item.target_type),
     recordId:item.target_id||'—',actor:item.actor_subject||'—',
   }})); }
+
+  get profitLossTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'currency',label:this.t('العملة','Currency'),primary:true},
+    {key:'revenue',label:this.t('الإيرادات','Revenue'),kind:'numeric'},
+    {key:'returns',label:this.t('المرتجعات المعتمدة','Approved returns'),kind:'numeric'},
+    {key:'expenses',label:this.t('المصروفات','Expenses'),kind:'numeric'},
+    {key:'result',label:this.t('النتيجة قبل تكلفة البضاعة','Result before COGS'),kind:'numeric'},
+  ]; }
+  get profitLossTableRows(): readonly AbaRecordTableRow[] { return (this.profitLoss?.currencies||[]).map(row=>({id:row.currency_code,cells:{
+    currency:row.currency_code,revenue:`${row.revenue} · ${row.revenue_invoice_count} ${this.t('فاتورة','invoices')}`,
+    returns:`${row.approved_return_total} · ${row.approved_return_count} ${this.t('مرتجع','returns')}`,
+    expenses:`${row.expenses} · ${row.expense_count} ${this.t('مصروف','expenses')}`,
+    result:row.operating_result_before_cost_of_goods,
+  }})); }
+  get taxTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'currency',label:this.t('العملة','Currency'),primary:true},
+    {key:'tax',label:this.t('إجمالي الضريبة','Tax total'),kind:'numeric'},
+    {key:'count',label:this.t('الفواتير الصادرة','Issued invoices'),kind:'numeric'},
+  ]; }
+  get taxTableRows(): readonly AbaRecordTableRow[] { return (this.taxSummaryReport?.currencies||[]).map(row=>({id:row.currency_code,cells:{
+    currency:row.currency_code,tax:`${row.tax_total} ${row.currency_code}`,count:String(row.invoice_count),
+  }})); }
+  get integrityInvoiceColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'invoice',label:this.t('الفاتورة','Invoice'),primary:true},
+    {key:'total',label:this.t('الإجمالي','Total'),kind:'numeric'},
+    {key:'date',label:this.t('تاريخ الإنشاء','Created')},
+    {key:'record',label:this.t('معرّف السجل','Record ID')},
+  ]; }
+  get integrityInvoiceRows(): readonly AbaRecordTableRow[] { return (this.dataIntegrityReport?.unlinked_issued_invoices.items||[]).map(row=>({id:row.invoice_id,cells:{
+    invoice:row.invoice_number,total:`${row.total} ${row.currency_code}`,date:row.created_at||'—',record:row.invoice_id,
+  }})); }
+  get integrityAllocationColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'invoice',label:this.t('الفاتورة','Invoice'),primary:true},
+    {key:'issue',label:this.t('نوع المراجعة','Review issue'),kind:'status'},
+    {key:'amount',label:this.t('المبلغ','Amount'),kind:'numeric'},
+    {key:'paymentCurrency',label:this.t('عملة الدفعة','Payment currency')},
+    {key:'invoiceCurrency',label:this.t('عملة الفاتورة','Invoice currency')},
+    {key:'customers',label:this.t('مطابقة العميل','Customer match')},
+    {key:'reference',label:this.t('مرجع الدفعة','Payment reference')},
+  ]; }
+  get integrityAllocationRows(): readonly AbaRecordTableRow[] {
+    const currency=(this.dataIntegrityReport?.currency_mismatched_allocations.items||[]).map(row=>({id:`currency-${row.allocation_id}`,cells:{
+      invoice:row.invoice_number,issue:this.t('اختلاف العملة','Currency mismatch'),
+      amount:`${row.allocated_amount} ${row.payment_currency}`,paymentCurrency:row.payment_currency,
+      invoiceCurrency:row.invoice_currency,customers:'—',reference:row.payment_reference||row.payment_id,
+    }}));
+    const customer=(this.dataIntegrityReport?.customer_mismatched_allocations.items||[]).map(row=>({id:`customer-${row.allocation_id}`,cells:{
+      invoice:row.invoice_number,issue:this.t('اختلاف العميل','Customer mismatch'),
+      amount:`${row.allocated_amount} ${row.invoice_currency}`,paymentCurrency:row.payment_currency,
+      invoiceCurrency:row.invoice_currency,
+      customers:`${row.payment_customer_id||'—'} / ${row.invoice_customer_id||'—'}`,
+      reference:row.payment_reference||row.payment_id,
+    }}));
+    return [...currency,...customer];
+  }
   exportCurrentList(): void {
     if (!this.business || this.business.role !== 'owner') return;
     let filename = '';
