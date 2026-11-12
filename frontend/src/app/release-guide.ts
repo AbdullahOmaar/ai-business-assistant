@@ -32,6 +32,12 @@ export const FEATURE_CATALOG = [
         detailEn: 'In a signed-in workspace, press Tab to reveal a link that moves keyboard focus directly to the main content.',
       },
       {
+        titleAr: 'البحث في أقسام الموبايل',
+        titleEn: 'Search mobile navigation',
+        detailAr: 'افتح «المزيد» واكتب اسم القسم بالعربية أو الإنجليزية للعثور عليه بسرعة؛ النتائج تقتصر على الأقسام المتاحة لدورك الحالي.',
+        detailEn: 'Open More and search by an Arabic or English section name; results include only destinations available to your current role.',
+      },
+      {
         titleAr: 'التنقل على الشاشات اللوحية',
         titleEn: 'Tablet navigation',
         detailAr: 'على الشاشات بعرض 761 إلى 900 بكسل، تتحول القائمة الجانبية إلى شريط أيقونات مضغوط لتوفير مساحة للمحتوى. تظهر أسماء الأقسام عند المرور بالمؤشر، وتظل متاحة لقارئات الشاشة؛ مرّر داخل الشريط للوصول إلى بقية الأقسام.',
