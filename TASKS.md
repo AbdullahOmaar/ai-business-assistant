@@ -3952,3 +3952,5 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Disposition:** this UX slice is implemented and source-reviewed, but automated validation and full rendered/accessibility/device acceptance remain open. T50 / Phase 1 remain **PARTIALLY COMPLETE**.
 
 - **Follow-up regression coverage authored:** added structural checks for mobile More query reset on close, Escape focus restoration and selection dismissal; added Arabic/English Unicode NFKC compatibility-form search cases. These specs are authored but remain **NOT RUN** pending the exact-head CI-provider gate.
+
+- **Final static review checkpoint:** test-only follow-up commit `eda076532e022b65bc31dcd2c3ea34605e2da901` adds mobile More dismissal/focus-restoration and Arabic/English NFKC compatibility regression cases. A refreshed 18/18 focused source checks passed on that exact SHA. This is not a Node unit-test, Angular build, Playwright, security or CI PASS; all remain NOT RUN.
