@@ -28,7 +28,7 @@
   .customer-directory__desktop{display:none}
   .customer-directory__mobile-sort{display:block;margin-block-end:8px}
   .customer-directory__mobile-sort label{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;color:var(--aiba-muted,#5f6e83);font-size:12px}
-  .customer-directory__mobile-sort select{flex:0 1 68%;min-width:0;min-height:40px;padding:7px 34px 7px 10px;border:1px solid var(--aiba-line,#e2e8f0);border-radius:9px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);font:inherit;font-size:12px}
+  .customer-directory__mobile-sort select{flex:0 1 68%;min-width:0;min-height:44px;padding:7px 34px 7px 10px;border:1px solid var(--aiba-line,#e2e8f0);border-radius:9px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);font:inherit;font-size:12px}
   .customer-directory__mobile-list{display:grid;gap:7px;margin:0;padding:0;list-style:none}
   .customer-directory__mobile-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;min-width:0;padding:10px 11px;border:1px solid var(--aiba-line,#e2e8f0);border-radius:11px;background:var(--aiba-surface,#fff)}
   .customer-directory__identity{display:grid;gap:4px;min-width:0}

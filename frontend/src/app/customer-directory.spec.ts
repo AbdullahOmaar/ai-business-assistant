@@ -31,6 +31,7 @@ test('customer directory keeps compact mobile contact rows and visible existing 
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /grid-template-columns:minmax\(0,1fr\) auto/);
   assert.match(css, /min-height:44px/);
+  assert.match(css, /customer-directory__mobile-sort select\{[^}]*min-height:44px/);
   assert.match(css, /prefers-reduced-motion:reduce/);
   assert.match(css, /forced-colors:active/);
 });

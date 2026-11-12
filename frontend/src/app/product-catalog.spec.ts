@@ -18,6 +18,8 @@ test('catalogue filters stock-tracked and non-stock items on the current searche
   assert.match(component, /nonStockCount = computed/);
   assert.match(component, /filter\(\) === 'non-stock'/);
   assert.match(component, /'Non-stock'/);
+  assert.match(component, /'Item'/);
+  assert.doesNotMatch(component, /Product \/ non-stock/);
   assert.doesNotMatch(component, /'Services'/);
   assert.match(component, /visibleProducts = computed/);
   assert.match(component, /product\.is_stock_tracked/);
@@ -43,7 +45,9 @@ test('catalogue only renders fields already present in the Product API contract'
 test('mobile catalogue remains compact and readable in RTL/LTR with visible focus', () => {
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /product-catalog__mobile-row/);
-  assert.match(css, /min-height:40px/);
+  assert.match(css, /product-catalog__filters button\{[^}]*min-height:44px/);
+  assert.match(css, /product-catalog__mobile-sort select\{[^}]*min-height:44px/);
+  assert.match(css, /product-catalog__clear-filter\{[^}]*min-height:44px/);
   assert.match(css, /focus-visible/);
   assert.match(css, /forced-colors:active/);
 });

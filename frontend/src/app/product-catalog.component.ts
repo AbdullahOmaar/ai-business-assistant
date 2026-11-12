@@ -53,7 +53,7 @@ type SortDirection = 'asc' | 'desc';
           <table>
             <caption class="product-catalog__sr-only">{{ ariaLabel() }}</caption>
             <thead><tr>
-              <th scope="col" [attr.aria-sort]="ariaSort('name')"><button type="button" (click)="toggleSort('name')">{{ locale() === 'ar' ? 'المنتج / غير مخزني' : 'Product / non-stock' }} <span aria-hidden="true">{{ sortIndicator('name') }}</span></button></th>
+              <th scope="col" [attr.aria-sort]="ariaSort('name')"><button type="button" (click)="toggleSort('name')">{{ locale() === 'ar' ? 'الصنف' : 'Item' }} <span aria-hidden="true">{{ sortIndicator('name') }}</span></button></th>
               <th scope="col" [attr.aria-sort]="ariaSort('sku')"><button type="button" (click)="toggleSort('sku')">SKU <span aria-hidden="true">{{ sortIndicator('sku') }}</span></button></th>
               <th scope="col" [attr.aria-sort]="ariaSort('price')"><button type="button" (click)="toggleSort('price')">{{ locale() === 'ar' ? 'سعر الوحدة' : 'Unit price' }} <span aria-hidden="true">{{ sortIndicator('price') }}</span></button></th>
               <th scope="col" [attr.aria-sort]="ariaSort('stock')"><button type="button" (click)="toggleSort('stock')">{{ locale() === 'ar' ? 'المخزون' : 'Inventory' }} <span aria-hidden="true">{{ sortIndicator('stock') }}</span></button></th>

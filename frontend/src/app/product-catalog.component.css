@@ -23,16 +23,16 @@
 .product-catalog__quantity{display:inline-block;margin-inline-start:8px;color:var(--aiba-ink,#172033);font-size:12px;font-variant-numeric:tabular-nums}
 .product-catalog__service{display:inline-flex;align-items:center;padding:4px 8px;border:1px solid var(--aiba-line,#e2e8f0);border-radius:999px;background:var(--aiba-page,#f4f7fb);color:var(--aiba-muted,#5f6e83);font-size:11px;font-weight:650}
 .product-catalog__mobile-list{display:none}
-.product-catalog__clear-filter{justify-self:start;min-height:36px;padding:5px 10px;border:0;border-radius:8px;background:transparent;color:var(--aiba-brand-strong,#115e59);font:inherit;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.product-catalog__clear-filter{justify-self:start;min-height:44px;padding:5px 10px;border:0;border-radius:8px;background:transparent;color:var(--aiba-brand-strong,#115e59);font:inherit;font-size:12px;font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
 .product-catalog :is(button,select):focus-visible{outline:3px solid var(--aiba-focus,#2563eb);outline-offset:2px}
 .product-catalog__sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 @media(max-width:760px){
  .product-catalog__toolbar{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}
  .product-catalog__filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
- .product-catalog__filters button{min-width:0;min-height:40px;padding:6px 5px;gap:4px;font-size:11px}
+ .product-catalog__filters button{min-width:0;min-height:44px;padding:6px 5px;gap:4px;font-size:11px}
  .product-catalog__filters button span{min-width:17px;height:17px;font-size:10px}
  .product-catalog__mobile-sort{display:flex;align-items:center;justify-content:space-between;gap:9px;color:var(--aiba-muted,#5f6e83);font-size:12px}
- .product-catalog__mobile-sort select{flex:0 1 70%;min-width:0;min-height:40px;padding:6px 30px 6px 9px;border:1px solid var(--aiba-line,#e2e8f0);border-radius:9px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);font:inherit;font-size:12px}
+ .product-catalog__mobile-sort select{flex:0 1 70%;min-width:0;min-height:44px;padding:6px 30px 6px 9px;border:1px solid var(--aiba-line,#e2e8f0);border-radius:9px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);font:inherit;font-size:12px}
  .product-catalog__desktop{display:none}
  .product-catalog__mobile-list{display:grid;gap:7px;margin:0;padding:0;list-style:none}
  .product-catalog__mobile-row{display:grid;gap:7px;min-width:0;padding:10px 11px;border:1px solid var(--aiba-line,#e2e8f0);border-radius:11px;background:var(--aiba-surface,#fff)}
