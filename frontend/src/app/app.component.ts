@@ -1721,7 +1721,7 @@ export class AppComponent implements OnInit, OnDestroy {
       name:product.name,sku:product.sku||'—',
       price:`${product.unit_price} ${product.currency_code||this.business?.currency_code||''}`.trim(),
       tracking:product.is_stock_tracked?this.t('مخزني','Stock tracked'):this.t('خدمة / غير مخزني','Service / non-stock'),
-      stock:product.is_stock_tracked?(product.stock_quantity??'0'):this.t('غير منطبق','Not applicable'),
+      stock:product.is_stock_tracked?String(product.stock_quantity??0):this.t('غير منطبق','Not applicable'),
     },
   })); }
   get supplierTableColumns(): readonly AbaRecordTableColumn[] { return [
