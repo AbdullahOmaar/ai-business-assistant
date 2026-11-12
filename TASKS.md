@@ -4083,3 +4083,10 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Exact candidate: pending after the final documentation commit. The required GitHub Actions workflow is the only authoritative CI; Semaphore's legacy failure is retired/non-authoritative and is not retried.
 - Local Vercel sandbox build could not be started because the Vercel account returned 402 (Hobby snapshot-storage quota). No production deploy, merge, database write or schema change was made.
 - Remaining product work: continue the screen-by-screen feature workflow improvements and validate rendered behavior after the current full exact-head CI run.
+
+
+## 2026-11-12 — Shared record-table template compile correction
+
+- Exact-head GitHub Actions run `43311579627` checked out `94d9112b0c356e20bbe5245dfb4a9bee4d23e66f` and exposed an Angular template visibility error: the template read private `activeSortKey` directly. The production build failed; browser smoke could not start the dev server for the same compile error.
+- Exposed a narrow public `isSortActive(key)` presentation accessor and bound the sort button's `aria-pressed` state through it. Updated the focused source contract. No sort behavior, API, authorization, business state or persisted data changed.
+- Fresh exact-head GitHub Actions is required after this correction; prior failure remains recorded and is not reused.

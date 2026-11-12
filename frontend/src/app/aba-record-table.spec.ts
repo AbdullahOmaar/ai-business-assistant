@@ -116,8 +116,9 @@ test('mobile record cards surface primary fields before secondary date metadata'
 test('shared record tables sort locally with keyboard-accessible, semantic direction feedback',()=>{
   assert.match(component, /\[attr\.aria-sort\]="sortAria\(column\.key\)"/);
   assert.match(component, /\(click\)="toggleSort\(column\)"/);
-  assert.match(component, /\[attr\.aria-pressed\]="activeSortKey===column\.key"/);
+  assert.match(component, /\[attr\.aria-pressed\]="isSortActive\(column\.key\)"/);
   assert.match(component, /get sortedRows\(\)/);
+  assert.match(component, /isSortActive\(key:string\):boolean/);
   assert.match(component, /new Intl\.Collator\(undefined,\{numeric:true,sensitivity:'base'\}\)/);
   assert.match(component, /this\.sortDirection==='asc'\?result:-result/);
 });
