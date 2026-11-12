@@ -78,7 +78,7 @@ test('expense and notification types use selectable, localized options', () => {
 });
 
 test('AI suggestions live outside the chat panel in a compact responsive prompt rail', () => {
-  const assistantStart = source.indexOf('<div class="assistant-workspace">');
+  const assistantStart = source.indexOf('<div class="assistant-workspace"');
   const chatStart = source.indexOf('<section abaCard class="panel chat-panel">', assistantStart);
   const chatEnd = source.indexOf('</section>', chatStart);
   const suggestionsStart = source.indexOf('<aside class="assistant-suggestions"', chatEnd);
@@ -88,6 +88,8 @@ test('AI suggestions live outside the chat panel in a compact responsive prompt 
     'suggestions must be a sibling of the chat panel, not inside it');
   assert.ok(workspaceEnd > suggestionsStart, 'suggestions must remain inside the assistant layout');
   assert.ok(source.includes('.assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px'));
+  assert.ok(source.includes('.assistant-workspace:not(.has-chat) .assistant-suggestions{grid-row:1}'));
+  assert.ok(source.includes('.assistant-workspace:not(.has-chat) .chat-panel{grid-row:2}'));
   assert.ok(source.includes('.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr)'));
   assert.ok(source.includes('@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}'));
   assert.match(source, /class="suggestion-card"/);
@@ -1238,7 +1240,7 @@ test('chat composer announces empty and whitespace-only drafts without sending a
   assert.ok(form.includes('chatForm.valid && chatDraft.trim() && sendChat()'));
   assert.ok(form.includes('#chatMessageControl="ngModel"'));
   assert.match(form, /maxlength="2000"[\s\S]*?\brequired/);
-  assert.ok(form.includes(`[attr.aria-describedby]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'chat-message-error' : null"`));
+  assert.ok(form.includes(`[attr.aria-describedby]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'chat-message-hint chat-message-error' : 'chat-message-hint'"`));
   assert.match(form, /\[disabled\]="chatSending"/);
   assert.doesNotMatch(form, /\[disabled\]="chatSending \|\| !chatDraft\.trim\(\)"/);
   assert.ok(source.includes('id="chat-message-error"'));
@@ -1473,7 +1475,7 @@ test('shared workspace record tables and Platform Admin tables are named keyboar
 
 
 test('AI assistant conversation history is a named keyboard-scrollable log region', () => {
-  const log = source.match(/<div class="chat-log"[^>]*>/)?.[0] ?? '';
+  const log = source.match(/<div #chatLog class="chat-log"[^>]*>/)?.[0] ?? '';
   assert.match(log, /role="log"/);
   assert.match(log, /tabindex="0"/);
   assert.match(log, /\[attr\.aria-label\]=/);
@@ -1505,67 +1507,83 @@ test('AI assistant new-chat control resets only in-memory conversation state', (
   const start = source.indexOf('startNewChat(): void');
   const end = source.indexOf('async copyAssistantMessage(', start);
   const method = source.slice(start, end);
-  assert.match(method, /if \(this\.chatSending\) return/);
-  assert.match(method, /this\.chatMessages = \[\]/);
-  assert.match(method, /this\.chatDraft = ''/);
-  assert.match(method, /this\.chatError = ''/);
-  assert.match(method, /this\.chatConfigurationMissing = false/);
-  assert.match(method, /this\.chatCopyStatus = null/);
-  assert.doesNotMatch(method, /this\.api\.|this\.auth\.|localStorage|sessionStorage/);
+  assert.ok(method.includes('if (this.chatSending) return;'));
+  assert.ok(method.includes('this.chatMessages = [];'));
+  assert.ok(method.includes("this.chatDraft = '';"));
+  assert.ok(method.includes("this.chatError = '';"));
+  assert.ok(method.includes('this.chatConfigurationMissing = false;'));
+  assert.ok(method.includes('this.chatCopyStatus = null;'));
+  assert.ok(!method.includes('this.api.'));
+  assert.ok(!method.includes('this.auth.'));
+  assert.ok(!method.includes('localStorage'));
+  assert.ok(!method.includes('sessionStorage'));
 });
 
 test('AI assistant response copy is explicitly click initiated and always removes its fallback input', () => {
   const copyStart = source.indexOf('async copyAssistantMessage(');
-  const copyEnd = source.indexOf('private isChatLogNearBottom()', copyStart);
-  const copy = source.slice(copyStart, copyEnd);
-  assert.match(copy, /navigator\.clipboard\?\.writeText\(content\)/);
-  assert.match(copy, /this\.copyTextWithSelectionFallback\(content\)/);
-  assert.match(copy, /this\.chatCopyStatus = \{ index, success: true \}/);
-  assert.match(copy, /this\.chatCopyStatus = \{ index, success: false \}/);
-  assert.match(copy, /finally \{\s*temporaryInput\.remove\(\)/);
-  assert.match(source, /\(click\)="copyAssistantMessage\(message\.content, messageIndex\)"/);
-  assert.doesNotMatch(copy, /fetch\(|this\.api\./);
+  const fallbackStart = source.indexOf('private copyTextWithSelectionFallback(', copyStart);
+  const copyEnd = source.indexOf('private isChatLogNearBottom()', fallbackStart);
+  const copy = source.slice(copyStart, fallbackStart);
+  const fallback = source.slice(fallbackStart, copyEnd);
+  assert.ok(copy.includes('if (navigator.clipboard?.writeText)'));
+  assert.ok(copy.includes('await navigator.clipboard.writeText(content);'));
+  assert.ok(copy.includes('this.copyTextWithSelectionFallback(content);'));
+  assert.ok(copy.includes('this.chatCopyStatus = { index, success: true };'));
+  assert.ok(copy.includes('this.chatCopyStatus = { index, success: false };'));
+  assert.ok(fallback.includes('finally {'));
+  assert.ok(fallback.includes('temporaryInput.remove();'));
+  assert.ok(source.includes('(click)="copyAssistantMessage(message.content, messageIndex)"'));
+  assert.ok(!copy.includes('fetch('));
+  assert.ok(!copy.includes('this.api.'));
 });
 
 test('AI assistant keyboard submission preserves multiline entry and IME composition', () => {
   const start = source.indexOf('handleChatKeydown(event: KeyboardEvent): void');
   const end = source.indexOf('startNewChat(): void', start);
   const method = source.slice(start, end);
-  assert.match(method, /event\.key !== 'Enter'/);
-  assert.match(method, /event\.shiftKey/);
-  assert.match(method, /event\.isComposing/);
-  assert.match(method, /event\.preventDefault\(\)/);
-  assert.match(method, /if \(!this\.chatDraft\.trim\(\) \|\| this\.chatSending\) return/);
-  assert.match(source, /Shift \+ Enter for a new line/);
-  assert.match(source, /chatDraft\.length \} \/ 2000/);
+  assert.ok(method.includes("event.key !== 'Enter'"));
+  assert.ok(method.includes('event.shiftKey'));
+  assert.ok(method.includes('event.isComposing'));
+  assert.ok(method.includes('event.preventDefault();'));
+  assert.ok(method.includes('if (!this.chatDraft.trim() || this.chatSending) return;'));
+  assert.ok(source.includes('Shift + Enter for a new line'));
+  assert.ok(source.includes('{{ chatDraft.length }} / 2000'));
 });
 
 test('AI assistant conversation log announces additions and exposes active request state', () => {
-  const log = source.match(/<div #chatLog class="chat-log"[^>]*>/)?.[0] ?? '';
-  assert.match(log, /role="log"/);
-  assert.match(log, /aria-live="polite"/);
-  assert.match(log, /aria-relevant="additions"/);
-  assert.match(log, /aria-atomic="false"/);
-  assert.match(log, /chatSending \? 'true' : null/);
-  assert.match(source, /\.assistant-workspace:not\(\.has-chat\) \.assistant-suggestions\{grid-row:1\}/);
-  assert.match(source, /\.assistant-workspace:not\(\.has-chat\) \.chat-panel\{grid-row:2\}/);
+  const logStart = source.indexOf('<div #chatLog class="chat-log"');
+  const logEnd = source.indexOf('>', logStart);
+  const log = source.slice(logStart, logEnd + 1);
+  assert.ok(log.includes('role="log"'));
+  assert.ok(log.includes('aria-live="polite"'));
+  assert.ok(log.includes('aria-relevant="additions"'));
+  assert.ok(log.includes('aria-atomic="false"'));
+  assert.ok(log.includes("chatSending ? 'true' : null"));
+  assert.ok(source.includes('.assistant-workspace:not(.has-chat) .assistant-suggestions{grid-row:1}'));
+  assert.ok(source.includes('.assistant-workspace:not(.has-chat) .chat-panel{grid-row:2}'));
+});
+
+test('AI assistant template uses null-safe copy feedback and a typed key event expression', () => {
+  assert.ok(source.includes('chatCopyStatus?.success'));
+  assert.ok(source.includes('handleChatKeydown($any($event))'));
+  assert.ok(!source.includes('(keydown.enter)="handleChatKeydown($event)"'));
 });
 
 test('AI assistant resets transient copy feedback when workspace context changes', () => {
   const start = source.indexOf('private clearWorkspaceData(): void');
   const end = source.indexOf('async createWorkspace(): Promise<void>', start);
   const clear = source.slice(start, end);
-  assert.match(clear, /this\.chatMessages = \[\]/);
-  assert.match(clear, /this\.chatCopyStatus = null/);
-  assert.match(clear, /this\.chatError = ''/);
-  assert.match(clear, /this\.chatConfigurationMissing = false/);
+  assert.ok(clear.includes('this.chatMessages = [];'));
+  assert.ok(clear.includes('this.chatCopyStatus = null;'));
+  assert.ok(clear.includes("this.chatError = '';"));
+  assert.ok(clear.includes('this.chatConfigurationMissing = false;'));
 });
 
 test('AI assistant auto-follow respects the reader position and reduced motion', () => {
   const start = source.indexOf('private scrollChatToLatest(force = false): void');
   const end = source.indexOf('private captureTenantRequest(', start);
   const method = source.slice(start, end);
-  assert.match(method, /!force && !this\.isChatLogNearBottom\(\)/);
-  assert.match(method, /prefers-reduced-motion/);
-  assert.match(method, /behavior: reducedMotion \? 'auto' : 'smooth'/);
+  assert.ok(method.includes('!force && !this.isChatLogNearBottom()'));
+  assert.ok(method.includes('prefers-reduced-motion'));
+  assert.ok(method.includes("behavior: reducedMotion ? 'auto' : 'smooth'"));
 });
