@@ -694,6 +694,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     const direction = language === 'ar' ? 'rtl' : 'ltr';
     await expect(page.locator('.shell')).toHaveAttribute('dir', direction);
     await expect(page.locator('html')).toHaveAttribute('dir', direction);
+    await expect(page.locator('body')).toHaveCSS('direction', direction);
 
     for (const destination of routeDestinations) {
       const expectedTitle = language === 'ar' ? destination.titleAr : destination.titleEn;
@@ -777,7 +778,9 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
   await page.keyboard.press('Escape');
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
+  await assertRouteSweep(360, 'en');
   await assertRouteSweep(390, 'en');
+  await assertRouteSweep(430, 'en');
   await assertRouteSweep(768, 'en');
   await assertRouteSweep(1280, 'en');
 
@@ -1075,6 +1078,39 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   }
 
   const moreTrigger = page.getByRole('button', { name: /More sections|المزيد من الأقسام/ });
+  const assertStaffViewport = async (width: number, language: 'en' | 'ar') => {
+    await page.setViewportSize({ width, height: 844 });
+    const direction = language === 'ar' ? 'rtl' : 'ltr';
+    await expect(page.locator('.shell')).toHaveAttribute('dir', direction);
+    await expect(page.locator('html')).toHaveAttribute('dir', direction);
+    await expect(page.locator('body')).toHaveCSS('direction', direction);
+    await expect(staffModuleDirectory.locator('aba-quick-access-card')).toHaveCount(12);
+
+    const restrictedLabels = language === 'en'
+      ? [/Payments & collections/, /Employees & payroll/, /Tax summary/, /Activity log/, /Data integrity/, /Operational health/, /Platform admin/i]
+      : [/المدفوعات والتحصيل/, /الموظفون والمرتبات/, /ملخص الضرائب/, /سجل العمليات/, /سلامة البيانات/, /الحالة التشغيلية/, /إدارة المنصة/];
+    for (const restricted of restrictedLabels) {
+      await expect(staffModuleDirectory.getByRole('button', { name: restricted })).toHaveCount(0);
+    }
+
+    const layout = await page.evaluate(() => ({
+      viewportWidth: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+    }));
+    expect(layout.documentWidth, 'STAFF Home must not overflow at ' + width + 'px/' + language)
+      .toBeLessThanOrEqual(layout.viewportWidth);
+    if (width <= 760) {
+      await expect(page.locator('aba-mobile-app-header')).toBeVisible();
+    } else {
+      await expect(page.locator('.workspace-bar')).toBeVisible();
+    }
+  };
+
+  for (const width of [360, 390, 430, 768, 1280]) {
+    await assertStaffViewport(width, 'en');
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+
   await moreTrigger.click();
   const menu = page.locator('#mobile-more-menu');
   for (const restricted of [
@@ -1088,6 +1124,30 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   ]) {
     await expect(menu.getByRole('button', { name: available })).toBeVisible();
   }
+
+  // Repeat role filtering and responsive layout in Arabic RTL.
+  await menu.locator('.mobile-menu-action').first().click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
+  for (const width of [360, 390, 430, 768, 1280]) {
+    await assertStaffViewport(width, 'ar');
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await moreTrigger.click();
+  for (const restricted of [
+    /المدفوعات والتحصيل/, /الموظفون والمرتبات/, /ملخص الضرائب/,
+    /سجل العمليات/, /سلامة البيانات/, /الحالة التشغيلية/, /إدارة المنصة/,
+  ]) {
+    await expect(menu.getByRole('button', { name: restricted })).toHaveCount(0);
+  }
+  for (const available of [/الموردون/, /المشتريات/, /الفواتير الدورية/, /الإشعارات/, /دليل التطبيق والإصدارات/]) {
+    await expect(menu.getByRole('button', { name: available })).toBeVisible();
+  }
+  await menu.locator('.mobile-menu-action').first().click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
+  await moreTrigger.click();
+
   await menu.getByRole('button', { name: /App guide & versions/ }).click();
   await expect(menu).toHaveCount(0);
   await expect(moreTrigger).toHaveClass(/active/);
