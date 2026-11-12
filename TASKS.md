@@ -3822,3 +3822,12 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Receivables aging invoice findings now use a labeled record table; currency-specific summaries and human-review warnings remain separate.
 - No payroll calculation, approval rule, payout semantics, expense posting, financial report formula, API/schema, or data changes.
 - Exact-head unit/build/browser/security validation remains NOT RUN; no PR, merge, or deployment.
+
+
+## 2026-11-12 — Platform Admin mobile data-grid batch
+
+- Reviewed all six Platform Admin data tables: currency/status summary, workspace directory, workspace memberships, platform activity, global user directory and platform-role audit.
+- Added localized per-cell labels and a phone layout that converts the five-column-plus data grids into readable record cards; compact summaries and memberships use the same labeled card treatment.
+- Preserved semantic table markup for assistive technology and desktop, existing row actions, exact-search and pagination behavior, read-only financial summaries, and server-owned platform permissions.
+- No API, role, authorization, tenant, identity, database, financial, or audit behavior changed.
+- Exact-head tests/build/browser/security validation remain deferred until the coherent November UX batch is assembled; no PR, merge or deployment.

@@ -67,3 +67,19 @@ test('workspace directory distinguishes no matches from an empty or out-of-range
   assert.match(source, /No workspaces on this page/);
   assert.match(source, /No workspaces are registered yet/);
 });
+
+
+test('Platform Admin business, membership, activity and user tables become labeled cards on phones', () => {
+  for (const label of [
+    "t('مساحة العمل', 'Workspace')",
+    "t('هوية المستخدم', 'User subject')",
+    "t('التاريخ', 'Timestamp')",
+    "t('المستخدم', 'User')",
+    "t('المستخدم المستهدف', 'Target user')",
+    "t('الإجراء', 'Action')",
+  ]) assert.ok(source.includes('[attr.data-label]="'+label+'"'), 'missing mobile column label: '+label);
+  assert.match(source, /\.table-wrap thead\{position:absolute;width:1px;height:1px/);
+  assert.match(source, /\.table-wrap tbody tr\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(source, /\.table-wrap tbody td::before\{content:attr\(data-label\)/);
+  assert.match(source, /\.user-directory-table\{min-width:0\}/);
+});
