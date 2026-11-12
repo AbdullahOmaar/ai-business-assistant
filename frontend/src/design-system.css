@@ -1881,3 +1881,31 @@
 @media (prefers-reduced-motion: reduce) {
   :root body .shell :is(button,a,[role="button"]) { scroll-behavior: auto; transition-duration: .01ms; }
 }
+
+
+/* Accessible sort affordance for the shared record-table contract. */
+:root body .shell .aba-record-table__sort-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 4px 7px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-weight: 750;
+  text-align: start;
+  cursor: pointer;
+}
+:root body .shell .aba-record-table__sort-button:hover { background: var(--aiba-surface-tint); }
+:root body .shell .aba-record-table__sort-button:focus-visible {
+  outline: 3px solid var(--aiba-focus);
+  outline-offset: 2px;
+}
+:root body .shell .aba-record-table__sort-indicator {
+  min-width: 12px;
+  color: var(--aiba-brand);
+  font-size: 11px;
+}
