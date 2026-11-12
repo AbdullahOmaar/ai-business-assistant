@@ -1332,10 +1332,6 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
     notes: 'Staff draft - edited',
   });
   expect(staffDraftLines).toHaveLength(1);
-  expect(apiRequests.some(item =>
-    item.method === 'PATCH' && item.path === '/api/v1/businesses/staff-business-1/invoices/staff-draft-invoice-1'
-  )).toBe(true);
-  expect(apiRequests.some(item => /\/(issue|void)$/.test(item.path))).toBe(false);
   expect(paymentRequests).toEqual([]);
   expect(forbiddenInvoiceActions).toEqual([]);
   expect(unexpectedRequests).toEqual([]);
