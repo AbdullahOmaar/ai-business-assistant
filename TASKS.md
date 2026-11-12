@@ -3919,3 +3919,6 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Exact-head browser smoke on `92df2bc1dc5ea2a2b9a2cca13b629ab296e896ce` exercised 21/22 tests successfully; the expanded Platform Admin route matrix exposed an ambiguous Arabic accessible-name regex for Permissions (`/الصلاحيات/` also matched Users & access). This was a test-locator strict-mode failure, not an application behavior or permission failure.
 - Tightened only the Permissions navigation locator to anchored exact-name patterns in Arabic and English. No UI, authorization, role, API or data behavior changed.
 - This correction is part of the same Phase 1 Platform Admin accessibility/route audit batch. Re-run exact-head CI before merge; previous result remains failed and is not reusable for the new candidate.
+
+
+- **Follow-up before rerun:** aligned the keyboard-only Overview assertion with the actual section heading (“Platform metrics” / “مؤشرات المنصة”), rather than the page-level H1 (“Admin center”). This is a test expectation correction only; no app behavior changed.

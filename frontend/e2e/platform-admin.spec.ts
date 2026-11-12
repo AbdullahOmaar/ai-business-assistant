@@ -517,7 +517,7 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   const adminNavButtons = adminNav.getByRole('button');
   await expect(adminNavButtons).toHaveCount(5);
   const keyboardSections = [
-    { announcement: 'Opened Overview section', heading: /Admin center/ },
+    { announcement: 'Opened Overview section', heading: /Platform metrics|مؤشرات المنصة/ },
     { announcement: 'Opened Workspaces section', heading: /Workspaces/ },
     { announcement: 'Opened Audit activity section', heading: /Audit & security activity/ },
     { announcement: 'Opened Users and access section', heading: /Users & access/ },

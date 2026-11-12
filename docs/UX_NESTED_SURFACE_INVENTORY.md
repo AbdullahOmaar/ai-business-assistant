@@ -539,3 +539,5 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
 - Corrected the Arabic Permissions route selector to an exact accessible-name match after the expanded Platform Admin matrix showed the partial word also matches “Users & access”. The observed failure was strictly an E2E locator ambiguity; the UI and authorization behavior were not changed.
 - New exact-head CI evidence is required before the candidate can proceed to merge.
+
+- Keyboard-only Overview check now targets its actual in-section heading (Platform metrics / مؤشرات المنصة), not the page-level Admin center H1.
