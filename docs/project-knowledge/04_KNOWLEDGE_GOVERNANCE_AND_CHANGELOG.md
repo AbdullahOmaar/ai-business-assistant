@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-04
 title: Knowledge Governance & Changelog
-version: 1.0.9
+version: 1.0.8
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-12T00:29:54.778Z
+last_verified_at: 2026-11-11T05:55:00Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -14,28 +14,14 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
-related_github_sha: 3413eb1edadcc1a490c9317eda8d402cb6b9b5a8
+related_github_sha: 827f220da14139605294923cc5550e088c2589e3
 supersedes: none
 superseded_by: none
 ---
 
 # Knowledge Governance & Changelog
 
-## Owner policy supersession — 2026-11-12
-
-Version 1.0.9 records the Owner's November delivery discipline: one continuing product branch (`master/nov-2026-phase-1-ux-foundation`), no PR for small/cosmetic/docs-only/test-only work, and no routine suite/build/CI runs until a substantial coherent product outcome is assembled. Validate the major candidate once on its exact SHA. Focused immediate checks remain appropriate only for directly evidenced critical security, authorization, tenant, data-integrity or production-safety risk. Enforced PR checks remain mandatory. PR #388 and #389 were closed without merge; both branches/commits are preserved. This is a DRAFT controlled-knowledge update; Project Sources publication/readback is not claimed.
-
-
 > **Approval state:** DRAFT candidate version 1.0.8. The underlying development-stage write authorization is effective in canonical Notion from 2026-11-11; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. No separate independent reviewer is required by project policy; formal GitHub branch-protection requirements remain mandatory.
-
-## Changelog
-
-### 1.0.9 — 2026-11-12 — DRAFT
-- Recorded Owner-directed single continuing November branch and sequential phases on that branch.
-- Superseded routine milestone PRs with a substantial-product-outcome PR threshold.
-- Superseded routine per-edit test execution with one consolidated exact-SHA validation at a major product milestone; retained narrow safety and enforced-gate exceptions.
-- Recorded PR #388/#389 closure without merge and preservation of both branches/commits.
-- Actual ChatGPT Project Instructions UI save/readback and Project Sources publication remain NOT VERIFIED.
 
 ## 1. Package manifest
 
