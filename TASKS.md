@@ -3777,3 +3777,13 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Deployment:** no Vercel deployment was requested or performed. Merge does not imply production release.
 
 - Browser-smoke follow-up: the mobile collapsed-form selector is strengthened against the global form display rule. Exact-head run [43168710539](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43168710539) PASS on code SHA `0f0f6801deb969009c4e7ac39eec887888f19a9e`; the rendered E2E verifies collapsed/open/collapsed state, keyboard section navigation and the 195px RTL/LTR route sweep.
+
+
+## 2026-11-12 — Shared record-screen foundation (Customers, Products, Suppliers, Purchasing)
+
+- Added a reusable semantic record-table component with localized columns, loading/empty states, row-specific actions and keyboard focus.
+- Replaced the four core module list-card layouts with structured records: Customers, Products & inventory, Suppliers, and Purchase orders. Desktop uses clear columns; phone layouts become labeled record cards instead of forcing horizontal scrolling.
+- Standardized search toolbars and status/quantity/financial columns. Create forms and owner-only CSV imports are progressively disclosed so records are the primary content.
+- Preserved contracts and side effects: no new product category/warehouse/valuation/COGS/AP fields, routes, APIs, schema, migrations, authorization changes or financial semantics. Purchase receiving remains Owner-only and uses the existing confirmation path for eligible approved/partially received orders.
+- Changes remain on the existing November Phase 1 branch. No PR, merge or deployment. Exact-head consolidated GitHub Actions validation follows this coherent batch.
+- Physical Android / installed-PWA, real screen-reader and live OWNER/STAFF/two-tenant acceptance remain separate gates.

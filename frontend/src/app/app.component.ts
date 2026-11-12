@@ -18,6 +18,7 @@ import { AbaCardComponent } from './shared/ui/aba-card.component';
 import { AbaMetricCardComponent } from './shared/ui/aba-metric-card.component';
 import { AbaQuickAccessCardComponent } from './shared/ui/aba-quick-access-card.component';
 import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
+import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecordTableColumn, type AbaRecordTableRow } from './shared/ui/aba-record-table.component';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 import { AbaMobileAppHeaderComponent } from './shared/ui/aba-mobile-app-header.component';
 import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
@@ -35,7 +36,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -339,6 +340,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @if (tab === 'suppliers') {
               <section abaCard class="panel">
                 <aba-section-header [title]=" t('دليل الموردين', 'Supplier directory') " [description]=" t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') "><span class="count">{{ filteredSuppliers.length }} / {{ suppliers.length }}</span></aba-section-header>
+<details class="aba-record-create">
+                  <summary><span>إضافة مورد</span><span class="aba-record-create__icon" aria-hidden="true">＋</span><span class="aba-record-create__sr-only">Add a supplier</span></summary>
+                  <div class="aba-record-create__body">
                 <form #supplierForm="ngForm" class="inline-form" (ngSubmit)="supplierForm.valid && createSupplier()">
                   <input #supplierNameControl="ngModel" name="supplierName" required maxlength="160" [attr.aria-label]="t('اسم المورد', 'Supplier name')" [attr.aria-invalid]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'supplier-name-error' : null" [placeholder]="t('اسم المورد', 'Supplier name')" [(ngModel)]="supplierName">
                   <input #supplierEmailControl="ngModel" name="supplierEmail" type="email" maxlength="254" [attr.aria-label]="t('البريد الإلكتروني', 'Email')" [attr.aria-invalid]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'supplier-email-error' : null" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="supplierEmail">
@@ -352,12 +356,16 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     @if (supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted)) { <small id="supplier-email-error" class="field-error">{{ t('أدخل بريدًا إلكترونيًا صحيحًا أو اترك الحقل فارغًا.', 'Enter a valid email address or leave this field blank.') }}</small> }
                   </div>
                 }
+
+                  </div>
+                </details>
                 @if (operationsError && operationsErrorTab === 'suppliers') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'suppliers') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'suppliers' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (suppliersLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل الموردين…', 'Loading suppliers…')" /> }
-                <div class="list-tools operations-search"><input name="supplierSearch" type="search" [attr.aria-label]="t('البحث عن مورد', 'Search suppliers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف أو العنوان…', 'Search by name, email, phone or address…')" [(ngModel)]="supplierSearch"></div>
-                <div class="list">@for (supplier of filteredSuppliers; track supplier.id) { <article class="list-row"><div class="avatar">{{ supplier.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ supplier.name }}</strong><small>{{ supplier.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ supplier.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ supplier.address || '' }}</small></div></article> } @if (!filteredSuppliers.length && !suppliersLoading) { <aba-state-message kind="empty" [description]="supplierSearch.trim() ? t('لا توجد موردون مطابقون للبحث.', 'No suppliers match this search.') : t('لا يوجد موردون بعد.', 'No suppliers yet.')" /> }</div>
+                <div class="list-tools operations-search aba-record-toolbar"><input name="supplierSearch" type="search" [attr.aria-label]="t('البحث عن مورد', 'Search suppliers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف أو العنوان…', 'Search by name, email, phone or address…')" [(ngModel)]="supplierSearch"></div>
+                <aba-record-table [ariaLabel]="t('جدول الموردين', 'Suppliers table')" [columns]="supplierTableColumns" [rows]="supplierTableRows" [loading]="suppliersLoading && !suppliers.length" [emptyTitle]="t('لا يوجد موردون', 'No suppliers yet')" [emptyDescription]="supplierSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No suppliers match this search.') : t('أضف الموردين لتسهيل ربطهم بأوامر الشراء.', 'Add suppliers to link them to purchase orders.')" />
+
               </section>
             }
 
@@ -365,6 +373,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @if (tab === 'purchases') {
               <section abaCard class="panel">
                 <aba-section-header id="purchases-section-heading" tabindex="-1" [title]=" t('أوامر الشراء', 'Purchase orders') " [description]=" t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') "><span class="count">{{ filteredPurchaseOrders.length }} / {{ purchaseOrders.length }}</span></aba-section-header>
+<details class="aba-record-create">
+                  <summary><span>إنشاء أمر شراء</span><span class="aba-record-create__icon" aria-hidden="true">＋</span><span class="aba-record-create__sr-only">Create a purchase order</span></summary>
+                  <div class="aba-record-create__body">
                 <form #purchaseForm="ngForm" class="stack" (ngSubmit)="purchaseForm.valid && createPurchaseOrder()">
                   <label>{{ t('رقم أمر الشراء', 'Order number') }}<input #purchaseOrderNumberControl="ngModel" name="purchaseOrderNumber" required maxlength="64" [attr.aria-invalid]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'purchase-number-error' : null" [(ngModel)]="purchaseOrderNumber"></label>
                   <label>{{ t('المورد', 'Supplier') }}<select #purchaseSupplierControl="ngModel" name="purchaseSupplierId" required [attr.aria-invalid]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'purchase-supplier-error' : null" [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('اختر المورد', 'Choose supplier') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
@@ -381,12 +392,16 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     @if (purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted)) { <small id="purchase-unit-cost-error" class="field-error">{{ t('أدخل تكلفة وحدة تساوي صفرًا أو أكثر وبحد أقصى منزلتين عشريتين.', 'Enter a unit cost of zero or more with up to two decimal places.') }}</small> }
                   </div>
                 }
+
+                  </div>
+                </details>
                 @if (operationsError && operationsErrorTab === 'purchases') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'purchases') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'purchases' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 @if (purchasesLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل المشتريات…', 'Loading purchasing…')" /> }
-                <div class="list-tools operations-search"><input name="purchaseSearch" type="search" [attr.aria-label]="t('البحث في أوامر الشراء', 'Search purchase orders')" [placeholder]="t('ابحث برقم الأمر أو المورد أو المنتج أو الحالة…', 'Search by order, supplier, product or status…')" [(ngModel)]="purchaseSearch"></div>
-                <div class="list">@for (order of filteredPurchaseOrders; track order.id) { <article class="list-row"><div class="invoice-mark">⇩</div><div class="grow"><strong>{{ order.order_number }} · {{ supplierNameFor(order.supplier_id) }}</strong><small>{{ purchaseOrderStatusLabel(order.status) }} · {{ order.total }} {{ order.currency_code }}</small><small>@for (line of order.lines; track line.id) { {{ productNameFor(line.product_id) }}: {{ line.received_quantity }}/{{ line.quantity }} · {{ line.remaining_quantity }} {{ t('متبقي', 'remaining') }}; }</small></div>@if (business?.role === 'owner' && order.status === 'draft' && order.lines.some(hasRemainingQuantity)) { <small class="muted">{{ t('أمر الشراء مسودة؛ لا يمكن تسجيل الاستلام قبل الاعتماد.', 'This order is a draft; receiving is unavailable until it is approved.') }}</small> } @if (business?.role === 'owner' && canReceivePurchaseOrder(order)) { <button class="secondary" type="button" (click)="requestPurchaseOrderReceipt(order, $event)" [disabled]="purchasesLoading">{{ t('استلام المتبقي', 'Receive remaining') }}</button> }</article> } @if (!filteredPurchaseOrders.length && !purchasesLoading) { <aba-state-message kind="empty" [description]="purchaseSearch.trim() ? t('لا توجد أوامر شراء مطابقة.', 'No purchase orders match this search.') : t('لا توجد أوامر شراء بعد.', 'No purchase orders yet.')" /> }</div>
+                <div class="list-tools operations-search aba-record-toolbar"><input name="purchaseSearch" type="search" [attr.aria-label]="t('البحث في أوامر الشراء', 'Search purchase orders')" [placeholder]="t('ابحث برقم الأمر أو المورد أو المنتج أو الحالة…', 'Search by order, supplier, product or status…')" [(ngModel)]="purchaseSearch"></div>
+                <aba-record-table [ariaLabel]="t('جدول أوامر الشراء والاستلام', 'Purchase orders and receiving table')" [columns]="purchaseTableColumns" [rows]="purchaseTableRows" [loading]="purchasesLoading && !purchaseOrders.length" [emptyTitle]="t('لا توجد أوامر شراء', 'No purchase orders yet')" [emptyDescription]="purchaseSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No purchase orders match this search.') : t('أنشئ أمر شراء لربط المورد بالمنتجات والكميات المطلوبة.', 'Create a purchase order to connect a supplier with products and requested quantities.')" (rowAction)="onPurchaseRecordAction($event)" />
+
               </section>
             }
 
@@ -489,7 +504,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'customers') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('قائمة العملاء', 'Customer list') " [description]=" t('تقتصر السجلات على مساحة العمل المحددة.', 'Records are limited to the selected workspace.') "><span class="count">{{ customers.length }} {{ t('عميل', 'customers') }}</span></aba-section-header>
+                <aba-section-header [title]=" t('قائمة العملاء', 'Customer list') " [description]=" t('تقتصر السجلات على مساحة العمل المحددة.', 'Records are limited to the selected workspace.') "><span class="count">{{ filteredCustomers.length }} / {{ customers.length }} {{ t('عميل', 'customers') }}</span></aba-section-header>
+<details class="aba-record-create">
+                  <summary><span>إضافة عميل جديد</span><span class="aba-record-create__icon" aria-hidden="true">＋</span><span class="aba-record-create__sr-only">Add a customer</span></summary>
+                  <div class="aba-record-create__body">
                 <form #customerForm="ngForm" class="inline-form" (ngSubmit)="customerForm.valid && createCustomer()">
                   <input #customerNameModel="ngModel" [attr.aria-label]="t('اسم العميل', 'Customer name')" name="customerName" [placeholder]="t('اسم العميل', 'Customer name')" required maxlength="160" [(ngModel)]="customerName" [attr.aria-invalid]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'customer-name-error' : null">
                   @if (customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted)) {
@@ -502,8 +520,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <input [attr.aria-label]="t('هاتف العميل', 'Customer phone')" name="customerPhone" maxlength="32" [placeholder]="t('الهاتف (اختياري)', 'Phone (optional)')" [(ngModel)]="customerPhone">
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة عميل', 'Add customer') }}</button>
                 </form>
+
+                  </div>
+                </details>
                 @if (customerMessage) { <aba-state-message [kind]="customerMessageKind" [description]="customerMessage" /> }
-                @if (business?.role === 'owner') { <section abaCard class="csv-import-panel" [attr.aria-label]="t('استيراد العملاء من CSV', 'CSV customer import')">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>استيراد العملاء من CSV</span><span aria-hidden="true">⌄</span><span class="aba-record-create__sr-only">Import customers from CSV</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('استيراد العملاء من CSV', 'CSV customer import')">
                   <h3>{{ t('استيراد العملاء من CSV', 'Import customers from CSV') }}</h3>
                   <p>{{ t('اختَر ملف CSV يحتوي على name ويمكنه تضمين email وphone وaddress وnotes. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with name and optional email, phone, address, and notes. Preview does not save data.') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV للعملاء', 'Choose customer CSV file')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
@@ -523,12 +544,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     }
                   }
                   @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
-                </section> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
-                <div class="list-tools"><input name="customerSearch" type="search" [attr.aria-label]="t('البحث عن عميل', 'Search customers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف…', 'Search by name, email, or phone…')" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
-                <div class="list">
-                  @for (customer of filteredCustomers; track customer.id) { <article class="list-row customer-list-row"><div class="avatar">{{ customer.name.slice(0,1).toUpperCase() }}</div><div class="grow"><strong>{{ customer.name }}</strong><small>{{ customer.email || t('لا يوجد بريد إلكتروني', 'No email') }} · {{ customer.phone || t('لا يوجد هاتف', 'No phone') }}</small><small>{{ customerInvoiceCount(customer.id) }} {{ t('فاتورة مرتبطة', 'linked invoices') }}</small></div><button class="secondary" type="button" (click)="showCustomerInvoices(customer.id)">{{ t('عرض الفواتير', 'View invoices') }}</button><button class="secondary" type="button" (click)="loadCustomerStatement(customer)">{{ t('كشف الحساب', 'Statement') }}</button></article> }
-                  @if (!filteredCustomers.length) { <aba-state-message kind="empty" [description]="customerSearch ? t('لا توجد نتائج مطابقة للبحث.', 'No matching results.') : t('لا يوجد عملاء بعد. أضف أول عميل من النموذج أعلاه.', 'No customers yet. Add your first customer using the form above.')" /> }
-                </div>
+                </section></div></details> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
+                <div class="list-tools aba-record-toolbar"><input name="customerSearch" type="search" [attr.aria-label]="t('البحث عن عميل', 'Search customers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف…', 'Search by name, email, or phone…')" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
+                <aba-record-table [ariaLabel]="t('جدول العملاء', 'Customers table')" [columns]="customerTableColumns" [rows]="customerTableRows" [loading]="loading && !customers.length" [emptyTitle]="t('لا يوجد عملاء', 'No customers yet')" [emptyDescription]="customerSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No customers match this search.') : t('أضف أول عميل لبدء ربطه بالفواتير.', 'Add your first customer to link them with invoices.')" (rowAction)="onCustomerRecordAction($event)" />
+
                 @if (statementVisible) {
                   <section abaCard class="panel statement-panel">
                     <aba-section-header [level]="3" [title]="t('كشف حساب العميل', 'Customer statement') + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t('الرصيد مفصول حسب العملة. هذا التقرير لا يستبدل دفتر أستاذ مزدوج القيد.', 'Balances stay separate by currency. This report is not a double-entry general ledger.')"><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('إغلاق', 'Close') }}</button></aba-section-header>
@@ -556,7 +575,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'products') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('المنتجات والخدمات', 'Products & services') " [description]=" t('يتم حفظ الأسعار بدقة عشرية.', 'Prices are stored using decimal precision.') "><span class="count">{{ products.length }} {{ t('منتج', 'products') }}</span></aba-section-header>
+                <aba-section-header [title]=" t('المنتجات والخدمات', 'Products & services') " [description]=" t('يتم حفظ الأسعار بدقة عشرية.', 'Prices are stored using decimal precision.') "><span class="count">{{ filteredProducts.length }} / {{ products.length }} {{ t('منتج', 'products') }}</span></aba-section-header>
+<details class="aba-record-create">
+                  <summary><span>إضافة منتج أو خدمة</span><span class="aba-record-create__icon" aria-hidden="true">＋</span><span class="aba-record-create__sr-only">Add a product or service</span></summary>
+                  <div class="aba-record-create__body">
                 <form #productForm="ngForm" class="inline-form" (ngSubmit)="productForm.valid && createProduct()">
                   <label>{{ t('اسم المنتج', 'Product name') }}<input #productNameModel="ngModel" [attr.aria-label]="t('اسم المنتج', 'Product name')" name="productName" [placeholder]="t('اسم المنتج', 'Product name')" required [(ngModel)]="productName" [attr.aria-invalid]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'product-name-error' : null">
                     @if (productNameModel.invalid && (productNameModel.touched || productForm.submitted)) {
@@ -578,8 +600,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                   <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة منتج', 'Add product') }}</button>
                 </form>
+
+                  </div>
+                </details>
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
-                @if (business?.role === 'owner') { <section abaCard class="csv-import-panel" [attr.aria-label]="t('استيراد المنتجات من CSV', 'CSV product import')">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>استيراد المنتجات من CSV</span><span aria-hidden="true">⌄</span><span class="aba-record-create__sr-only">Import products from CSV</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('استيراد المنتجات من CSV', 'CSV product import')">
                   <h3>{{ t('استيراد المنتجات من CSV', 'Import products from CSV') }}</h3>
                   <p>{{ t('اختَر ملف CSV يحتوي على sku وname وunit_price. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with sku, name and unit_price. Preview does not save any data.') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV', 'Choose CSV file')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
@@ -599,12 +624,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     }
                   }
                   @if (importMessage) { <aba-state-message [kind]="importMessageKind" [description]="importMessage" /> }
-                </section> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
-                <div class="list-tools"><input name="productSearch" type="search" [attr.aria-label]="t('البحث عن منتج', 'Search products')" [placeholder]="t('ابحث عن منتج أو رمز SKU…', 'Search products or SKU…')" [(ngModel)]="productSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
-                <div class="list">
-                  @for (product of filteredProducts; track product.id) { <article class="list-row"><div class="product-mark">◇</div><div class="grow"><strong>{{ product.name }}</strong><small>{{ product.is_stock_tracked ? t('المخزون: ', 'Stock: ') + (product.stock_quantity ?? '0') : t('خدمة / لا تتم متابعة المخزون', 'Service / no stock tracking') }}{{ product.sku ? ' · SKU ' + product.sku : '' }}</small></div><strong>{{ product.unit_price }} {{ business.currency_code }}</strong></article> }
-                  @if (!filteredProducts.length) { <aba-state-message kind="empty" [description]="productSearch ? t('لا توجد نتائج مطابقة للبحث.', 'No matching results.') : t('لا توجد منتجات بعد. أضف منتجًا أو خدمة من النموذج أعلاه.', 'No products yet. Add a product or service using the form above.')" /> }
-                </div>
+                </section></div></details> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
+                <div class="list-tools aba-record-toolbar"><input name="productSearch" type="search" [attr.aria-label]="t('البحث عن منتج', 'Search products')" [placeholder]="t('ابحث عن منتج أو رمز SKU…', 'Search products or SKU…')" [(ngModel)]="productSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
+                <aba-record-table [ariaLabel]="t('جدول المنتجات والمخزون', 'Products and inventory table')" [columns]="productTableColumns" [rows]="productTableRows" [loading]="loading && !products.length" [emptyTitle]="t('لا توجد منتجات', 'No products yet')" [emptyDescription]="productSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No products match this search.') : t('أضف منتجًا أو خدمة لبدء إدارة الكتالوج والمخزون.', 'Add a product or service to start managing the catalogue and stock.')" />
+
             </section>
             }
 
@@ -1674,6 +1697,80 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get filteredCustomers(): Customer[] {
     return filterCustomers(this.customers, this.customerSearch);
+  }
+
+  get customerTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'name',label:this.t('العميل','Customer'),primary:true},
+    {key:'email',label:this.t('البريد الإلكتروني','Email')},
+    {key:'phone',label:this.t('الهاتف','Phone')},
+    {key:'invoices',label:this.t('الفواتير المرتبطة','Linked invoices'),kind:'numeric'},
+  ]; }
+  get customerTableRows(): readonly AbaRecordTableRow[] { return this.filteredCustomers.map(customer=>({
+    id:customer.id,cells:{name:customer.name,email:customer.email||this.t('غير مسجل','Not provided'),phone:customer.phone||this.t('غير مسجل','Not provided'),invoices:String(this.customerInvoiceCount(customer.id))},
+    actions:[{id:'invoices',label:this.t('عرض الفواتير','View invoices')},{id:'statement',label:this.t('كشف الحساب','Statement')}],
+  })); }
+  get productTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'name',label:this.t('المنتج / الخدمة','Product / service'),primary:true},
+    {key:'sku',label:'SKU'},
+    {key:'price',label:this.t('سعر الوحدة','Unit price'),kind:'numeric'},
+    {key:'tracking',label:this.t('نوع الصنف','Item type'),kind:'status'},
+    {key:'stock',label:this.t('الكمية المتاحة','Stock quantity'),kind:'numeric'},
+  ]; }
+  get productTableRows(): readonly AbaRecordTableRow[] { return this.filteredProducts.map(product=>({
+    id:product.id,cells:{
+      name:product.name,sku:product.sku||'—',
+      price:`${product.unit_price} ${product.currency_code||this.business?.currency_code||''}`.trim(),
+      tracking:product.is_stock_tracked?this.t('مخزني','Stock tracked'):this.t('خدمة / غير مخزني','Service / non-stock'),
+      stock:product.is_stock_tracked?(product.stock_quantity??'0'):this.t('غير منطبق','Not applicable'),
+    },
+  })); }
+  get supplierTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'name',label:this.t('المورد','Supplier'),primary:true},
+    {key:'email',label:this.t('البريد الإلكتروني','Email')},
+    {key:'phone',label:this.t('الهاتف','Phone')},
+    {key:'address',label:this.t('العنوان','Address')},
+    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
+  ]; }
+  get supplierTableRows(): readonly AbaRecordTableRow[] { return this.filteredSuppliers.map(supplier=>({
+    id:supplier.id,cells:{
+      name:supplier.name,email:supplier.email||this.t('غير مسجل','Not provided'),
+      phone:supplier.phone||this.t('غير مسجل','Not provided'),
+      address:supplier.address||this.t('غير مسجل','Not provided'),
+      status:supplier.is_active?this.t('نشط','Active'):this.t('غير نشط','Inactive'),
+    },
+  })); }
+  get purchaseTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'order',label:this.t('رقم الأمر','Order no.'),primary:true},
+    {key:'supplier',label:this.t('المورد','Supplier')},
+    {key:'products',label:this.t('الأصناف','Items')},
+    {key:'received',label:this.t('المستلم / المطلوب','Received / ordered')},
+    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
+    {key:'total',label:this.t('الإجمالي','Total'),kind:'numeric'},
+  ]; }
+  get purchaseTableRows(): readonly AbaRecordTableRow[] { return this.filteredPurchaseOrders.map(order=>({
+    id:order.id,cells:{
+      order:order.order_number,supplier:this.supplierNameFor(order.supplier_id),
+      products:this.purchaseOrderProductsSummary(order),received:this.purchaseOrderReceivedSummary(order),
+      status:this.purchaseOrderStatusLabel(order.status),total:`${order.total} ${order.currency_code}`,
+    },
+    actions:this.business?.role==='owner'&&this.canReceivePurchaseOrder(order)?[{id:'receive',label:this.t('استلام المتبقي','Receive remaining')}]:[],
+  })); }
+  purchaseOrderProductsSummary(order:PurchaseOrder):string {
+    return order.lines.map(line=>`${this.productNameFor(line.product_id)} × ${line.quantity}`).join(' · ')||'—';
+  }
+  purchaseOrderReceivedSummary(order:PurchaseOrder):string {
+    return order.lines.map(line=>`${line.received_quantity}/${line.quantity}`).join(' · ')||'—';
+  }
+  onCustomerRecordAction(action:AbaRecordTableActionEvent):void {
+    const customer=this.filteredCustomers.find(item=>item.id===action.rowId); if(!customer)return;
+    if(action.actionId==='invoices')this.showCustomerInvoices(customer.id);
+    if(action.actionId==='statement')this.loadCustomerStatement(customer);
+  }
+  onPurchaseRecordAction(action:AbaRecordTableActionEvent):void {
+    if(action.actionId!=='receive'||this.business?.role!=='owner')return;
+    const order=this.purchaseOrders.find(item=>item.id===action.rowId);
+    if(!order||!this.canReceivePurchaseOrder(order))return;
+    this.requestPurchaseOrderReceipt(order,action.anchor);
   }
 
   get filteredProducts(): Product[] {
@@ -3073,13 +3170,13 @@ export class AppComponent implements OnInit, OnDestroy {
   }
   supplierNameFor(id: string): string { return this.suppliers.find(item=>item.id===id)?.name || id.slice(0,8); }
   productNameFor(id: string): string { return this.products.find(item=>item.id===id)?.name || id.slice(0,8); }
-  requestPurchaseOrderReceipt(order: PurchaseOrder, event: MouseEvent): void {
+  requestPurchaseOrderReceipt(order: PurchaseOrder, event: MouseEvent | HTMLElement): void {
     if (!this.business || this.business.role !== 'owner' || !this.canReceivePurchaseOrder(order)) return;
     this.pendingInvoiceVoid = null;
     this.invoiceVoidError = '';
     this.pendingPurchaseReceipt = order;
     this.purchaseReceiptError = '';
-    this.confirmationReturnFocus = event.currentTarget as HTMLElement;
+    this.confirmationReturnFocus = event instanceof HTMLElement ? event : event.currentTarget as HTMLElement;
   }
 
   cancelPurchaseOrderReceipt(): void {
