@@ -686,3 +686,11 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 
 - Exact run `43302487177` on `7b6aa465b6b9ebb93450ed5eeff3ef808c19ac5d` had one unit failure (test 114). The previous assertion rejected `!chatDraft.trim()` anywhere inside the textarea markup, but the expression legitimately appears in validation and ARIA bindings. Narrowed the negative assertion to the actual `[disabled]` binding only.
 - The contract is now explicit: textarea disabled only during sending; Send button disabled for sending or empty/whitespace drafts. This is test-only; runtime behavior is unchanged. Fresh exact-head CI required.
+
+
+## 2026-11-12 — Shared product interaction increment
+
+- **Shared workspace forms:** consistent 44px controls, clearer focus feedback, responsive inline-form stacking, and action-row wrapping across the existing Workspace modules. Source implementation is present; rendered route acceptance is not claimed.
+- **Shared record tables:** column headers are keyboard-operable sort controls; local sorting toggles ascending/descending, uses numeric-aware locale comparison, and exposes the active direction through `aria-sort`. Existing row actions, permissions, data contracts and API behavior are unchanged.
+- **Mobile record presentation:** the shared component retains labeled record-card behavior at narrow widths; long values wrap and action controls remain touch-sized.
+- **Status:** IMPLEMENTED in source — rendered desktop/mobile and Arabic RTL/English LTR acceptance remains NOT VERIFIED pending browser access and the current exact-head CI.

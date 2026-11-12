@@ -4072,3 +4072,14 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Exact run:** `43302487177` on `7b6aa465b6b9ebb93450ed5eeff3ef808c19ac5d`; unit job `131477181797` reported one failure, test 114. The prior correction still asserted `!textarea.includes('!chatDraft.trim()')`, which was over-broad because the same expression correctly appears in `aria-invalid` and `aria-describedby`.
 - **Final assertion:** only reject the empty-draft expression inside the textarea's `[disabled]` binding. Require textarea disabled only while `chatSending`; require the Send button disabled while `chatSending || !chatDraft.trim()`. This keeps validation/ARIA behavior intact and proves users can continue editing whitespace/empty drafts. Test-only change; no runtime source change.
 - **Other exact-head CI results:** Angular production build PASS; backend-container PASS; backend-accounting PASS; frontend dependency audit PASS; GitGuardian PASS. Browser smoke was still running at last read. Authenticated API smoke SKIPPED by workflow condition. Exact-head checks must rerun after this test-only correction.
+
+
+## 2026-11-12 — Master UX product-development increment
+
+- Continued on the existing Master branch and PR #395; no duplicate branch or PR created.
+- Shared record tables now support local ascending/descending sorting, numeric-aware comparison, and semantic sort-direction feedback. Sorting is presentation-only; it does not change API requests, business state, permissions or persisted data.
+- Shared workspace form controls, inline forms and section action rows received consistent sizing, focus and mobile stacking refinements.
+- Existing Arabic-first design tokens and responsive card treatment are retained.
+- Exact candidate: pending after the final documentation commit. The required GitHub Actions workflow is the only authoritative CI; Semaphore's legacy failure is retired/non-authoritative and is not retried.
+- Local Vercel sandbox build could not be started because the Vercel account returned 402 (Hobby snapshot-storage quota). No production deploy, merge, database write or schema change was made.
+- Remaining product work: continue the screen-by-screen feature workflow improvements and validate rendered behavior after the current full exact-head CI run.
