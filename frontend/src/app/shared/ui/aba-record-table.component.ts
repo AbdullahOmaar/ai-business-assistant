@@ -20,7 +20,7 @@ export interface AbaRecordTableActionEvent { rowId:string; actionId:string; anch
           <table>
             <caption class="aba-record-table__visually-hidden">{{ariaLabel()}}</caption>
             <thead><tr>
-              @for(column of columns();track column.key){<th scope="col" [attr.aria-sort]="sortAria(column.key)"><button class="aba-record-table__sort-button" type="button" (click)="toggleSort(column)" [attr.aria-label]="sortButtonLabel(column)"><span>{{column.label}}</span><span class="aba-record-table__sort-indicator" aria-hidden="true">{{sortIndicator(column.key)}}</span></button></th>}
+              @for(column of columns();track column.key){<th scope="col" [attr.aria-sort]="sortAria(column.key)"><button class="aba-record-table__sort-button" type="button" (click)="toggleSort(column)" [attr.aria-label]="column.label" [attr.aria-pressed]="activeSortKey===column.key"><span>{{column.label}}</span><span class="aba-record-table__sort-indicator" aria-hidden="true">{{sortIndicator(column.key)}}</span></button></th>}
               @if(hasActions){<th scope="col">{{actionsHeading()}}</th>}
             </tr></thead>
             <tbody>
@@ -130,10 +130,6 @@ export class AbaRecordTableComponent {
   }
   sortAria(key:string):string|null{return this.activeSortKey===key?(this.sortDirection==='asc'?'ascending':'descending'):null;}
   sortIndicator(key:string):string{return this.activeSortKey!==key?'↕':this.sortDirection==='asc'?'↑':'↓';}
-  sortButtonLabel(column:AbaRecordTableColumn):string{
-    const next=this.activeSortKey===column.key&&this.sortDirection==='asc'?'descending':'ascending';
-    return 'Sort by '+column.label+', '+next;
-  }
   actionAriaLabel(row:AbaRecordTableRow,action:AbaRecordTableAction):string{
     const primaryColumn=this.columns().find(column=>column.primary);
     const recordLabel=primaryColumn?row.cells[primaryColumn.key]:row.id;
