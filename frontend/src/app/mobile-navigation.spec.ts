@@ -58,3 +58,18 @@ test('mobile More navigation provides localized search over authorized destinati
   assert.match(source, /module\.descriptionAr/);
   assert.match(source, /mobileMoreSearch = ''/);
 });
+
+
+test('Home module directory exposes bilingual search and a localized empty state', () => {
+  const homeStart = source.indexOf('class="module-directory-disclosure"');
+  const homeEnd = source.indexOf("@if (tab === 'notifications')", homeStart);
+  assert.ok(homeStart >= 0 && homeEnd > homeStart);
+  const home = source.slice(homeStart, homeEnd);
+
+  assert.match(home, /name="homeModuleSearch"/);
+  assert.match(home, /\[\(ngModel\)\]="homeModuleSearch"/);
+  assert.match(home, /get filteredHomeModuleCards/);
+  assert.match(home, /@for \(module of filteredHomeModuleCards; track module\.tab\)/);
+  assert.match(home, /module-directory-empty" role="status"/);
+  assert.match(source, /filterWorkspaceModules\(this\.homeModuleCards, this\.homeModuleSearch/);
+});
