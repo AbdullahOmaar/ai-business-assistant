@@ -44,6 +44,28 @@ test('employee/payroll styles are component-local and responsive instead of rely
   assert.match(component, /@media\(max-width:760px\)/);
 });
 
+test('mobile HR is a task-based workspace while desktop retains the full workflow', () => {
+  assert.match(component, /data-mobile-section]="mobileSection"/);
+  assert.match(component, /class="mobile-hr-nav"/);
+  for (const pane of ['employees', 'prepare', 'history']) {
+    assert.ok(component.includes(`data-mobile-pane="${pane}"`), `missing mobile HR pane: ${pane}`);
+    assert.ok(component.includes(`setMobileSection('${pane}')`));
+  }
+  for (const fragment of [
+    'employeeFormOpen = false',
+    'class="employee-form-shell" [class.is-open]="employeeFormOpen"',
+    'aria-controls="employee-profile-form"',
+    'this.employeeFormOpen = true',
+    "this.mobileSection = 'prepare'",
+    "this.mobileSection = 'history'",
+    '@media(max-width:760px)',
+    '.employee-panel[data-mobile-section="employees"]',
+    'grid-template-columns:repeat(2,minmax(0,1fr))',
+    '.employee-form{display:none}',
+    '.mobile-hr-nav{display:grid',
+  ]) assert.ok(component.includes(fragment), `missing mobile HR contract: ${fragment}`);
+});
+
 test('employee and payroll client methods use business-scoped API paths and never accept a client net-pay value', () => {
   assert.match(api, /employees\(businessId: string\): Promise<EmployeeRecord\[]>/);
   assert.match(api, /createEmployee\(businessId: string/);

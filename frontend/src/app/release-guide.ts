@@ -346,6 +346,12 @@ export const FEATURE_CATALOG = [
         detailAr: 'يلزم اعتماد مالك مختلف عن منشئ المسودة. الصرف يسجل مصروف رواتب واحدًا ولا يسمح بصرف السجل مرتين.',
         detailEn: 'A different owner must approve the draft. Payment creates one linked Payroll expense and cannot be repeated.',
       },
+      {
+        titleAr: 'مساحات عمل مخصصة للهاتف',
+        titleEn: 'Task-focused mobile workspaces',
+        detailAr: 'على الهاتف، تنقّل بين دليل الموظفين وتجهيز المرتب وسجل المرتبات من شريط أقسام مستقل. نموذج الموظف يظل مغلقًا حتى تطلب إضافته أو تعديله.',
+        detailEn: 'On phones, switch between the employee directory, payroll preparation and payroll history using dedicated section navigation. The employee form stays collapsed until you add or edit a profile.',
+      },
     ],
   },
   {

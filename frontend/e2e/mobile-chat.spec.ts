@@ -734,6 +734,31 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       } else {
         await expect(page.locator('.workspace-bar')).toBeVisible();
       }
+      if (destination.tab === 'employees' && width <= 760) {
+        const labels = language === 'ar'
+          ? { nav: 'التنقل داخل إدارة الموظفين والمرتبات', employees: 'الموظفون', prepare: 'تجهيز المرتب', history: 'سجل المرتبات' }
+          : { nav: 'Employee and payroll sections', employees: 'Employees', prepare: 'Prepare pay', history: 'Payroll history' };
+        const hrNavigation = page.getByRole('navigation', { name: labels.nav });
+        await expect(hrNavigation).toBeVisible();
+        const employeeForm = page.locator('#employee-profile-form');
+        const formToggle = page.locator('.employee-form-toggle');
+        await expect(employeeForm, 'mobile employee form is collapsed by default').toBeHidden();
+        await expect(formToggle).toHaveAttribute('aria-expanded', 'false');
+        await hrNavigation.getByRole('button', { name: labels.prepare, exact: true }).click();
+        await expect(page.locator('[data-mobile-pane="prepare"]')).toBeVisible();
+        await expect(page.locator('[data-mobile-pane="employees"]')).toBeHidden();
+        await hrNavigation.getByRole('button', { name: labels.history, exact: true }).click();
+        await expect(page.locator('[data-mobile-pane="history"]')).toBeVisible();
+        await expect(page.locator('[data-mobile-pane="prepare"]')).toBeHidden();
+        await hrNavigation.getByRole('button', { name: labels.employees, exact: true }).click();
+        await expect(page.locator('[data-mobile-pane="employees"]')).toBeVisible();
+        await formToggle.click();
+        await expect(employeeForm, 'mobile employee form opens on demand').toBeVisible();
+        await expect(formToggle).toHaveAttribute('aria-expanded', 'true');
+        await formToggle.click();
+        await expect(employeeForm).toBeHidden();
+        await expect(formToggle).toHaveAttribute('aria-expanded', 'false');
+      }
       if (destination.tab === 'customers' && width === 390 && language === 'en') {
         const mobileTitle = await page.locator('aba-mobile-app-header .page-copy h1').evaluate(element => {
           const range = document.createRange();

@@ -9,6 +9,18 @@
 
 ---
 
+## November Phase 1 — HR mobile workspaces — 2026-11-12
+
+- **Branch:** `master/nov-2026-phase-1-ux-foundation` (continue on the one Owner-selected November branch).
+- **Work:** restructure the owner-only Employees & Payroll phone experience into Employees, Prepare pay and Payroll history workspaces. Collapse the employee profile form by default on mobile and open it on demand; route existing Edit employee / Prepare payroll / Edit draft actions to their relevant mobile workspace.
+- **Desktop:** retain the existing full workflow and simultaneous employee/preparation/history surfaces.
+- **Preserved contracts:** no backend/API/schema/data/financial/payroll-rule or authorization changes; server-side net pay, second-owner draft approval, one linked in-app Payroll expense on payout, no bank transfer, and owner-only salary data remain unchanged. Directory and employee selector do not expose base salary.
+- **Regression coverage:** structural HR UI assertions plus rendered mobile route checks for section navigation, pane visibility and collapsed/open employee form in Arabic RTL and English LTR at existing phone widths.
+- **Validation:** authored on the continuing branch; consolidated exact-head GitHub Actions workflow has not yet been run for this candidate. Physical Android/PWA, screen-reader, keyboard-only, high-contrast/200% zoom and authenticated STAFF/second-tenant acceptance remain separate open gates.
+- **Disposition:** Phase 1 remains PARTIALLY COMPLETE until all full-product acceptance evidence is available. This is bundled on the active branch; do not open a docs-only or isolated small PR.
+
+---
+
 ## November Phase 1 — Arabic mobile heading typography — 2026-11-12
 
 - **Branch:** `master/nov-2026-phase-1-ux-foundation` (same Phase 1 branch name restored from merged main; no parallel Phase 1 branch).

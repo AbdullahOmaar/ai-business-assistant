@@ -8,7 +8,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <section class="panel employee-panel" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
+    <section class="panel employee-panel" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" [attr.data-mobile-section]="mobileSection">
       <div class="section-head">
         <div>
           <h2>{{ t('الموظفون والمرتبات', 'Employees & payroll') }}</h2>
@@ -20,7 +20,19 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
       @if (error) { <p class="error" role="alert">{{ error }}</p> }
       @if (message) { <p class="notice success-notice" role="status">{{ message }}</p> }
 
-      <form class="employee-form" (ngSubmit)="saveEmployee()">
+      <nav class="mobile-hr-nav" [attr.aria-label]="t('التنقل داخل إدارة الموظفين والمرتبات', 'Employee and payroll sections')">
+        <button type="button" [class.active]="mobileSection === 'employees'" [attr.aria-current]="mobileSection === 'employees' ? 'page' : null" (click)="setMobileSection('employees')">{{ t('الموظفون', 'Employees') }}</button>
+        <button type="button" [class.active]="mobileSection === 'prepare'" [attr.aria-current]="mobileSection === 'prepare' ? 'page' : null" (click)="setMobileSection('prepare')">{{ t('تجهيز المرتب', 'Prepare pay') }}</button>
+        <button type="button" [class.active]="mobileSection === 'history'" [attr.aria-current]="mobileSection === 'history' ? 'page' : null" (click)="setMobileSection('history')">{{ t('سجل المرتبات', 'Payroll history') }}</button>
+      </nav>
+
+      <section class="employee-workspace" data-mobile-pane="employees">
+        <div class="employee-form-shell" [class.is-open]="employeeFormOpen">
+          <button class="employee-form-toggle" type="button" [attr.aria-expanded]="employeeFormOpen" aria-controls="employee-profile-form" (click)="toggleEmployeeForm()">
+            <span>{{ employeeFormOpen ? t('إخفاء نموذج الموظف', 'Hide employee form') : editingEmployeeId ? t('متابعة تعديل الموظف', 'Continue editing employee') : t('نموذج موظف جديد', 'New employee form') }}</span>
+            <span aria-hidden="true">{{ employeeFormOpen ? '−' : '+' }}</span>
+          </button>
+          <form id="employee-profile-form" class="employee-form" (ngSubmit)="saveEmployee()">
         <label>{{ t('اسم الموظف', 'Employee name') }}
           <input name="employeeName" maxlength="160" autocomplete="off" required [disabled]="busy" [(ngModel)]="employeeName">
         </label>
@@ -50,7 +62,8 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
             <button class="secondary" type="button" (click)="cancelEmployeeEdit()">{{ t('إلغاء التعديل', 'Cancel edit') }}</button>
           }
         </div>
-      </form>
+          </form>
+        </div>
 
       <div class="employee-tools">
         <label>{{ t('البحث عن موظف', 'Search employees') }}
@@ -84,8 +97,9 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           <p class="empty">{{ employeeSearch.trim() ? t('لا يوجد موظفون مطابقون للبحث.', 'No matching employees found.') : t('لم تتم إضافة موظفين بعد.', 'No employees have been added yet.') }}</p>
         }
       </div>
+      </section>
 
-      <section class="payroll-section">
+      <section class="payroll-section payroll-preparation" data-mobile-pane="prepare">
         <div class="section-head">
           <div>
             <h3>{{ editingPayrollId ? t('تعديل مسودة المرتب', 'Edit payroll draft') : t('تجهيز مرتب شهري', 'Prepare monthly payroll') }}</h3>
@@ -127,7 +141,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
         </div>
       </section>
 
-      <section class="payroll-section">
+      <section class="payroll-section payroll-history" data-mobile-pane="history">
         <div class="section-head">
           <div>
             <h3>{{ t('سجل المرتبات', 'Payroll records') }}</h3>
@@ -166,6 +180,8 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
   styles: [`
     :host{display:block;min-width:0;color:var(--aba-color-text-primary,#172033)}
     .employee-panel{min-width:0;background:var(--aba-color-surface,#fff);border:1px solid var(--aba-color-border,#e5eaf1);border-radius:14px;padding:22px;margin-top:4px}
+    .mobile-hr-nav{display:none}
+    .employee-form-toggle{display:none}
     .section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px;min-width:0}
     .section-head>div{min-width:0}
     .section-head h2{font-size:18px;margin:0 0 6px}
@@ -205,6 +221,24 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     @media(max-width:600px){.section-head{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.section-head .count{justify-self:start}}
     @media(max-width:760px){
       .employee-panel{padding:15px;border-radius:13px}
+      .mobile-hr-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:0 0 16px;padding:5px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:13px;background:var(--aba-color-surface-subtle,#f8fafc)}
+      .mobile-hr-nav button{min-width:0;min-height:48px;padding:8px 5px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--aba-color-text-secondary,#475569);font-size:12px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
+      .mobile-hr-nav button.active{border-color:var(--aba-color-primary-border,#99f6e4);background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59)}
+      .mobile-hr-nav button:focus-visible,.employee-form-toggle:focus-visible{outline:3px solid var(--aba-color-focus-ring,#2563eb);outline-offset:2px}
+      .employee-form-shell{min-width:0;margin-bottom:14px;padding:10px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px;background:var(--aba-color-surface-subtle,#f8fafc)}
+      .employee-form-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:10px 12px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:10px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font-size:13px;font-weight:800;text-align:start}
+      .employee-form-toggle span:last-child{display:grid;flex:0 0 26px;width:26px;height:26px;place-items:center;border-radius:8px;background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59);font-size:19px}
+      .employee-form{display:none;margin:12px 0 2px}
+      .employee-form-shell.is-open .employee-form{display:grid}
+      .employee-panel[data-mobile-section="employees"] [data-mobile-pane="prepare"],
+      .employee-panel[data-mobile-section="employees"] [data-mobile-pane="history"],
+      .employee-panel[data-mobile-section="prepare"] [data-mobile-pane="employees"],
+      .employee-panel[data-mobile-section="prepare"] [data-mobile-pane="history"],
+      .employee-panel[data-mobile-section="history"] [data-mobile-pane="employees"],
+      .employee-panel[data-mobile-section="history"] [data-mobile-pane="prepare"]{display:none}
+      .employee-row .actions,.payroll-row .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;justify-content:stretch}
+      .employee-row .actions button,.payroll-row .actions button{min-width:0;min-height:44px;padding:8px 9px;white-space:normal;overflow-wrap:anywhere}
+      .employee-row .actions button:nth-child(3){grid-column:1/-1}
       .section-head{align-items:flex-start}
       .notice{align-items:flex-start;flex-direction:column}
       .list-row{grid-template-columns:32px minmax(0,1fr);align-items:start}
@@ -229,6 +263,8 @@ export class EmployeePayrollComponent implements OnChanges {
   error = '';
   message = '';
   employeeSearch = '';
+  mobileSection: 'employees' | 'prepare' | 'history' = 'employees';
+  employeeFormOpen = false;
   editingEmployeeId: string | null = null;
   employeeName = '';
   employeeCode = '';
@@ -258,6 +294,8 @@ export class EmployeePayrollComponent implements OnChanges {
       this.clearEmployeeForm();
       this.cancelPayrollEdit();
       this.employeeSearch = '';
+      this.mobileSection = 'employees';
+      this.employeeFormOpen = false;
       this.payrollEmployeeId = '';
       this.payrollFilterPeriod = '';
       this.payrollPeriod = this.currentPeriod();
@@ -290,6 +328,14 @@ export class EmployeePayrollComponent implements OnChanges {
       [employee.name, employee.employee_code, employee.email, employee.department, employee.job_title]
         .some(value => (value || '').toLocaleLowerCase().includes(query))
     );
+  }
+
+  setMobileSection(section: 'employees' | 'prepare' | 'history'): void {
+    this.mobileSection = section;
+  }
+
+  toggleEmployeeForm(): void {
+    this.employeeFormOpen = !this.employeeFormOpen;
   }
 
   payrollStatusLabel(status: EmployeePayrollRecord['status']): string {
@@ -341,6 +387,8 @@ export class EmployeePayrollComponent implements OnChanges {
   }
 
   editEmployee(employee: EmployeeRecord): void {
+    this.mobileSection = 'employees';
+    this.employeeFormOpen = true;
     this.editingEmployeeId = employee.id;
     this.employeeName = employee.name;
     this.employeeCode = employee.employee_code || '';
@@ -355,6 +403,7 @@ export class EmployeePayrollComponent implements OnChanges {
 
   cancelEmployeeEdit(): void {
     this.clearEmployeeForm();
+    this.employeeFormOpen = false;
   }
 
   async saveEmployee(): Promise<void> {
@@ -393,6 +442,7 @@ export class EmployeePayrollComponent implements OnChanges {
       }
       if (this.businessId !== businessId) return;
       this.clearEmployeeForm();
+      this.employeeFormOpen = false;
       this.message = this.t('تم حفظ بيانات الموظف بنجاح.', 'Employee details saved successfully.');
       await this.loadEmployeesAndPayroll();
     } catch (error) {
@@ -423,6 +473,7 @@ export class EmployeePayrollComponent implements OnChanges {
 
   preparePayroll(employee: EmployeeRecord): void {
     if (!employee.is_active) return;
+    this.mobileSection = 'prepare';
     this.payrollEmployeeId = employee.id;
     this.editingPayrollId = null;
     this.payrollPeriod = this.currentPeriod();
@@ -435,6 +486,7 @@ export class EmployeePayrollComponent implements OnChanges {
 
   editPayroll(record: EmployeePayrollRecord): void {
     if (record.status !== 'draft') return;
+    this.mobileSection = 'prepare';
     this.editingPayrollId = record.id;
     this.payrollEmployeeId = record.employee_id;
     this.payrollPeriod = record.period;
@@ -487,6 +539,7 @@ export class EmployeePayrollComponent implements OnChanges {
       }
       if (this.businessId !== businessId) return;
       this.cancelPayrollEdit();
+      this.mobileSection = 'history';
       await this.loadEmployeesAndPayroll();
     } catch (error) {
       if (this.businessId === businessId) this.error = this.errorMessage(error);

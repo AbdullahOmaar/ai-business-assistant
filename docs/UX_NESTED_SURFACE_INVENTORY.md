@@ -509,3 +509,13 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - At all inspected sizes, document/body dimensions matched the viewport, scrollWidth equaled clientWidth, scrollHeight equaled clientHeight, and forced scrolling left scrollY at 0. No vertical scrollbar exists; the space below the card is balanced centering, not an overflow defect.
 - Added a focused Playwright guard to the existing mocked mobile OWNER journey for 360×800, 390×844, 1280×800 RTL and 390×844 LTR. It checks no horizontal/vertical document overflow and vertical centering. It does not submit real credentials or contact production identity/API services.
 - No CSS/auth behavior change was justified by this evidence. The source-only route sweep already covers the 18 OWNER workspace destinations; Platform Admin remains a separate identity/surface. Physical Android/PWA, full keyboard/screen-reader, high-contrast/200% zoom and authenticated second-tenant acceptance remain separate open gates.
+
+
+## November Phase 1 — HR mobile workspaces — 2026-11-12
+
+- The Employees & Payroll destination is part of the 18 OWNER workspace destinations in the existing responsive route sweep. Its previous phone treatment only stacked forms and controls; it did not provide a mobile-first workflow.
+- The mobile presentation is reorganized into three focused workspaces: Employees, Prepare pay, and Payroll history. The employee profile form is collapsed by default and opens on demand; editing an employee opens the directory/form, selecting Prepare payroll opens the preparation workspace, and saving a payroll draft returns the user to history.
+- Desktop continues to show the existing full employee and payroll workflow. Mobile-only panes do not change API calls, permission checks, server-side net-pay calculation, separate-owner approval, one-time in-app payout recording, or the existing salary privacy boundary.
+- The employee directory and payroll employee selector continue to omit base salary values. The Employees & Payroll destination remains owner-only.
+- Added structural HR UI regressions and rendered Playwright checks for mobile navigation, pane switching, disclosure state, and RTL/LTR route rendering at the existing phone viewport matrix.
+- Implementation status at this checkpoint: authored on the continuing November branch; final exact-SHA GitHub Actions validation and full rendered/manual acceptance remain pending. This does not close physical Android/PWA, screen reader, keyboard, high-contrast/200% zoom, or authenticated STAFF/second-tenant acceptance.
