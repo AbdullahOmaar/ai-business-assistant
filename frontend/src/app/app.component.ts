@@ -1597,10 +1597,6 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.invoiceStatusLabel(invoice.status);
   }
 
-  customerInvoiceCount(customerId: string): number {
-    return this.invoices.filter(invoice => invoice.customer_id === customerId).length;
-  }
-
   showCustomerInvoices(customerId: string): void {
     this.invoiceFilterCustomerId = customerId;
     this.setTab('invoices');
@@ -1737,7 +1733,7 @@ export class AppComponent implements OnInit, OnDestroy {
   get paymentTableRows(): readonly AbaRecordTableRow[] { return this.filteredPayments.map(item=>({id:item.id,cells:{
     customer:this.customerNameForInvoice(item.customer_id),amount:`${item.amount} ${item.currency_code}`,
     received:this.formatRecordDate(item.received_at),method:item.method?this.paymentMethodLabel(item.method):this.t('غير محددة','Not specified'),
-    reference:item.reference||'—',allocation:item.allocations.length?this.t('يوجد تخصيص','Has allocations'):this.t('بدون تخصيص','Unallocated'),
+    reference:item.reference||'—',allocation:item.allocations.length?`${item.allocations.length} ${this.t('تخصيصات','allocations')}`:this.t('غير مخصصة','Unallocated'),
   }})); }
   get expenseTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'date',label:this.t('التاريخ','Date')},
