@@ -764,11 +764,76 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     }
   };
 
+  const assertTabletRail = async (language: 'ar' | 'en') => {
+    const homeLabel = language === 'ar' ? 'الرئيسية' : 'Home';
+    const homeHeading = language === 'ar' ? 'الرئيسية' : 'Overview';
+    const direction = language === 'ar' ? 'rtl' : 'ltr';
+
+    for (const width of [761, 768, 820, 900]) {
+      await page.setViewportSize({ width, height: 1024 });
+      await expect(page.locator('.shell')).toHaveAttribute('dir', direction);
+      const metrics = await page.locator('.sidebar').evaluate((sidebar, expectedLabel) => {
+        const home = Array.from(sidebar.querySelectorAll<HTMLButtonElement>('.nav-item'))
+          .find(button => button.getAttribute('aria-label') === expectedLabel);
+        const label = home?.querySelector<HTMLElement>('span:not(.nav-icon)');
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const mainRect = document.querySelector<HTMLElement>('.main')?.getBoundingClientRect();
+        return {
+          sidebarWidth: Math.round(sidebarRect.width),
+          sidebarLeft: Math.round(sidebarRect.left),
+          sidebarOverflowY: getComputedStyle(sidebar).overflowY,
+          homeAriaLabel: home?.getAttribute('aria-label') ?? '',
+          homeTitle: home?.getAttribute('title') ?? '',
+          homeLabelDisplay: label ? getComputedStyle(label).display : '',
+          mainOverlapsSidebar: mainRect
+            ? mainRect.left < sidebarRect.right && mainRect.right > sidebarRect.left
+            : true,
+          documentWidth: document.documentElement.scrollWidth,
+        };
+      }, homeLabel);
+
+      expect(metrics.sidebarWidth, 'tablet rail width at ' + width + 'px').toBe(84);
+      expect(metrics.sidebarLeft, 'RTL/LTR rail placement at ' + width + 'px')
+        .toBe(language === 'ar' ? 0 : width - 84);
+      expect(metrics.sidebarOverflowY).toBe('auto');
+      expect(metrics.homeAriaLabel).toBe(homeLabel);
+      expect(metrics.homeTitle).toBe(homeLabel);
+      expect(metrics.homeLabelDisplay).toBe('none');
+      expect(metrics.mainOverlapsSidebar).toBe(false);
+      expect(metrics.documentWidth, 'tablet document width at ' + width + 'px')
+        .toBeLessThanOrEqual(width);
+
+      const homeButton = page.locator('.sidebar').getByRole('button', { name: homeLabel, exact: true });
+      await homeButton.focus();
+      await expect(homeButton).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(page.locator('.topbar-heading h1')).toHaveText(homeHeading);
+      await expect(page.locator('.workspace-bar')).toBeVisible();
+    }
+
+    // The rail ends at 900px; the full-label desktop sidebar resumes at 901px.
+    await page.setViewportSize({ width: 901, height: 1024 });
+    const desktopMetrics = await page.locator('.sidebar').evaluate(sidebar => {
+      const home = sidebar.querySelector<HTMLElement>('.nav-item:not(.mobile-more)');
+      const label = home?.querySelector<HTMLElement>('span:not(.nav-icon)');
+      const rect = sidebar.getBoundingClientRect();
+      return {
+        sidebarWidth: Math.round(rect.width),
+        labelDisplay: label ? getComputedStyle(label).display : '',
+        documentWidth: document.documentElement.scrollWidth,
+      };
+    });
+    expect(desktopMetrics.sidebarWidth).toBe(245);
+    expect(desktopMetrics.labelDisplay).not.toBe('none');
+    expect(desktopMetrics.documentWidth).toBeLessThanOrEqual(901);
+  };
+
   await assertRouteSweep(390, 'ar');
   // Complete all Arabic RTL widths before using the More-menu language action.
   await assertRouteSweep(360, 'ar');
   await assertRouteSweep(430, 'ar');
   await assertRouteSweep(768, 'ar');
+  await assertTabletRail('ar');
   await assertRouteSweep(1280, 'ar');
 
   // The More menu is mobile-only; restore a phone viewport after the tablet/desktop sweeps.
@@ -782,6 +847,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await assertRouteSweep(390, 'en');
   await assertRouteSweep(430, 'en');
   await assertRouteSweep(768, 'en');
+  await assertTabletRail('en');
   await assertRouteSweep(1280, 'en');
 
   // Restore Arabic for the remaining mobile interaction checks.

@@ -179,3 +179,27 @@ test('mobile fixed navigation leaves a safe scroll runway after the final conten
   assert.match(css, /scroll-padding-block-end:\s*calc\(132px \+ env\(safe-area-inset-bottom, 0px\)\)/);
   assert.match(css, /\.shell \.sidebar[\s\S]*?padding-block-end:\s*calc\(8px \+ env\(safe-area-inset-bottom, 0px\)\)/);
 });
+
+test('tablet workspace navigation uses a compact rail without removing accessible navigation names', () => {
+  const tabletRail = css.slice(css.indexOf('/* Tablet workspace rail:'));
+  assert.match(tabletRail, /@media\s*\(min-width:\s*761px\)\s*and\s*\(max-width:\s*900px\)/);
+  assert.match(tabletRail, /--aba-layout-sidebar:\s*84px/);
+  assert.match(tabletRail, /overflow-y:\s*auto/);
+  assert.match(tabletRail, /\.nav-item > span:not\(\.nav-icon\)\s*\{\s*display:\s*none/);
+  assert.match(tabletRail, /\.brand > span:not\(\.brand-mark\)\s*\{[\s\S]*?clip:\s*rect\(0,\s*0,\s*0,\s*0\)/);
+
+  const sidebarStart = app.indexOf('<aside class="sidebar"');
+  const moreMenuStart = app.indexOf('<nav #mobileMoreMenu', sidebarStart);
+  assert.ok(sidebarStart >= 0 && moreMenuStart > sidebarStart, 'the workspace sidebar navigation must exist');
+  const sidebarMarkup = app.slice(sidebarStart, moreMenuStart);
+  const navigationButtons = [...sidebarMarkup.matchAll(/<button class="nav-item[^"]*"[^>]*>/g)];
+  assert.ok(navigationButtons.length >= 10, 'the compact rail must preserve the existing workspace module set');
+  for (const [index, match] of navigationButtons.entries()) {
+    assert.match(match[0], /\[attr\.aria-label\]=/,
+      'workspace navigation item ' + index + ' must retain an accessible name');
+    if (!match[0].includes('class="nav-item mobile-more"')) {
+      assert.match(match[0], /\[attr\.title\]=/,
+        'workspace navigation item ' + index + ' must retain its native tooltip');
+    }
+  }
+});
