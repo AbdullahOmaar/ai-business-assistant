@@ -484,7 +484,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       }
                     </div>
                   }
-                  @if (agingReport.invoices.length) { <div class="list">@for (invoice of agingReport.invoices; track invoice.invoice_id) { <article class="list-row"><div class="grow"><strong>{{ invoice.invoice_number }} · {{ invoice.outstanding_amount }} {{ invoice.currency_code }}</strong><small>{{ agingBucketLabel(invoice.aging_bucket) }} · {{ invoice.due_date || t('بدون تاريخ استحقاق', 'No due date') }}@if (invoice.customer_link_missing) { · {{ t('عميل غير مرتبط — يلزم تدقيق يدوي', 'Missing customer link — manual review required') }} }</small></div></article> }</div> }
+                  <aba-record-table [ariaLabel]="t('جدول أعمار المديونيات','Receivables aging table')" [columns]="agingTableColumns" [rows]="agingTableRows" [emptyTitle]="t('لا توجد فواتير مستحقة','No outstanding invoices')" [emptyDescription]="t('لا توجد فواتير مستحقة في تاريخ التقرير.','No outstanding invoices as of the report date.')" />
                   @if (agingReport.limitations.length) { <div class="notice"><strong>{{ t('حدود التقرير', 'Report limitations') }}</strong>@for (limitation of agingReport.limitations; track limitation) { <p>{{ reportLimitationLabel(limitation) }}</p> }</div> }
                 }
               </section>
@@ -1845,6 +1845,19 @@ export class AppComponent implements OnInit, OnDestroy {
     recordId:item.target_id||'—',actor:item.actor_subject||'—',
   }})); }
 
+
+  get agingTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'invoice',label:this.t('رقم الفاتورة','Invoice'),primary:true},
+    {key:'outstanding',label:this.t('المتبقي','Outstanding'),kind:'numeric'},
+    {key:'bucket',label:this.t('عمر المديونية','Aging bucket'),kind:'status'},
+    {key:'dueDate',label:this.t('تاريخ الاستحقاق','Due date')},
+    {key:'customer',label:this.t('حالة العميل','Customer link'),kind:'status'},
+  ]; }
+  get agingTableRows(): readonly AbaRecordTableRow[] { return (this.agingReport?.invoices||[]).map(invoice=>({id:invoice.invoice_id,cells:{
+    invoice:invoice.invoice_number,outstanding:`${invoice.outstanding_amount} ${invoice.currency_code}`,
+    bucket:this.agingBucketLabel(invoice.aging_bucket),dueDate:invoice.due_date||this.t('بدون تاريخ استحقاق','No due date'),
+    customer:invoice.customer_link_missing?this.t('غير مرتبط — مراجعة يدوية','Missing — manual review'):this.t('مرتبط','Linked'),
+  }})); }
   get profitLossTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'currency',label:this.t('العملة','Currency'),primary:true},
     {key:'revenue',label:this.t('الإيرادات','Revenue'),kind:'numeric'},

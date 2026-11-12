@@ -3813,3 +3813,12 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Kept previously loaded rows visible during background refresh for Notifications, Recurring Schedules and Activity Log; first-load spinner remains owned by the table.
 - No domain behavior, permissions, API, schema, database, financial semantics or deployment changes.
 - Exact-head unit/build/browser/security validation remains NOT RUN for this candidate; the non-primary SemaphoreCI status is FAILURE and is not treated as approved GitHub Actions evidence.
+
+
+## 2026-11-12 — HR and receivables-aging record screens
+
+- Employee directory and payroll history now use the shared responsive record table; the employee directory deliberately excludes monthly salary, while compensation details remain in the owner-only payroll history.
+- Existing employee edit/deactivate/prepare-pay actions and payroll edit/approve/in-app payout actions are preserved through row-action dispatch with existing status and busy guards.
+- Receivables aging invoice findings now use a labeled record table; currency-specific summaries and human-review warnings remain separate.
+- No payroll calculation, approval rule, payout semantics, expense posting, financial report formula, API/schema, or data changes.
+- Exact-head unit/build/browser/security validation remains NOT RUN; no PR, merge, or deployment.

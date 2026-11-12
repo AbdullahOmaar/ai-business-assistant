@@ -29,6 +29,10 @@ test('employee workflows expose localized create, edit, deactivate, search, and 
     assert.ok(component.includes(phrase), `Missing UI action: ${phrase}`);
   }
   assert.match(component, /employeeSearch/);
+  assert.match(component, /<aba-record-table \[ariaLabel\]="t\('جدول الموظفين'/);
+  assert.match(component, /<aba-record-table \[ariaLabel\]="t\('سجل المرتبات'/);
+  assert.match(component, /onEmployeeRecordAction\(\$event\)/);
+  assert.match(component, /onPayrollRecordAction\(\$event\)/);
   assert.match(component, /t\('الموظفون والمرتبات', 'Employees & payroll'\)/);
   assert.match(component, /Net pay is calculated on the server/);
   assert.match(component, /A different owner must approve the payroll draft/);
@@ -175,13 +179,13 @@ test('owner-only payroll view stays behind its deferred loading boundary', () =>
 
 
 test('employee directory and payroll selector never expose base salary values', () => {
-  const directoryStart = component.indexOf('<div class="list">');
-  const directoryEnd = component.indexOf('data-mobile-pane="prepare"', directoryStart);
+  const directoryStart = component.indexOf('get employeeTableRows()');
+  const directoryEnd = component.indexOf('get payrollTableColumns()', directoryStart);
   assert.ok(directoryStart >= 0 && directoryEnd > directoryStart);
   const directory = component.slice(directoryStart, directoryEnd);
   assert.doesNotMatch(directory, /monthly_salary|currencyCode/);
-  assert.match(directory, /<strong>\{\{ employee\.name \}\}<\/strong>/);
-  assert.match(directory, /employee\.employee_code \|\| t\('بدون كود', 'No code'\)/);
+  assert.match(directory, /name:employee\\.name/);
+  assert.match(directory, /employee\\.employee_code\\|\\|'—'/);
 
   const selectorStart = component.indexOf('<select name="payrollEmployeeId"');
   const selectorEnd = component.indexOf('</select>', selectorStart);

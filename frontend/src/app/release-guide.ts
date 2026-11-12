@@ -362,6 +362,11 @@ export const FEATURE_CATALOG = [
         detailEn: 'A different owner must approve the draft. Payment creates one linked Payroll expense and cannot be repeated.',
       },
       {
+        titleAr: 'جداول الموظفين والمرتبات', titleEn: 'Employee and payroll tables',
+        detailAr: 'دليل الموظفين وسجل المرتبات يعرضان أعمدة منظمة على الويب وكروت سجلات على الهاتف. بيانات الراتب لا تظهر في دليل الموظفين؛ تفاصيل التعويضات تظل داخل سجل المرتبات المخصص للمالك.',
+        detailEn: 'The employee directory and payroll history use structured desktop columns and mobile record cards. Salary is excluded from the employee directory; compensation details remain in the owner-only payroll history.',
+      },
+      {
         titleAr: 'مساحات عمل مخصصة للهاتف',
         titleEn: 'Task-focused mobile workspaces',
         detailAr: 'على الهاتف، تنقّل بين دليل الموظفين وتجهيز المرتب وسجل المرتبات من شريط أقسام مستقل. نموذج الموظف يظل مغلقًا حتى تطلب إضافته أو تعديله.',

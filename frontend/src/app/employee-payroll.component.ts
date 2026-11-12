@@ -1,12 +1,13 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecordTableColumn, type AbaRecordTableRow } from './shared/ui/aba-record-table.component';
 import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service';
 
 @Component({
   selector: 'aba-employee-payroll',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AbaRecordTableComponent],
   template: `
     <section class="panel employee-panel" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" [attr.data-mobile-section]="mobileSection">
       <div class="section-head">
@@ -75,28 +76,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
         <span class="count">{{ filteredEmployees.length }} {{ t('نتيجة', 'results') }}</span>
       </div>
 
-      @if (busy) { <p class="muted" role="status">{{ t('جارٍ تحميل البيانات…', 'Loading employee and payroll data…') }}</p> }
-      <div class="list">
-        @for (employee of filteredEmployees; track employee.id) {
-          <article class="list-row employee-row">
-            <div class="employee-mark" aria-hidden="true">♙</div>
-            <div class="grow">
-              <strong>{{ employee.name }}</strong>
-              <small>{{ employee.employee_code || t('بدون كود', 'No code') }}{{ employee.department ? ' · ' + employee.department : '' }}{{ employee.job_title ? ' · ' + employee.job_title : '' }}</small>
-              <small>{{ employee.email || t('بدون بريد', 'No email') }}{{ employee.phone ? ' · ' + employee.phone : '' }}</small>
-              <span class="status" [class.inactive]="!employee.is_active">{{ employee.is_active ? t('نشط', 'Active') : t('غير نشط', 'Inactive') }}</span>
-            </div>
-            <div class="actions">
-              <button class="secondary" type="button" (click)="editEmployee(employee)" [disabled]="busy">{{ t('تعديل', 'Edit') }}</button>
-              <button class="secondary" type="button" (click)="preparePayroll(employee)" [disabled]="busy || !employee.is_active">{{ t('تجهيز مرتب', 'Prepare payroll') }}</button>
-              <button class="secondary" type="button" (click)="toggleEmployeeActive(employee)" [disabled]="busy">{{ employee.is_active ? t('إيقاف', 'Deactivate') : t('إعادة تفعيل', 'Reactivate') }}</button>
-            </div>
-          </article>
-        }
-        @if (!filteredEmployees.length && !busy && !error) {
-          <p class="empty">{{ employeeSearch.trim() ? t('لا يوجد موظفون مطابقون للبحث.', 'No matching employees found.') : t('لم تتم إضافة موظفين بعد.', 'No employees have been added yet.') }}</p>
-        }
-      </div>
+      <aba-record-table [ariaLabel]="t('جدول الموظفين','Employees table')" [columns]="employeeTableColumns" [rows]="employeeTableRows" [loading]="busy && !employees.length" [loadingDescription]="t('جارٍ تحميل الموظفين…','Loading employees…')" [emptyTitle]="t('لا يوجد موظفون','No employees yet')" [emptyDescription]="employeeSearch.trim() ? t('لا يوجد موظفون مطابقون للبحث.','No matching employees found.') : t('لم تتم إضافة موظفين بعد.','No employees have been added yet.')" (rowAction)="onEmployeeRecordAction($event)" />
       </section>
 
       <section class="payroll-section payroll-preparation" data-mobile-pane="prepare">
@@ -149,31 +129,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           </div>
           <span class="count">{{ payrollRecords.length }} {{ t('سجل', 'records') }}</span>
         </div>
-        <div class="list">
-          @for (payroll of payrollRecords; track payroll.id) {
-            <article class="list-row payroll-row">
-              <div class="employee-mark money-mark" aria-hidden="true">＄</div>
-              <div class="grow">
-                <strong>{{ payroll.employee_name }} · {{ payroll.period }} · {{ payroll.net_pay }} {{ currencyCode }}</strong>
-                <small>{{ t('أساسي', 'Base') }} {{ payroll.base_salary }} + {{ t('بدلات', 'allowances') }} {{ payroll.allowances }} + {{ t('مكافآت', 'bonuses') }} {{ payroll.bonuses }} − {{ t('خصومات', 'deductions') }} {{ payroll.deductions }}</small>
-                <span class="status" [class.inactive]="payroll.status !== 'paid'">{{ payrollStatusLabel(payroll.status) }}</span>
-                @if (payroll.status === 'paid' && payroll.paid_at) { <small>{{ t('وقت تسجيل الصرف', 'Payout recorded at') }} · {{ payroll.paid_at | date:'mediumDate' }}</small> }
-              </div>
-              <div class="actions">
-                @if (payroll.status === 'draft') {
-                  <button class="secondary" type="button" (click)="editPayroll(payroll)" [disabled]="busy || !!operationId">{{ t('تعديل المسودة', 'Edit draft') }}</button>
-                  <button class="secondary" type="button" (click)="approvePayroll(payroll)" [disabled]="busy || !!operationId">{{ t('اعتماد', 'Approve') }}</button>
-                }
-                @if (payroll.status === 'approved') {
-                  <button class="primary" type="button" (click)="payPayroll(payroll)" [disabled]="busy || !!operationId">{{ t('تسجيل الصرف داخل النظام', 'Record payout in app') }}</button>
-                }
-              </div>
-            </article>
-          }
-          @if (!payrollRecords.length && !busy && !error) {
-            <p class="empty">{{ t('لا توجد مرتبات في الفترة المحددة.', 'No payroll records for this period.') }}</p>
-          }
-        </div>
+        <aba-record-table [ariaLabel]="t('سجل المرتبات','Payroll history table')" [columns]="payrollTableColumns" [rows]="payrollTableRows" [loading]="busy && !payrollRecords.length" [loadingDescription]="t('جارٍ تحميل سجل المرتبات…','Loading payroll history…')" [emptyTitle]="t('لا توجد مرتبات','No payroll records')" [emptyDescription]="t('لا توجد مرتبات في الفترة المحددة.','No payroll records for this period.')" [actionsHeading]="t('الإجراءات','Actions')" (rowAction)="onPayrollRecordAction($event)" />
       </section>
     </section>
   `,
@@ -337,6 +293,58 @@ export class EmployeePayrollComponent implements OnChanges {
 
   toggleEmployeeForm(): void {
     this.employeeFormOpen = !this.employeeFormOpen;
+  }
+
+
+  get employeeTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'name',label:this.t('الموظف','Employee'),primary:true},
+    {key:'code',label:this.t('الكود','Code')},
+    {key:'department',label:this.t('القسم','Department')},
+    {key:'jobTitle',label:this.t('المسمى الوظيفي','Job title')},
+    {key:'contact',label:this.t('بيانات التواصل','Contact')},
+    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
+  ]; }
+  get employeeTableRows(): readonly AbaRecordTableRow[] { return this.filteredEmployees.map(employee=>({id:employee.id,cells:{
+    name:employee.name,code:employee.employee_code||'—',department:employee.department||'—',
+    jobTitle:employee.job_title||'—',contact:[employee.email,employee.phone].filter(Boolean).join(' · ')||'—',
+    status:employee.is_active?this.t('نشط','Active'):this.t('غير نشط','Inactive'),
+  },actions:[
+    {id:'edit',label:this.t('تعديل','Edit'),disabled:this.busy},
+    {id:'prepare',label:this.t('تجهيز مرتب','Prepare pay'),disabled:this.busy||!employee.is_active},
+    {id:'toggle',label:employee.is_active?this.t('إيقاف','Deactivate'):this.t('إعادة تفعيل','Reactivate'),disabled:this.busy},
+  ]})); }
+  get payrollTableColumns(): readonly AbaRecordTableColumn[] { return [
+    {key:'employee',label:this.t('الموظف','Employee'),primary:true},
+    {key:'period',label:this.t('الفترة','Period')},
+    {key:'base',label:this.t('الأساسي','Base'),kind:'numeric'},
+    {key:'additions',label:this.t('البدلات والمكافآت','Allowances & bonuses'),kind:'numeric'},
+    {key:'deductions',label:this.t('الخصومات','Deductions'),kind:'numeric'},
+    {key:'net',label:this.t('الصافي','Net pay'),kind:'numeric'},
+    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
+    {key:'payout',label:this.t('تاريخ الصرف','Payout date')},
+  ]; }
+  get payrollTableRows(): readonly AbaRecordTableRow[] { return this.payrollRecords.map(payroll=>({id:payroll.id,cells:{
+    employee:payroll.employee_name,period:payroll.period,base:`${payroll.base_salary} ${this.currencyCode}`,
+    additions:`${payroll.allowances} + ${payroll.bonuses} ${this.currencyCode}`,
+    deductions:`${payroll.deductions} ${this.currencyCode}`,net:`${payroll.net_pay} ${this.currencyCode}`,
+    status:this.payrollStatusLabel(payroll.status),payout:payroll.paid_at||'—',
+  },actions:payroll.status==='draft'?[
+    {id:'edit',label:this.t('تعديل المسودة','Edit draft'),disabled:this.busy||!!this.operationId},
+    {id:'approve',label:this.t('اعتماد','Approve'),disabled:this.busy||!!this.operationId},
+  ]:payroll.status==='approved'?[
+    {id:'pay',label:this.t('تسجيل الصرف داخل النظام','Record in-app payout'),disabled:this.busy||!!this.operationId},
+  ]:[]})); }
+  onEmployeeRecordAction(action:AbaRecordTableActionEvent):void {
+    const employee=this.filteredEmployees.find(item=>item.id===action.rowId); if(!employee)return;
+    if(action.actionId==='edit')this.editEmployee(employee);
+    else if(action.actionId==='prepare')this.preparePayroll(employee);
+    else if(action.actionId==='toggle')void this.toggleEmployeeActive(employee);
+  }
+  onPayrollRecordAction(action:AbaRecordTableActionEvent):void {
+    const payroll=this.payrollRecords.find(item=>item.id===action.rowId); if(!payroll||this.busy||this.operationId)return;
+    if(action.actionId==='edit'&&payroll.status==='draft')this.editPayroll(payroll);
+    else if(action.actionId==='approve'&&payroll.status==='draft')void this.approvePayroll(payroll);
+    else if(action.actionId==='pay'&&payroll.status==='approved')void this.payPayroll(payroll);
   }
 
   payrollStatusLabel(status: EmployeePayrollRecord['status']): string {
