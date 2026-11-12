@@ -3922,3 +3922,14 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 
 
 - **Follow-up before rerun:** aligned the keyboard-only Overview assertion with the actual section heading (“Platform metrics” / “مؤشرات المنصة”), rather than the page-level H1 (“Admin center”). This is a test expectation correction only; no app behavior changed.
+
+## 2026-11-12 — Searchable mobile More navigation
+
+- **Branch:** `master/nov-2026-phase-1-ux-foundation`; candidate at this ledger entry: `26a30371e6d92af32cd9d2668f67e5ddae2d0c37`.
+- **UX outcome:** added a bilingual search field to the mobile More menu. It filters only the already role-filtered `mobileMoreGroups` catalogue by Arabic/English section titles and descriptions; matching group headings show their group modules. Empty results have a polite status message. Search is cleared when the menu closes, Escape closes it and restores focus, and selecting a destination resets the query.
+- **Accessibility / responsive:** search has a localized accessible name, search input semantics, sticky visibility within the scrollable menu, and a 44px minimum control height. Existing navigation focus restoration and role-filtered catalogue remain the source for available destinations; this is not an authorization boundary.
+- **Documentation / regression:** added structural navigation coverage in `mobile-navigation.spec.ts`, and documented the feature in the bilingual in-app guide with a matching `release-guide.spec.ts` assertion.
+- **Commits:** implementation `45c80358528f175c34ee723509c08342ee93a075`; navigation regression `9df9cae4e6576e04924556f82ad14eccfdbe0e98`; guide `ed737cba51c3806fcdb7c2e74ca94c19f25769c6`; guide regression / current candidate `26a30371e6d92af32cd9d2668f67e5ddae2d0c37`.
+- **Scope safety:** frontend navigation, tests and in-app guide only. No backend/API/authentication/authorization/tenant/database/schema/business/financial/payroll behavior changed. No PR, merge or deployment.
+- **Validation:** post-commit static readback confirmed the search input, two-way binding, filtered group loop, empty state, query filtering, reset paths and guide/test entries. Automated frontend tests, Angular build, Playwright, dependency audit and exact-head GitHub Actions are **NOT RUN**. The CI workflow triggers on PR, main push, schedule or manual dispatch; no PR was opened and no workflow was manually dispatched for this incremental change.
+- **Next:** continue the same November UX branch with the next substantial mobile-first usability outcome; run one consolidated exact-candidate validation when the coherent batch is assembled. Physical Android/PWA and full assistive-technology acceptance remain separate gates.
