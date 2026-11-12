@@ -129,7 +129,7 @@ test('a successful payroll payment refreshes workspace data only for the same au
 
 
 test('payroll payout wording describes an in-app record and never implies a bank transfer', () => {
-  assert.match(component, /Record payout in app/);
+  assert.match(component, /Record in-app payout/);
   assert.match(component, /Payout recorded in the app/);
   assert.match(component, /No bank transfer is sent/);
   assert.match(component, /Payout recorded/);
