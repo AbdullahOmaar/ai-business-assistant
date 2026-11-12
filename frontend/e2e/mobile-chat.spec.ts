@@ -689,8 +689,8 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     routeNetworkFailures.push(`${request.method()} ${new URL(request.url()).pathname}: ${request.failure()?.errorText ?? 'request failed'}`);
   });
 
-  const assertRouteSweep = async (width: number, language: 'ar' | 'en') => {
-    await page.setViewportSize({ width, height: 844 });
+  const assertRouteSweep = async (width: number, language: 'ar' | 'en', height = 844) => {
+    await page.setViewportSize({ width, height });
     const direction = language === 'ar' ? 'rtl' : 'ltr';
     await expect(page.locator('.shell')).toHaveAttribute('dir', direction);
     await expect(page.locator('html')).toHaveAttribute('dir', direction);
@@ -744,18 +744,41 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         const formToggle = page.locator('.employee-form-toggle');
         await expect(employeeForm, 'mobile employee form is collapsed by default').toBeHidden();
         await expect(formToggle).toHaveAttribute('aria-expanded', 'false');
-        await hrNavigation.getByRole('button', { name: labels.prepare, exact: true }).click();
+        const employeesTab = hrNavigation.getByRole('button', { name: labels.employees, exact: true });
+        const prepareTab = hrNavigation.getByRole('button', { name: labels.prepare, exact: true });
+        const historyTab = hrNavigation.getByRole('button', { name: labels.history, exact: true });
+        const tabHeights = await hrNavigation.getByRole('button').evaluateAll(elements =>
+          elements.map(element => element.getBoundingClientRect().height));
+        expect(tabHeights.length).toBe(3);
+        for (const height of tabHeights) expect(height, 'mobile HR tabs retain 44px touch targets').toBeGreaterThanOrEqual(44);
+
+        // Exercise the same mobile HR flow with keyboard-only navigation.
+        await employeesTab.focus();
+        await expect(employeesTab).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expect(page.locator('[data-mobile-pane="employees"]')).toBeVisible();
+        await page.keyboard.press('Tab');
+        await expect(prepareTab).toBeFocused();
+        await page.keyboard.press('Enter');
         await expect(page.locator('[data-mobile-pane="prepare"]')).toBeVisible();
         await expect(page.locator('[data-mobile-pane="employees"]')).toBeHidden();
-        await hrNavigation.getByRole('button', { name: labels.history, exact: true }).click();
+        await page.keyboard.press('Tab');
+        await expect(historyTab).toBeFocused();
+        await page.keyboard.press('Enter');
         await expect(page.locator('[data-mobile-pane="history"]')).toBeVisible();
         await expect(page.locator('[data-mobile-pane="prepare"]')).toBeHidden();
-        await hrNavigation.getByRole('button', { name: labels.employees, exact: true }).click();
+        await page.keyboard.press('Shift+Tab');
+        await expect(prepareTab).toBeFocused();
+        await page.keyboard.press('Shift+Tab');
+        await expect(employeesTab).toBeFocused();
+        await page.keyboard.press('Enter');
         await expect(page.locator('[data-mobile-pane="employees"]')).toBeVisible();
-        await formToggle.click();
-        await expect(employeeForm, 'mobile employee form opens on demand').toBeVisible();
+        await page.keyboard.press('Tab');
+        await expect(formToggle).toBeFocused();
+        await page.keyboard.press('Enter');
+        await expect(employeeForm, 'mobile employee form opens on demand with keyboard').toBeVisible();
         await expect(formToggle).toHaveAttribute('aria-expanded', 'true');
-        await formToggle.click();
+        await page.keyboard.press('Enter');
         await expect(employeeForm).toBeHidden();
         await expect(formToggle).toHaveAttribute('aria-expanded', 'false');
       }
@@ -853,6 +876,9 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     expect(desktopMetrics.documentWidth).toBeLessThanOrEqual(901);
   };
 
+  // A 195×422 CSS viewport approximates the available layout area at 200% zoom
+  // on a 390×844 device; it is not a substitute for browser/device zoom testing.
+  await assertRouteSweep(195, 'ar', 422);
   await assertRouteSweep(390, 'ar');
   // Complete all Arabic RTL widths before using the More-menu language action.
   await assertRouteSweep(360, 'ar');
@@ -868,6 +894,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
   await page.keyboard.press('Escape');
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
+  await assertRouteSweep(195, 'en', 422);
   await assertRouteSweep(360, 'en');
   await assertRouteSweep(390, 'en');
   await assertRouteSweep(430, 'en');
