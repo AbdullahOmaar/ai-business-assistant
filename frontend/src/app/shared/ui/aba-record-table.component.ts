@@ -73,7 +73,7 @@ export class AbaRecordTableComponent {
   actionAriaLabel(row:AbaRecordTableRow,action:AbaRecordTableAction):string{
     const primaryColumn=this.columns().find(column=>column.primary);
     const recordLabel=primaryColumn?row.cells[primaryColumn.key]:row.id;
-    return recordLabel?\x60\x24{action.label}: \x24{recordLabel}\x60:action.label;
+    return recordLabel ? action.label + ': ' + recordLabel : action.label;
   }
   activateRowAction(rowId:string,actionId:string,event:MouseEvent):void{
     const anchor=event.currentTarget;
