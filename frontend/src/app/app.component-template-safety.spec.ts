@@ -1244,7 +1244,7 @@ test('chat composer announces empty and whitespace-only drafts without sending a
   const textarea = form.slice(form.indexOf('<textarea'), form.indexOf('</textarea>'));
   const sendButton = form.slice(form.indexOf('<button'), form.indexOf('</button>'));
   assert.ok(textarea.includes('[disabled]=\"chatSending\"'));
-  assert.ok(!textarea.includes('!chatDraft.trim()'));
+  assert.ok(!textarea.includes('[disabled]=\"chatSending || !chatDraft.trim()\"'));
   assert.ok(sendButton.includes('[disabled]=\"chatSending || !chatDraft.trim()\"'));
   assert.ok(source.includes('id="chat-message-error"'));
   assert.ok(source.includes('Enter your question before sending (up to 2000 characters).'));

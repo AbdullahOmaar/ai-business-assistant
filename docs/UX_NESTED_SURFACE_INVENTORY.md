@@ -681,3 +681,8 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - On exact PR head `0be013fa06086d58c6c6a265e3c2aaccb7b9ff5a`, run `43301999429` reported **468/469 frontend unit tests PASS**. The only failure was test 114, a stale broad negative assertion that searched the entire composer form and incorrectly rejected the intended disabled state on the Send button.
 - Re-scoped the assertion: the textarea is disabled only while sending; the Send button is disabled while sending or when the trimmed draft is empty. Empty/whitespace input remains editable, is blocked by required validation and the submit guard, and creates no request.
 - This is a test-only correction; no app source/runtime behavior changed. New exact-head CI required after this test commit. Build/dependency/backend-container/GitGuardian had passed on this candidate; backend accounting and browser smoke were still running at last read; authenticated API smoke skipped by workflow condition.
+
+## PR #395 final composer regression assertion correction — 2026-11-12
+
+- Exact run `43302487177` on `7b6aa465b6b9ebb93450ed5eeff3ef808c19ac5d` had one unit failure (test 114). The previous assertion rejected `!chatDraft.trim()` anywhere inside the textarea markup, but the expression legitimately appears in validation and ARIA bindings. Narrowed the negative assertion to the actual `[disabled]` binding only.
+- The contract is now explicit: textarea disabled only during sending; Send button disabled for sending or empty/whitespace drafts. This is test-only; runtime behavior is unchanged. Fresh exact-head CI required.
