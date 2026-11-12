@@ -24,16 +24,15 @@ test('phone layout renders labeled record cards with touch-sized row actions',()
   assert.match(css,/\.aba-record-table__action\{[^}]*min-height:44px/);
 });
 test('Customers uses its own directory while Products, Suppliers and Purchasing retain the shared record contract',()=>{
-  assert.match(app,/<aba-customer-directory[^>]*\\[customers\\]="filteredCustomers"/);
+  assert.match(app,/<aba-customer-directory[^>]*\[customers\]="filteredCustomers"/);
   assert.doesNotMatch(app,/customerTableRows|customerTableColumns/);
   for(const key of ['productTableRows','supplierTableRows','purchaseTableRows'])assert.ok(app.includes('[rows]="'+key+'"'));
-  assert.match(app,/business\\?\\.role==='owner'&&this\\.canReceivePurchaseOrder\\(order\\)/);
-  assert.match(app,/this\\.requestPurchaseOrderReceipt\\(order,action\\.anchor\\)/);
+  assert.match(app,/business\?\.role==='owner'&&this\\.canReceivePurchaseOrder\(order\)/);
+  assert.match(app,/this\.requestPurchaseOrderReceipt\\(order,action\\.anchor\\)/);
 });
 
 test('record table labels and loading states follow the selected app locale',()=>{
   for(const fragment of [
-    "[loadingDescription]=\"t('جارٍ تحميل العملاء…', 'Loading customers…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل المنتجات…', 'Loading products…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل الموردين…', 'Loading suppliers…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل أوامر الشراء…', 'Loading purchase orders…')\"",
