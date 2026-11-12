@@ -94,8 +94,8 @@ test('AI suggestions live outside the chat panel in a compact responsive prompt 
 });
 
 test('audit actions and record types have Arabic display labels', () => {
-  assert.match(source, /auditActionLabel\(event\.action\)/);
-  assert.match(source, /auditTargetLabel\(event\.target_type\)/);
+  assert.match(source, /this\.auditActionLabel\(item\.action\)/);
+  assert.match(source, /this\.auditTargetLabel\(item\.target_type\)/);
   assert.match(auditLabelsSource, /'invoice\.issued': \{ ar: 'إصدار فاتورة'/);
   assert.match(auditLabelsSource, /'invoice\.voided': \{ ar: 'إلغاء فاتورة'/);
   assert.match(source, /value="invoice\.draft_updated"/);
@@ -131,18 +131,16 @@ test('invoice amounts use consistent grouped decimal formatting in the list and 
   assert.match(invoiceEditorSource, /serverSummary\.total \| number:'1\.2-2'/);
 });
 
-test('responsive invoice list uses the accessible table fallback and compact responsive cards', () => {
-  assert.match(invoiceEditorSource, /\.field\{display:grid;gap:7px/);
-  assert.match(source, /\.workspace-bar\{grid-template-columns:minmax\(0,1fr\);padding:12px/);
-  assert.match(source, /class="invoice-table-wrap" role="region" tabindex="0" aria-labelledby="invoice-table-caption"/);
-  assert.match(source, /<caption id="invoice-table-caption">/);
-  assert.match(source, /class="invoice-table"/);
+test('invoice list uses compact responsive cards with readable financial and status hierarchy', () => {
   assert.match(source, /class="invoice-cards"/);
+  assert.match(source, /class="invoice-card"/);
   assert.match(source, /class="invoice-card-financials"/);
-  assert.match(source, /\.invoice-table-wrap\{display:none\}/);
+  assert.match(source, /class="invoice-payment-progress"/);
+  assert.match(source, /class="invoice-actions"/);
   assert.match(source, /\.invoice-cards\{display:grid;grid-template-columns:repeat\(auto-fit/);
   assert.match(source, /\.invoice-card-financials\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.ok(source.includes('[rows]="customerTableRows"'), 'Customer records use the shared semantic record table');
+  assert.match(source, /\.invoice-card \.invoice-actions button\{min-height:40px/);
+  assert.ok(source.includes('class="invoice-controls"'), 'invoice search and status filters remain grouped above the cards');
 });
 
 test('financial and integrity report basis labels are localized', () => {
@@ -946,7 +944,7 @@ test('owner-only notification and recurring creation controls stay hidden from s
   assert.ok(notificationStart >= 0 && notificationEnd > notificationStart);
   assert.match(notificationView, /@if \(business\?\.role === 'owner'\) \{\s*<form #notificationForm="ngForm"/);
   assert.match(notificationView, /Only workspace owners can queue notifications/);
-  assert.match(notificationView, /@for \(item of filteredNotifications/);
+  assert.match(notificationView, /<aba-record-table[^>]*\[rows\]="notificationTableRows"/);
 
   const recurringStart = source.indexOf("@if (tab === 'recurring')");
   const recurringEnd = source.indexOf("@if (tab === 'health'", recurringStart);
@@ -954,7 +952,7 @@ test('owner-only notification and recurring creation controls stay hidden from s
   assert.ok(recurringStart >= 0 && recurringEnd > recurringStart);
   assert.match(recurringView, /@if \(business\?\.role === 'owner'\) \{\s*<form #recurringForm="ngForm"/);
   assert.match(recurringView, /Only workspace owners can create recurring invoice schedules/);
-  assert.match(recurringView, /@for \(schedule of filteredRecurringSchedules/);
+  assert.match(recurringView, /<aba-record-table[^>]*\[rows\]="recurringTableRows"/);
 
   const notificationMethodStart = source.indexOf('async createNotification(): Promise<void>');
   const notificationMethodEnd = source.indexOf('private async loadSuppliers()', notificationMethodStart);
@@ -996,14 +994,14 @@ test('assistant source citations use bilingual labels and localized expense cate
 });
 
 test('expense categories are localized in the list and available to local search', () => {
-  assert.match(source, /expenseCategoryLabel\(expense\.category\)/);
+  assert.match(source, /category:this\.expenseCategoryLabel\(item\.category\)/);
   assert.match(source, /category => this\.expenseCategoryLabel\(category\)/);
   assert.match(source, /Transport: 'نقل ومواصلات'/);
   assert.match(source, /Transport: 'Transport'/);
 });
 
 test('payment methods are localized in the list and available to local search', () => {
-  assert.match(source, /paymentMethodLabel\(payment\.method\)/);
+  assert.match(source, /method:item\.method\?this\.paymentMethodLabel\(item\.method\)/);
   assert.match(source, /method => this\.paymentMethodLabel\(method\)/);
   assert.match(source, /bank_transfer: 'تحويل بنكي'/);
   assert.match(source, /bank_transfer: 'Bank transfer'/);
@@ -1461,15 +1459,15 @@ test('customer statement event types use bilingual labels while preserving unkno
 });
 
 
-test('horizontally scrollable workspace and platform tables are named keyboard-accessible regions', () => {
-  for (const [surface, componentSource] of [['workspace', source], ['platform admin', platformAdminSource]] as const) {
-    const wrappers = [...componentSource.matchAll(/<div class="table-wrap[^"]*"[^>]*>/g)].map(match => match[0]);
-    assert.ok(wrappers.length > 0, `${surface} must retain its table wrappers`);
-    for (const wrapper of wrappers) {
-      assert.match(wrapper, /role="region"/, `${surface} table wrapper must expose a region`);
-      assert.match(wrapper, /tabindex="0"/, `${surface} table wrapper must be keyboard focusable`);
-      assert.match(wrapper, /\[attr\.aria-label\]=/, `${surface} table wrapper must have a localized accessible name`);
-    }
+test('shared workspace record tables and Platform Admin tables are named keyboard-accessible regions', () => {
+  assert.match(recordTableSource, /class="aba-record-table__viewport" role="region" tabindex="0" \[attr\.aria-label\]="ariaLabel\(\)"/);
+  assert.match(recordTableSource, /<caption class="aba-record-table__visually-hidden">/);
+  const wrappers = [...platformAdminSource.matchAll(/<div class="table-wrap[^"]*"[^>]*>/g)].map(match => match[0]);
+  assert.ok(wrappers.length > 0, 'Platform Admin must retain its table wrappers');
+  for (const wrapper of wrappers) {
+    assert.match(wrapper, /role="region"/);
+    assert.match(wrapper, /tabindex="0"/);
+    assert.match(wrapper, /\[attr\.aria-label\]=/);
   }
 });
 
