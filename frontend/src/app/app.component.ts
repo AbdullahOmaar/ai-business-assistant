@@ -331,7 +331,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (operationsWarning && operationsMessageTab === 'notifications') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'notifications' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 <div class="list-tools operations-search aba-record-toolbar"><input name="notificationSearch" type="search" [attr.aria-label]="t('البحث في الإشعارات', 'Search notifications')" [placeholder]="t('ابحث بالعنوان أو المحتوى أو النوع أو الحالة…', 'Search by title, message, type or status…')" [(ngModel)]="notificationSearch"></div>
-                <aba-record-table [ariaLabel]="t('جدول الإشعارات','Notifications table')" [columns]="notificationTableColumns" [rows]="notificationTableRows" [loading]="notificationsLoading && !notifications.length" [emptyTitle]="t('قائمة الإشعارات فارغة','Notification queue is empty')" [emptyDescription]="notificationSearch.trim() ? t('لا توجد إشعارات مطابقة للبحث.','No notifications match this search.') : t('لا توجد إشعارات حتى الآن.','No notifications yet.')" />
+                <aba-record-table [ariaLabel]="t('جدول الإشعارات','Notifications table')" [columns]="notificationTableColumns" [rows]="notificationTableRows" [loading]="notificationsLoading && !notifications.length" [loadingDescription]="t('جارٍ تحميل الإشعارات…', 'Loading notifications…')" [emptyTitle]="t('قائمة الإشعارات فارغة','Notification queue is empty')" [emptyDescription]="notificationSearch.trim() ? t('لا توجد إشعارات مطابقة للبحث.','No notifications match this search.') : t('لا توجد إشعارات حتى الآن.','No notifications yet.')" />
               </section>
             }
 
@@ -425,7 +425,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (operationsWarning && operationsMessageTab === 'recurring') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'recurring' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
                 <div class="list-tools operations-search aba-record-toolbar"><input name="recurringSearch" type="search" [attr.aria-label]="t('البحث في الجداول الدورية', 'Search recurring schedules')" [placeholder]="t('ابحث بالعميل أو الفاصل أو المنطقة الزمنية أو الحالة…', 'Search by customer, interval, timezone or state…')" [(ngModel)]="recurringSearch"></div>
-                <aba-record-table [ariaLabel]="t('جدول الفواتير الدورية','Recurring schedules table')" [columns]="recurringTableColumns" [rows]="recurringTableRows" [loading]="recurringLoading && !recurringSchedules.length" [emptyTitle]="t('لا توجد جداول دورية','No recurring schedules')" [emptyDescription]="recurringSearch.trim() ? t('لا توجد جداول مطابقة للبحث.','No schedules match this search.') : t('لا توجد جداول بعد.','No schedules yet.')" />
+                <aba-record-table [ariaLabel]="t('جدول الفواتير الدورية','Recurring schedules table')" [columns]="recurringTableColumns" [rows]="recurringTableRows" [loading]="recurringLoading && !recurringSchedules.length" [loadingDescription]="t('جارٍ تحميل الجداول الدورية…', 'Loading recurring schedules…')" [emptyTitle]="t('لا توجد جداول دورية','No recurring schedules')" [emptyDescription]="recurringSearch.trim() ? t('لا توجد جداول مطابقة للبحث.','No schedules match this search.') : t('لا توجد جداول بعد.','No schedules yet.')" />
               </section>
             }
 
@@ -777,7 +777,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (paymentMessage) { <aba-state-message [kind]="paymentMessageKind" [description]="paymentMessage" /> }
                 <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
                 <div class="list-tools operations-search aba-record-toolbar"><input name="paymentSearch" type="search" [attr.aria-label]="t('البحث في المدفوعات', 'Search payments')" [placeholder]="t('ابحث بالعميل أو المرجع أو طريقة الدفع أو حالة التخصيص…', 'Search by customer, reference, method or allocation state…')" [(ngModel)]="paymentSearch"></div>
-                <aba-record-table [ariaLabel]="t('جدول المدفوعات','Payments table')" [columns]="paymentTableColumns" [rows]="paymentTableRows" [loading]="paymentLoading && !payments.length" [emptyTitle]="t('لا توجد مدفوعات','No payments yet')" [emptyDescription]="paymentSearch.trim() ? t('لا توجد دفعات مطابقة للبحث.','No payments match this search.') : t('لا توجد دفعات مسجلة حتى الآن.','No payments have been recorded yet.')" />
+                <aba-record-table [ariaLabel]="t('جدول المدفوعات','Payments table')" [columns]="paymentTableColumns" [rows]="paymentTableRows" [loading]="paymentLoading && !payments.length" [loadingDescription]="t('جارٍ تحميل المدفوعات…', 'Loading payments…')" [emptyTitle]="t('لا توجد مدفوعات','No payments yet')" [emptyDescription]="paymentSearch.trim() ? t('لا توجد دفعات مطابقة للبحث.','No payments match this search.') : t('لا توجد دفعات مسجلة حتى الآن.','No payments have been recorded yet.')" />
                 @if (paymentsHasMore) { <button class="secondary" type="button" (click)="loadMorePayments()" [disabled]="paymentsLoadingMore">{{ paymentsLoadingMore ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل دفعات إضافية', 'Load more payments') }}</button> }
               </section>
             }
@@ -847,7 +847,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <button class="secondary" type="button" (click)="auditAction=''; auditTargetType=''; loadAuditEvents(0)" [disabled]="auditLoading">{{ t('مسح الفلاتر', 'Clear filters') }}</button>
                 </form>
                 @if (auditError) { <aba-state-message kind="error" [description]="auditError" /> }
-                <aba-record-table [ariaLabel]="t('جدول سجل العمليات','Activity log table')" [columns]="auditTableColumns" [rows]="auditTableRows" [loading]="auditLoading && !auditEvents.length" [emptyTitle]="t('لا توجد أحداث','No activity yet')" [emptyDescription]="t('لا توجد أحداث مطابقة للفلاتر.','No events match these filters.')" />
+                <aba-record-table [ariaLabel]="t('جدول سجل العمليات','Activity log table')" [columns]="auditTableColumns" [rows]="auditTableRows" [loading]="auditLoading && !auditEvents.length" [loadingDescription]="t('جارٍ تحميل سجل النشاط…', 'Loading activity log…')" [emptyTitle]="t('لا توجد أحداث','No activity yet')" [emptyDescription]="t('لا توجد أحداث مطابقة للفلاتر.','No events match these filters.')" />
                 <div class="inline-form"><span class="muted">{{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} / {{ auditTotal }}</span><button class="secondary" type="button" (click)="loadAuditEvents((auditOffset > 50 ? auditOffset - 50 : 0))" [disabled]="auditLoading || auditOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadAuditEvents(auditOffset + 50)" [disabled]="auditLoading || auditOffset + auditEvents.length >= auditTotal">{{ t('التالي', 'Next') }}</button></div>
               </section>
             }
@@ -909,7 +909,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <aba-state-message kind="error" [description]="t('تعذر تأكيد نتيجة الحفظ. لا تعِد الإرسال قبل تحديث القائمة ومراجعتها.', 'The save result is uncertain. Refresh and review the list before trying again.')" [actionLabel]="t('فحص قائمة المصروفات', 'Check expense list')" [actionDisabled]="loading" (action)="checkExpenseSubmissionOutcome()" />
                 }
                 <div class="list-tools operations-search aba-record-toolbar"><input name="expenseSearch" type="search" [attr.aria-label]="t('البحث في المصروفات', 'Search expenses')" [placeholder]="t('ابحث بالتصنيف أو الوصف أو المورد أو المرجع…', 'Search by category, description, vendor or reference…')" [(ngModel)]="expenseSearch"></div>
-                <aba-record-table [ariaLabel]="t('جدول المصروفات','Expenses table')" [columns]="expenseTableColumns" [rows]="expenseTableRows" [loading]="loading && !expenses.length" [emptyTitle]="t('لا توجد مصروفات','No expenses yet')" [emptyDescription]="expenseSearch.trim() ? t('لا توجد مصروفات مطابقة للبحث.','No expenses match this search.') : t('لم يتم تسجيل مصروفات بعد.','No expenses recorded yet.')" />
+                <aba-record-table [ariaLabel]="t('جدول المصروفات','Expenses table')" [columns]="expenseTableColumns" [rows]="expenseTableRows" [loading]="loading && !expenses.length" [loadingDescription]="t('جارٍ تحميل المصروفات…', 'Loading expenses…')" [emptyTitle]="t('لا توجد مصروفات','No expenses yet')" [emptyDescription]="expenseSearch.trim() ? t('لا توجد مصروفات مطابقة للبحث.','No expenses match this search.') : t('لم يتم تسجيل مصروفات بعد.','No expenses recorded yet.')" />
               </section>
             }
 
@@ -1845,7 +1845,7 @@ export class AppComponent implements OnInit, OnDestroy {
       invoice:row.invoice_number,issue:this.t('اختلاف العميل','Customer mismatch'),
       amount:`${row.allocated_amount} ${row.invoice_currency}`,paymentCurrency:row.payment_currency,
       invoiceCurrency:row.invoice_currency,
-      customers:`${row.payment_customer_id||'—'} / ${row.invoice_customer_id||'—'}`,
+      customers:`${this.t('عميل الدفعة:','Payment customer:')} ${row.payment_customer_id||'—'} · ${this.t('عميل الفاتورة:','Invoice customer:')} ${row.invoice_customer_id||'—'}`,
       reference:row.payment_reference||row.payment_id,
     }}));
     return [...currency,...customer];
