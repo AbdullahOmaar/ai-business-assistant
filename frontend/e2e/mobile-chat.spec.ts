@@ -773,6 +773,12 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         await expect(employeesTab).toBeFocused();
         await page.keyboard.press('Enter');
         await expect(page.locator('[data-mobile-pane="employees"]')).toBeVisible();
+        // Continue through the remaining two section controls in DOM order
+        // before reaching the employee form disclosure.
+        await page.keyboard.press('Tab');
+        await expect(prepareTab).toBeFocused();
+        await page.keyboard.press('Tab');
+        await expect(historyTab).toBeFocused();
         await page.keyboard.press('Tab');
         await expect(formToggle).toBeFocused();
         await page.keyboard.press('Enter');
