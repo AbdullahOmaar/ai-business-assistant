@@ -38,6 +38,11 @@ export const FEATURE_CATALOG = [
         detailEn: 'At 761–900px widths, the sidebar becomes a compact icon rail to leave more room for content. Module names appear on hover and remain available to screen readers; scroll within the rail to reach the remaining sections.',
       },
       {
+        titleAr: 'شاشات التشغيل الأساسية', titleEn: 'Core operational record screens',
+        detailAr: 'تم توحيد عرض المدفوعات والمصروفات والجداول الدورية والإشعارات وسجل العمليات باستخدام مكوّن الجداول المشترك؛ مع حقول واضحة على الموبايل والبحث وحالات التحميل والفراغ.',
+        detailEn: 'Payments, expenses, recurring schedules, notifications, and activity log now share the record-table component, with labeled mobile fields, search, loading, and empty states.',
+      },
+      {
         titleAr: 'جداول موحدة وإجراءات السجل', titleEn: 'Consistent record tables and actions',
         detailAr: 'تعرض شاشات العملاء والمنتجات والموردين والمشتريات جداول موحدة على الشاشات الكبيرة وصفوفًا منظمة على الموبايل، مع بحث وحالات فارغة وإجراءات مرتبطة بالسجل. نماذج الإضافة واستيراد CSV قابلة للفتح عند الحاجة.',
         detailEn: 'Customers, products, suppliers, and purchasing use consistent desktop tables and structured mobile record cards, with search, empty states, and row-specific actions. Create forms and CSV imports open only when needed.',

@@ -3787,3 +3787,12 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Preserved contracts and side effects: no new product category/warehouse/valuation/COGS/AP fields, routes, APIs, schema, migrations, authorization changes or financial semantics. Purchase receiving remains Owner-only and uses the existing confirmation path for eligible approved/partially received orders.
 - Changes remain on the existing November Phase 1 branch. No PR, merge or deployment. Exact-head consolidated GitHub Actions validation follows this coherent batch.
 - Physical Android / installed-PWA, real screen-reader and live OWNER/STAFF/two-tenant acceptance remain separate gates.
+
+
+## 2026-11-12 — Core operations screen consistency batch
+
+- Extended the shared record-table presentation to Payments, Expenses, Recurring Invoice Schedules, Notifications, and the workspace Activity Log.
+- Each screen now exposes a consistent labeled record model, desktop table/mobile cards, semantic headers, loading/empty states and retains its existing search, pagination, and create workflow.
+- No payment allocation, expense posting, recurring execution, notification delivery, audit, or financial business logic was added or changed. Notification UI continues to disclose that actual delivery requires a configured provider and deployed worker.
+- Existing November Phase 1 branch only; no PR, merge, deployment, schema or database changes.
+- Exact-head consolidated validation and full rendered route audit remain pending.
