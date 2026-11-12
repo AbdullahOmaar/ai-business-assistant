@@ -1,12 +1,23 @@
+## Owner decision — November execution model — 2026-11-12
+
+- **Product objective:** prioritize real product capability and end-to-end workflows; do not optimize for cosmetic changes or isolated small fixes.
+- **One active November branch:** `master/nov-2026-phase-1-ux-foundation`. Continue sequentially on this branch across November phases; no new phase/task/commit branches. `docs/contributing-ci-single-source` is frozen. Existing branches/commits are preserved.
+- **PR policy:** no PR for minor/cosmetic, docs-only, refactor-only, trivial fix or test-only changes. Open a PR only after a substantial coherent product outcome is complete with acceptance evidence.
+- **Testing policy:** defer routine unit/browser/build/CI validation until a major outcome is assembled, then validate once on the exact candidate SHA. Run only the smallest focused check early for directly evidenced critical security/authorization/tenant/data-integrity/production-safety risks. Never bypass exact-head checks required by repository protection.
+- **PR closeout:** PR #388 (docs branch) and #389 (November product branch) were closed without merge; both branches and their commits remain preserved. #389's Arabic typography refinement is retained on the single active product branch and is not a standalone release.
+- **No merge/deployment/production DB write/migration authorization is implied.**
+
+---
+
 ## November Phase 1 — Arabic mobile heading typography — 2026-11-12
 
 - **Branch:** `master/nov-2026-phase-1-ux-foundation` (same Phase 1 branch name restored from merged main; no parallel Phase 1 branch).
 - **Base:** `main@0d28a6680a76800cdec90247cfa735ea87d3c2a9`.
-- **PR:** [#389](https://github.com/AbdullahOmaar/ai-business-assistant/pull/389) — OPEN / DRAFT / UNMERGED; exact-head checks pending.
+- **PR disposition:** [#389](https://github.com/AbdullahOmaar/ai-business-assistant/pull/389) — CLOSED / UNMERGED on 2026-11-12 under the Owner's no-small-PR policy. The branch and all commits are preserved; this incremental typography refinement is retained for bundling with a future substantial product outcome.
 - **Change:** the shared mobile page title previously applied negative Latin-style letter spacing in both locales. Arabic RTL now explicitly uses natural letter spacing for semantic h1/h2/h3 headings and eyebrow/navigation captions across the workspace, including nested Platform Admin. English/LTR tracking, title sizing and existing narrow-phone layout are unchanged.
 - **Regression:** added focused source assertions for the RTL mobile-header rule and shared design-system heading overrides.
 - **Files:** `frontend/src/app/shared/ui/aba-mobile-app-header.component.css`, `frontend/src/design-system.css`, `frontend/src/app/mobile-app-header.spec.ts`, `frontend/src/app/design-tokens.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`.
-- **Validation checkpoint:** run [43125325728](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43125325728) on `2786af1c28f9b3fb967a9197397e540713092914` exposed one over-escaped test regex (419/420 unit tests passed); the matcher was corrected. Run [43125561663](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43125561663) on `bb0a7ceec8d090122e46d8349ea399ac8e3b19bc` then passed: frontend unit tests 420/420, browser smoke 21/21, production build, dependency audit, backend accounting, backend container and aggregate `all-checks-passed` all SUCCESS; authenticated API smoke SKIPPED by workflow condition. This task-ledger commit advances the candidate; exact-head Actions must pass again before review/merge.
+- **Validation checkpoint:** run [43125325728](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43125325728) on `2786af1c28f9b3fb967a9197397e540713092914` exposed one over-escaped test regex (419/420 unit tests passed); the matcher was corrected. Run [43125561663](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43125561663) on `bb0a7ceec8d090122e46d8349ea399ac8e3b19bc` then passed: frontend unit tests 420/420, browser smoke 21/21, production build, dependency audit, backend accounting, backend container and aggregate `all-checks-passed` all SUCCESS; authenticated API smoke SKIPPED by workflow condition. The Owner closed PR #389 without merge on 2026-11-12. Do not rerun the suite for this standalone minor change; preserve the validated historical result above, retain the branch, and bundle the change into the next substantial product outcome.
 - **Scope:** presentation CSS, regression assertion and UX evidence only. No API/backend/auth/tenant, database/schema/migration, financial, inventory/payroll semantics, production data, merge or deployment changes.
 - **Phase 1 remains PARTIALLY COMPLETE:** full rendered 19-destination RTL/LTR acceptance, physical Android/PWA, keyboard/screen-reader, high-contrast/200% zoom and authenticated second-tenant acceptance remain separate NOT RUN/BLOCKED items.
 
