@@ -229,6 +229,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
       .employee-form-toggle{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;min-height:48px;padding:10px 12px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:10px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font-size:13px;font-weight:800;text-align:start}
       .employee-form-toggle span:last-child{display:grid;flex:0 0 26px;width:26px;height:26px;place-items:center;border-radius:8px;background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59);font-size:19px}
       .employee-form{display:none;margin:12px 0 2px}
+      .employee-panel .employee-form-shell:not(.is-open) .employee-form{display:none}
       .employee-form-shell.is-open .employee-form{display:grid}
       .employee-panel[data-mobile-section="employees"] [data-mobile-pane="prepare"],
       .employee-panel[data-mobile-section="employees"] [data-mobile-pane="history"],

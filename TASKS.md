@@ -3775,3 +3775,5 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Validation for this follow-up:** catalogue text only; no new release version or API/DB/financial behavior. This follow-up commit is not yet CI-validated. It remains on the same November branch and will be bundled with the next coherent product outcome rather than opening a documentation-only PR.
 - **Acceptance:** Phase 1 merge delivery is complete, but overall Phase 1 product acceptance remains PARTIALLY COMPLETE while full rendered 19-destination audit, screen-reader/keyboard, high-contrast/200% zoom, physical Android installed-PWA install/update/offline, direct authenticated cross-tenant API denial and STAFF live provisioning remain BLOCKED / NOT RUN.
 - **Deployment:** no Vercel deployment was requested or performed. Merge does not imply production release.
+
+- Browser-smoke follow-up: strengthen the mobile collapsed-form selector against the global form display rule; rendered E2E verifies collapsed/open/collapsed state. Exact-head CI pending.

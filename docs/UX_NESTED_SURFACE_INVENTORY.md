@@ -519,3 +519,5 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - The employee directory and payroll employee selector continue to omit base salary values. The Employees & Payroll destination remains owner-only.
 - Added structural HR UI regressions and rendered Playwright checks for mobile navigation, pane switching, disclosure state, and RTL/LTR route rendering at the existing phone viewport matrix.
 - Implementation status at this checkpoint: authored on the continuing November branch; final exact-SHA GitHub Actions validation and full rendered/manual acceptance remain pending. This does not close physical Android/PWA, screen reader, keyboard, high-contrast/200% zoom, or authenticated STAFF/second-tenant acceptance.
+
+- Browser-smoke finding and correction: a global form layout rule had equal specificity and loaded after the component style, keeping the employee form visible. The mobile collapsed-state selector now uses a more specific selector; the rendered route sweep explicitly asserts hidden/open/hidden states. Exact-head rerun is pending.

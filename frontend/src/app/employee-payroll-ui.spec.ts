@@ -61,6 +61,7 @@ test('mobile HR is a task-based workspace while desktop retains the full workflo
     '@media(max-width:760px)',
     '.employee-panel[data-mobile-section="employees"]',
     'grid-template-columns:repeat(2,minmax(0,1fr))',
+    '.employee-panel .employee-form-shell:not(.is-open) .employee-form{display:none}',
     '.employee-form{display:none;',
     '.mobile-hr-nav{display:grid',
   ]) assert.ok(component.includes(fragment), `missing mobile HR contract: ${fragment}`);
