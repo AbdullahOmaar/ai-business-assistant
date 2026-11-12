@@ -1303,7 +1303,7 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
 
   const staffInvoiceCard = page.locator('.invoice-card').filter({ hasText: 'STAFF-DRAFT-001' });
   await expect(staffInvoiceCard).toBeVisible();
-  await expect(staffInvoiceCard.getByText('Draft')).toBeVisible();
+  await expect(staffInvoiceCard.locator('.invoice-status-badge.status-draft')).toBeVisible();
   await expect(staffInvoiceCard.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
   await expect(staffInvoiceCard.getByRole('button', { name: 'Issue', exact: true })).toHaveCount(0);
   await expect(staffInvoiceCard.getByRole('button', { name: 'Void', exact: true })).toHaveCount(0);
