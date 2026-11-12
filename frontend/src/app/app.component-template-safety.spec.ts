@@ -8,6 +8,7 @@ const invoiceDraftSource = readFileSync(new URL('./invoice-draft.ts', import.met
 const releaseGuideSource = readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8');
 const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const stateMessageSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
+const recordTableSource = readFileSync(new URL('./shared/ui/aba-record-table.component.ts', import.meta.url), 'utf8');
 const quickAccessSource = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
 const workspaceLoadGuardSource = readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8');
 const auditLabelsSource = readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8');
@@ -141,7 +142,7 @@ test('responsive invoice list uses the accessible table fallback and compact res
   assert.match(source, /\.invoice-table-wrap\{display:none\}/);
   assert.match(source, /\.invoice-cards\{display:grid;grid-template-columns:repeat\(auto-fit/);
   assert.match(source, /\.invoice-card-financials\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
-  assert.match(source, /class="list-row customer-list-row"/);
+  assert.ok(source.includes('[rows]="customerTableRows"'), 'Customer records use the shared semantic record table');
 });
 
 test('financial and integrity report basis labels are localized', () => {
@@ -271,12 +272,12 @@ test('mobile More navigation renders grouped destinations from the shared catalo
 
 test('workspace empty states use the shared accessible state component', () => {
   assert.doesNotMatch(source, /<p class="empty">/);
-  assert.ok((source.match(/<aba-state-message kind="empty"/g) || []).length >= 13);
+  assert.match(recordTableSource, /<aba-state-message kind="empty"/, "shared record tables provide an accessible empty state");
   assert.ok((source.match(/<aba-state-message kind="error"/g) || []).length >= 17);
   assert.doesNotMatch(source, /<p class="error" role="alert">/);
   assert.doesNotMatch(source, /class="error-banner"/);
   assert.doesNotMatch(source, /class="error" role="alert"/);
-  assert.ok((source.match(/<aba-state-message kind="loading"/g) || []).length >= 9);
+  assert.match(recordTableSource, /<aba-state-message kind="loading"/, "shared record tables provide an accessible loading state");
   assert.ok((source.match(/<aba-state-message kind="success"/g) || []).length >= 4);
   assert.ok(source.includes('<aba-state-message [kind]'));
   assert.doesNotMatch(source, /<p class="muted" role="status">/);
@@ -964,8 +965,8 @@ test('owner-only notification and recurring creation controls stay hidden from s
 });
 
 test('CSV import preview and write controls are owner-only without restricting member record creation', () => {
-  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <section abaCard class="csv-import-panel" \[attr\.aria-label\]="t\('استيراد العملاء من CSV', 'CSV customer import'\)"/);
-  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <section abaCard class="csv-import-panel" \[attr\.aria-label\]="t\('استيراد المنتجات من CSV', 'CSV product import'\)"/);
+  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <details class="aba-record-secondary">[\s\S]*?<section abaCard class="csv-import-panel" \[attr\.aria-label\]="t\('استيراد العملاء من CSV', 'CSV customer import'\)"/);
+  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <details class="aba-record-secondary">[\s\S]*?<section abaCard class="csv-import-panel" \[attr\.aria-label\]="t\('استيراد المنتجات من CSV', 'CSV product import'\)"/);
   assert.match(source, /CSV imports are available to workspace owners only/);
   const methods = [
     ['async onImportFileSelected(event: Event)', 'async previewProductImport()'],
@@ -1036,8 +1037,15 @@ test('purchase orders remain creatable by members while receiving and payment wr
   const purchaseEnd = source.indexOf("@if (tab === 'recurring')", purchaseStart);
   const purchaseView = source.slice(purchaseStart, purchaseEnd);
   assert.match(purchaseView, /<form #purchaseForm="ngForm" class="stack" \(ngSubmit\)="purchaseForm\.valid && createPurchaseOrder\(\)">/);
-  assert.match(purchaseView, /business\?\.role === 'owner' && canReceivePurchaseOrder\(order\)/);
-  assert.match(purchaseView, /requestPurchaseOrderReceipt\(order, \$event\)/);
+  assert.match(purchaseView, /<aba-record-table[^>]*\[rows\]="purchaseTableRows"[^>]*\(rowAction\)="onPurchaseRecordAction\(\$event\)"/);
+  assert.match(source, /actions:this\.business\?\.role==='owner'&&this\.canReceivePurchaseOrder\(order\)\?\[\{id:'receive'/);
+  const actionStart = source.indexOf('onPurchaseRecordAction(action:AbaRecordTableActionEvent):void {');
+  const actionEnd = source.indexOf('\n  }', actionStart);
+  const purchaseAction = source.slice(actionStart, actionEnd);
+  assert.ok(actionStart >= 0 && actionEnd > actionStart, 'purchase row action handler must exist');
+  assert.match(purchaseAction, /this\.business\?\.role!=='owner'/);
+  assert.match(purchaseAction, /!this\.canReceivePurchaseOrder\(order\)/);
+  assert.match(purchaseAction, /this\.requestPurchaseOrderReceipt\(order,action\.anchor\)/);
 
   const receiveStart = source.indexOf('async confirmPurchaseOrderReceipt(): Promise<void>');
   const receiveEnd = source.indexOf('async createRecurringSchedule()', receiveStart);

@@ -1396,6 +1396,7 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   await moreTrigger.click();
   await menu.getByRole('button', { name: /Products & inventory/ }).click();
   await page.getByRole('heading', { name: /Products & inventory/ }).waitFor({ state: 'visible' });
+  await page.locator('details.aba-record-create > summary').click();
   await page.getByRole('checkbox', { name: /Track stock/ }).check();
   await expect(page.getByText(/Only workspace owners can set a positive opening stock quantity/)).toBeVisible();
   await expect(page.locator('input[name="productOpeningQuantity"]')).toHaveCount(0);
