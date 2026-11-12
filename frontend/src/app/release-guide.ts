@@ -414,8 +414,8 @@ export const FEATURE_CATALOG = [
       {
         titleAr: 'نسخ الردود ومتابعتها',
         titleEn: 'Copy and follow responses',
-        detailAr: 'انسخ رد المساعد بضغطة واحدة، ويتابع سجل المحادثة أحدث رسالة تلقائيًا مع احترام إعداد تقليل الحركة.',
-        detailEn: 'Copy an assistant response in one action; the conversation log follows the latest message and respects reduced-motion preferences.',
+        detailAr: 'انسخ رد المساعد بضغطة واحدة مع بديل للمتصفحات التي لا تدعم الحافظة، ويظل موضع قراءتك ثابتًا عند استعراض الرسائل القديمة.',
+        detailEn: 'Copy assistant responses with a fallback for browsers without Clipboard API support; preserve your reading position when reviewing older messages.',
       },
       {
         titleAr: 'كتابة السؤال بسرعة',
