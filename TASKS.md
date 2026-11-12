@@ -4041,3 +4041,5 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Updated the T18 nested-surface inventory and bilingual in-app guide.
 - **Validation intentionally deferred:** no tests, build, browser smoke, audits or CI were run per Owner direction. Clipboard fallback, screen-reader feedback, scrolling and mobile keyboard interaction remain unverified.
 - **Delivery:** same November branch; no PR, merge or deployment. No API, backend, DB or business-record changes.
+
+- Mobile first-run hierarchy: starter prompts now appear before the empty conversation panel; after the first turn the conversation remains primary and prompts move below it. New chat restores the first-run prompt position. This is an untested UX change pending consolidated mobile/browser validation.
