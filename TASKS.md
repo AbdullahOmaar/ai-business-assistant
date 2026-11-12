@@ -3804,3 +3804,12 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Converted read-only data-integrity findings into distinct tables for unlinked invoices and mismatched payment allocations, preserving separate currency-mismatch and customer-mismatch labels.
 - No financial formula, report source, tax rule, allocation, or data mutation changed.
 - No schema/API/database changes; no PR, merge, or deployment.
+
+
+## 2026-11-12 — Record-table maintainer review follow-up
+
+- Reviewed the combined 10-path November branch diff in staged scope after it crossed the 800 changed-line review-planning threshold.
+- Removed duplicate loading/empty announcements where the shared table already owns those states (Notifications, Suppliers, Purchasing, Recurring, Reports, Taxes, Activity Log).
+- Kept previously loaded rows visible during background refresh for Notifications, Recurring Schedules and Activity Log; first-load spinner remains owned by the table.
+- No domain behavior, permissions, API, schema, database, financial semantics or deployment changes.
+- Exact-head unit/build/browser/security validation remains NOT RUN for this candidate; the non-primary SemaphoreCI status is FAILURE and is not treated as approved GitHub Actions evidence.
