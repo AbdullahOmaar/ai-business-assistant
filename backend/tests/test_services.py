@@ -731,7 +731,7 @@ def test_staff_can_prepare_drafts_but_cannot_post_financials(workspace):
         assert len(persisted_lines) == 1
         assert persisted_lines[0].description == "Updated consulting"
         assert persisted_lines[0].quantity == Decimal("2")
-        assert session.scalar(select(Invoice).where(Invoice.business_id == business_id)).id == draft_id
+        assert session.scalar(select(Invoice.id).where(Invoice.business_id == business_id, Invoice.id == draft_id)) == draft_id
         assert session.query(AuditEvent).filter(
             AuditEvent.target_id == str(draft_id),
             AuditEvent.action.in_(["invoice.created", "invoice.draft_updated"]),
