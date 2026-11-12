@@ -39,3 +39,15 @@ test('record table labels and loading states follow the selected app locale',()=
     "{{ t('استيراد المنتجات من CSV', 'Import products from CSV') }}",
   ]) assert.ok(app.includes(fragment), 'missing localized record label: '+fragment);
 });
+
+
+test('record dates remain localized after moving legacy lists into tables', () => {
+  assert.match(app, /formatRecordDate\\(item\\.received_at\\)/);
+  assert.match(app, /formatRecordDate\\(item\\.incurred_at\\)/);
+  assert.match(app, /formatRecordDate\\(item\\.next_run_at\\)/);
+  assert.match(app, /formatRecordDate\\(item\\.scheduled_at\\)/);
+  assert.match(app, /formatRecordDate\\(item\\.created_at,'short'\\)/);
+  assert.match(app, /formatRecordDate\\(invoice\\.due_date,'date'\\)/);
+  assert.match(app, /map\\(\\(event,index\\)=>\\(\\{/);
+  assert.match(app, /event\\.invoice_id\\|\\|''\\}.*event\\.occurred_at/);
+});

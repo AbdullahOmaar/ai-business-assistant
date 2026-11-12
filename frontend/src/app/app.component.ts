@@ -1737,7 +1737,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ]; }
   get paymentTableRows(): readonly AbaRecordTableRow[] { return this.filteredPayments.map(item=>({id:item.id,cells:{
     customer:this.customerNameForInvoice(item.customer_id),amount:`${item.amount} ${item.currency_code}`,
-    received:item.received_at,method:item.method?this.paymentMethodLabel(item.method):this.t('غير محددة','Not specified'),
+    received:this.formatRecordDate(item.received_at),method:item.method?this.paymentMethodLabel(item.method):this.t('غير محددة','Not specified'),
     reference:item.reference||'—',allocation:item.allocations.length?this.t('مخصصة','Allocated'):` ${this.t('غير مخصصة','Unallocated')} `,
   }})); }
   get expenseTableColumns(): readonly AbaRecordTableColumn[] { return [
@@ -1749,7 +1749,7 @@ export class AppComponent implements OnInit, OnDestroy {
     {key:'amount',label:this.t('المبلغ','Amount'),kind:'numeric'},
   ]; }
   get expenseTableRows(): readonly AbaRecordTableRow[] { return this.filteredExpenses.map(item=>({id:item.id,cells:{
-    date:item.incurred_at,description:item.description,category:this.expenseCategoryLabel(item.category),
+    date:this.formatRecordDate(item.incurred_at),description:item.description,category:this.expenseCategoryLabel(item.category),
     vendor:item.vendor_name||this.t('بدون مورد','No vendor'),reference:item.reference||'—',amount:`${item.amount} ${item.currency_code}`,
   }})); }
   get recurringTableColumns(): readonly AbaRecordTableColumn[] { return [
@@ -1761,7 +1761,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ]; }
   get recurringTableRows(): readonly AbaRecordTableRow[] { return this.filteredRecurringSchedules.map(item=>({id:item.id,cells:{
     customer:item.customer_id?this.customerNameForInvoice(item.customer_id):this.t('غير محدد','Not assigned'),
-    interval:`${item.interval_days} ${this.t('يوم','days')}`,nextRun:item.next_run_at,timezone:item.timezone,
+    interval:`${item.interval_days} ${this.t('يوم','days')}`,nextRun:this.formatRecordDate(item.next_run_at),timezone:item.timezone,
     status:item.is_active?this.t('نشطة','Active'):this.t('متوقفة','Inactive'),
   }})); }
   get notificationTableColumns(): readonly AbaRecordTableColumn[] { return [
@@ -1774,7 +1774,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ]; }
   get notificationTableRows(): readonly AbaRecordTableRow[] { return this.filteredNotifications.map(item=>({id:item.id,cells:{
     title:item.title,kind:this.notificationKindLabel(item.kind),status:this.notificationStatusLabel(item.status),
-    scheduled:item.scheduled_at||this.t('غير مجدول','Unscheduled'),created:item.created_at||'—',body:item.body,
+    scheduled:item.scheduled_at?this.formatRecordDate(item.scheduled_at):this.t('غير مجدول','Unscheduled'),created:this.formatRecordDate(item.created_at,'short'),body:item.body,
   }})); }
   get auditTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'date',label:this.t('التاريخ','Date')},
@@ -1784,7 +1784,7 @@ export class AppComponent implements OnInit, OnDestroy {
     {key:'actor',label:this.t('المنفذ','Actor')},
   ]; }
   get auditTableRows(): readonly AbaRecordTableRow[] { return this.auditEvents.map(item=>({id:item.id,cells:{
-    date:item.created_at||'—',action:this.auditActionLabel(item.action),target:this.auditTargetLabel(item.target_type),
+    date:this.formatRecordDate(item.created_at,'short'),action:this.auditActionLabel(item.action),target:this.auditTargetLabel(item.target_type),
     recordId:item.target_id||'—',actor:item.actor_subject||'—',
   }})); }
 
@@ -1798,7 +1798,7 @@ export class AppComponent implements OnInit, OnDestroy {
   ]; }
   get agingTableRows(): readonly AbaRecordTableRow[] { return (this.agingReport?.invoices||[]).map(invoice=>({id:invoice.invoice_id,cells:{
     invoice:invoice.invoice_number,outstanding:`${invoice.outstanding_amount} ${invoice.currency_code}`,
-    bucket:this.agingBucketLabel(invoice.aging_bucket),dueDate:invoice.due_date||this.t('بدون تاريخ استحقاق','No due date'),
+    bucket:this.agingBucketLabel(invoice.aging_bucket),dueDate:invoice.due_date?this.formatRecordDate(invoice.due_date,'date'):this.t('بدون تاريخ استحقاق','No due date'),
     customer:invoice.customer_link_missing?this.t('غير مرتبط — مراجعة يدوية','Missing — manual review'):this.t('مرتبط','Linked'),
   }})); }
   get profitLossTableColumns(): readonly AbaRecordTableColumn[] { return [
@@ -1829,7 +1829,7 @@ export class AppComponent implements OnInit, OnDestroy {
     {key:'record',label:this.t('معرّف السجل','Record ID')},
   ]; }
   get integrityInvoiceRows(): readonly AbaRecordTableRow[] { return (this.dataIntegrityReport?.unlinked_issued_invoices.items||[]).map(row=>({id:row.invoice_id,cells:{
-    invoice:row.invoice_number,total:`${row.total} ${row.currency_code}`,date:row.created_at||'—',record:row.invoice_id,
+    invoice:row.invoice_number,total:`${row.total} ${row.currency_code}`,date:this.formatRecordDate(row.created_at,'short'),record:row.invoice_id,
   }})); }
   get integrityAllocationColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'invoice',label:this.t('الفاتورة','Invoice'),primary:true},
@@ -3411,6 +3411,20 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
 
+  formatRecordDate(value: string | null | undefined, style: 'short' | 'medium' | 'date' = 'medium'): string {
+    if (!value) return '—';
+    const dateOnly = style === 'date' && /^\\d{4}-\\d{2}-\\d{2}$/.test(value);
+    const parsed = new Date(dateOnly ? `${value}T12:00:00` : value);
+    if (!Number.isFinite(parsed.getTime())) return '—';
+    const locale = this.language === 'ar' ? 'ar-EG' : 'en-GB';
+    const options: Intl.DateTimeFormatOptions = style === 'date'
+      ? { dateStyle: 'medium' }
+      : style === 'short'
+        ? { dateStyle: 'short', timeStyle: 'short' }
+        : { dateStyle: 'medium', timeStyle: 'short' };
+    return new Intl.DateTimeFormat(locale, options).format(parsed);
+  }
+
   formatCustomerStatementDate(value: string | null | undefined): string {
     if (!value || !Number.isFinite(Date.parse(value))) return '—';
     return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en-GB', {
@@ -3426,8 +3440,8 @@ export class AppComponent implements OnInit, OnDestroy {
     {key:'credit',label:this.t('دائن','Credit'),kind:'numeric'},
     {key:'balance',label:this.t('الرصيد','Balance'),kind:'numeric'},
   ]; }
-  get customerStatementTableRows(): readonly AbaRecordTableRow[] { return (this.customerStatement?.items||[]).map(event=>({
-    id:event.source_id+event.event_type,
+  get customerStatementTableRows(): readonly AbaRecordTableRow[] { return (this.customerStatement?.items||[]).map((event,index)=>({
+    id:`${event.source_id}:${event.event_type}:${event.invoice_id||''}:${event.occurred_at}:${index}`,
     cells:{
       date:this.formatCustomerStatementDate(event.occurred_at),
       event:this.customerStatementEventLabel(event.event_type),reference:event.reference||event.source_id,

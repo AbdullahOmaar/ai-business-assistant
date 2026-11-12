@@ -3858,3 +3858,11 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 
 
 - **Locale review correction:** use native Intl.DateTimeFormat for customer-statement and payroll dates instead of Angular formatDate with an unregistered ar-EG locale; Arabic/English formatting no longer depends on missing Angular locale registration.
+
+
+## 2026-11-12 — Record-table review corrections
+
+- Preserved locale-aware dates previously supplied by Angular date pipes for payments, expenses, recurring schedules, notifications, audit history, receivables aging and integrity findings.
+- Made customer-statement row keys unique across repeated payment-allocation events using invoice identity, occurrence time and page index.
+- Presentation/key stability only; no date-range, amount, currency, allocation, balance, payroll or posting semantics changed.
+- Consolidated exact-head validation remains pending for the full cross-screen batch.
