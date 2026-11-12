@@ -4013,3 +4013,13 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Validation:** per Owner direction, automated tests, build, Playwright, dependency/security audit and GitHub Actions are intentionally deferred until the coherent November product batch closes. The new interactions are NOT YET TESTED; no pass is claimed.
 - **Delivery:** implementation is staged on the single Owner-selected November branch. No PR, merge or deployment is created or authorized by this checkpoint.
 - **Next:** continue the Master-owned assistant journey improvements on the same branch, then add/execute consolidated regression and cross-device acceptance once the batch is complete.
+
+
+## 2026-11-12 — AI assistant composer ergonomics follow-up
+
+- **Branch:** `master/nov-2026-phase-1-ux-foundation`; current prior branch head `97aa2b5ac99d9d2330dc0ac3d4c7c551a6f93f42`.
+- Enter submits a question; Shift+Enter adds a newline; IME composition is respected.
+- Send remains disabled for blank drafts and while sending. Added visible character count and keyboard hint, and strengthened mobile touch sizing for the composer.
+- Copy feedback is announced politely. No API, auth, tenant, DB, financial or external-side-effect behavior changed.
+- **Validation:** automated tests/build/browser/CI remain intentionally deferred per Owner direction. NOT YET TESTED.
+- **Delivery:** same November feature branch; no PR, merge or deploy.

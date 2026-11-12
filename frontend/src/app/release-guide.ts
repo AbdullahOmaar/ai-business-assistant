@@ -417,6 +417,12 @@ export const FEATURE_CATALOG = [
         detailAr: 'انسخ رد المساعد بضغطة واحدة، ويتابع سجل المحادثة أحدث رسالة تلقائيًا مع احترام إعداد تقليل الحركة.',
         detailEn: 'Copy an assistant response in one action; the conversation log follows the latest message and respects reduced-motion preferences.',
       },
+      {
+        titleAr: 'كتابة السؤال بسرعة',
+        titleEn: 'Faster question entry',
+        detailAr: 'اضغط Enter للإرسال وShift + Enter لإضافة سطر جديد، مع عدّاد أحرف واضح وحد أقصى 2000 حرف.',
+        detailEn: 'Press Enter to send and Shift + Enter for a new line, with a visible character counter and a 2,000-character limit.',
+      },
     ],
   },
   {
