@@ -3776,4 +3776,4 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Acceptance:** Phase 1 merge delivery is complete, but overall Phase 1 product acceptance remains PARTIALLY COMPLETE while full rendered 19-destination audit, screen-reader/keyboard, high-contrast/200% zoom, physical Android installed-PWA install/update/offline, direct authenticated cross-tenant API denial and STAFF live provisioning remain BLOCKED / NOT RUN.
 - **Deployment:** no Vercel deployment was requested or performed. Merge does not imply production release.
 
-- Browser-smoke follow-up: strengthen the mobile collapsed-form selector against the global form display rule; rendered E2E verifies collapsed/open/collapsed state. Exact-head CI pending.
+- Browser-smoke follow-up: the mobile collapsed-form selector is strengthened against the global form display rule. Exact-head run [43168710539](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43168710539) PASS on code SHA `0f0f6801deb969009c4e7ac39eec887888f19a9e`; the rendered E2E verifies collapsed/open/collapsed state, keyboard section navigation and the 195px RTL/LTR route sweep.
