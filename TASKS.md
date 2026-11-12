@@ -4031,3 +4031,13 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Conversation log announces additions only and exposes its busy state to assistive technology.
 - Scope remains the Master-owned AI assistant presentation only; no API/data/authorization behavior changed.
 - Tests/build/browser/CI remain deferred per Owner direction; NOT YET TESTED.
+
+
+## 2026-11-12 — Assistant conversation continuity follow-up
+
+- Hardened response copying: modern Clipboard API with an explicit user-initiated textarea/browser-command fallback; localized feedback remains the outcome signal.
+- Preserved reading continuity: assistant/user turns auto-follow only when the user was already near the latest message. Browsing older conversation history is not forcibly interrupted by late responses.
+- Retained reduced-motion-aware scrolling and all prior tenant/auth/read-only/source boundaries.
+- Updated the T18 nested-surface inventory and bilingual in-app guide.
+- **Validation intentionally deferred:** no tests, build, browser smoke, audits or CI were run per Owner direction. Clipboard fallback, screen-reader feedback, scrolling and mobile keyboard interaction remain unverified.
+- **Delivery:** same November branch; no PR, merge or deployment. No API, backend, DB or business-record changes.
