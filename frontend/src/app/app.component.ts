@@ -2565,6 +2565,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.chatDraft = '';
     this.chatError = '';
     this.chatConfigurationMissing = false;
+    this.chatCopyStatus = null;
     this.reportError = '';
     this.agingError = '';
     this.reportLoading = false;

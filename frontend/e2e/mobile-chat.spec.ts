@@ -947,6 +947,19 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   const chatLog = page.locator('.chat-log');
   await expect(chatLog).toHaveAttribute('role', 'log');
   await expect(chatLog).toHaveAttribute('aria-live', 'polite');
+  await expect(chatLog).toHaveAttribute('aria-relevant', 'additions');
+  await expect(chatLog).toHaveAttribute('aria-atomic', 'false');
+  await expect(chatLog).not.toHaveAttribute('aria-busy');
+  const assistantWorkspace = page.locator('.assistant-workspace');
+  await expect(assistantWorkspace).not.toHaveClass(/has-chat/);
+  const firstRunOrder = await page.evaluate(() => ({
+    suggestionsTop: document.querySelector('.assistant-suggestions')?.getBoundingClientRect().top ?? Infinity,
+    chatTop: document.querySelector('.chat-panel')?.getBoundingClientRect().top ?? -Infinity,
+  }));
+  expect(firstRunOrder.suggestionsTop).toBeLessThan(firstRunOrder.chatTop);
+  const newChatButton = page.getByRole('button', { name: /محادثة جديدة|New chat/ });
+  await expect(newChatButton).toBeDisabled();
+
   const composer = page.getByRole('textbox', { name: /سؤالك للمساعد الذكي|Your question for the AI assistant/ });
   const sendButton = page.getByRole('button', { name: /إرسال|Send/ });
   const longChatPrompt = Array.from({ length: 12 }, (_, index) =>
@@ -955,12 +968,14 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   expect(longChatPrompt.length).toBeLessThanOrEqual(2000);
   await composer.fill(longChatPrompt);
   await sendButton.click();
+  await expect(chatLog).toHaveAttribute('aria-busy', 'true');
 
   await expect(page.locator('.aba-state-message[role="status"]')).toContainText(/المساعد الذكي يجهّز الإجابة|The AI assistant is preparing an answer/);
   await expect(sendButton).toBeDisabled();
   expect(chatAttempts).toBe(1);
   const errorState = page.locator('.aba-state-message[role="alert"]');
   await expect(errorState).toContainText('Temporary assistant failure.');
+  await expect(chatLog).not.toHaveAttribute('aria-busy');
   await expect(composer).toHaveValue(longChatPrompt);
   await expect(page.locator('.chat-message')).toHaveCount(0);
   const retryButton = page.getByRole('button', { name: /إعادة المحاولة|Retry/ });
@@ -972,6 +987,39 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await expect(page.locator('.chat-message')).toHaveCount(2);
   await expect(assistantMessage.locator('p')).toContainText('ملخص النشاط للفترة المحددة');
   await expect(assistantMessage.locator('p')).toContainText('نهاية الملخص');
+
+  // Copy actions are user initiated. First exercise the modern Clipboard API path.
+  await page.evaluate(() => {
+    const testWindow = window as Window & { __abaCopiedText?: string };
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async (value: string) => { testWindow.__abaCopiedText = value; } },
+    });
+  });
+  const copyButton = assistantMessage.getByRole('button', { name: /نسخ رد المساعد|Copy assistant response/ });
+  await copyButton.click();
+  await expect(copyButton).toContainText(/تم النسخ|Copied/);
+  expect(await page.evaluate(() => (window as Window & { __abaCopiedText?: string }).__abaCopiedText))
+    .toBe(longAssistantAnswer);
+
+  // A rejected Clipboard API call must use the click-triggered fallback and clean its temporary input.
+  await page.evaluate(() => {
+    const testWindow = window as Window & { __abaExecCommandCalls?: number };
+    testWindow.__abaExecCommandCalls = 0;
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText: async () => { throw new Error('Clipboard permission denied'); } },
+    });
+    document.execCommand = ((command: string) => {
+      if (command === 'copy') testWindow.__abaExecCommandCalls = (testWindow.__abaExecCommandCalls ?? 0) + 1;
+      return command === 'copy';
+    }) as typeof document.execCommand;
+  });
+  await copyButton.click();
+  await expect(copyButton).toContainText(/تم النسخ|Copied/);
+  expect(await page.evaluate(() => (window as Window & { __abaExecCommandCalls?: number }).__abaExecCommandCalls))
+    .toBe(1);
+  await expect(page.locator('textarea[aria-hidden="true"]')).toHaveCount(0);
   const chatLogLayout = await page.locator('.chat-log').evaluate(element => ({
     scrollHeight: element.scrollHeight,
     clientHeight: element.clientHeight,
@@ -982,12 +1030,49 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   expect(chatLogLayout.scrollWidth).toBeLessThanOrEqual(chatLogLayout.clientWidth);
   await page.locator('.chat-log').evaluate(element => { element.scrollTop = element.scrollHeight; });
   await expect(assistantMessage.locator('p')).toContainText('نهاية الملخص');
+  // Do not jump to a late answer when the user is reading older conversation content.
+  await chatLog.evaluate(element => { element.scrollTop = 0; });
+  await composer.fill('اختبار الحفاظ على موضع القراءة');
+  await sendButton.click();
+  await expect(page.locator('.chat-message')).toHaveCount(4);
+  await expect.poll(() => chatLog.evaluate(element => element.scrollTop)).toBeLessThanOrEqual(1);
+  await expect(chatLog).not.toHaveAttribute('aria-busy');
   expect(paymentRequests).toEqual(['/api/v1/businesses/business-1/payments']);
-  expect(chatAttempts).toBe(2);
+  expect(chatAttempts).toBe(3);
   expect(chatRequests).toEqual([
     { businessId: 'business-1', message: longChatPrompt, authorization: 'Bearer ' + idToken },
     { businessId: 'business-1', message: longChatPrompt, authorization: 'Bearer ' + idToken },
+    { businessId: 'business-1', message: 'اختبار الحفاظ على موضع القراءة', authorization: 'Bearer ' + idToken },
   ]);
+
+  // New chat clears only the local transcript, draft and transient copy state.
+  await composer.fill('مسودة لن تُرسل');
+  await expect(newChatButton).toBeEnabled();
+  await newChatButton.click();
+  await expect(page.locator('.chat-message')).toHaveCount(0);
+  await expect(composer).toHaveValue('');
+  await expect(newChatButton).toBeDisabled();
+  await expect(assistantWorkspace).not.toHaveClass(/has-chat/);
+  const newChatOrder = await page.evaluate(() => ({
+    suggestionsTop: document.querySelector('.assistant-suggestions')?.getBoundingClientRect().top ?? Infinity,
+    chatTop: document.querySelector('.chat-panel')?.getBoundingClientRect().top ?? -Infinity,
+  }));
+  expect(newChatOrder.suggestionsTop).toBeLessThan(newChatOrder.chatTop);
+
+  // Shift+Enter inserts a newline. IME composition must not submit the form.
+  await composer.fill('سؤال جديد');
+  await composer.press('Shift+Enter');
+  await expect(composer).toHaveValue('سؤال جديد\n');
+  await composer.evaluate(element => {
+    element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true, isComposing: true }));
+  });
+  expect(chatAttempts).toBe(3);
+  await composer.press('Enter');
+  await expect(page.locator('.chat-message')).toHaveCount(2);
+  await expect.poll(() => chatAttempts).toBe(4);
+  expect(chatRequests[3]).toEqual({
+    businessId: 'business-1', message: 'سؤال جديد', authorization: 'Bearer ' + idToken,
+  });
 
   // Focusing the composer hides the fixed mobile dock. Simulate the Android
   // visual viewport inset separately because Playwright resizing changes both viewports.

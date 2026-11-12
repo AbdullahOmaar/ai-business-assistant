@@ -1499,3 +1499,73 @@ test('unapproved discount and tax rates remain read-only and saved values are pr
   assert.match(edit, /this\.invoiceTaxRate = this\.deriveRate\(detail\.tax_total, taxableBase\.toFixed\(2\)\)/);
   assert.match(edit, /this\.invoiceDraftNotes = detail\.notes \?\? ''/);
 });
+
+
+test('AI assistant new-chat control resets only in-memory conversation state', () => {
+  const start = source.indexOf('startNewChat(): void');
+  const end = source.indexOf('async copyAssistantMessage(', start);
+  const method = source.slice(start, end);
+  assert.match(method, /if \(this\.chatSending\) return/);
+  assert.match(method, /this\.chatMessages = \[\]/);
+  assert.match(method, /this\.chatDraft = ''/);
+  assert.match(method, /this\.chatError = ''/);
+  assert.match(method, /this\.chatConfigurationMissing = false/);
+  assert.match(method, /this\.chatCopyStatus = null/);
+  assert.doesNotMatch(method, /this\.api\.|this\.auth\.|localStorage|sessionStorage/);
+});
+
+test('AI assistant response copy is explicitly click initiated and always removes its fallback input', () => {
+  const copyStart = source.indexOf('async copyAssistantMessage(');
+  const copyEnd = source.indexOf('private isChatLogNearBottom()', copyStart);
+  const copy = source.slice(copyStart, copyEnd);
+  assert.match(copy, /navigator\.clipboard\?\.writeText\(content\)/);
+  assert.match(copy, /this\.copyTextWithSelectionFallback\(content\)/);
+  assert.match(copy, /this\.chatCopyStatus = \{ index, success: true \}/);
+  assert.match(copy, /this\.chatCopyStatus = \{ index, success: false \}/);
+  assert.match(copy, /finally \{\s*temporaryInput\.remove\(\)/);
+  assert.match(source, /\(click\)="copyAssistantMessage\(message\.content, messageIndex\)"/);
+  assert.doesNotMatch(copy, /fetch\(|this\.api\./);
+});
+
+test('AI assistant keyboard submission preserves multiline entry and IME composition', () => {
+  const start = source.indexOf('handleChatKeydown(event: KeyboardEvent): void');
+  const end = source.indexOf('startNewChat(): void', start);
+  const method = source.slice(start, end);
+  assert.match(method, /event\.key !== 'Enter'/);
+  assert.match(method, /event\.shiftKey/);
+  assert.match(method, /event\.isComposing/);
+  assert.match(method, /event\.preventDefault\(\)/);
+  assert.match(method, /if \(!this\.chatDraft\.trim\(\) \|\| this\.chatSending\) return/);
+  assert.match(source, /Shift \+ Enter for a new line/);
+  assert.match(source, /chatDraft\.length \} \/ 2000/);
+});
+
+test('AI assistant conversation log announces additions and exposes active request state', () => {
+  const log = source.match(/<div #chatLog class="chat-log"[^>]*>/)?.[0] ?? '';
+  assert.match(log, /role="log"/);
+  assert.match(log, /aria-live="polite"/);
+  assert.match(log, /aria-relevant="additions"/);
+  assert.match(log, /aria-atomic="false"/);
+  assert.match(log, /chatSending \? 'true' : null/);
+  assert.match(source, /\.assistant-workspace:not\(\.has-chat\) \.assistant-suggestions\{grid-row:1\}/);
+  assert.match(source, /\.assistant-workspace:not\(\.has-chat\) \.chat-panel\{grid-row:2\}/);
+});
+
+test('AI assistant resets transient copy feedback when workspace context changes', () => {
+  const start = source.indexOf('private clearWorkspaceData(): void');
+  const end = source.indexOf('async createWorkspace(): Promise<void>', start);
+  const clear = source.slice(start, end);
+  assert.match(clear, /this\.chatMessages = \[\]/);
+  assert.match(clear, /this\.chatCopyStatus = null/);
+  assert.match(clear, /this\.chatError = ''/);
+  assert.match(clear, /this\.chatConfigurationMissing = false/);
+});
+
+test('AI assistant auto-follow respects the reader position and reduced motion', () => {
+  const start = source.indexOf('private scrollChatToLatest(force = false): void');
+  const end = source.indexOf('private captureTenantRequest(', start);
+  const method = source.slice(start, end);
+  assert.match(method, /!force && !this\.isChatLogNearBottom\(\)/);
+  assert.match(method, /prefers-reduced-motion/);
+  assert.match(method, /behavior: reducedMotion \? 'auto' : 'smooth'/);
+});
