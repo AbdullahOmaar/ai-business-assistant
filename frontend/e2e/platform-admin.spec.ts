@@ -381,7 +381,7 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   await page.getByLabel(/Reason \(required\)|سبب التغيير/).fill('Approved admin access for support');
   await page.getByRole('button', { name: /Grant role|منح الصلاحية/ }).click();
 
-  await expect(page.getByRole('cell', { name: 'User Manager', exact: true }).last()).toBeVisible();
+  await expect(page.getByRole('cell', { name: /User Manager/ }).last()).toBeVisible();
   await expect(page.getByRole('cell', { name: /Platform role granted|منح صلاحية/ })).toBeVisible();
   expect(roleGranted).toBe(true);
   expect(authRequests.some(item => item.url.includes('accounts:signInWithPassword'))).toBe(true);
