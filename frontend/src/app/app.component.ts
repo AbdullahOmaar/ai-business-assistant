@@ -124,7 +124,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           <button #mobileMoreTrigger class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" [attr.aria-controls]="mobileMoreOpen ? 'mobile-more-menu' : null" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
           @if (mobileMoreOpen) {
             <nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
-              @for (group of mobileMoreGroups; track group.id) {
+              <label class="mobile-more-search">
+                <span class="sr-only">{{ t('البحث في الأقسام', 'Search sections') }}</span>
+                <input type="search" name="mobileMoreSearch" autocomplete="off" enterkeyhint="search"
+                  [attr.aria-label]="t('البحث في الأقسام', 'Search sections')"
+                  [placeholder]="t('ابحث عن قسم…', 'Search sections…')"
+                  [(ngModel)]="mobileMoreSearch" />
+              </label>
+              @if (filteredMobileMoreGroups.length) {
+                @for (group of filteredMobileMoreGroups; track group.id) {
                 <section class="mobile-more-group" [attr.aria-labelledby]="'mobile-more-' + group.id + '-heading'">
                   <h3 [id]="'mobile-more-' + group.id + '-heading'">{{ t(group.titleAr, group.titleEn) }}</h3>
                   @for (module of group.modules; track module.tab) {
@@ -134,6 +142,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     </button>
                   }
                 </section>
+                }
+              } @else {
+                <p class="mobile-more-empty" role="status">{{ t('لا توجد أقسام مطابقة للبحث.', 'No sections match your search.') }}</p>
               }
               <div class="mobile-more-actions">
                 <button class="nav-item mobile-menu-action" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? 'English' : 'العربية' }}</span></button>
@@ -1016,7 +1027,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       .mobile-version-row{display:flex;justify-content:flex-end;min-width:0;margin:0 0 8px}
       .mobile-version-row .version-pill{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:10px;padding:5px 8px}
 
-      .install-button{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border-color:var(--aba-color-primary-border,#99f6e4);color:#065f46;background:#ecfdf5;font-weight:800}.mobile-install-card{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;margin:0 0 12px;padding:10px 12px;border:1px solid var(--aba-color-primary-border,#99f6e4);border-radius:14px;background:linear-gradient(110deg,#f0fdfa,#f8fafc);box-shadow:0 2px 10px #0f766e0a}.mobile-install-copy{display:flex;align-items:center;gap:9px;min-width:0}.mobile-install-copy>div{display:grid;gap:2px;min-width:0}.mobile-install-copy strong{color:var(--aba-color-text-primary,#172033);font-size:12px;line-height:1.4}.mobile-install-copy small{color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.45}.mobile-install-icon{display:grid;flex:0 0 34px;width:34px;height:34px;place-items:center;border-radius:10px;background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59);font-size:18px;font-weight:900}.mobile-install-button{display:inline-flex;flex:0 0 auto;min-width:72px;min-height:44px;padding:9px 12px;border-radius:11px}.main,.shell.english .main{padding-top:calc(20px + env(safe-area-inset-top,0px))}.mobile-more{display:flex}.mobile-more-menu{display:grid;position:fixed;z-index:30;inset-inline-end:10px;bottom:calc(82px + env(safe-area-inset-bottom));width:min(270px,calc(100vw - 20px));max-height:min(70vh,560px);max-height:min(70dvh,560px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:8px;background:var(--aba-color-nav-surface-deep,#0f172a);border:1px solid var(--aba-color-nav-border,#334155);border-radius:var(--aba-radius-panel,16px);box-shadow:var(--aba-shadow-nav-menu,0 18px 50px #02061755);gap:8px}.mobile-more-group{display:grid;gap:4px}.mobile-more-group+.mobile-more-group{border-top:1px solid var(--aba-color-nav-border,#334155);padding-top:8px;margin-top:4px}.mobile-more-group h3{margin:2px 10px 4px;color:var(--aba-color-nav-muted,#94a3b8);font-size:10px;font-weight:800;line-height:1.5;letter-spacing:.04em;text-align:start}.mobile-more-menu .nav-item{flex-direction:row;justify-content:flex-start;min-height:48px;padding:9px 12px;font-size:13px}.mobile-more-menu .nav-item>span:not(.nav-icon){max-width:none}.mobile-more-menu .nav-item.active{border-inline-start:3px solid var(--aba-color-nav-accent,#5eead4);box-shadow:none}.mobile-more-actions{display:grid;gap:4px;border-top:1px solid var(--aba-color-nav-border,#334155);padding-top:8px;margin-top:4px}.mobile-more-menu .mobile-menu-action{border-radius:8px;margin-top:0}
+      .install-button{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border-color:var(--aba-color-primary-border,#99f6e4);color:#065f46;background:#ecfdf5;font-weight:800}.mobile-install-card{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;margin:0 0 12px;padding:10px 12px;border:1px solid var(--aba-color-primary-border,#99f6e4);border-radius:14px;background:linear-gradient(110deg,#f0fdfa,#f8fafc);box-shadow:0 2px 10px #0f766e0a}.mobile-install-copy{display:flex;align-items:center;gap:9px;min-width:0}.mobile-install-copy>div{display:grid;gap:2px;min-width:0}.mobile-install-copy strong{color:var(--aba-color-text-primary,#172033);font-size:12px;line-height:1.4}.mobile-install-copy small{color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.45}.mobile-install-icon{display:grid;flex:0 0 34px;width:34px;height:34px;place-items:center;border-radius:10px;background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59);font-size:18px;font-weight:900}.mobile-install-button{display:inline-flex;flex:0 0 auto;min-width:72px;min-height:44px;padding:9px 12px;border-radius:11px}.main,.shell.english .main{padding-top:calc(20px + env(safe-area-inset-top,0px))}.mobile-more{display:flex}.mobile-more-menu{display:grid;position:fixed;z-index:30;inset-inline-end:10px;bottom:calc(82px + env(safe-area-inset-bottom));width:min(270px,calc(100vw - 20px));max-height:min(70vh,560px);max-height:min(70dvh,560px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:8px;background:var(--aba-color-nav-surface-deep,#0f172a);border:1px solid var(--aba-color-nav-border,#334155);border-radius:var(--aba-radius-panel,16px);box-shadow:var(--aba-shadow-nav-menu,0 18px 50px #02061755);gap:8px}.mobile-more-search{position:sticky;top:0;z-index:1;display:block;padding:3px;background:var(--aba-color-nav-surface-deep,#0f172a)}.mobile-more-search input{box-sizing:border-box;width:100%;min-height:44px;border:1px solid var(--aba-color-nav-border,#334155);border-radius:10px;background:var(--aba-color-nav-surface-raised,#1e293b);color:var(--aba-color-text-inverse,#fff);font-size:14px}.mobile-more-search input::placeholder{color:var(--aba-color-nav-muted,#94a3b8)}.mobile-more-empty{margin:8px 10px;padding:12px;border:1px dashed var(--aba-color-nav-border,#334155);border-radius:10px;color:var(--aba-color-nav-muted,#94a3b8);font-size:12px;line-height:1.6}.mobile-more-group{display:grid;gap:4px}.mobile-more-group+.mobile-more-group{border-top:1px solid var(--aba-color-nav-border,#334155);padding-top:8px;margin-top:4px}.mobile-more-group h3{margin:2px 10px 4px;color:var(--aba-color-nav-muted,#94a3b8);font-size:10px;font-weight:800;line-height:1.5;letter-spacing:.04em;text-align:start}.mobile-more-menu .nav-item{flex-direction:row;justify-content:flex-start;min-height:48px;padding:9px 12px;font-size:13px}.mobile-more-menu .nav-item>span:not(.nav-icon){max-width:none}.mobile-more-menu .nav-item.active{border-inline-start:3px solid var(--aba-color-nav-accent,#5eead4);box-shadow:none}.mobile-more-actions{display:grid;gap:4px;border-top:1px solid var(--aba-color-nav-border,#334155);padding-top:8px;margin-top:4px}.mobile-more-menu .mobile-menu-action{border-radius:8px;margin-top:0}
       .global-loading{position:fixed;inset:0 0 auto;z-index:1000;height:3px;background:#ccfbf1;overflow:hidden}.global-loading>span:first-child{position:absolute;inset:0 auto 0 0;width:35%;background:var(--aba-color-primary,#0f766e);animation:loading-sweep 1.15s ease-in-out infinite}.loading-label{position:absolute;top:10px;right:12px;background:var(--aba-color-primary,#0f766e);color:var(--aba-color-text-inverse,#fff);padding:7px 12px;border-radius:999px;font-size:12px;box-shadow:0 4px 14px #0f172a22}@keyframes loading-sweep{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}@media(prefers-reduced-motion:reduce){.global-loading>span:first-child{animation:none;width:100%}}
     .sidebar{position:fixed;inset:auto 0 0;width:100%;min-height:0;height:auto;padding:8px 6px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:2px;overflow-x:auto;overflow-y:hidden;background:var(--aba-color-nav-surface-glass,rgba(15,23,42,.97));border-top:1px solid var(--aba-color-nav-border,#334155);box-shadow:var(--aba-shadow-nav-dock,0 -8px 28px #0f172a20);backdrop-filter:blur(16px);z-index:20}
       .brand,.brand>span:last-child,.nav-label,.workspace-release-meta,.sidebar-bottom{display:none}.sidebar>.mobile-extra,.sidebar>.platform-admin-nav{display:none}
@@ -1508,6 +1519,7 @@ export class AppComponent implements OnInit, OnDestroy {
   chatConfigurationMissing = false;
   keyboardOpen = false;
   mobileMoreOpen = false;
+  mobileMoreSearch = '';
   @ViewChild('mobileMoreTrigger') private mobileMoreTrigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('mobileMoreMenu') private mobileMoreMenu?: ElementRef<HTMLElement>;
   isInstalled = false;
@@ -1971,6 +1983,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   toggleMobileMore(): void {
+    if (this.mobileMoreOpen) this.mobileMoreSearch = '';
     this.mobileMoreOpen = !this.mobileMoreOpen;
   }
 
@@ -1978,11 +1991,13 @@ export class AppComponent implements OnInit, OnDestroy {
   closeMobileMoreOnEscape(): void {
     if (!this.mobileMoreOpen) return;
     this.mobileMoreOpen = false;
+    this.mobileMoreSearch = '';
     this.mobileMoreTrigger?.nativeElement.focus();
   }
 
   /** Restore keyboard focus to the More trigger after a secondary destination is selected. */
   selectMobileMoreTab(tab: Tab): void {
+    this.mobileMoreSearch = '';
     this.setTab(tab);
     this.mobileMoreTrigger?.nativeElement.focus();
   }
@@ -1995,6 +2010,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.mobileMoreTrigger?.nativeElement.contains(target)
       || this.mobileMoreMenu?.nativeElement.contains(target)) return;
     this.mobileMoreOpen = false;
+    this.mobileMoreSearch = '';
   }
 
   async installApp(): Promise<void> {
@@ -3355,6 +3371,21 @@ export class AppComponent implements OnInit, OnDestroy {
 
   isMobileMoreTab(tab: Tab): boolean {
     return isMobileMoreTabValue(tab);
+  }
+
+  /** Search only the already-authorized mobile destinations; this is navigation UX, not access control. */
+  get filteredMobileMoreGroups(): readonly (WorkspaceModuleGroup & { modules: readonly WorkspaceModuleCard[] })[] {
+    const query = this.mobileMoreSearch.trim().toLocaleLowerCase(this.language === 'ar' ? 'ar-EG' : 'en');
+    if (!query) return this.mobileMoreGroups;
+    return this.mobileMoreGroups.map(group => {
+      const locale = this.language === 'ar' ? 'ar-EG' : 'en';
+      const groupMatches = `${group.titleAr} ${group.titleEn}`.toLocaleLowerCase(locale).includes(query);
+      const modules = groupMatches ? group.modules : group.modules.filter(module =>
+        `${module.titleAr} ${module.titleEn} ${module.descriptionAr} ${module.descriptionEn}`
+          .toLocaleLowerCase(locale).includes(query),
+      );
+      return { ...group, modules };
+    }).filter(group => group.modules.length > 0);
   }
 
   setTab(tab: Tab): void {
