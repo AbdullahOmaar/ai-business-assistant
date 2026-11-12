@@ -77,3 +77,19 @@ export function selectHomeQuickAccessModules(
     return module ? [module] : [];
   });
 }
+
+/** Filters a pre-authorized module list by bilingual names and descriptions. */
+export function filterWorkspaceModules(
+  modules: readonly WorkspaceModuleCard[],
+  query: string,
+  locale: string,
+): readonly WorkspaceModuleCard[] {
+  const normalizedQuery = query.trim().normalize('NFKC').toLocaleLowerCase(locale);
+  if (!normalizedQuery) return modules;
+  return modules.filter(module =>
+    `${module.titleAr} ${module.titleEn} ${module.descriptionAr} ${module.descriptionEn}`
+      .normalize('NFKC')
+      .toLocaleLowerCase(locale)
+      .includes(normalizedQuery),
+  );
+}

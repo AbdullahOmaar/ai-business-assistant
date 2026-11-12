@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS } from './workspace-module-catalog.ts';
+import { filterWorkspaceModules, selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS } from './workspace-module-catalog.ts';
 import { canAccessWorkspaceTab, isMobileMoreTab } from './module-access.ts';
 
 const visibleModules = (role: string, platformAdminAvailable: boolean) =>
@@ -91,4 +91,17 @@ test('Home quick access preserves role filtering and does not mutate its input',
   assert.deepEqual(selected.map(module => module.tab), ['customers', 'expenses']);
   assert.deepEqual(accessible.map(module => module.tab), originalOrder);
   assert.ok(selected.every(module => accessible.includes(module)));
+});
+
+
+test('bilingual module search filters names and descriptions without expanding role access', () => {
+  const ownerModules = visibleModules('owner', false);
+  const staffModules = visibleModules('staff', false);
+
+  assert.deepEqual(filterWorkspaceModules(ownerModules, 'المنتجات', 'ar-EG').map(module => module.tab), ['products']);
+  assert.deepEqual(filterWorkspaceModules(ownerModules, 'inventory', 'en').map(module => module.tab), ['products']);
+  assert.deepEqual(filterWorkspaceModules(staffModules, 'tax summary', 'en'), []);
+  assert.deepEqual(filterWorkspaceModules(staffModules, 'employees', 'en'), []);
+  assert.deepEqual(filterWorkspaceModules(staffModules, 'customers', 'en').map(module => module.tab), ['customers']);
+  assert.equal(filterWorkspaceModules(staffModules, '   ', 'en'), staffModules);
 });

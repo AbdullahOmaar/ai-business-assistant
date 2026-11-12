@@ -32,6 +32,12 @@ export const FEATURE_CATALOG = [
         detailEn: 'In a signed-in workspace, press Tab to reveal a link that moves keyboard focus directly to the main content.',
       },
       {
+        titleAr: 'البحث في أقسام الموبايل',
+        titleEn: 'Search mobile navigation',
+        detailAr: 'ابحث من دليل الأقسام في الرئيسية أو افتح «المزيد» على الموبايل واكتب اسم القسم أو وصفه بالعربية أو الإنجليزية؛ النتائج تقتصر على الأقسام المتاحة لدورك الحالي.',
+        detailEn: 'Search the Home module directory or open More on mobile and search by an Arabic or English module name or description; results include only destinations available to your current role.',
+      },
+      {
         titleAr: 'التنقل على الشاشات اللوحية',
         titleEn: 'Tablet navigation',
         detailAr: 'على الشاشات بعرض 761 إلى 900 بكسل، تتحول القائمة الجانبية إلى شريط أيقونات مضغوط لتوفير مساحة للمحتوى. تظهر أسماء الأقسام عند المرور بالمؤشر، وتظل متاحة لقارئات الشاشة؛ مرّر داخل الشريط للوصول إلى بقية الأقسام.',
@@ -68,6 +74,12 @@ export const FEATURE_CATALOG = [
         detailEn: 'Add customers and review their details and related activity.',
       },
       {
+        titleAr: 'البحث والترتيب وتحميل المزيد',
+        titleEn: 'Search, sorting, and load more',
+        detailAr: 'ابحث بالاسم أو البريد أو الهاتف ورتّب السجلات؛ استخدم «تحميل المزيد» لإضافة الصفحة التالية عند تجاوز أول 100 سجل.',
+        detailEn: 'Search by name, email, or phone and sort the directory; use Load more to append the next page when the list exceeds the first 100 records.',
+      },
+      {
         titleAr: 'كشف حساب العميل',
         titleEn: 'Customer statement',
         detailAr: 'راجع الحركات والأرصدة حسب العملة والفترة، مع عرض أنواع الحركات باللغة المختارة.',
@@ -87,6 +99,12 @@ export const FEATURE_CATALOG = [
         titleEn: 'Products and services',
         detailAr: 'سجّل الاسم وسعر الوحدة وحدد هل الصنف مخزني أم غير مخزني.',
         detailEn: 'Save item names and unit prices, and choose stock-tracked or non-stock.',
+      },
+      {
+        titleAr: 'البحث والتصفية والترتيب',
+        titleEn: 'Search, filters, and sorting',
+        detailAr: 'ابحث بالاسم أو رمز SKU، وفلتر بين الأصناف المخزنية وغير المخزنية، ورتّب بالاسم أو الرمز أو السعر أو المخزون. استخدم «تحميل المزيد» للوصول إلى الصفحات التالية؛ ويمكنك مسح الفلتر حتى لو لم تظهر نتائج.',
+        detailEn: 'Search by item name or SKU, filter stock-tracked vs non-stock items, and sort by name, SKU, price, or stock. Use Load more to reach later pages; you can clear a filter even when it has no matches.',
       },
       {
         titleAr: 'رصيد المخزون',

@@ -23,7 +23,7 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   const moreEnd = source.indexOf('          <div class="sidebar-bottom"', moreStart);
   assert.ok(moreStart >= 0 && moreEnd > moreStart);
   const moreMenu = source.slice(moreStart, moreEnd);
-  assert.match(moreMenu, /@for \(group of mobileMoreGroups; track group\.id\)/);
+  assert.match(moreMenu, /@for \(group of filteredMobileMoreGroups; track group\.id\)/);
   assert.match(moreMenu, /@for \(module of group\.modules; track module\.tab\)/);
   assert.match(moreMenu, /selectMobileMoreTab\(module\.tab\)/);
   assert.match(catalogueSource, /tab: 'platform-admin', mobileGroup: 'team-admin'/);
@@ -40,4 +40,36 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   );
   assert.match(moduleAccessSource, /export function isMobileMoreTab\(tab: WorkspaceModuleTab\): boolean/);
   assert.match(moduleAccessSource, /return MOBILE_MORE_TABS\.has\(tab\)/);
+});
+
+
+test('mobile More navigation provides localized search over authorized destinations', () => {
+  const moreStart = source.indexOf('id="mobile-more-menu"');
+  const moreEnd = source.indexOf('          <div class="sidebar-bottom"', moreStart);
+  assert.ok(moreStart >= 0 && moreEnd > moreStart);
+  const menu = source.slice(moreStart, moreEnd);
+
+  assert.match(menu, /<input type="search" name="mobileMoreSearch"/);
+  assert.match(menu, /\[\(ngModel\)\]="mobileMoreSearch"/);
+  assert.match(menu, /\[attr\.aria-label\]="t\('البحث في الأقسام', 'Search sections'\)"/);
+  assert.match(menu, /@for \(group of filteredMobileMoreGroups; track group\.id\)/);
+  assert.match(menu, /mobile-more-empty" role="status"/);
+  assert.match(source, /get filteredMobileMoreGroups\(\)/);
+  assert.match(source, /module\.descriptionAr/);
+  assert.match(source, /mobileMoreSearch = ''/);
+});
+
+
+test('Home module directory exposes bilingual search and a localized empty state', () => {
+  const homeStart = source.indexOf('class="module-directory-disclosure"');
+  const homeEnd = source.indexOf("@if (tab === 'notifications')", homeStart);
+  assert.ok(homeStart >= 0 && homeEnd > homeStart);
+  const home = source.slice(homeStart, homeEnd);
+
+  assert.match(home, /name="homeModuleSearch"/);
+  assert.match(home, /\[\(ngModel\)\]="homeModuleSearch"/);
+  assert.match(source, /get filteredHomeModuleCards/);
+  assert.match(home, /@for \(module of filteredHomeModuleCards; track module\.tab\)/);
+  assert.match(home, /module-directory-empty" role="status"/);
+  assert.match(source, /filterWorkspaceModules\(this\.homeModuleCards, this\.homeModuleSearch/);
 });

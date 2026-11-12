@@ -11,8 +11,10 @@ import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, f
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { ReleaseGuideComponent } from './release-guide.component';
+import { CustomerDirectoryComponent } from './customer-directory.component';
+import { ProductCatalogComponent } from './product-catalog.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
-import { selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
+import { filterWorkspaceModules, selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
 import { AbaConfirmDialogComponent } from './shared/ui/aba-confirm-dialog.component';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
 import { AbaMetricCardComponent } from './shared/ui/aba-metric-card.component';
@@ -36,7 +38,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerDirectoryComponent, ProductCatalogComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -122,7 +124,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           <button #mobileMoreTrigger class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" [attr.aria-controls]="mobileMoreOpen ? 'mobile-more-menu' : null" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
           @if (mobileMoreOpen) {
             <nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
-              @for (group of mobileMoreGroups; track group.id) {
+              <label class="mobile-more-search">
+                <span class="sr-only">{{ t('البحث في الأقسام', 'Search sections') }}</span>
+                <input type="search" name="mobileMoreSearch" autocomplete="off" enterkeyhint="search"
+                  [attr.aria-label]="t('البحث في الأقسام', 'Search sections')"
+                  [placeholder]="t('ابحث عن قسم…', 'Search sections…')"
+                  [(ngModel)]="mobileMoreSearch" />
+              </label>
+              @if (filteredMobileMoreGroups.length) {
+                @for (group of filteredMobileMoreGroups; track group.id) {
                 <section class="mobile-more-group" [attr.aria-labelledby]="'mobile-more-' + group.id + '-heading'">
                   <h3 [id]="'mobile-more-' + group.id + '-heading'">{{ t(group.titleAr, group.titleEn) }}</h3>
                   @for (module of group.modules; track module.tab) {
@@ -132,6 +142,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     </button>
                   }
                 </section>
+                }
+              } @else {
+                <p class="mobile-more-empty" role="status">{{ t('لا توجد أقسام مطابقة للبحث.', 'No sections match your search.') }}</p>
               }
               <div class="mobile-more-actions">
                 <button class="nav-item mobile-menu-action" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? 'English' : 'العربية' }}</span></button>
@@ -281,8 +294,16 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     <span class="count">{{ homeModuleCards.length }}</span>
                     <span class="module-directory-toggle" aria-hidden="true">＋</span>
                   </summary>
+                  <label class="module-directory-search">
+                    <span class="sr-only">{{ t('البحث في أقسام مساحة العمل', 'Search workspace modules') }}</span>
+                    <input type="search" name="homeModuleSearch" autocomplete="off"
+                      [attr.aria-label]="t('البحث في أقسام مساحة العمل', 'Search workspace modules')"
+                      [placeholder]="t('ابحث باسم القسم أو وصفه…', 'Search by module name or description…')"
+                      [(ngModel)]="homeModuleSearch" />
+                  </label>
+                  @if (filteredHomeModuleCards.length) {
                   <div class="module-directory-grid">
-                    @for (module of homeModuleCards; track module.tab) {
+                    @for (module of filteredHomeModuleCards; track module.tab) {
                       <aba-quick-access-card
                         [icon]="module.icon"
                         [title]="t(module.titleAr, module.titleEn)"
@@ -290,6 +311,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                         (activated)="setTab(module.tab)" />
                     }
                   </div>
+                  } @else {
+                    <p class="module-directory-empty" role="status">{{ t('لا توجد أقسام مطابقة للبحث.', 'No modules match your search.') }}</p>
+                  }
                 </details>
               </section>
               
@@ -534,7 +558,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
                 <div class="list-tools aba-record-toolbar"><input name="customerSearch" type="search" [attr.aria-label]="t('البحث عن عميل', 'Search customers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف…', 'Search by name, email, or phone…')" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
-                <aba-record-table [ariaLabel]="t('جدول العملاء', 'Customers table')" [columns]="customerTableColumns" [rows]="customerTableRows" [loading]="loading && !customers.length" [loadingDescription]="t('جارٍ تحميل العملاء…', 'Loading customers…')" [actionsHeading]="t('الإجراءات', 'Actions')" [emptyTitle]="t('لا يوجد عملاء', 'No customers yet')" [emptyDescription]="customerSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No customers match this search.') : t('أضف أول عميل لبدء ربطه بالفواتير.', 'Add your first customer to link them with invoices.')" (rowAction)="onCustomerRecordAction($event)" />
+                <aba-customer-directory [ariaLabel]="t('دليل العملاء', 'Customer directory')" [customers]="filteredCustomers" [locale]="language" [loading]="loading && !customers.length" [loadingDescription]="t('جارٍ تحميل العملاء…', 'Loading customers…')" [emptyTitle]="t('لا يوجد عملاء', 'No customers yet')" [emptyDescription]="customerSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No customers match this search.') : t('أضف أول عميل لبدء ربطه بالفواتير.', 'Add your first customer to link them with invoices.')" (rowAction)="onCustomerRecordAction($event)" />
+                @if (customersHasMore || customersLoadingMore) {
+                  <div class="inline-form record-load-more" aria-live="polite">
+                    <span class="muted">{{ customers.length }} {{ t('عميل تم تحميلهم', 'customers loaded') }}</span>
+                    <button class="secondary" type="button" (click)="loadMoreCustomers()" [disabled]="customersLoadingMore">
+                      {{ customersLoadingMore ? t('جارٍ تحميل العملاء…', 'Loading customers…') : t('تحميل المزيد من العملاء', 'Load more customers') }}
+                    </button>
+                  </div>
+                }
 
                 @if (statementVisible) {
                   <section abaCard class="panel statement-panel">
@@ -612,7 +644,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   @if (importMessage) { <aba-state-message [kind]="importMessageKind" [description]="importMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
                 <div class="list-tools aba-record-toolbar"><input name="productSearch" type="search" [attr.aria-label]="t('البحث عن منتج', 'Search products')" [placeholder]="t('ابحث عن منتج أو رمز SKU…', 'Search products or SKU…')" [(ngModel)]="productSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
-                <aba-record-table [ariaLabel]="t('جدول المنتجات والمخزون', 'Products and inventory table')" [columns]="productTableColumns" [rows]="productTableRows" [loading]="loading && !products.length" [loadingDescription]="t('جارٍ تحميل المنتجات…', 'Loading products…')" [emptyTitle]="t('لا توجد منتجات', 'No products yet')" [emptyDescription]="productSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No products match this search.') : t('أضف منتجًا أو خدمة لبدء إدارة الكتالوج والمخزون.', 'Add a product or service to start managing the catalogue and stock.')" />
+                <aba-product-catalog [ariaLabel]="t('كتالوج المنتجات والمخزون', 'Product and inventory catalogue')" [products]="filteredProducts" [locale]="language" [currencyCode]="business?.currency_code || ''" [loading]="loading && !products.length" [loadingDescription]="t('جارٍ تحميل المنتجات…', 'Loading products…')" [emptyTitle]="t('لا توجد منتجات', 'No products yet')" [emptyDescription]="productSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No products match this search.') : t('أضف منتجًا أو خدمة لبدء إدارة الكتالوج والمخزون.', 'Add a product or service to start managing the catalogue and stock.')" />
+                @if (productsHasMore || productsLoadingMore) {
+                  <div class="inline-form record-load-more" aria-live="polite">
+                    <span class="muted">{{ products.length }} {{ t('صنف تم تحميله', 'items loaded') }}</span>
+                    <button class="secondary" type="button" (click)="loadMoreProducts()" [disabled]="productsLoadingMore">
+                      {{ productsLoadingMore ? t('جارٍ تحميل المنتجات…', 'Loading products…') : t('تحميل المزيد من الأصناف', 'Load more items') }}
+                    </button>
+                  </div>
+                }
 
             </section>
             }
@@ -1005,7 +1045,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
     .shell{min-height:100vh}.shell.auth-shell{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;padding-block:24px}.shell.auth-shell>.auth-card,.shell.auth-shell>.setup-card{margin:0 auto}.install-button{display:none}.mobile-install-card{display:none}.mobile-more,.mobile-more-menu{display:none}.language-row{display:flex;justify-content:flex-end;margin-bottom:8px}.language-toggle{min-height:38px}.sidebar{position:fixed;inset-block:0;inset-inline-end:0;width:var(--aba-layout-sidebar,245px);background:var(--aba-color-nav-surface,#111827);color:var(--aba-color-text-inverse,#e5e7eb);padding:26px 17px;display:flex;flex-direction:column;z-index:2}
     .brand{display:flex;align-items:center;gap:10px;color:var(--aba-color-text-inverse,#fff);text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:var(--aba-color-nav-muted,#9ca3af);margin-inline-start:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:var(--aba-color-text-tertiary,#6b7280);margin:0 0 8px}.nav-label{font-size:10px;color:var(--aba-color-nav-muted,#9ca3af);letter-spacing:1.5px;padding:0 10px}.workspace-release-meta{display:grid;gap:5px;padding:0 10px;margin:-4px 0 10px;min-width:0}.workspace-release-meta .version-pill{align-self:start;max-width:100%;font-size:10px;white-space:normal;line-height:1.4}.workspace-release-meta small{font-size:10px;color:var(--aba-color-nav-muted,#9ca3af);line-height:1.5;overflow-wrap:anywhere}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:var(--aba-color-nav-text,#cbd5e1);text-align:start;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:var(--aba-color-nav-surface-raised,#1e293b);color:var(--aba-color-text-inverse,#fff)}.nav-item.active{background:linear-gradient(100deg,var(--aba-color-nav-active-start,#164e63),var(--aba-color-nav-active-end,#1d4ed8));color:var(--aba-color-text-inverse,#fff);border-inline-start:3px solid var(--aba-color-nav-accent,#5eead4)}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:var(--aba-color-nav-surface-raised,#1e293b)}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.expense-icon{color:#fdba74;background:#7c2d12}.nav-item.active .nav-icon{background:#ffffff24;color:var(--aba-color-text-inverse,#fff)}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:var(--aba-color-nav-muted,#9ca3af);margin-block-start:8px;margin-inline-start:15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-inline-end:8px}
     .main{margin-inline-end:var(--aba-layout-sidebar,245px);padding:30px clamp(18px,4vw,54px) 20px;max-width:var(--aba-layout-content-max,1550px)}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px}.topbar h1{font-size:25px;letter-spacing:-.8px;margin:0}.mobile-page-heading{display:none}.user-area{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--aba-color-text-muted,#4b5563)}.secondary,.primary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:var(--aba-color-surface,#fff);color:#374151}.primary{background:var(--aba-color-primary,#0f766e);border-color:var(--aba-color-primary,#0f766e);color:var(--aba-color-text-inverse,#fff)}.primary:hover{background:#115e59}.workspace-bar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(180px,260px);justify-content:stretch;align-items:center;gap:14px;padding:14px 17px;background:var(--aba-color-surface,#fff);border:1px solid var(--aba-color-border,#e5e7eb);border-radius:var(--aba-radius-card,13px);margin-bottom:18px;min-width:0}.workspace-bar strong{display:block;font-size:14px}.workspace-bar select{max-width:260px}.dashboard-period{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 18px;margin:0 0 14px;padding:13px 16px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:var(--aba-radius-card,14px);background:var(--aba-color-surface-subtle,#f8fafc)}.dashboard-period__heading{display:grid;gap:3px;min-width:0}.dashboard-period__title{margin:0;color:var(--aba-color-text-primary,#172033);font-size:14px;line-height:1.4;font-weight:var(--aba-font-weight-bold,700);overflow-wrap:anywhere}.dashboard-period__heading strong{font-size:13px;line-height:1.4;color:var(--aba-color-text-primary,#172033)}.dashboard-period__details{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;min-width:0;color:var(--aba-color-text-secondary,#64748b);font-size:12px;line-height:1.5}.dashboard-period__details span{overflow-wrap:anywhere}.dashboard-period__details bdi{font-variant-numeric:tabular-nums;color:var(--aba-color-text-primary,#172033)}.dashboard-period--skeleton{min-height:66px}.dashboard-period-skeleton__details{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;min-width:0}.dashboard-period-skeleton__details span{display:block;width:clamp(110px,24vw,190px);height:9px;border-radius:999px;background:var(--aba-color-border-subtle,#eef2f7)}.dashboard-period-skeleton__details span:last-child{width:clamp(90px,18vw,145px)}.metric-skeleton{display:grid;align-content:start;gap:12px;min-width:0;min-height:145px;padding:16px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:var(--aba-radius-card,14px);background:var(--aba-color-surface,#fff)}.metric-skeleton span{display:block;height:10px;max-width:100%;border-radius:999px;background:var(--aba-color-border-subtle,#e2e8f0)}.metric-skeleton span:first-child{width:44%}.metric-skeleton span:nth-child(2){width:72%;height:24px;border-radius:8px;background:var(--aba-color-surface-muted,#eef2f7)}.metric-skeleton span:last-child{width:58%}
-    .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:0}.metric-grid aba-metric-card small{font-size:12px;line-height:1.55}.metric{padding:17px;min-height:125px;background:var(--aba-color-surface,#fff);border:1px solid #e5eaf1;border-radius:14px}.metric>span{display:block;color:var(--aba-color-text-tertiary,#6b7280);font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:var(--aba-color-nav-muted,#9ca3af);margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.home-shortcut-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0;margin-top:15px}.home-shortcut-link{display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;min-width:0;min-height:44px;padding:8px 12px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:var(--aba-radius-control,10px);background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font-size:var(--aba-font-size-base,14px);line-height:var(--aba-line-height-normal,1.5);font-weight:700;text-align:start;cursor:pointer;transition:border-color var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease),background var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease)}.home-shortcut-link:hover:not(:disabled){border-color:var(--aba-color-primary-border,#99f6e4);background:var(--aba-color-surface-hover,#f1f5f9)}.home-shortcut-link:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:var(--aba-focus-ring-offset,2px)}.home-shortcut-link__icon{display:grid;flex:0 0 26px;width:26px;height:26px;place-items:center;border-radius:8px;background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary,#0f766e);font-size:14px}.home-shortcut-link__label{min-width:0;overflow-wrap:anywhere}.module-launcher{margin-top:18px}.module-directory{margin-top:18px}.dashboard-trust-note{background:var(--aba-color-surface-subtle,#f8fafc);border-color:var(--aba-color-border,#e5eaf1);color:var(--aba-color-text-secondary,#64748b);font-size:12px;line-height:1.65}.dashboard-trust-note strong{color:var(--aba-color-text-primary,#172033)}.module-directory-disclosure{display:grid;gap:12px}.module-directory-summary{display:flex;align-items:center;gap:12px;min-width:0;min-height:44px;cursor:pointer;list-style:none}.module-directory-summary::-webkit-details-marker{display:none}.module-directory-summary__copy{display:grid;flex:1;gap:3px;min-width:0}.module-directory-summary__title{margin:0;color:var(--aba-color-text-primary,#172033);font-size:14px;line-height:1.45;overflow-wrap:anywhere}.module-directory-summary__copy small{color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.5;overflow-wrap:anywhere}.module-directory-toggle{display:grid;flex:0 0 32px;width:32px;height:32px;place-items:center;border-radius:9px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#64748b);font-size:18px;transition:transform var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease)}.module-directory-disclosure[open] .module-directory-toggle{transform:rotate(45deg)}.module-directory-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px;margin-top:0}
+    .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:0}.metric-grid aba-metric-card small{font-size:12px;line-height:1.55}.metric{padding:17px;min-height:125px;background:var(--aba-color-surface,#fff);border:1px solid #e5eaf1;border-radius:14px}.metric>span{display:block;color:var(--aba-color-text-tertiary,#6b7280);font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:var(--aba-color-nav-muted,#9ca3af);margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.home-shortcut-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0;margin-top:15px}.home-shortcut-link{display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;min-width:0;min-height:44px;padding:8px 12px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:var(--aba-radius-control,10px);background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font-size:var(--aba-font-size-base,14px);line-height:var(--aba-line-height-normal,1.5);font-weight:700;text-align:start;cursor:pointer;transition:border-color var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease),background var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease)}.home-shortcut-link:hover:not(:disabled){border-color:var(--aba-color-primary-border,#99f6e4);background:var(--aba-color-surface-hover,#f1f5f9)}.home-shortcut-link:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:var(--aba-focus-ring-offset,2px)}.home-shortcut-link__icon{display:grid;flex:0 0 26px;width:26px;height:26px;place-items:center;border-radius:8px;background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary,#0f766e);font-size:14px}.home-shortcut-link__label{min-width:0;overflow-wrap:anywhere}.module-launcher{margin-top:18px}.module-directory{margin-top:18px}.dashboard-trust-note{background:var(--aba-color-surface-subtle,#f8fafc);border-color:var(--aba-color-border,#e5eaf1);color:var(--aba-color-text-secondary,#64748b);font-size:12px;line-height:1.65}.dashboard-trust-note strong{color:var(--aba-color-text-primary,#172033)}.module-directory-disclosure{display:grid;gap:12px}.module-directory-summary{display:flex;align-items:center;gap:12px;min-width:0;min-height:44px;cursor:pointer;list-style:none}.module-directory-summary::-webkit-details-marker{display:none}.module-directory-summary__copy{display:grid;flex:1;gap:3px;min-width:0}.module-directory-summary__title{margin:0;color:var(--aba-color-text-primary,#172033);font-size:14px;line-height:1.45;overflow-wrap:anywhere}.module-directory-summary__copy small{color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.5;overflow-wrap:anywhere}.module-directory-toggle{display:grid;flex:0 0 32px;width:32px;height:32px;place-items:center;border-radius:9px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#64748b);font-size:18px;transition:transform var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease)}.module-directory-disclosure[open] .module-directory-toggle{transform:rotate(45deg)}.module-directory-search{display:block;min-width:0}.module-directory-search input{box-sizing:border-box;width:100%;min-height:44px;border:1px solid var(--aba-color-border,#e5e7eb);border-radius:10px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font-size:14px}.module-directory-empty{margin:0;padding:14px;border:1px dashed var(--aba-color-border,#e5e7eb);border-radius:10px;color:var(--aba-color-text-secondary,#64748b);font-size:12px;line-height:1.6}.module-directory-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px;margin-top:0}
     .panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:var(--aba-color-text-tertiary,#6b7280);line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:var(--aba-color-text-tertiary,#6b7280);margin:0}.count{font-size:10px;font-weight:700;color:var(--aba-color-primary,#0f766e);background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:var(--aba-color-surface-subtle,#f8fafc);border:1px solid #edf0f5;border-radius:11px}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.expense-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:var(--aba-color-surface,#fff);padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.expense-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#ffedd5;color:#c2410c;font-size:20px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px;margin-top:5px;overflow-wrap:anywhere}.footnote{font-size:10px;line-height:1.6;color:var(--aba-color-nav-muted,#9ca3af);margin:15px 0 0} .assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px;gap:16px;align-items:start}.assistant-suggestions{min-width:0;margin:0;padding:16px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:16px;background:var(--aba-color-surface,#fff);box-shadow:0 8px 24px #0f172a08}.assistant-suggestions>p{font-size:12px;font-weight:800;color:var(--aba-color-text-muted,#334155);margin:0 0 10px}.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.suggestion-card{display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;column-gap:9px;row-gap:2px;text-align:start;padding:9px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:11px;background:var(--aba-color-surface-subtle,#f8fafc);color:#1e293b;transition:background .16s ease,border-color .16s ease}.suggestion-card:hover{background:#eff6ff;border-color:#2563eb}.suggestion-icon{grid-row:span 2;display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:#dbeafe;color:#1d4ed8;font-size:15px}.suggestion-card strong{font-size:11px}.suggestion-card small{font-size:10px;color:var(--aba-color-text-secondary,#64748b);line-height:1.35}.chat-panel{min-width:0}.chat-log{min-height:280px;max-height:55vh}@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}.assistant-suggestions{grid-row:2}.suggestion-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}.suggestion-card{flex:0 0 175px}}@media(max-width:480px){.assistant-suggestions{padding:12px}.suggestion-card{flex-basis:158px;padding:8px}.chat-log{min-height:220px;max-height:48vh}}.chat-log{min-height:280px;max-height:55vh;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-inline-end:auto;margin-inline-start:0;background:#e0f2fe}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--aba-color-text-tertiary,#6b7280);font-weight:800}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:var(--aba-color-primary,#0f766e);font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-inline-end:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical}.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}.install-help-inline{position:static;z-index:auto;width:min(520px,100%);max-width:100%;margin:0 0 14px auto;box-shadow:none}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:var(--aba-color-surface,#fff);border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:var(--aba-color-text-tertiary,#6b7280);line-height:1.7}.setup-steps{background:var(--aba-color-surface-subtle,#f8fafc);border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:var(--aba-color-primary,#0f766e);font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}.splash-build-time{display:block;margin:-8px 0 18px;color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.6;text-align:center}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px}footer span{color:var(--aba-color-nav-muted,#9ca3af)}
     .mobile-version-strip{display:none}
     .section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -1014,7 +1054,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       .mobile-version-row{display:flex;justify-content:flex-end;min-width:0;margin:0 0 8px}
       .mobile-version-row .version-pill{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:10px;padding:5px 8px}
 
-      .install-button{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border-color:var(--aba-color-primary-border,#99f6e4);color:#065f46;background:#ecfdf5;font-weight:800}.mobile-install-card{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;margin:0 0 12px;padding:10px 12px;border:1px solid var(--aba-color-primary-border,#99f6e4);border-radius:14px;background:linear-gradient(110deg,#f0fdfa,#f8fafc);box-shadow:0 2px 10px #0f766e0a}.mobile-install-copy{display:flex;align-items:center;gap:9px;min-width:0}.mobile-install-copy>div{display:grid;gap:2px;min-width:0}.mobile-install-copy strong{color:var(--aba-color-text-primary,#172033);font-size:12px;line-height:1.4}.mobile-install-copy small{color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.45}.mobile-install-icon{display:grid;flex:0 0 34px;width:34px;height:34px;place-items:center;border-radius:10px;background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59);font-size:18px;font-weight:900}.mobile-install-button{display:inline-flex;flex:0 0 auto;min-width:72px;min-height:44px;padding:9px 12px;border-radius:11px}.main,.shell.english .main{padding-top:calc(20px + env(safe-area-inset-top,0px))}.mobile-more{display:flex}.mobile-more-menu{display:grid;position:fixed;z-index:30;inset-inline-end:10px;bottom:calc(82px + env(safe-area-inset-bottom));width:min(270px,calc(100vw - 20px));max-height:min(70vh,560px);max-height:min(70dvh,560px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:8px;background:var(--aba-color-nav-surface-deep,#0f172a);border:1px solid var(--aba-color-nav-border,#334155);border-radius:var(--aba-radius-panel,16px);box-shadow:var(--aba-shadow-nav-menu,0 18px 50px #02061755);gap:8px}.mobile-more-group{display:grid;gap:4px}.mobile-more-group+.mobile-more-group{border-top:1px solid var(--aba-color-nav-border,#334155);padding-top:8px;margin-top:4px}.mobile-more-group h3{margin:2px 10px 4px;color:var(--aba-color-nav-muted,#94a3b8);font-size:10px;font-weight:800;line-height:1.5;letter-spacing:.04em;text-align:start}.mobile-more-menu .nav-item{flex-direction:row;justify-content:flex-start;min-height:48px;padding:9px 12px;font-size:13px}.mobile-more-menu .nav-item>span:not(.nav-icon){max-width:none}.mobile-more-menu .nav-item.active{border-inline-start:3px solid var(--aba-color-nav-accent,#5eead4);box-shadow:none}.mobile-more-actions{display:grid;gap:4px;border-top:1px solid var(--aba-color-nav-border,#334155);padding-top:8px;margin-top:4px}.mobile-more-menu .mobile-menu-action{border-radius:8px;margin-top:0}
+      .install-button{display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;border-color:var(--aba-color-primary-border,#99f6e4);color:#065f46;background:#ecfdf5;font-weight:800}.mobile-install-card{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;margin:0 0 12px;padding:10px 12px;border:1px solid var(--aba-color-primary-border,#99f6e4);border-radius:14px;background:linear-gradient(110deg,#f0fdfa,#f8fafc);box-shadow:0 2px 10px #0f766e0a}.mobile-install-copy{display:flex;align-items:center;gap:9px;min-width:0}.mobile-install-copy>div{display:grid;gap:2px;min-width:0}.mobile-install-copy strong{color:var(--aba-color-text-primary,#172033);font-size:12px;line-height:1.4}.mobile-install-copy small{color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.45}.mobile-install-icon{display:grid;flex:0 0 34px;width:34px;height:34px;place-items:center;border-radius:10px;background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59);font-size:18px;font-weight:900}.mobile-install-button{display:inline-flex;flex:0 0 auto;min-width:72px;min-height:44px;padding:9px 12px;border-radius:11px}.main,.shell.english .main{padding-top:calc(20px + env(safe-area-inset-top,0px))}.mobile-more{display:flex}.mobile-more-menu{display:grid;position:fixed;z-index:30;inset-inline-end:10px;bottom:calc(82px + env(safe-area-inset-bottom));width:min(270px,calc(100vw - 20px));max-height:min(70vh,560px);max-height:min(70dvh,560px);overflow-y:auto;overscroll-behavior:contain;scrollbar-gutter:stable;padding:8px;background:var(--aba-color-nav-surface-deep,#0f172a);border:1px solid var(--aba-color-nav-border,#334155);border-radius:var(--aba-radius-panel,16px);box-shadow:var(--aba-shadow-nav-menu,0 18px 50px #02061755);gap:8px}.mobile-more-search{position:sticky;top:0;z-index:1;display:block;padding:3px;background:var(--aba-color-nav-surface-deep,#0f172a)}.mobile-more-search input{box-sizing:border-box;width:100%;min-height:44px;border:1px solid var(--aba-color-nav-border,#334155);border-radius:10px;background:var(--aba-color-nav-surface-raised,#1e293b);color:var(--aba-color-text-inverse,#fff);font-size:14px}.mobile-more-search input::placeholder{color:var(--aba-color-nav-muted,#94a3b8)}.mobile-more-empty{margin:8px 10px;padding:12px;border:1px dashed var(--aba-color-nav-border,#334155);border-radius:10px;color:var(--aba-color-nav-muted,#94a3b8);font-size:12px;line-height:1.6}.mobile-more-group{display:grid;gap:4px}.mobile-more-group+.mobile-more-group{border-top:1px solid var(--aba-color-nav-border,#334155);padding-top:8px;margin-top:4px}.mobile-more-group h3{margin:2px 10px 4px;color:var(--aba-color-nav-muted,#94a3b8);font-size:10px;font-weight:800;line-height:1.5;letter-spacing:.04em;text-align:start}.mobile-more-menu .nav-item{flex-direction:row;justify-content:flex-start;min-height:48px;padding:9px 12px;font-size:13px}.mobile-more-menu .nav-item>span:not(.nav-icon){max-width:none}.mobile-more-menu .nav-item.active{border-inline-start:3px solid var(--aba-color-nav-accent,#5eead4);box-shadow:none}.mobile-more-actions{display:grid;gap:4px;border-top:1px solid var(--aba-color-nav-border,#334155);padding-top:8px;margin-top:4px}.mobile-more-menu .mobile-menu-action{border-radius:8px;margin-top:0}
       .global-loading{position:fixed;inset:0 0 auto;z-index:1000;height:3px;background:#ccfbf1;overflow:hidden}.global-loading>span:first-child{position:absolute;inset:0 auto 0 0;width:35%;background:var(--aba-color-primary,#0f766e);animation:loading-sweep 1.15s ease-in-out infinite}.loading-label{position:absolute;top:10px;right:12px;background:var(--aba-color-primary,#0f766e);color:var(--aba-color-text-inverse,#fff);padding:7px 12px;border-radius:999px;font-size:12px;box-shadow:0 4px 14px #0f172a22}@keyframes loading-sweep{0%{transform:translateX(-100%)}100%{transform:translateX(300%)}}@media(prefers-reduced-motion:reduce){.global-loading>span:first-child{animation:none;width:100%}}
     .sidebar{position:fixed;inset:auto 0 0;width:100%;min-height:0;height:auto;padding:8px 6px calc(8px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:stretch;gap:2px;overflow-x:auto;overflow-y:hidden;background:var(--aba-color-nav-surface-glass,rgba(15,23,42,.97));border-top:1px solid var(--aba-color-nav-border,#334155);box-shadow:var(--aba-shadow-nav-dock,0 -8px 28px #0f172a20);backdrop-filter:blur(16px);z-index:20}
       .brand,.brand>span:last-child,.nav-label,.workspace-release-meta,.sidebar-bottom{display:none}.sidebar>.mobile-extra,.sidebar>.platform-admin-nav{display:none}
@@ -1506,6 +1546,8 @@ export class AppComponent implements OnInit, OnDestroy {
   chatConfigurationMissing = false;
   keyboardOpen = false;
   mobileMoreOpen = false;
+  mobileMoreSearch = '';
+  homeModuleSearch = '';
   @ViewChild('mobileMoreTrigger') private mobileMoreTrigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('mobileMoreMenu') private mobileMoreMenu?: ElementRef<HTMLElement>;
   isInstalled = false;
@@ -1606,30 +1648,6 @@ export class AppComponent implements OnInit, OnDestroy {
     return filterCustomers(this.customers, this.customerSearch);
   }
 
-  get customerTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'name',label:this.t('العميل','Customer'),primary:true},
-    {key:'email',label:this.t('البريد الإلكتروني','Email')},
-    {key:'phone',label:this.t('الهاتف','Phone')},
-  ]; }
-  get customerTableRows(): readonly AbaRecordTableRow[] { return this.filteredCustomers.map(customer=>({
-    id:customer.id,cells:{name:customer.name,email:customer.email||this.t('غير مسجل','Not provided'),phone:customer.phone||this.t('غير مسجل','Not provided')},
-    actions:[{id:'invoices',label:this.t('عرض الفواتير','View invoices')},{id:'statement',label:this.t('كشف الحساب','Statement')}],
-  })); }
-  get productTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'name',label:this.t('المنتج / الخدمة','Product / service'),primary:true},
-    {key:'sku',label:'SKU'},
-    {key:'price',label:this.t('سعر الوحدة','Unit price'),kind:'numeric'},
-    {key:'tracking',label:this.t('نوع الصنف','Item type'),kind:'status'},
-    {key:'stock',label:this.t('الكمية المتاحة','Stock quantity'),kind:'numeric'},
-  ]; }
-  get productTableRows(): readonly AbaRecordTableRow[] { return this.filteredProducts.map(product=>({
-    id:product.id,cells:{
-      name:product.name,sku:product.sku||'—',
-      price:`${product.unit_price} ${product.currency_code||this.business?.currency_code||''}`.trim(),
-      tracking:product.is_stock_tracked?this.t('مخزني','Stock tracked'):this.t('خدمة / غير مخزني','Service / non-stock'),
-      stock:product.is_stock_tracked?String(product.stock_quantity??0):this.t('غير منطبق','Not applicable'),
-    },
-  })); }
   get supplierTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'name',label:this.t('المورد','Supplier'),primary:true},
     {key:'email',label:this.t('البريد الإلكتروني','Email')},
@@ -1993,6 +2011,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   toggleMobileMore(): void {
+    if (this.mobileMoreOpen) this.mobileMoreSearch = '';
     this.mobileMoreOpen = !this.mobileMoreOpen;
   }
 
@@ -2000,11 +2019,13 @@ export class AppComponent implements OnInit, OnDestroy {
   closeMobileMoreOnEscape(): void {
     if (!this.mobileMoreOpen) return;
     this.mobileMoreOpen = false;
+    this.mobileMoreSearch = '';
     this.mobileMoreTrigger?.nativeElement.focus();
   }
 
   /** Restore keyboard focus to the More trigger after a secondary destination is selected. */
   selectMobileMoreTab(tab: Tab): void {
+    this.mobileMoreSearch = '';
     this.setTab(tab);
     this.mobileMoreTrigger?.nativeElement.focus();
   }
@@ -2017,6 +2038,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.mobileMoreTrigger?.nativeElement.contains(target)
       || this.mobileMoreMenu?.nativeElement.contains(target)) return;
     this.mobileMoreOpen = false;
+    this.mobileMoreSearch = '';
   }
 
   async installApp(): Promise<void> {
@@ -2788,6 +2810,16 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
+  // Reuse the same tenant-scoped, deduplicating page loader in the main
+  // directories and invoice editor; pagination state is shared intentionally.
+  loadMoreCustomers(): Promise<void> {
+    return this.loadMoreInvoiceCustomers();
+  }
+
+  loadMoreProducts(): Promise<void> {
+    return this.loadMoreInvoiceProducts();
+  }
+
   loadMoreInvoices(): Promise<void> {
     return this.loadMoreRecords({
       guard: this.invoiceListLoadGuard,
@@ -3360,6 +3392,10 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   /** Home quick access stays focused on the five existing key destinations. */
+  get filteredHomeModuleCards(): readonly WorkspaceModuleCard[] {
+    return filterWorkspaceModules(this.homeModuleCards, this.homeModuleSearch, this.language === 'ar' ? 'ar-EG' : 'en');
+  }
+
   get homeQuickAccessCards(): readonly WorkspaceModuleCard[] {
     return selectHomeQuickAccessModules(this.homeModuleCards);
   }
@@ -3377,6 +3413,18 @@ export class AppComponent implements OnInit, OnDestroy {
 
   isMobileMoreTab(tab: Tab): boolean {
     return isMobileMoreTabValue(tab);
+  }
+
+  /** Search only the already-authorized mobile destinations; this is navigation UX, not access control. */
+  get filteredMobileMoreGroups(): readonly (WorkspaceModuleGroup & { modules: readonly WorkspaceModuleCard[] })[] {
+    const query = this.mobileMoreSearch.trim().normalize('NFKC').toLocaleLowerCase(this.language === 'ar' ? 'ar-EG' : 'en');
+    if (!query) return this.mobileMoreGroups;
+    return this.mobileMoreGroups.map(group => {
+      const locale = this.language === 'ar' ? 'ar-EG' : 'en';
+      const groupMatches = `${group.titleAr} ${group.titleEn}`.normalize('NFKC').toLocaleLowerCase(locale).includes(query);
+      const modules = groupMatches ? group.modules : filterWorkspaceModules(group.modules, this.mobileMoreSearch, locale);
+      return { ...group, modules };
+    }).filter(group => group.modules.length > 0);
   }
 
   setTab(tab: Tab): void {
