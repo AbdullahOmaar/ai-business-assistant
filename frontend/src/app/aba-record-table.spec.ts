@@ -4,6 +4,7 @@ import test from 'node:test';
 const component=readFileSync(new URL('./shared/ui/aba-record-table.component.ts',import.meta.url),'utf8');
 const css=readFileSync(new URL('../design-system.css',import.meta.url),'utf8');
 const app=readFileSync(new URL('./app.component.ts',import.meta.url),'utf8');
+const customerDirectory=readFileSync(new URL('./customer-directory.component.ts',import.meta.url),'utf8');
 test('shared record table exposes semantic columns and stable row actions',()=>{
   assert.match(component,/<table>/);assert.match(component,/<caption class="aba-record-table__visually-hidden">/);
   assert.match(component,/<th scope="col">/);assert.match(component,/<th scope="row"/);
@@ -22,10 +23,12 @@ test('phone layout renders labeled record cards with touch-sized row actions',()
   assert.match(css,/\.aba-record-table table\{display:block;min-width:0/);
   assert.match(css,/\.aba-record-table__action\{[^}]*min-height:44px/);
 });
-test('Customers, Products, Suppliers and Purchasing use the shared record contract',()=>{
-  for(const key of ['customerTableRows','productTableRows','supplierTableRows','purchaseTableRows'])assert.ok(app.includes('[rows]="'+key+'"'));
-  assert.match(app,/business\?\.role==='owner'&&this\.canReceivePurchaseOrder\(order\)/);
-  assert.match(app,/this\.requestPurchaseOrderReceipt\(order,action\.anchor\)/);
+test('Customers uses its own directory while Products, Suppliers and Purchasing retain the shared record contract',()=>{
+  assert.match(app,/<aba-customer-directory[^>]*\\[customers\\]="filteredCustomers"/);
+  assert.doesNotMatch(app,/customerTableRows|customerTableColumns/);
+  for(const key of ['productTableRows','supplierTableRows','purchaseTableRows'])assert.ok(app.includes('[rows]="'+key+'"'));
+  assert.match(app,/business\\?\\.role==='owner'&&this\\.canReceivePurchaseOrder\\(order\\)/);
+  assert.match(app,/this\\.requestPurchaseOrderReceipt\\(order,action\\.anchor\\)/);
 });
 
 test('record table labels and loading states follow the selected app locale',()=>{
@@ -61,9 +64,12 @@ test('record dates remain localized after moving legacy lists into tables', () =
 });
 
 
-test('customer table does not imply a complete invoice count from a partial invoice list', () => {
-  const customerRows = app.slice(app.indexOf('get customerTableRows()'), app.indexOf('get productTableColumns()'));
-  assert.doesNotMatch(customerRows, /customerInvoiceCount/);
-  assert.match(customerRows, /actions:\[\{id:'invoices'/);
-  assert.match(app, /item\.allocations\.length\?`\$\{item\.allocations\.length\}/);
+test('customer directory exposes only supported customer details and existing navigation actions', () => {
+  assert.doesNotMatch(customerDirectory, /customerInvoiceCount|invoiceCount/);
+  assert.match(customerDirectory, /customer\\.name/);
+  assert.match(customerDirectory, /customer\\.email/);
+  assert.match(customerDirectory, /customer\\.phone/);
+  assert.match(customerDirectory, /emitAction\\(customer\\.id, 'invoices'/);
+  assert.match(customerDirectory, /emitAction\\(customer\\.id, 'statement'/);
+  assert.match(app, /item\\.allocations\\.length/);
 });
