@@ -1614,10 +1614,9 @@ export class AppComponent implements OnInit, OnDestroy {
     {key:'name',label:this.t('العميل','Customer'),primary:true},
     {key:'email',label:this.t('البريد الإلكتروني','Email')},
     {key:'phone',label:this.t('الهاتف','Phone')},
-    {key:'invoices',label:this.t('الفواتير المرتبطة','Linked invoices'),kind:'numeric'},
   ]; }
   get customerTableRows(): readonly AbaRecordTableRow[] { return this.filteredCustomers.map(customer=>({
-    id:customer.id,cells:{name:customer.name,email:customer.email||this.t('غير مسجل','Not provided'),phone:customer.phone||this.t('غير مسجل','Not provided'),invoices:String(this.customerInvoiceCount(customer.id))},
+    id:customer.id,cells:{name:customer.name,email:customer.email||this.t('غير مسجل','Not provided'),phone:customer.phone||this.t('غير مسجل','Not provided')},
     actions:[{id:'invoices',label:this.t('عرض الفواتير','View invoices')},{id:'statement',label:this.t('كشف الحساب','Statement')}],
   })); }
   get productTableColumns(): readonly AbaRecordTableColumn[] { return [
@@ -1738,7 +1737,7 @@ export class AppComponent implements OnInit, OnDestroy {
   get paymentTableRows(): readonly AbaRecordTableRow[] { return this.filteredPayments.map(item=>({id:item.id,cells:{
     customer:this.customerNameForInvoice(item.customer_id),amount:`${item.amount} ${item.currency_code}`,
     received:this.formatRecordDate(item.received_at),method:item.method?this.paymentMethodLabel(item.method):this.t('غير محددة','Not specified'),
-    reference:item.reference||'—',allocation:item.allocations.length?this.t('مخصصة','Allocated'):` ${this.t('غير مخصصة','Unallocated')} `,
+    reference:item.reference||'—',allocation:item.allocations.length?this.t('يوجد تخصيص','Has allocations'):this.t('بدون تخصيص','Unallocated'),
   }})); }
   get expenseTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'date',label:this.t('التاريخ','Date')},

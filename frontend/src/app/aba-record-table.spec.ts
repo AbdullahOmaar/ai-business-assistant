@@ -55,3 +55,11 @@ test('record dates remain localized after moving legacy lists into tables', () =
     'event.occurred_at',
   ]) assert.ok(app.includes(fragment), 'missing localized date or stable key: '+fragment);
 });
+
+
+test('customer table does not imply a complete invoice count from a partial invoice list', () => {
+  const customerRows = app.slice(app.indexOf('get customerTableRows()'), app.indexOf('get productTableColumns()'));
+  assert.doesNotMatch(customerRows, /customerInvoiceCount/);
+  assert.match(customerRows, /actions:\[\{id:'invoices'/);
+  assert.match(app, /Has allocations/);
+});
