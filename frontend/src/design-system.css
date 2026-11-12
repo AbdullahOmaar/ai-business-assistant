@@ -1808,3 +1808,76 @@
     transition: none !important;
   }
 }
+
+
+/* Productive workspace rhythm — shared by every feature, with mobile-first forms. */
+:root body .shell .panel {
+  min-width: 0;
+  border: 1px solid var(--aiba-line);
+  border-radius: var(--aiba-radius-panel);
+  background: var(--aiba-surface);
+  box-shadow: var(--aiba-shadow-card);
+}
+:root body .shell :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), select, textarea) {
+  min-width: 0;
+  min-height: 44px;
+  max-width: 100%;
+  border: 1px solid var(--aiba-line-strong);
+  border-radius: var(--aiba-radius-control);
+  background: var(--aiba-surface);
+  color: var(--aiba-ink);
+  font: inherit;
+}
+:root body .shell textarea { min-height: 104px; padding: 11px 13px; resize: vertical; }
+:root body .shell :is(input,select,textarea)::placeholder { color: #64748b; opacity: 1; }
+:root body .shell :is(input,select,textarea):focus-visible {
+  border-color: var(--aiba-focus);
+  outline: 3px solid color-mix(in srgb, var(--aiba-focus) 22%, transparent);
+  outline-offset: 1px;
+}
+:root body .shell label { min-width: 0; }
+:root body .shell .stack { gap: 14px; }
+:root body .shell .stack > label,
+:root body .shell .inline-form > label {
+  display: grid;
+  min-width: 0;
+  gap: 7px;
+  color: var(--aiba-ink-soft);
+  font-size: var(--aiba-text-sm);
+  font-weight: 680;
+  line-height: 1.45;
+}
+:root body .shell .inline-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  min-width: 0;
+}
+:root body .shell .inline-form > label { flex: 1 1 190px; }
+:root body .shell .inline-form > button { min-height: 44px; flex: 0 0 auto; }
+:root body .shell .section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  min-width: 0;
+}
+:root body .shell .section-head > * { min-width: 0; }
+:root body .shell :is(button,a,[role="button"]) { touch-action: manipulation; }
+@media (max-width: 760px) {
+  :root body .shell .inline-form { display: grid; grid-template-columns: minmax(0,1fr); }
+  :root body .shell .inline-form > label,
+  :root body .shell .inline-form > button { width: 100%; min-width: 0; }
+  :root body .shell .section-head { align-items: stretch; }
+  :root body .shell .section-head > button { width: 100%; }
+  :root body .shell .panel { border-radius: 15px; }
+}
+@media (max-width: 360px) {
+  :root body .shell .panel { padding-inline: 12px; }
+  :root body .shell :is(input,select,textarea) { font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root body .shell :is(button,a,[role="button"]) { scroll-behavior: auto; transition-duration: .01ms; }
+}
