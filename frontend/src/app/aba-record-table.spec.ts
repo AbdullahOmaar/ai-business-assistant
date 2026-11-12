@@ -42,12 +42,16 @@ test('record table labels and loading states follow the selected app locale',()=
 
 
 test('record dates remain localized after moving legacy lists into tables', () => {
-  assert.match(app, /formatRecordDate\\(item\\.received_at\\)/);
-  assert.match(app, /formatRecordDate\\(item\\.incurred_at\\)/);
-  assert.match(app, /formatRecordDate\\(item\\.next_run_at\\)/);
-  assert.match(app, /formatRecordDate\\(item\\.scheduled_at\\)/);
-  assert.match(app, /formatRecordDate\\(item\\.created_at,'short'\\)/);
-  assert.match(app, /formatRecordDate\\(invoice\\.due_date,'date'\\)/);
-  assert.match(app, /map\\(\\(event,index\\)=>\\(\\{/);
-  assert.match(app, /event\\.invoice_id\\|\\|''\\}.*event\\.occurred_at/);
+  for (const fragment of [
+    'formatRecordDate(item.received_at)',
+    'formatRecordDate(item.incurred_at)',
+    'formatRecordDate(item.next_run_at)',
+    'formatRecordDate(item.scheduled_at)',
+    "formatRecordDate(item.created_at,'short')",
+    "formatRecordDate(invoice.due_date,'date')",
+    'map((event,index)=>({',
+    'event.source_id',
+    "event.invoice_id||''",
+    'event.occurred_at',
+  ]) assert.ok(app.includes(fragment), 'missing localized date or stable key: '+fragment);
 });

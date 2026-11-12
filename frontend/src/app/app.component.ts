@@ -3413,7 +3413,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   formatRecordDate(value: string | null | undefined, style: 'short' | 'medium' | 'date' = 'medium'): string {
     if (!value) return '—';
-    const dateOnly = style === 'date' && /^\\d{4}-\\d{2}-\\d{2}$/.test(value);
+    const dateOnly = style === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(value);
     const parsed = new Date(dateOnly ? `${value}T12:00:00` : value);
     if (!Number.isFinite(parsed.getTime())) return '—';
     const locale = this.language === 'ar' ? 'ar-EG' : 'en-GB';
