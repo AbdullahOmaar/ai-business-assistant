@@ -4045,3 +4045,5 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Mobile first-run hierarchy: starter prompts now appear before the empty conversation panel; after the first turn the conversation remains primary and prompts move below it. New chat restores the first-run prompt position. This is an untested UX change pending consolidated mobile/browser validation.
 
 - Mobile chat readability: increase response text to 14px, line spacing, source labels and starter prompt text; composer text to 16px. Responsive layout/device verification is deferred with the consolidated test batch.
+
+- Clipboard fallback cleanup is now guarded with `finally`, ensuring its temporary off-screen input is removed even if the browser copy command throws. Still pending runtime/browser validation.
