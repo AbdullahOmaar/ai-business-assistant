@@ -127,7 +127,7 @@ test('Platform Admin mobile controls remain touch-friendly and readable', () => 
 });
 
 test('real workspace filter groups reflow to one column and preserve 44px mobile controls', () => {
-  assert.match(appTemplate, /class="list-tools(?:\\s+[^"]*)?"/, 'Customer/product search must use the shared list filter');
+  assert.match(appTemplate, /class="list-tools(?:\s+[^"]*)?"/, 'Customer/product search must use the shared list filter');
   assert.ok(appTemplate.includes('class="list-tools operations-search"'), 'Operational searches must use the shared search filter');
   assert.ok(appTemplate.includes('class="invoice-controls"'), 'Invoice search/status filters must use the shared invoice filter');
   assert.ok(appTemplate.includes('class="inline-form statement-filters"'), 'Customer statements must use the shared statement filter');
