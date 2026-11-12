@@ -1396,6 +1396,10 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   await menu.locator('.mobile-menu-action').first().click();
   await page.keyboard.press('Escape');
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
+  // The keyboard regression navigates to Products; return Home before the
+  // following Home-directory viewport sweep.
+  await page.getByRole('button', { name: /Go to Home|العودة إلى الرئيسية/ }).click();
+  await expect(staffModuleDirectory.locator('aba-quick-access-card')).toHaveCount(12);
   for (const width of [360, 390, 430, 768, 1280]) {
     await assertStaffViewport(width, 'ar');
   }

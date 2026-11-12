@@ -3984,3 +3984,6 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Follow-up branch: `master/nov-2026-phase-1-ux-hotfix`, based on merged main. No API/DB/schema, financial, inventory movement, tax, payroll or authorization-policy changes.
 - DesignBookmark's supplied `/motion` route was not directly retrievable by the web reader in this session; motion treatment remains restrained micro-interaction feedback, not copied assets or a pixel-level reproduction.
 - Exact-head checks for the hotfix are pending; no hotfix PR/merge/deploy is claimed yet.
+
+
+- **Hotfix browser-smoke correction — 2026-11-12:** run `43232384359` executed 22 Chromium E2E tests: 21 passed, 1 failed. The new keyboard/More-search regression itself passed and successfully tapped the filtered Products destination. The following pre-existing STAFF Home viewport sweep then ran while the test was still on the Products page and expected 12 Home cards. Added an explicit return to Home and asserted the 12 cards before the Arabic viewport sweep. No app runtime behavior changed. New exact-head browser smoke and aggregate are required.
