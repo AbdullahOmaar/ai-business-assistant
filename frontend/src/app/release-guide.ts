@@ -405,6 +405,18 @@ export const FEATURE_CATALOG = [
         detailAr: 'اسأل عن السجلات الحديثة، وتظهر المصادر المرتبطة عندما تكون متاحة.',
         detailEn: 'Ask about recent records; linked sources are shown when available.',
       },
+      {
+        titleAr: 'إدارة المحادثة',
+        titleEn: 'Manage the conversation',
+        detailAr: 'ابدأ محادثة جديدة لمسح سياق الجلسة الحالية محليًا، مع الاحتفاظ بإمكانية متابعة السؤال عند تعذر الرد.',
+        detailEn: 'Start a new conversation to clear the current in-memory session, while keeping failed questions available for retry.',
+      },
+      {
+        titleAr: 'نسخ الردود ومتابعتها',
+        titleEn: 'Copy and follow responses',
+        detailAr: 'انسخ رد المساعد بضغطة واحدة، ويتابع سجل المحادثة أحدث رسالة تلقائيًا مع احترام إعداد تقليل الحركة.',
+        detailEn: 'Copy an assistant response in one action; the conversation log follows the latest message and respects reduced-motion preferences.',
+      },
     ],
   },
   {

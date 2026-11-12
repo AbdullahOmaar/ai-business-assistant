@@ -3999,3 +3999,17 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Updated only the shared mobile card presentation to place the declared primary cell first. Desktop table column order and data contracts remain unchanged.
 - Added regression coverage for the shared primary-cell ordering rule and the three date-first contracts.
 - No API, database, authorization, financial, inventory, payroll or notification behavior changed. Consolidated exact-head CI is required before review/merge.
+
+
+## 2026-11-12 — AI assistant conversation workspace improvement
+
+- **Branch:** `master/nov-2026-phase-1-ux-foundation`; based on current main `49cbf744ab71a3623822d5645ce1ef1a8e812b51`.
+- **Product outcome:** improve the complete in-app assistant conversation loop without changing its backend contract or read-only authority.
+- Added a local New chat action to reset only in-memory conversation state; no persistence or business data is deleted.
+- Added explicit one-tap copy for assistant replies with localized success/failure feedback; clipboard access is user initiated only.
+- Added latest-turn auto-scroll with reduced-motion support. Preserved fail-closed workspace/auth context, backend source citations, retry draft restoration and bounded history.
+- Updated the bilingual feature guide and T18 nested-surface inventory.
+- **Scope:** `app.component.ts`, `release-guide.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`. No backend/API/schema/auth/tenant/financial/payroll/inventory/notification behavior or external side effects changed.
+- **Validation:** per Owner direction, automated tests, build, Playwright, dependency/security audit and GitHub Actions are intentionally deferred until the coherent November product batch closes. The new interactions are NOT YET TESTED; no pass is claimed.
+- **Delivery:** implementation is staged on the single Owner-selected November branch. No PR, merge or deployment is created or authorized by this checkpoint.
+- **Next:** continue the Master-owned assistant journey improvements on the same branch, then add/execute consolidated regression and cross-device acceptance once the batch is complete.
