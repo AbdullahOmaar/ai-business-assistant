@@ -576,3 +576,5 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Browser compatibility, clipboard permissions, screen-reader announcements and scroll behavior are NOT YET TESTED; included in the deferred consolidated validation batch.
 
 - On narrow layouts, first-run suggestion cards move above the conversation panel until the first turn exists; after the conversation starts, the chat stays first and suggestions remain available below. Starting a new chat restores the first-run order.
+
+- Mobile readability pass: assistant response text is raised to 14px with more line spacing and overflow wrapping; composer text is 16px to avoid small-input zoom behavior; source labels and starter prompt text are slightly larger. These responsive overrides remain pending device/browser validation.
