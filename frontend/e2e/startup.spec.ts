@@ -33,14 +33,17 @@ test('switches startup language and layout direction both ways', async ({ page }
   await expect(page.locator('.language-toggle')).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('body')).toHaveCSS('direction', 'rtl');
 
   await page.locator('.language-toggle').click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  await expect(page.locator('body')).toHaveCSS('direction', 'ltr');
 
   await page.locator('.language-toggle').click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('body')).toHaveCSS('direction', 'rtl');
 });
 
 test('keeps the safe setup screen usable at a narrow mobile viewport', async ({ page }) => {

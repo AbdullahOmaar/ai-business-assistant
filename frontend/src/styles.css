@@ -163,7 +163,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   overflow-wrap: anywhere;
 }
 
-html[dir="rtl"], body { direction: rtl; }
+html[dir="rtl"], html[dir="rtl"] body { direction: rtl; }
 body { text-align: start; }
 input, select, textarea { text-align: start; }
 button, input, select, textarea { font-family: inherit; }
