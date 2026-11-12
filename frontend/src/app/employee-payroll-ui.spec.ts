@@ -184,8 +184,8 @@ test('employee directory and payroll selector never expose base salary values', 
   assert.ok(directoryStart >= 0 && directoryEnd > directoryStart);
   const directory = component.slice(directoryStart, directoryEnd);
   assert.doesNotMatch(directory, /monthly_salary|currencyCode/);
-  assert.match(directory, /name:employee\\.name/);
-  assert.match(directory, /employee\\.employee_code\\|\\|'—'/);
+  assert.ok(directory.includes('name:employee.name'));
+  assert.ok(directory.includes("code:employee.employee_code||'—'"));
 
   const selectorStart = component.indexOf('<select name="payrollEmployeeId"');
   const selectorEnd = component.indexOf('</select>', selectorStart);
