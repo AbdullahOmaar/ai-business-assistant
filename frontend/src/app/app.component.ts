@@ -4572,18 +4572,48 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async copyAssistantMessage(content: string, index: number): Promise<void> {
     try {
-      if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
-      await navigator.clipboard.writeText(content);
+      if (navigator.clipboard?.writeText) {
+        try {
+          await navigator.clipboard.writeText(content);
+        } catch {
+          this.copyTextWithSelectionFallback(content);
+        }
+      } else {
+        this.copyTextWithSelectionFallback(content);
+      }
       this.chatCopyStatus = { index, success: true };
     } catch {
       this.chatCopyStatus = { index, success: false };
     }
   }
 
-  private scrollChatToLatest(): void {
+  private copyTextWithSelectionFallback(content: string): void {
+    const temporaryInput = document.createElement('textarea');
+    temporaryInput.value = content;
+    temporaryInput.setAttribute('readonly', '');
+    temporaryInput.setAttribute('aria-hidden', 'true');
+    temporaryInput.style.position = 'fixed';
+    temporaryInput.style.opacity = '0';
+    temporaryInput.style.pointerEvents = 'none';
+    temporaryInput.style.insetInlineStart = '-9999px';
+    document.body.appendChild(temporaryInput);
+    temporaryInput.select();
+    temporaryInput.setSelectionRange(0, temporaryInput.value.length);
+    const copied = document.execCommand('copy');
+    temporaryInput.remove();
+    if (!copied) throw new Error('Clipboard copy command failed');
+  }
+
+  private isChatLogNearBottom(): boolean {
+    const log = this.chatLog?.nativeElement;
+    if (!log) return true;
+    return log.scrollHeight - log.scrollTop - log.clientHeight <= 120;
+  }
+
+  private scrollChatToLatest(force = false): void {
     requestAnimationFrame(() => {
       const log = this.chatLog?.nativeElement;
-      if (!log) return;
+      if (!log || (!force && !this.isChatLogNearBottom())) return;
       const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       log.scrollTo({ top: log.scrollHeight, behavior: reducedMotion ? 'auto' : 'smooth' });
     });
@@ -4630,13 +4660,14 @@ export class AppComponent implements OnInit, OnDestroy {
 
     const question = this.chatDraft.trim();
     const history = this.chatMessages.slice(-8);
+    const shouldFollowLatest = this.isChatLogNearBottom();
     this.chatMessages = [...this.chatMessages, { role: 'user', content: question }];
     this.chatDraft = '';
     this.chatSending = true;
     this.chatError = '';
     this.chatCopyStatus = null;
     this.error = '';
-    this.scrollChatToLatest();
+    this.scrollChatToLatest(shouldFollowLatest);
 
     await runTenantScopedRequest(
       this.chatRequestGuard,
@@ -4645,8 +4676,9 @@ export class AppComponent implements OnInit, OnDestroy {
       () => this.api.chat(requestContext.workspaceId, question, history),
       {
         onSuccess: (reply: ChatReply) => {
+          const shouldFollowLatest = this.isChatLogNearBottom();
           this.chatMessages = [...this.chatMessages, { role: 'assistant', content: reply.answer, sources: reply.sources, mode: reply.mode }];
-          this.scrollChatToLatest();
+          this.scrollChatToLatest(shouldFollowLatest);
         },
         onError: error => {
           this.chatMessages = this.chatMessages.slice(0, -1);
