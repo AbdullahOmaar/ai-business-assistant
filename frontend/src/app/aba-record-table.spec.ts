@@ -89,3 +89,25 @@ test('shared motion uses short purposeful feedback and honors reduced-motion pre
   assert.match(css,/aiba-motion-menu-enter/);
   assert.match(css,/animation: none !important/);
 });
+
+
+test('mobile record cards surface primary fields before secondary date metadata', () => {
+  assert.match(css, /\.aba-record-table tbody :is\(td,th\)\.aba-record-table__primary-cell\{grid-column:1\/-1;order:-1;/);
+
+  const contracts = [
+    ['expenseTableColumns', 'date', 'description'],
+    ['auditTableColumns', 'date', 'action'],
+    ['customerStatementTableColumns', 'date', 'event'],
+  ];
+
+  for (const [getter, dateKey, primaryKey] of contracts) {
+    const start = app.indexOf('get ' + getter);
+    assert.ok(start >= 0, 'missing column contract: ' + getter);
+    const next = app.indexOf('\n  get ', start + 4);
+    const block = app.slice(start, next < 0 ? app.length : next);
+    const datePosition = block.indexOf("key:'" + dateKey + "'");
+    const primaryPosition = block.indexOf("key:'" + primaryKey + "'");
+    assert.ok(datePosition >= 0 && primaryPosition > datePosition, 'expected date-first source order: ' + getter);
+    assert.match(block.slice(primaryPosition, primaryPosition + 100), /primary:true/);
+  }
+});

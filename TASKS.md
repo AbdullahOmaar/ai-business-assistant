@@ -3990,3 +3990,12 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 
 
 - **Keyboard containing-block correction — 2026-11-12:** Greptile's follow-up review correctly noted that `backdrop-filter` on `.sidebar` establishes the containing block for its fixed More menu. The keyboard inset was therefore being counted once in the sidebar bottom and again in the menu bottom. Corrected the menu bottom to remain dock-relative (`88px + safe-area`) while the sidebar alone is raised by the keyboard inset. Strengthened Playwright to assert the actual viewport rectangle/top/bottom gap, not merely CSS values. Exact-head CI must be rerun.
+
+
+## 2026-11-12 — Shared mobile record-card primary hierarchy
+
+- Confirmed Supplier, Purchasing, Payment, Recurring, Notification, Receivables Aging, Profit/Loss and Tax tables already start with their primary identifier/context field.
+- Confirmed three date-first table contracts whose semantic primary field was rendered after the date on phones: Expenses (Description), Audit (Action), and Customer Statement (Event).
+- Updated only the shared mobile card presentation to place the declared primary cell first. Desktop table column order and data contracts remain unchanged.
+- Added regression coverage for the shared primary-cell ordering rule and the three date-first contracts.
+- No API, database, authorization, financial, inventory, payroll or notification behavior changed. Consolidated exact-head CI is required before review/merge.

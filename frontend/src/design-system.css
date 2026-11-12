@@ -1744,7 +1744,7 @@
 :root body .shell .aba-record-table tbody tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));min-width:0;overflow:hidden;border:1px solid var(--aiba-line);border-radius:14px;background:var(--aiba-surface);box-shadow:0 3px 12px rgb(15 23 42 / 4%)}
 :root body .shell .aba-record-table tbody :is(td,th){display:grid;align-content:start;gap:5px;min-width:0;padding:11px 12px;border:0;background:transparent;white-space:normal;text-align:start}
 :root body .shell .aba-record-table tbody :is(td,th)::before{content:attr(data-label);color:var(--aiba-muted);font-size:11px;font-weight:650;line-height:1.35}
-:root body .shell .aba-record-table tbody :is(td,th).aba-record-table__primary-cell{grid-column:1/-1;padding:14px 14px 11px;border-block-end:1px solid var(--aiba-line);background:var(--aiba-surface-tint);font-size:14px}
+:root body .shell .aba-record-table tbody :is(td,th).aba-record-table__primary-cell{grid-column:1/-1;order:-1;padding:14px 14px 11px;border-block-end:1px solid var(--aiba-line);background:var(--aiba-surface-tint);font-size:14px}
 :root body .shell .aba-record-table tbody td[data-kind="numeric"]{white-space:normal;text-align:start}
 :root body .shell .aba-record-table tbody td.aba-record-table__actions-cell{grid-column:1/-1;min-width:0;padding-block:10px;border-block-start:1px solid var(--aiba-line);background:var(--aiba-surface-tint)}
 :root body .shell .aba-record-table__actions{width:100%}
