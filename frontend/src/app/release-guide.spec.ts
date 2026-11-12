@@ -203,3 +203,12 @@ test('customer guide documents bilingual statement event labels', () => {
   assert.ok(customers);
   assert.match(customers.features.map(feature => feature.detailEn).join(' '), /event types shown in the selected language/i);
 });
+
+
+test('feature guide documents searchable bilingual mobile navigation without overstating access control', () => {
+  const workspace = FEATURE_CATALOG.find(section => section.id === 'workspace');
+  assert.ok(workspace);
+  const featureText = workspace.features.map(feature => feature.detailEn).join(' ');
+  assert.match(featureText, /search by an Arabic or English section name/i);
+  assert.match(featureText, /destinations available to your current role/i);
+});
