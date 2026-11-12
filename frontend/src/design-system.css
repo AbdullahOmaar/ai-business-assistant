@@ -65,6 +65,8 @@
   --aiba-motion: 160ms cubic-bezier(.2, 0, 0, 1);
   --aiba-motion-fast: 120ms cubic-bezier(.2, 0, 0, 1);
   --aiba-motion-standard: 190ms cubic-bezier(.2, .8, .2, 1);
+  --aiba-motion-standard-duration: 190ms;
+  --aiba-motion-standard-easing: cubic-bezier(.2, .8, .2, 1);
   --aiba-motion-emphasized: 260ms cubic-bezier(.2, .9, .25, 1);
   --aiba-motion-spring: 220ms cubic-bezier(.2, .9, .25, 1.12);
 }
@@ -1759,8 +1761,8 @@
   :root body .shell :is(.nav-item, .home-shortcut-link, .module-directory-summary,
     .aba-record-create > summary, .aba-record-secondary > summary, .aba-record-table__action) {
     transition-property: color, background-color, border-color, box-shadow, opacity, transform;
-    transition-duration: var(--aiba-motion-standard);
-    transition-timing-function: cubic-bezier(.2, .8, .2, 1);
+    transition-duration: var(--aiba-motion-standard-duration);
+    transition-timing-function: var(--aiba-motion-standard-easing);
   }
 
   :root body .shell .nav-item .nav-icon {

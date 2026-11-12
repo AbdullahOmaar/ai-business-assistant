@@ -1363,6 +1363,35 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
     await expect(menu.getByRole('button', { name: available })).toBeVisible();
   }
 
+  // Focusing More search opens the virtual keyboard on phones. Keep the
+  // dock/menu above that keyboard so filtered destinations remain tappable.
+  await menu.getByRole('searchbox', { name: /Search sections/ }).fill('Products & inventory');
+  await page.locator('.shell').evaluate(shell => {
+    shell.classList.add('keyboard-open');
+    document.documentElement.style.setProperty('--aba-keyboard-inset', '300px');
+  });
+  const keyboardProductAction = menu.getByRole('button', { name: /Products & inventory/ });
+  await expect(menu).toBeVisible();
+  await expect(keyboardProductAction).toBeVisible();
+  await expect(keyboardProductAction).toHaveCSS('pointer-events', 'auto');
+  const keyboardMenuLayout = await menu.evaluate(element => ({
+    bottom: Number.parseFloat(getComputedStyle(element).bottom),
+    sidebarBottom: Number.parseFloat(getComputedStyle(element.parentElement!).bottom),
+    sidebarPointerEvents: getComputedStyle(element.parentElement!).pointerEvents,
+  }));
+  expect(keyboardMenuLayout.bottom).toBeGreaterThan(300);
+  expect(keyboardMenuLayout.sidebarBottom).toBe(300);
+  expect(keyboardMenuLayout.sidebarPointerEvents).toBe('auto');
+  await keyboardProductAction.click();
+  await expect(menu).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /Products & inventory/ })).toBeVisible();
+  await page.locator('.shell').evaluate(shell => {
+    shell.classList.remove('keyboard-open');
+    document.documentElement.style.removeProperty('--aba-keyboard-inset');
+  });
+  await moreTrigger.click();
+  await expect(menu).toBeVisible();
+
   // Repeat role filtering and responsive layout in Arabic RTL.
   await menu.locator('.mobile-menu-action').first().click();
   await page.keyboard.press('Escape');

@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const component = readFileSync(new URL('./product-catalog.component.ts', import.meta.url), 'utf8');
+const sortHelper = readFileSync(new URL('./directory-sort.ts', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./product-catalog.component.css', import.meta.url), 'utf8');
 const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 
@@ -30,9 +31,10 @@ test('catalogue sorting is available to desktop keyboard users and mobile touch 
   assert.match(component, /aria-sort/);
   assert.match(component, /toggleSort\('price'\)/);
   assert.match(component, /onMobileSortChange\(\$event\)/);
-  assert.match(component, /new Intl\.Collator\(this\.locale\(\)/);
-  assert.match(component, /Number\(left\.unit_price\)/);
-  assert.match(component, /leftCurrency/);
+  assert.match(component, /filterAndSortProducts\(/);
+  assert.match(sortHelper, /new Intl\.Collator\(locale/);
+  assert.match(sortHelper, /Number\(left\.unit_price\)/);
+  assert.match(sortHelper, /leftCurrency/);
 });
 
 test('catalogue only renders fields already present in the Product API contract', () => {

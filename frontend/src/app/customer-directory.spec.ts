@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const component = readFileSync(new URL('./customer-directory.component.ts', import.meta.url), 'utf8');
+const sortHelper = readFileSync(new URL('./directory-sort.ts', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./customer-directory.component.css', import.meta.url), 'utf8');
 const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 
@@ -16,7 +17,8 @@ test('customer directory supports accessible sorting in desktop and mobile layou
   assert.match(component, /aria-sort/);
   assert.match(component, /toggleSort\('name'\)/);
   assert.match(component, /onMobileSortChange\(\$event\)/);
-  assert.match(component, /new Intl\.Collator\(this\.locale\(\)/);
+  assert.match(component, /sortCustomers\(this\.customers\(\)/);
+  assert.match(sortHelper, /new Intl\.Collator\(locale/);
   assert.match(component, /ariaSort\(field: CustomerSortField\)/);
   assert.match(component, /sortIndicator\(field: CustomerSortField\)/);
 });

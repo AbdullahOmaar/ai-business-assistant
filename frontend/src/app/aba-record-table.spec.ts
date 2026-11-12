@@ -78,6 +78,8 @@ test('customer directory exposes only supported customer details and existing na
 test('shared motion uses short purposeful feedback and honors reduced-motion preferences',()=>{
   assert.match(css,/--aiba-motion-fast:/);
   assert.match(css,/--aiba-motion-standard:/);
+  assert.match(css,/--aiba-motion-standard-duration: 190ms/);
+  assert.match(css,/transition-duration: var\\(--aiba-motion-standard-duration\\)/);
   assert.match(css,/--aiba-motion-spring:/);
   assert.match(css,/@media \(prefers-reduced-motion: no-preference\)/);
   assert.match(css,/\.nav-item\.active \.nav-icon/);
