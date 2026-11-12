@@ -3831,3 +3831,12 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Preserved semantic table markup for assistive technology and desktop, existing row actions, exact-search and pagination behavior, read-only financial summaries, and server-owned platform permissions.
 - No API, role, authorization, tenant, identity, database, financial, or audit behavior changed.
 - Exact-head tests/build/browser/security validation remain deferred until the coherent November UX batch is assembled; no PR, merge or deployment.
+
+
+## 2026-11-12 — Invoice list single-layout cleanup
+
+- Reviewed the invoice destination end-to-end: search, status/customer filters, owner-only export, draft editor, status-dependent actions, server-returned payment allocations/outstanding balances, payment progress and incremental loading.
+- Removed a duplicate desktop invoice table that was permanently hidden by CSS; the existing rich invoice cards remain the single responsive presentation across desktop and phone, avoiding duplicated action markup that could drift.
+- Raised invoice-card action targets to 44px on phone widths. Existing invoice status, print, pay, issue and void guards remain unchanged.
+- No invoice calculations, payment/allocation semantics, API, schema, database, authorization, or financial behavior changed.
+- Exact-head consolidated validation remains deferred until the November UX batch closes; no PR, merge or deployment.

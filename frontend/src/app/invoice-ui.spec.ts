@@ -43,8 +43,9 @@ test('payment state and progress require server-returned allocations and outstan
 });
 
 test('invoice cards are the primary responsive layout rather than a desktop-only table replacement', () => {
-  assert.match(appSource, /\.invoice-table-wrap\{display:none\}/);
+  assert.doesNotMatch(appSource, /invoice-table-wrap|invoice-table/);
   assert.match(appSource, /\.invoice-cards\{display:grid;grid-template-columns:repeat\(auto-fit/);
+  assert.match(appSource, /\.invoice-card \.invoice-actions button\{min-height:44px\}/);
   assert.match(appSource, /\.invoice-cards\{grid-template-columns:minmax\(0,1fr\)\}/);
 });
 

@@ -679,44 +679,6 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 } @else if (!filteredInvoices.length) {
                   <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId) ? t('لا توجد فواتير مطابقة للبحث والفلاتر.', 'No invoices match your search and filters.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ مسودة فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice draft.')" />
                 } @else {
-                  <div class="invoice-table-wrap" role="region" tabindex="0" aria-labelledby="invoice-table-caption">
-                    <table class="invoice-table">
-                      <caption id="invoice-table-caption">{{ t('قائمة الفواتير', 'Invoice list') }}</caption>
-                      <thead><tr>
-                        <th scope="col">{{ t('العميل', 'Customer') }}</th><th scope="col">{{ t('الفاتورة / التاريخ', 'Invoice / date') }}</th>
-                        <th scope="col">{{ t('القيمة', 'Amount') }}</th><th scope="col">{{ t('المتبقي', 'Remaining') }}</th>
-                        <th scope="col">{{ t('الحالة', 'Status') }}</th><th scope="col">{{ t('الإجراءات', 'Actions') }}</th>
-                      </tr></thead>
-                      <tbody>
-                        @for (invoice of filteredInvoices; track invoice.id) {
-                          <tr>
-                            <td class="invoice-customer"><strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong></td>
-                            <td class="invoice-reference"><strong>{{ invoice.invoice_number }}</strong><small>{{ invoice.issue_date ? (invoice.issue_date | date:'mediumDate') : (invoice.created_at ? t('تاريخ الإنشاء: ', 'Created: ') + (invoice.created_at | date:'mediumDate') : t('التاريخ غير متاح', 'Date unavailable')) }}</small></td>
-                            <td class="invoice-money"><bdi dir="ltr">{{ invoice.total | number:'1.2-2' }} {{ invoice.currency_code }}</bdi></td>
-                            <td class="invoice-money">@if (invoice.status === 'issued' && invoice.outstanding_amount !== undefined) {
-                                  <bdi dir="ltr">{{ invoice.outstanding_amount | number:'1.2-2' }} {{ invoice.currency_code }}</bdi>
-                                } @else { — }</td>
-                            <td><span class="invoice-status-badge" [class.status-draft]="invoice.status === 'draft'" [class.status-issued]="invoice.status === 'issued'" [class.status-void]="invoice.status === 'void'">{{ invoiceStatusLabel(invoice.status) }}</span></td>
-                            <td><div class="invoice-actions">
-                              @if (invoice.status === 'draft') {
-                                <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button>
-                                @if (business?.role === 'owner') {
-                                  <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button>
-                                  <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button>
-                                }
-                              } @else if (invoice.status === 'issued') {
-                                <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button>
-                                @if (business?.role === 'owner') {
-                                  @if (hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> }
-                                  <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button>
-                                }
-                              }
-                            </div></td>
-                          </tr>
-                        }
-                      </tbody>
-                    </table>
-                  </div>
                   <div class="invoice-cards">
                     @for (invoice of filteredInvoices; track invoice.id) {
                       <article class="invoice-card">
@@ -1278,33 +1240,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
     .invoice-filter{display:grid;gap:5px;min-width:0;color:var(--aba-color-text-secondary,#475569);font-size:11px;font-weight:500}
     .invoice-filter select{width:100%;min-width:0;font-weight:400}
     .invoice-export,.invoice-load-more-customers{min-height:40px;white-space:nowrap;padding:8px 11px}
-    .invoice-table-wrap{width:100%;max-width:100%;overflow-x:auto;overscroll-behavior-inline:contain;-webkit-overflow-scrolling:touch;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px}
-    .invoice-table{width:100%;min-width:820px;border-collapse:collapse;table-layout:auto}
-    .invoice-table caption{padding:10px 13px;text-align:start;color:var(--aba-color-text-secondary,#64748b);font-size:11px;font-weight:700}
-    .invoice-table th,.invoice-table td{padding:12px 13px;text-align:start;vertical-align:middle;border-bottom:1px solid var(--aba-color-border-subtle,#e2e8f0);overflow-wrap:anywhere}
-    .invoice-table th{background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#475569);font-size:11px;font-weight:800;white-space:nowrap}
-    .invoice-table th:nth-child(3),.invoice-table th:nth-child(4){text-align:end}
-    .invoice-table-wrap:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:2px}
-    .invoice-table tbody tr:last-child td{border-bottom:0}
-    .invoice-table tbody tr:hover{background:var(--aba-color-surface-subtle,#f8fafc)}
-    .invoice-customer{min-width:170px}
-    .invoice-customer strong{display:block;font-size:13px;line-height:1.5;color:var(--aba-color-text-primary,#172033);overflow-wrap:anywhere}
-    .invoice-reference{min-width:150px}
-    .invoice-reference strong,.invoice-reference small{display:block}
-    .invoice-reference strong{font-size:12px;font-variant-numeric:tabular-nums}
-    .invoice-reference small{margin-top:3px;color:var(--aba-color-text-secondary,#64748b);font-size:10px}
-    .invoice-money{min-width:115px;text-align:end!important;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
     .invoice-status-badge{display:inline-flex;align-items:center;justify-content:center;min-height:26px;padding:4px 9px;border:1px solid var(--aba-color-border,#d0d5dd);border-radius:999px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#475569);font-size:11px;font-weight:800;white-space:nowrap}
     .invoice-status-badge.status-draft{border-color:#d0d5dd;background:#f2f4f7;color:#344054}
     .invoice-status-badge.status-issued{border-color:#bfdbfe;background:#eff6ff;color:#1d4ed8}
     .invoice-status-badge.status-void{border-color:#fecaca;background:#fef2f2;color:#b42318}
     .invoice-actions{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:6px;min-width:0}
     .invoice-actions button{min-height:34px;padding:6px 9px;font-size:11px;white-space:nowrap}
-    .invoice-cards{display:none}
     .invoice-list-state{padding:18px;border:1px dashed var(--aba-color-border,#d0d5dd);border-radius:12px;color:var(--aba-color-text-secondary,#64748b);text-align:center}
     
     
-    .invoice-table-wrap{display:none}
     .invoice-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:10px;margin-top:12px}
     .invoice-card{display:grid;gap:12px;min-width:0;padding:13px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:14px;background:var(--aba-color-surface,#fff)}
     .invoice-card-header{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
@@ -1335,6 +1279,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
     @media(max-width:1050px){.invoice-controls{grid-template-columns:minmax(0,1fr) minmax(130px,170px) minmax(170px,220px)}.invoice-export,.invoice-load-more-customers{grid-column:1/-1;justify-self:end}}
     @media(max-width:760px){
       .invoice-cards{grid-template-columns:minmax(0,1fr)}
+      .invoice-card .invoice-actions button{min-height:44px}
       .invoice-card{padding:12px;gap:11px}
       .invoice-card-header{gap:8px}
       .invoice-cards .invoice-status-badge{max-width:108px;white-space:normal}
