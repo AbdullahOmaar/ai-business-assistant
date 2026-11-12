@@ -574,3 +574,5 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Copying an assistant response first uses the modern Clipboard API, then falls back to a temporary off-screen textarea and the browser copy command when permissions/API support are unavailable. Both paths remain user-click initiated; failure is surfaced in the existing localized feedback.
 - Auto-follow now respects the reader's position: new turns move the log only when the user was already near the latest message. Reading older messages is no longer interrupted by a late assistant response. Reduced-motion preference remains respected.
 - Browser compatibility, clipboard permissions, screen-reader announcements and scroll behavior are NOT YET TESTED; included in the deferred consolidated validation batch.
+
+- On narrow layouts, first-run suggestion cards move above the conversation panel until the first turn exists; after the conversation starts, the chat stays first and suggestions remain available below. Starting a new chat restores the first-run order.
