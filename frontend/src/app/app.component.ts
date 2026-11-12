@@ -12,6 +12,7 @@ import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { ReleaseGuideComponent } from './release-guide.component';
 import { CustomerDirectoryComponent } from './customer-directory.component';
+import { ProductCatalogComponent } from './product-catalog.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
 import { AbaConfirmDialogComponent } from './shared/ui/aba-confirm-dialog.component';
@@ -37,7 +38,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerDirectoryComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerDirectoryComponent, ProductCatalogComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -613,7 +614,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   @if (importMessage) { <aba-state-message [kind]="importMessageKind" [description]="importMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
                 <div class="list-tools aba-record-toolbar"><input name="productSearch" type="search" [attr.aria-label]="t('البحث عن منتج', 'Search products')" [placeholder]="t('ابحث عن منتج أو رمز SKU…', 'Search products or SKU…')" [(ngModel)]="productSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
-                <aba-record-table [ariaLabel]="t('جدول المنتجات والمخزون', 'Products and inventory table')" [columns]="productTableColumns" [rows]="productTableRows" [loading]="loading && !products.length" [loadingDescription]="t('جارٍ تحميل المنتجات…', 'Loading products…')" [emptyTitle]="t('لا توجد منتجات', 'No products yet')" [emptyDescription]="productSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No products match this search.') : t('أضف منتجًا أو خدمة لبدء إدارة الكتالوج والمخزون.', 'Add a product or service to start managing the catalogue and stock.')" />
+                <aba-product-catalog [ariaLabel]="t('كتالوج المنتجات والمخزون', 'Product and inventory catalogue')" [products]="filteredProducts" [locale]="language" [currencyCode]="business?.currency_code || ''" [loading]="loading && !products.length" [loadingDescription]="t('جارٍ تحميل المنتجات…', 'Loading products…')" [emptyTitle]="t('لا توجد منتجات', 'No products yet')" [emptyDescription]="productSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No products match this search.') : t('أضف منتجًا أو خدمة لبدء إدارة الكتالوج والمخزون.', 'Add a product or service to start managing the catalogue and stock.')" />
 
             </section>
             }
@@ -1607,21 +1608,6 @@ export class AppComponent implements OnInit, OnDestroy {
     return filterCustomers(this.customers, this.customerSearch);
   }
 
-  get productTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'name',label:this.t('المنتج / الخدمة','Product / service'),primary:true},
-    {key:'sku',label:'SKU'},
-    {key:'price',label:this.t('سعر الوحدة','Unit price'),kind:'numeric'},
-    {key:'tracking',label:this.t('نوع الصنف','Item type'),kind:'status'},
-    {key:'stock',label:this.t('الكمية المتاحة','Stock quantity'),kind:'numeric'},
-  ]; }
-  get productTableRows(): readonly AbaRecordTableRow[] { return this.filteredProducts.map(product=>({
-    id:product.id,cells:{
-      name:product.name,sku:product.sku||'—',
-      price:`${product.unit_price} ${product.currency_code||this.business?.currency_code||''}`.trim(),
-      tracking:product.is_stock_tracked?this.t('مخزني','Stock tracked'):this.t('خدمة / غير مخزني','Service / non-stock'),
-      stock:product.is_stock_tracked?String(product.stock_quantity??0):this.t('غير منطبق','Not applicable'),
-    },
-  })); }
   get supplierTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'name',label:this.t('المورد','Supplier'),primary:true},
     {key:'email',label:this.t('البريد الإلكتروني','Email')},
