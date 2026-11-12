@@ -1374,12 +1374,21 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   await expect(menu).toBeVisible();
   await expect(keyboardProductAction).toBeVisible();
   await expect(keyboardProductAction).toHaveCSS('pointer-events', 'auto');
-  const keyboardMenuLayout = await menu.evaluate(element => ({
-    bottom: Number.parseFloat(getComputedStyle(element).bottom),
-    sidebarBottom: Number.parseFloat(getComputedStyle(element.parentElement!).bottom),
-    sidebarPointerEvents: getComputedStyle(element.parentElement!).pointerEvents,
-  }));
-  expect(keyboardMenuLayout.bottom).toBeGreaterThan(300);
+  const keyboardMenuLayout = await menu.evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    return {
+      bottom: Number.parseFloat(getComputedStyle(element).bottom),
+      bottomGap: window.innerHeight - rect.bottom,
+      top: rect.top,
+      sidebarBottom: Number.parseFloat(getComputedStyle(element.parentElement!).bottom),
+      sidebarPointerEvents: getComputedStyle(element.parentElement!).pointerEvents,
+    };
+  });
+  // The blurred sidebar is the fixed-position containing block: apply the
+  // keyboard inset to the dock once, then leave the menu offset dock-relative.
+  expect(keyboardMenuLayout.bottom).toBe(88);
+  expect(keyboardMenuLayout.bottomGap).toBeGreaterThanOrEqual(388);
+  expect(keyboardMenuLayout.top).toBeGreaterThanOrEqual(0);
   expect(keyboardMenuLayout.sidebarBottom).toBe(300);
   expect(keyboardMenuLayout.sidebarPointerEvents).toBe('auto');
   await keyboardProductAction.click();

@@ -1239,7 +1239,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       .shell.keyboard-open .main,.shell:has(.chat-form textarea:focus) .main{padding-bottom:12px}
       .shell.keyboard-open .chat-log{min-height:100px;max-height:35dvh}
       .shell.keyboard-open .sidebar:has(.mobile-more-menu){bottom:var(--aba-keyboard-inset,0px);transform:none;pointer-events:auto}
-      .shell.keyboard-open .sidebar:has(.mobile-more-menu) .mobile-more-menu{bottom:calc(var(--aba-keyboard-inset,0px) + 88px + env(safe-area-inset-bottom));max-height:min(62dvh,calc(100dvh - var(--aba-keyboard-inset,0px) - 110px))}
+      .shell.keyboard-open .sidebar:has(.mobile-more-menu) .mobile-more-menu{bottom:calc(88px + env(safe-area-inset-bottom));max-height:min(62dvh,calc(100dvh - var(--aba-keyboard-inset,0px) - 110px))}
     }
     /* P1 Home hierarchy: keep the four KPI cards readable as a single column on phones. */
     @media(max-width:760px){.metric-grid{grid-template-columns:minmax(0,1fr)}}

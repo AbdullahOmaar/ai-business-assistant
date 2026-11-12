@@ -3987,3 +3987,6 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 
 
 - **Hotfix browser-smoke correction — 2026-11-12:** run `43232384359` executed 22 Chromium E2E tests: 21 passed, 1 failed. The new keyboard/More-search regression itself passed and successfully tapped the filtered Products destination. The following pre-existing STAFF Home viewport sweep then ran while the test was still on the Products page and expected 12 Home cards. Added an explicit return to Home and asserted the 12 cards before the Arabic viewport sweep. No app runtime behavior changed. New exact-head browser smoke and aggregate are required.
+
+
+- **Keyboard containing-block correction — 2026-11-12:** Greptile's follow-up review correctly noted that `backdrop-filter` on `.sidebar` establishes the containing block for its fixed More menu. The keyboard inset was therefore being counted once in the sidebar bottom and again in the menu bottom. Corrected the menu bottom to remain dock-relative (`88px + safe-area`) while the sidebar alone is raised by the keyboard inset. Strengthened Playwright to assert the actual viewport rectangle/top/bottom gap, not merely CSS values. Exact-head CI must be rerun.
