@@ -567,3 +567,10 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - Mobile suggestion strips use horizontal scroll containment and proximity snap points, with a consistent minimum card height.
 - Conversation log announces additions rather than repeatedly re-reading its entire content and exposes the active request state through `aria-busy`.
 - Automated checks remain intentionally deferred; these changes are NOT YET TESTED.
+
+
+## Assistant reading continuity and clipboard compatibility — 2026-11-12
+
+- Copying an assistant response first uses the modern Clipboard API, then falls back to a temporary off-screen textarea and the browser copy command when permissions/API support are unavailable. Both paths remain user-click initiated; failure is surfaced in the existing localized feedback.
+- Auto-follow now respects the reader's position: new turns move the log only when the user was already near the latest message. Reading older messages is no longer interrupted by a late assistant response. Reduced-motion preference remains respected.
+- Browser compatibility, clipboard permissions, screen-reader announcements and scroll behavior are NOT YET TESTED; included in the deferred consolidated validation batch.
