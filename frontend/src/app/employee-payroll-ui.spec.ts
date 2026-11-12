@@ -202,3 +202,36 @@ test('employee directory and payroll selector never expose base salary values', 
   assert.match(component, /name="employeeMonthlySalary"/);
   assert.match(component, /\[\(ngModel\)\]="employeeMonthlySalary"/);
 });
+
+test('mobile payroll keeps its period filter with history and restores focus after workspace transitions', () => {
+  const toolsStart = component.indexOf('<div class="employee-tools">');
+  const toolsEnd = component.indexOf('</div>', toolsStart);
+  assert.ok(toolsStart >= 0 && toolsEnd > toolsStart);
+  assert.doesNotMatch(component.slice(toolsStart, toolsEnd), /payrollFilterPeriod/);
+  const historyStart = component.indexOf('data-mobile-pane="history"');
+  const historyEnd = component.indexOf('</section>', historyStart);
+  assert.ok(historyStart >= 0 && historyEnd > historyStart);
+  const history = component.slice(historyStart, historyEnd);
+  assert.match(history, /name="payrollFilterPeriod"/);
+  assert.match(component, /@ViewChild\('prepareHeading'\)/);
+  assert.match(component, /@ViewChild\('historyHeading'\)/);
+  assert.match(component, /focusAfterViewChange\('prepare'\)/);
+  assert.match(component, /focusAfterViewChange\('history'\)/);
+  assert.match(component, /focusAfterViewChange\('employee-toggle'\)/);
+  assert.match(component, /element\.focus\(\)/);
+  assert.match(component, /#employeeFormToggle/);
+});
+
+test('employee table action heading and remaining record loading descriptions respect Arabic locale', () => {
+  assert.match(component, /\[actionsHeading\]="t\('الإجراءات','Actions'\)"/);
+  for (const fragment of [
+    "[loadingDescription]=\"t('جارٍ تحميل الإشعارات…', 'Loading notifications…')\"",
+    "[loadingDescription]=\"t('جارٍ تحميل الجداول الدورية…', 'Loading recurring schedules…')\"",
+    "[loadingDescription]=\"t('جارٍ تحميل المدفوعات…', 'Loading payments…')\"",
+    "[loadingDescription]=\"t('جارٍ تحميل سجل النشاط…', 'Loading activity log…')\"",
+    "[loadingDescription]=\"t('جارٍ تحميل المصروفات…', 'Loading expenses…')\"",
+    "this.t('عميل الدفعة:','Payment customer:')",
+    "this.t('عميل الفاتورة:','Invoice customer:')",
+  ]) assert.ok(app.includes(fragment), 'missing localized record UX: '+fragment);
+});
+
