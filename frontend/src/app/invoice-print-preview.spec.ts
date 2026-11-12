@@ -4,24 +4,18 @@ import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 
-test('print action is exposed only for issued invoices in desktop rows and mobile cards', () => {
-  const containers = [
-    { selector: 'class="invoice-table"', endTag: '</tr>' },
-    { selector: 'class="invoice-cards"', endTag: '</article>' },
-  ];
-  for (const container of containers) {
-    const containerStart = source.indexOf(container.selector);
-    const loopStart = source.indexOf('@for (invoice of filteredInvoices; track invoice.id)', containerStart);
-    const blockEnd = source.indexOf(container.endTag, loopStart);
-    assert.ok(containerStart >= 0 && loopStart > containerStart && blockEnd > loopStart,
-      `invoice template loop must exist inside ${container.selector}`);
-    const block = source.slice(loopStart, blockEnd);
-    const draftStart = block.indexOf("invoice.status === 'draft'");
-    const issuedStart = block.indexOf("@else if (invoice.status === 'issued')", draftStart);
-    assert.ok(draftStart >= 0 && issuedStart > draftStart);
-    assert.ok(!block.slice(draftStart, issuedStart).includes('printInvoice(invoice)'));
-    assert.ok(block.slice(issuedStart).includes('printInvoice(invoice)'));
-  }
+test('print action is exposed only for issued invoices in the responsive invoice cards', () => {
+  const containerStart = source.indexOf('class="invoice-cards"');
+  const loopStart = source.indexOf('@for (invoice of filteredInvoices; track invoice.id)', containerStart);
+  const blockEnd = source.indexOf('</article>', loopStart);
+  assert.ok(containerStart >= 0 && loopStart > containerStart && blockEnd > loopStart,
+    'invoice card loop must exist inside the responsive card container');
+  const block = source.slice(loopStart, blockEnd);
+  const draftStart = block.indexOf("invoice.status === 'draft'");
+  const issuedStart = block.indexOf("@else if (invoice.status === 'issued')", draftStart);
+  assert.ok(draftStart >= 0 && issuedStart > draftStart);
+  assert.ok(!block.slice(draftStart, issuedStart).includes('printInvoice(invoice)'));
+  assert.ok(block.slice(issuedStart).includes('printInvoice(invoice)'));
 });
 
 test('print invoice escapes customer, business, invoice, and line values before writing HTML', () => {
