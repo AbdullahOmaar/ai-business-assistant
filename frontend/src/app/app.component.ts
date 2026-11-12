@@ -4597,10 +4597,14 @@ export class AppComponent implements OnInit, OnDestroy {
     temporaryInput.style.pointerEvents = 'none';
     temporaryInput.style.insetInlineStart = '-9999px';
     document.body.appendChild(temporaryInput);
-    temporaryInput.select();
-    temporaryInput.setSelectionRange(0, temporaryInput.value.length);
-    const copied = document.execCommand('copy');
-    temporaryInput.remove();
+    let copied = false;
+    try {
+      temporaryInput.select();
+      temporaryInput.setSelectionRange(0, temporaryInput.value.length);
+      copied = document.execCommand('copy');
+    } finally {
+      temporaryInput.remove();
+    }
     if (!copied) throw new Error('Clipboard copy command failed');
   }
 
