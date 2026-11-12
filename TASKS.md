@@ -3843,3 +3843,6 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 
 
 - **Review correction:** updated the existing Platform Admin user-directory regression assertion from horizontal-scroll behavior to the new labeled-card mobile contract; the prior assertion would have failed after the intended layout change.
+
+
+- **Maintainer review correction:** preserved the prior localized medium-date presentation for paid payroll records in the new shared table; malformed/missing timestamps render as an em dash rather than a raw ISO string.
