@@ -79,10 +79,10 @@ test('shared motion uses short purposeful feedback and honors reduced-motion pre
   assert.match(css,/--aiba-motion-fast:/);
   assert.match(css,/--aiba-motion-standard:/);
   assert.match(css,/--aiba-motion-spring:/);
-  assert.match(css,/@media \\(prefers-reduced-motion: no-preference\\)/);
+  assert.match(css,/@media \(prefers-reduced-motion: no-preference\)/);
   assert.match(css,/\.nav-item\.active \.nav-icon/);
   assert.match(css,/\.home-shortcut-link:active/);
-  assert.match(css,/@media \\(hover: hover\\) and \\(pointer: fine\\)/);
+  assert.match(css,/@media \(hover: hover\) and \(pointer: fine\)/);
   assert.match(css,/aiba-motion-menu-enter/);
   assert.match(css,/animation: none !important/);
 });

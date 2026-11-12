@@ -23,7 +23,7 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   const moreEnd = source.indexOf('          <div class="sidebar-bottom"', moreStart);
   assert.ok(moreStart >= 0 && moreEnd > moreStart);
   const moreMenu = source.slice(moreStart, moreEnd);
-  assert.match(moreMenu, /@for \(group of mobileMoreGroups; track group\.id\)/);
+  assert.match(moreMenu, /@for \(group of filteredMobileMoreGroups; track group\.id\)/);
   assert.match(moreMenu, /@for \(module of group\.modules; track module\.tab\)/);
   assert.match(moreMenu, /selectMobileMoreTab\(module\.tab\)/);
   assert.match(catalogueSource, /tab: 'platform-admin', mobileGroup: 'team-admin'/);
@@ -68,7 +68,7 @@ test('Home module directory exposes bilingual search and a localized empty state
 
   assert.match(home, /name="homeModuleSearch"/);
   assert.match(home, /\[\(ngModel\)\]="homeModuleSearch"/);
-  assert.match(home, /get filteredHomeModuleCards/);
+  assert.match(source, /get filteredHomeModuleCards/);
   assert.match(home, /@for \(module of filteredHomeModuleCards; track module\.tab\)/);
   assert.match(home, /module-directory-empty" role="status"/);
   assert.match(source, /filterWorkspaceModules\(this\.homeModuleCards, this\.homeModuleSearch/);

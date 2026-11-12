@@ -258,7 +258,7 @@ test('mobile More navigation renders grouped destinations from the shared catalo
   const menu = source.slice(menuStart, menuEnd);
   assert.ok(menuStart >= 0 && menuEnd > menuStart);
   assert.doesNotMatch(menu, /role="menu(?:item)?"/);
-  assert.match(menu, /@for \(group of mobileMoreGroups; track group\.id\)/);
+  assert.match(menu, /@for \(group of filteredMobileMoreGroups; track group\.id\)/);
   assert.match(menu, /@for \(module of group\.modules; track module\.tab\)/);
   assert.match(menu, /module\.icon/);
   assert.match(menu, /t\(module\.titleAr, module\.titleEn\)/);
@@ -302,7 +302,7 @@ test('Home quick access shows only the five key destinations from the shared rol
   assert.ok(quickAccess.includes('homeQuickAccessCards.length'));
   assert.match(quickAccess, /@for \(module of homeQuickAccessCards; track module\.tab\)/);
   assert.doesNotMatch(quickAccess, /homeModuleCards/);
-  assert.match(overview, /@for \(module of homeModuleCards; track module\.tab\)/);
+  assert.match(overview, /@for \(module of filteredHomeModuleCards; track module\.tab\)/);
   assert.match(overview, /All workspace modules/);
   assert.match(overview, /activated\)="setTab\(module\.tab\)"/);
   assert.doesNotMatch(source, /class="quick-card"/);

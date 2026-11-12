@@ -3967,3 +3967,6 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Added shared motion timing tokens and a reduced-motion override; hover-only movement is restricted to fine-pointer devices, while touch feedback uses active states.
 - Added a source-contract regression for the motion tokens, interaction states and reduced-motion guard. This test is authored; consolidated Node/Angular/Playwright/GitHub Actions validation remains pending on the final batch SHA.
 - Presentation-only change: no route, API, authorization, tenant, database, financial, inventory or payroll behavior changed.
+
+
+- **Exact-head CI failure diagnosis — 2026-11-12:** GitHub Actions run `43229792611` on `5acb8498ecdbf1b08bad31e4cd66778526ed1077` started correctly and verified the exact source SHA. Frontend unit tests reported 449/455 PASS, 6 FAIL. The failures were stale structural assertions that still expected the pre-search Home/More loops and a motion-test regex escaping error; no runtime/business logic failure was identified in those six reports. Updated the structural assertions to the filtered view models and corrected the regex. New exact-head run is required; the previous failed result is not reusable.
