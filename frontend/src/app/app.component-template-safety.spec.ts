@@ -513,7 +513,7 @@ test('authentication failures keep the user on the sign-in form instead of retry
   const authEnd = source.indexOf('} @else {', authStart);
   const authTemplate = source.slice(authStart, authEnd);
   assert.ok(authStart >= 0 && authEnd > authStart, 'sign-in view must exist');
-  assert.match(authTemplate, /<form #authForm="ngForm" \(ngSubmit\)="authForm\.valid && submitAuth\(\)" class="stack">/);
+  assert.match(authTemplate, /<form #authForm="ngForm"(?=[^>]*\(ngSubmit\)="authForm\.valid && submitAuth\(\)")(?=[^>]*class="stack")/);
   assert.match(authTemplate, /\[\(ngModel\)\]="email"/);
   assert.match(authTemplate, /\[\(ngModel\)\]="password"/);
   assert.match(authTemplate, /@if \(error\) \{ <aba-state-message kind="error" \[description\]="error" \/> \}/);

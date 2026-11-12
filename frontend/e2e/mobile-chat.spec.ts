@@ -694,6 +694,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     const direction = language === 'ar' ? 'rtl' : 'ltr';
     await expect(page.locator('.shell')).toHaveAttribute('dir', direction);
     await expect(page.locator('html')).toHaveAttribute('dir', direction);
+    await expect(page.locator('body')).toHaveCSS('direction', direction);
 
     for (const destination of routeDestinations) {
       const expectedTitle = language === 'ar' ? destination.titleAr : destination.titleEn;
@@ -763,11 +764,76 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     }
   };
 
+  const assertTabletRail = async (language: 'ar' | 'en') => {
+    const homeLabel = language === 'ar' ? 'الرئيسية' : 'Home';
+    const homeHeading = language === 'ar' ? 'الرئيسية' : 'Overview';
+    const direction = language === 'ar' ? 'rtl' : 'ltr';
+
+    for (const width of [761, 768, 820, 900]) {
+      await page.setViewportSize({ width, height: 1024 });
+      await expect(page.locator('.shell')).toHaveAttribute('dir', direction);
+      const metrics = await page.locator('.sidebar').evaluate((sidebar, expectedLabel) => {
+        const home = Array.from(sidebar.querySelectorAll<HTMLButtonElement>('.nav-item'))
+          .find(button => button.getAttribute('aria-label') === expectedLabel);
+        const label = home?.querySelector<HTMLElement>('span:not(.nav-icon)');
+        const sidebarRect = sidebar.getBoundingClientRect();
+        const mainRect = document.querySelector<HTMLElement>('.main')?.getBoundingClientRect();
+        return {
+          sidebarWidth: Math.round(sidebarRect.width),
+          sidebarLeft: Math.round(sidebarRect.left),
+          sidebarOverflowY: getComputedStyle(sidebar).overflowY,
+          homeAriaLabel: home?.getAttribute('aria-label') ?? '',
+          homeTitle: home?.getAttribute('title') ?? '',
+          homeLabelDisplay: label ? getComputedStyle(label).display : '',
+          mainOverlapsSidebar: mainRect
+            ? mainRect.left < sidebarRect.right && mainRect.right > sidebarRect.left
+            : true,
+          documentWidth: document.documentElement.scrollWidth,
+        };
+      }, homeLabel);
+
+      expect(metrics.sidebarWidth, 'tablet rail width at ' + width + 'px').toBe(84);
+      expect(metrics.sidebarLeft, 'RTL/LTR rail placement at ' + width + 'px')
+        .toBe(language === 'ar' ? 0 : width - 84);
+      expect(metrics.sidebarOverflowY).toBe('auto');
+      expect(metrics.homeAriaLabel).toBe(homeLabel);
+      expect(metrics.homeTitle).toBe(homeLabel);
+      expect(metrics.homeLabelDisplay).toBe('none');
+      expect(metrics.mainOverlapsSidebar).toBe(false);
+      expect(metrics.documentWidth, 'tablet document width at ' + width + 'px')
+        .toBeLessThanOrEqual(width);
+
+      const homeButton = page.locator('.sidebar').getByRole('button', { name: homeLabel, exact: true });
+      await homeButton.focus();
+      await expect(homeButton).toBeFocused();
+      await page.keyboard.press('Enter');
+      await expect(page.locator('.topbar-heading h1')).toHaveText(homeHeading);
+      await expect(page.locator('.workspace-bar')).toBeVisible();
+    }
+
+    // The rail ends at 900px; the full-label desktop sidebar resumes at 901px.
+    await page.setViewportSize({ width: 901, height: 1024 });
+    const desktopMetrics = await page.locator('.sidebar').evaluate(sidebar => {
+      const home = sidebar.querySelector<HTMLElement>('.nav-item:not(.mobile-more)');
+      const label = home?.querySelector<HTMLElement>('span:not(.nav-icon)');
+      const rect = sidebar.getBoundingClientRect();
+      return {
+        sidebarWidth: Math.round(rect.width),
+        labelDisplay: label ? getComputedStyle(label).display : '',
+        documentWidth: document.documentElement.scrollWidth,
+      };
+    });
+    expect(desktopMetrics.sidebarWidth).toBe(245);
+    expect(desktopMetrics.labelDisplay).not.toBe('none');
+    expect(desktopMetrics.documentWidth).toBeLessThanOrEqual(901);
+  };
+
   await assertRouteSweep(390, 'ar');
   // Complete all Arabic RTL widths before using the More-menu language action.
   await assertRouteSweep(360, 'ar');
   await assertRouteSweep(430, 'ar');
   await assertRouteSweep(768, 'ar');
+  await assertTabletRail('ar');
   await assertRouteSweep(1280, 'ar');
 
   // The More menu is mobile-only; restore a phone viewport after the tablet/desktop sweeps.
@@ -777,8 +843,11 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await page.locator('#mobile-more-menu .mobile-menu-action').first().click();
   await page.keyboard.press('Escape');
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
+  await assertRouteSweep(360, 'en');
   await assertRouteSweep(390, 'en');
+  await assertRouteSweep(430, 'en');
   await assertRouteSweep(768, 'en');
+  await assertTabletRail('en');
   await assertRouteSweep(1280, 'en');
 
   // Restore Arabic for the remaining mobile interaction checks.
@@ -892,6 +961,11 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   const paymentRequests: string[] = [];
   const unexpectedRequests: string[] = [];
   const productCreatePayloads: Array<Record<string, unknown>> = [];
+  const invoiceCreatePayloads: Array<Record<string, unknown>> = [];
+  const invoiceUpdatePayloads: Array<Record<string, unknown>> = [];
+  const forbiddenInvoiceActions: string[] = [];
+  let staffDraftInvoice: Record<string, unknown> | null = null;
+  let staffDraftLines: Array<Record<string, unknown>> = [];
 
   await page.addInitScript(() => window.localStorage.setItem('aba-language', 'en'));
   await page.route('**/*', async route => {
@@ -1029,6 +1103,79 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
       await route.fulfill({ status: 403, headers: corsHeaders, body: JSON.stringify({ detail: 'Owner-only data.' }) });
       return;
     }
+    if (path === '/api/v1/businesses/staff-business-1/invoices' && request.method() === 'POST') {
+      const payload = request.postDataJSON() as Record<string, unknown>;
+      invoiceCreatePayloads.push(payload);
+      staffDraftLines = (payload.lines as Array<Record<string, unknown>>).map((line, index) => ({
+        id: 'staff-draft-line-' + (index + 1),
+        product_id: line.product_id ?? null,
+        description: line.description,
+        quantity: line.quantity,
+        unit_price: line.unit_price,
+        line_total: '100.00',
+      }));
+      staffDraftInvoice = {
+        id: 'staff-draft-invoice-1',
+        business_id: 'staff-business-1',
+        invoice_number: payload.invoice_number,
+        customer_id: payload.customer_id,
+        status: 'draft',
+        currency_code: 'EGP',
+        subtotal: '100.00',
+        discount_total: '0.00',
+        tax_total: '0.00',
+        total: '100.00',
+        issue_date: null,
+        due_date: null,
+        notes: payload.notes ?? null,
+        created_at: '2026-11-12T00:00:00+00:00',
+      };
+      await route.fulfill({ status: 201, headers: corsHeaders, body: JSON.stringify(staffDraftInvoice) });
+      return;
+    }
+    if (path === '/api/v1/businesses/staff-business-1/invoices/staff-draft-invoice-1' && request.method() === 'GET') {
+      if (!staffDraftInvoice) {
+        await route.fulfill({ status: 404, headers: corsHeaders, body: JSON.stringify({ detail: 'Invoice not found.' }) });
+        return;
+      }
+      await route.fulfill({
+        status: 200, headers: corsHeaders,
+        body: JSON.stringify({ ...staffDraftInvoice, lines: staffDraftLines }),
+      });
+      return;
+    }
+    if (path === '/api/v1/businesses/staff-business-1/invoices/staff-draft-invoice-1' && request.method() === 'PATCH') {
+      const payload = request.postDataJSON() as Record<string, unknown>;
+      invoiceUpdatePayloads.push(payload);
+      if (!staffDraftInvoice || staffDraftInvoice.status !== 'draft') {
+        await route.fulfill({ status: 409, headers: corsHeaders, body: JSON.stringify({ detail: 'Only a draft invoice can be edited.' }) });
+        return;
+      }
+      staffDraftLines = (payload.lines as Array<Record<string, unknown>>).map((line, index) => ({
+        id: 'staff-draft-line-' + (index + 1),
+        product_id: line.product_id ?? null,
+        description: line.description,
+        quantity: line.quantity,
+        unit_price: line.unit_price,
+        line_total: '100.00',
+      }));
+      staffDraftInvoice = {
+        ...staffDraftInvoice,
+        invoice_number: payload.invoice_number,
+        customer_id: payload.customer_id,
+        notes: payload.notes ?? null,
+        subtotal: '100.00',
+        total: '100.00',
+      };
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify(staffDraftInvoice) });
+      return;
+    }
+    if (/^\/api\/v1\/businesses\/staff-business-1\/invoices\/staff-draft-invoice-1\/(issue|void)$/.test(path)
+      || path === '/api/v1/businesses/staff-business-1/payments') {
+      forbiddenInvoiceActions.push(request.method() + ' ' + path);
+      await route.fulfill({ status: 403, headers: corsHeaders, body: JSON.stringify({ detail: 'OWNER-only action.' }) });
+      return;
+    }
     if (path === '/api/v1/businesses/staff-business-1/products' && request.method() === 'POST') {
       productCreatePayloads.push(request.postDataJSON() as Record<string, unknown>);
       await route.fulfill({
@@ -1045,13 +1192,29 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
       });
       return;
     }
+    if (path === '/api/v1/businesses/staff-business-1/invoices' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200, headers: corsHeaders,
+        body: JSON.stringify(staffDraftInvoice ? [staffDraftInvoice] : []),
+      });
+      return;
+    }
     if ([
-      '/api/v1/businesses/staff-business-1/customers',
       '/api/v1/businesses/staff-business-1/products',
-      '/api/v1/businesses/staff-business-1/invoices',
       '/api/v1/businesses/staff-business-1/expenses',
     ].includes(path) && request.method() === 'GET') {
       await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify([]) });
+      return;
+    }
+    if (path === '/api/v1/businesses/staff-business-1/customers' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200, headers: corsHeaders,
+        body: JSON.stringify([{
+          id: 'staff-customer-1', business_id: 'staff-business-1',
+          name: 'STAFF QA Customer', email: null, phone: null,
+          created_at: '2026-11-12T00:00:00+00:00',
+        }]),
+      });
       return;
     }
     unexpectedRequests.push(request.method() + ' ' + path);
@@ -1075,6 +1238,39 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   }
 
   const moreTrigger = page.getByRole('button', { name: /More sections|المزيد من الأقسام/ });
+  const assertStaffViewport = async (width: number, language: 'en' | 'ar') => {
+    await page.setViewportSize({ width, height: 844 });
+    const direction = language === 'ar' ? 'rtl' : 'ltr';
+    await expect(page.locator('.shell')).toHaveAttribute('dir', direction);
+    await expect(page.locator('html')).toHaveAttribute('dir', direction);
+    await expect(page.locator('body')).toHaveCSS('direction', direction);
+    await expect(staffModuleDirectory.locator('aba-quick-access-card')).toHaveCount(12);
+
+    const restrictedLabels = language === 'en'
+      ? [/Payments & collections/, /Employees & payroll/, /Tax summary/, /Activity log/, /Data integrity/, /Operational health/, /Platform admin/i]
+      : [/المدفوعات والتحصيل/, /الموظفون والمرتبات/, /ملخص الضرائب/, /سجل العمليات/, /سلامة البيانات/, /الحالة التشغيلية/, /إدارة المنصة/];
+    for (const restricted of restrictedLabels) {
+      await expect(staffModuleDirectory.getByRole('button', { name: restricted })).toHaveCount(0);
+    }
+
+    const layout = await page.evaluate(() => ({
+      viewportWidth: window.innerWidth,
+      documentWidth: document.documentElement.scrollWidth,
+    }));
+    expect(layout.documentWidth, 'STAFF Home must not overflow at ' + width + 'px/' + language)
+      .toBeLessThanOrEqual(layout.viewportWidth);
+    if (width <= 760) {
+      await expect(page.locator('aba-mobile-app-header')).toBeVisible();
+    } else {
+      await expect(page.locator('.workspace-bar')).toBeVisible();
+    }
+  };
+
+  for (const width of [360, 390, 430, 768, 1280]) {
+    await assertStaffViewport(width, 'en');
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+
   await moreTrigger.click();
   const menu = page.locator('#mobile-more-menu');
   for (const restricted of [
@@ -1088,6 +1284,30 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   ]) {
     await expect(menu.getByRole('button', { name: available })).toBeVisible();
   }
+
+  // Repeat role filtering and responsive layout in Arabic RTL.
+  await menu.locator('.mobile-menu-action').first().click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
+  for (const width of [360, 390, 430, 768, 1280]) {
+    await assertStaffViewport(width, 'ar');
+  }
+  await page.setViewportSize({ width: 390, height: 844 });
+  await moreTrigger.click();
+  for (const restricted of [
+    /المدفوعات والتحصيل/, /الموظفون والمرتبات/, /ملخص الضرائب/,
+    /سجل العمليات/, /سلامة البيانات/, /الحالة التشغيلية/, /إدارة المنصة/,
+  ]) {
+    await expect(menu.getByRole('button', { name: restricted })).toHaveCount(0);
+  }
+  for (const available of [/الموردون/, /المشتريات/, /الفواتير الدورية/, /الإشعارات/, /دليل التطبيق والإصدارات/]) {
+    await expect(menu.getByRole('button', { name: available })).toBeVisible();
+  }
+  await menu.locator('.mobile-menu-action').first().click();
+  await page.keyboard.press('Escape');
+  await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
+  await moreTrigger.click();
+
   await menu.getByRole('button', { name: /App guide & versions/ }).click();
   await expect(menu).toHaveCount(0);
   await expect(moreTrigger).toHaveClass(/active/);
@@ -1113,6 +1333,72 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   });
   await expect(page.getByText(/Product saved successfully/)).toBeVisible();
 
+  // STAFF can create and edit one draft invoice, but issue/void/payment
+  // controls and requests remain outside the allowed role boundary.
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await page.locator('aside.sidebar[role="navigation"]').getByRole('button', { name: 'Invoices', exact: true }).click();
+  await expect(page.locator('header.topbar .topbar-heading h1')).toHaveText('Sales & invoices');
+  await page.getByRole('button', { name: 'Create a new invoice', exact: true }).click();
+  const staffEditor = page.locator('aba-invoice-draft-editor');
+  await staffEditor.locator('input[name="invoiceNumber"]').fill('STAFF-DRAFT-001');
+  await staffEditor.locator('select[name="customerId"]').selectOption('staff-customer-1');
+  const staffLine = staffEditor.locator('.line-card').first();
+  await staffLine.getByRole('button', { name: 'Service', exact: true }).click();
+  await staffLine.getByLabel('Service description').fill('STAFF consulting service');
+  await staffLine.getByLabel('Unit price (EGP)').fill('100.00');
+  await staffLine.getByLabel('Quantity').fill('1');
+  await staffEditor.getByLabel('Invoice notes (optional)').fill('Staff draft - initial');
+  await staffEditor.getByRole('button', { name: 'Save draft', exact: true }).click();
+
+  await expect(page.getByText('Invoice draft saved. Displayed totals came from the server.')).toBeVisible();
+  await expect(staffEditor.locator('.summary-total strong')).toHaveText('100.00 EGP');
+  expect(invoiceCreatePayloads).toHaveLength(1);
+  expect(invoiceCreatePayloads[0]).toMatchObject({
+    invoice_number: 'STAFF-DRAFT-001',
+    customer_id: 'staff-customer-1',
+    notes: 'Staff draft - initial',
+    lines: [expect.objectContaining({
+      description: 'STAFF consulting service',
+      quantity: '1',
+      unit_price: '100.00',
+    })],
+  });
+  for (const derivedTotal of ['subtotal', 'discount_total', 'tax_total', 'total']) {
+    expect(invoiceCreatePayloads[0]).not.toHaveProperty(derivedTotal);
+  }
+
+  const staffInvoiceCard = page.locator('.invoice-card').filter({ hasText: 'STAFF-DRAFT-001' });
+  await expect(staffInvoiceCard).toBeVisible();
+  await expect(staffInvoiceCard.locator('.invoice-status-badge.status-draft')).toBeVisible();
+  await expect(staffInvoiceCard.getByRole('button', { name: 'Edit', exact: true })).toBeVisible();
+  await expect(staffInvoiceCard.getByRole('button', { name: 'Issue', exact: true })).toHaveCount(0);
+  await expect(staffInvoiceCard.getByRole('button', { name: 'Void', exact: true })).toHaveCount(0);
+  await staffInvoiceCard.getByRole('button', { name: 'Edit', exact: true }).click();
+  await expect(staffEditor.getByRole('heading', { name: 'Edit invoice draft' })).toBeVisible();
+  await staffEditor.locator('.line-card').first().getByLabel('Service description').fill('STAFF updated consulting service');
+  await staffEditor.getByLabel('Invoice notes (optional)').fill('Staff draft - edited');
+  await staffEditor.getByRole('button', { name: 'Save draft', exact: true }).click();
+
+  await expect(staffEditor.locator('.summary-total strong')).toHaveText('100.00 EGP');
+  expect(invoiceUpdatePayloads).toHaveLength(1);
+  expect(invoiceUpdatePayloads[0]).toMatchObject({
+    invoice_number: 'STAFF-DRAFT-001',
+    customer_id: 'staff-customer-1',
+    notes: 'Staff draft - edited',
+    lines: [expect.objectContaining({
+      description: 'STAFF updated consulting service',
+      quantity: '1',
+      unit_price: '100.00',
+    })],
+  });
+  expect(staffDraftInvoice).toMatchObject({
+    id: 'staff-draft-invoice-1',
+    invoice_number: 'STAFF-DRAFT-001',
+    status: 'draft',
+    notes: 'Staff draft - edited',
+  });
+  expect(staffDraftLines).toHaveLength(1);
   expect(paymentRequests).toEqual([]);
+  expect(forbiddenInvoiceActions).toEqual([]);
   expect(unexpectedRequests).toEqual([]);
 });

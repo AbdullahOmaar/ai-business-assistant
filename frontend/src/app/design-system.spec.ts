@@ -5,6 +5,8 @@ import test from 'node:test';
 const css = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const angular = JSON.parse(readFileSync(new URL('../../angular.json', import.meta.url), 'utf8'));
 const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const globalStyles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
+const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const guide = readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8');
 
 test('the final AIBA visual direction defines a complete semantic token foundation', () => {
@@ -61,6 +63,17 @@ test('public authentication screens fit the visible viewport without redundant v
   assert.ok(app.includes('class="shell" [class.auth-shell]="!signedIn"'));
   assert.ok(app.includes('.shell.auth-shell{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;padding-block:24px}'));
   assert.ok(app.includes('.shell.auth-shell>.auth-card,.shell.auth-shell>.setup-card{margin:0 auto}'));
+});
+
+test('the authentication form is named by its visible localized heading', () => {
+  assert.ok(app.includes('<h1 id="auth-form-heading">{{ signingUp ?'));
+  assert.ok(app.includes('<form #authForm="ngForm" aria-labelledby="auth-form-heading"'));
+});
+
+test('bootstrap and global body styles allow auth reflow below the legacy 320px floor', () => {
+  assert.ok(!globalStyles.includes('min-width: 320px'));
+  assert.ok(!indexHtml.includes('min-width:320px'));
+  assert.ok(app.includes('.setup-card,.auth-card{width:min(540px,calc(100% - 30px))'));
 });
 
 test('browser title and root language metadata follow the persisted locale and language toggle', () => {
@@ -165,4 +178,28 @@ test('mobile fixed navigation leaves a safe scroll runway after the final conten
   assert.match(css, /@media\s*\(max-width:\s*760px\)[\s\S]*?\.shell \.main[\s\S]*?padding-block-end:\s*calc\(132px \+ env\(safe-area-inset-bottom, 0px\)\)/);
   assert.match(css, /scroll-padding-block-end:\s*calc\(132px \+ env\(safe-area-inset-bottom, 0px\)\)/);
   assert.match(css, /\.shell \.sidebar[\s\S]*?padding-block-end:\s*calc\(8px \+ env\(safe-area-inset-bottom, 0px\)\)/);
+});
+
+test('tablet workspace navigation uses a compact rail without removing accessible navigation names', () => {
+  const tabletRail = css.slice(css.indexOf('/* Tablet workspace rail:'));
+  assert.match(tabletRail, /@media\s*\(min-width:\s*761px\)\s*and\s*\(max-width:\s*900px\)/);
+  assert.match(tabletRail, /--aba-layout-sidebar:\s*84px/);
+  assert.match(tabletRail, /overflow-y:\s*auto/);
+  assert.match(tabletRail, /\.nav-item > span:not\(\.nav-icon\)\s*\{\s*display:\s*none/);
+  assert.match(tabletRail, /\.brand > span:not\(\.brand-mark\)\s*\{[\s\S]*?clip:\s*rect\(0,\s*0,\s*0,\s*0\)/);
+
+  const sidebarStart = app.indexOf('<aside class="sidebar"');
+  const moreMenuStart = app.indexOf('<nav #mobileMoreMenu', sidebarStart);
+  assert.ok(sidebarStart >= 0 && moreMenuStart > sidebarStart, 'the workspace sidebar navigation must exist');
+  const sidebarMarkup = app.slice(sidebarStart, moreMenuStart);
+  const navigationButtons = [...sidebarMarkup.matchAll(/<button class="nav-item[^"]*"[^>]*>/g)];
+  assert.ok(navigationButtons.length >= 10, 'the compact rail must preserve the existing workspace module set');
+  for (const [index, match] of navigationButtons.entries()) {
+    assert.match(match[0], /\[attr\.aria-label\]=/,
+      'workspace navigation item ' + index + ' must retain an accessible name');
+    if (!match[0].includes('class="nav-item mobile-more"')) {
+      assert.match(match[0], /\[attr\.title\]=/,
+        'workspace navigation item ' + index + ' must retain its native tooltip');
+    }
+  }
 });

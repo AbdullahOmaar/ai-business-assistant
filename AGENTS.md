@@ -1,3 +1,15 @@
+## Owner-selected November delivery discipline — effective 2026-11-12 (supersedes conflicting rules below)
+
+The Owner requires meaningful product evolution, not a stream of cosmetic edits and tiny PRs.
+
+- **Single continuing branch:** use only `master/nov-2026-phase-1-ux-foundation` for the November product plan. Continue Phases sequentially on this branch. No branch per Phase, task, chat, commit or small fix. Preserve existing branches; `docs/contributing-ci-single-source` is frozen and is not a writing branch.
+- **PR gate:** do not open a PR for isolated minor/cosmetic work (typography, spacing, color, text, small CSS, trivial bug fix), refactor-only, documentation-only or test-only changes. Batch small related changes on the single active branch. Open one PR only after a substantial coherent product outcome is complete and acceptance evidence is ready, such as an end-to-end business workflow, meaningful module capability, or major measurable Web + Mobile improvement.
+- **Test economy:** do not run unit suites, browser suites, builds or CI for each small edit/checkpoint. Defer routine validation until a substantial outcome is assembled; run the relevant consolidated checks once on the exact candidate SHA. Critical security, authorization, tenant-isolation, data-integrity or production-safety risks may require the smallest focused check immediately. Any exact-head check enforced for a future PR is mandatory and must never be bypassed.
+- **Product focus:** prioritize complete business capabilities and real user journeys. Standalone visual polish is not a delivery outcome unless it blocks usability or is bundled with a substantial improvement. Batch related code/docs/evidence on this branch and keep one primary writer per shared path.
+- **Current disposition:** Draft PRs #388 and #389 were closed without merge on 2026-11-12. Both source branches and commits are preserved. PR closure is not deletion. No merge, deployment, production database write or migration is authorized by this policy.
+
+This Owner decision supersedes older instructions below that allow a branch per Phase, milestone PRs for each important incremental change, or routine per-edit test execution. It does not supersede security/data-integrity controls, exact-head required checks, formal branch protections, Owner merge authorization or separate production-release authorization.
+
 ## Owner-authorized AIBA development-stage data operations — effective 2026-11-11
 
 The Owner confirms that AIBA is still in development / pre-release and is not yet a real customer-production business environment. This lifecycle classification applies even if Vercel reports `target=production`, a public alias contains “production”, or a Neon branch is named production. Keep provider metadata accurate; this decision does not rename infrastructure or change provider settings.

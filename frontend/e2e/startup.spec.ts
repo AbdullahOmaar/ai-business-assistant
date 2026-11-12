@@ -33,14 +33,17 @@ test('switches startup language and layout direction both ways', async ({ page }
   await expect(page.locator('.language-toggle')).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('body')).toHaveCSS('direction', 'rtl');
 
   await page.locator('.language-toggle').click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  await expect(page.locator('body')).toHaveCSS('direction', 'ltr');
 
   await page.locator('.language-toggle').click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
+  await expect(page.locator('body')).toHaveCSS('direction', 'rtl');
 });
 
 test('keeps the safe setup screen usable at a narrow mobile viewport', async ({ page }) => {
@@ -68,6 +71,43 @@ test('keeps the safe setup screen usable at a narrow mobile viewport', async ({ 
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
   await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
   await assertNoHorizontalOverflow();
+});
+
+test('reflows the startup shell at a 200% mobile zoom equivalent in both directions', async ({ page }) => {
+  await page.setViewportSize({ width: 195, height: 422 });
+  await page.goto('/');
+  await expect(page.locator('.setup-card')).toBeVisible({ timeout: 20_000 });
+  await expect(page.locator('.language-toggle')).toBeVisible();
+
+  const assertReflow = async () => {
+    const metrics = await page.evaluate(() => {
+      const card = document.querySelector<HTMLElement>('.setup-card');
+      const toggle = document.querySelector<HTMLElement>('.language-toggle');
+      const cardRect = card?.getBoundingClientRect();
+      const toggleRect = toggle?.getBoundingClientRect();
+      return {
+        viewportWidth: window.innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        bodyWidth: document.body.scrollWidth,
+        cardLeft: cardRect?.left ?? -1,
+        cardRight: cardRect?.right ?? Number.POSITIVE_INFINITY,
+        toggleLeft: toggleRect?.left ?? -1,
+        toggleRight: toggleRect?.right ?? Number.POSITIVE_INFINITY,
+      };
+    });
+
+    expect(metrics.documentWidth).toBeLessThanOrEqual(metrics.viewportWidth);
+    expect(metrics.bodyWidth).toBeLessThanOrEqual(metrics.viewportWidth);
+    expect(metrics.cardLeft).toBeGreaterThanOrEqual(0);
+    expect(metrics.cardRight).toBeLessThanOrEqual(metrics.viewportWidth);
+    expect(metrics.toggleLeft).toBeGreaterThanOrEqual(0);
+    expect(metrics.toggleRight).toBeLessThanOrEqual(metrics.viewportWidth);
+  };
+
+  await assertReflow();
+  await page.locator('.language-toggle').click();
+  await expect(page.locator('html')).toHaveAttribute('dir', 'ltr');
+  await assertReflow();
 });
 
 test('shows a recoverable startup error when runtime configuration cannot be loaded', async ({ page }) => {

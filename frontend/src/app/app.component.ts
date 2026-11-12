@@ -78,9 +78,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
           <div class="brand-mark">A</div>
           <p class="eyebrow">{{ t('كل أعمالك في مكان واحد', 'YOUR BUSINESS, IN ONE PLACE') }}</p>
-          <h1>{{ signingUp ? t('إنشاء حسابك', 'Create your account') : t('مرحبًا بعودتك', 'Welcome back') }}</h1>
+          <h1 id="auth-form-heading">{{ signingUp ? t('إنشاء حسابك', 'Create your account') : t('مرحبًا بعودتك', 'Welcome back') }}</h1>
           <p class="muted">{{ t('سجّل الدخول بأمان للوصول إلى مساحات العمل المصرح لك بها فقط.', 'Sign in securely to access only the workspaces you belong to.') }}</p>
-          <form #authForm="ngForm" (ngSubmit)="authForm.valid && submitAuth()" class="stack">
+          <form #authForm="ngForm" aria-labelledby="auth-form-heading" (ngSubmit)="authForm.valid && submitAuth()" class="stack">
             <label>{{ t('البريد الإلكتروني', 'Email address') }}<input #emailModel="ngModel" name="email" type="email" autocomplete="email" required [(ngModel)]="email" [attr.aria-invalid]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'auth-email-error' : null">
               @if (emailModel.invalid && (emailModel.touched || authForm.submitted)) {
                 <small id="auth-email-error" class="field-error" aria-live="polite">{{ emailModel.errors?.['required'] ? t('البريد الإلكتروني مطلوب.', 'Email is required.') : t('أدخل بريدًا إلكترونيًا صحيحًا.', 'Enter a valid email address.') }}</small>

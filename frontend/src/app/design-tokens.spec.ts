@@ -16,6 +16,7 @@ const componentSources = componentPaths.map(path =>
 const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const mobileHeaderSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
+const designSystemStyles = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const appStylesStart = appSource.lastIndexOf('styles: [`');
 const appStyles = appSource.slice(appStylesStart, appSource.indexOf('`]', appStylesStart));
 
@@ -435,3 +436,20 @@ test('mobile navigation dock reuses the shared navigation palette', () => {
     'color:var(--aba-color-primary-border,#99f6e4)',
   ]) assert.ok(appStyles.includes(declaration));
 });
+
+
+test('Arabic RTL heading levels use natural connected-script letter spacing', () => {
+  assert.match(designSystemStyles, /:root body \.shell\[dir="rtl"\] :is\(h1, h2, h3\) \{\s*letter-spacing: normal;/);
+});
+
+test('Arabic RTL navigation and eyebrow labels use natural tracking', () => {
+  assert.match(designSystemStyles, /:root body \.shell\[dir="rtl"\] :is\(\.eyebrow, \.nav-label, \.mobile-more-group h3\) \{\s*letter-spacing: normal;/);
+});
+
+
+test('Arabic typography overrides stay RTL-scoped and preserve English heading tracking', () => {
+  assert.match(designSystemStyles, /:root body \.shell\[dir="rtl"\] :is\(h1, h2, h3\) \{\s*letter-spacing: normal;/);
+  assert.match(designSystemStyles, /:root body \.shell \.topbar h1,[\s\S]*?letter-spacing: -\.035em;/);
+  assert.match(designSystemStyles, /:root body \.shell\[dir="rtl"\] :is\(\.eyebrow, \.nav-label, \.mobile-more-group h3\) \{\s*letter-spacing: normal;/);
+  assert.doesNotMatch(designSystemStyles, /:root body \.shell\s+:is\(h1, h2, h3\) \{\s*letter-spacing: normal;/);
+});;

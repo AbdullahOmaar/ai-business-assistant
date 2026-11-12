@@ -120,7 +120,6 @@
 * { box-sizing: border-box; }
 body {
   margin: 0;
-  min-width: 320px;
   min-height: 100vh;
   color: var(--aba-color-text-primary);
   background: var(--aba-color-page);
@@ -163,7 +162,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   overflow-wrap: anywhere;
 }
 
-html[dir="rtl"], body { direction: rtl; }
+html[dir="rtl"], html[dir="rtl"] body { direction: rtl; }
 body { text-align: start; }
 input, select, textarea { text-align: start; }
 button, input, select, textarea { font-family: inherit; }

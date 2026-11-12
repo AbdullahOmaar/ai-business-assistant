@@ -405,6 +405,7 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
     const direction = language === 'ar' ? 'rtl' : 'ltr';
     await expect(page.locator('html')).toHaveAttribute('dir', direction);
     await expect(page.locator('.shell')).toHaveAttribute('dir', direction);
+    await expect(page.locator('body')).toHaveCSS('direction', direction);
 
     if (view === 'overview') {
       await page.getByRole('button', { name: language === 'en' ? /Overview/ : /نظرة عامة/ }).click();
@@ -435,7 +436,7 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
     });
   };
 
-  for (const width of [390, 768, 1280]) {
+  for (const width of [360, 390, 430, 768, 1280]) {
     await captureAdminViewport('overview', 'en', width);
     await captureAdminViewport('users', 'en', width);
   }
@@ -446,7 +447,7 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   await expect(page.locator('html')).toHaveAttribute('dir', 'rtl');
   await expect(page.locator('.admin-shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.getByRole('heading', { name: /مركز الإدارة/ })).toBeVisible({ timeout: 20_000 });
-  for (const width of [390, 768, 1280]) {
+  for (const width of [360, 390, 430, 768, 1280]) {
     await captureAdminViewport('overview', 'ar', width);
     await captureAdminViewport('users', 'ar', width);
   }
