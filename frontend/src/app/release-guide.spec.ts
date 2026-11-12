@@ -209,6 +209,6 @@ test('feature guide documents searchable bilingual mobile navigation without ove
   const workspace = FEATURE_CATALOG.find(section => section.id === 'workspace');
   assert.ok(workspace);
   const featureText = workspace.features.map(feature => feature.detailEn).join(' ');
-  assert.match(featureText, /search by an Arabic or English section name/i);
+  assert.match(featureText, /search the Home module directory or open More on mobile/i);
   assert.match(featureText, /destinations available to your current role/i);
 });
