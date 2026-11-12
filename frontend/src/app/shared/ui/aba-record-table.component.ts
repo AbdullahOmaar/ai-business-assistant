@@ -27,17 +27,24 @@ export interface AbaRecordTableActionEvent { rowId:string; actionId:string; anch
               @for(row of rows();track row.id){
                 <tr>
                   @for(column of columns();track column.key){
-                    <td [attr.data-label]="column.label" [attr.data-kind]="column.kind||'text'" [class.aba-record-table__primary-cell]="column.primary">
-                      @if(column.kind==='status'){<span class="aba-record-table__status-value">{{row.cells[column.key]||'—'}}</span>}
-                      @else{<bdi [attr.dir]="column.kind==='numeric'?'ltr':'auto'">{{row.cells[column.key]||'—'}}</bdi>}
-                    </td>
+                    @if(column.primary){
+                      <th scope="row" [attr.data-label]="column.label" [attr.data-kind]="column.kind||'text'" class="aba-record-table__primary-cell">
+                        @if(column.kind==='status'){<span class="aba-record-table__status-value">{{row.cells[column.key]||'—'}}</span>}
+                        @else{<bdi [attr.dir]="column.kind==='numeric'?'ltr':'auto'">{{row.cells[column.key]||'—'}}</bdi>}
+                      </th>
+                    } @else{
+                      <td [attr.data-label]="column.label" [attr.data-kind]="column.kind||'text'">
+                        @if(column.kind==='status'){<span class="aba-record-table__status-value">{{row.cells[column.key]||'—'}}</span>}
+                        @else{<bdi [attr.dir]="column.kind==='numeric'?'ltr':'auto'">{{row.cells[column.key]||'—'}}</bdi>}
+                      </td>
+                    }
                   }
                   @if(hasActions){
                     <td class="aba-record-table__actions-cell" [attr.data-label]="actionsHeading()">
                       @if(row.actions?.length){
                         <div class="aba-record-table__actions">
                           @for(action of row.actions;track action.id){
-                            <button class="secondary aba-record-table__action" type="button" [disabled]="action.disabled||false" (click)="activateRowAction(row.id,action.id,$event)">{{action.label}}</button>
+                            <button class="secondary aba-record-table__action" type="button" [attr.aria-label]="actionAriaLabel(row,action)" [disabled]="action.disabled||false" (click)="activateRowAction(row.id,action.id,$event)">{{action.label}}</button>
                           }
                         </div>
                       } @else{<span class="aba-record-table__no-action">—</span>}
@@ -63,6 +70,11 @@ export class AbaRecordTableComponent {
   readonly actionsHeading=input('Actions');
   readonly rowAction=output<AbaRecordTableActionEvent>();
   get hasActions():boolean{return this.rows().some(row=>!!row.actions?.length);}
+  actionAriaLabel(row:AbaRecordTableRow,action:AbaRecordTableAction):string{
+    const primaryColumn=this.columns().find(column=>column.primary);
+    const recordLabel=primaryColumn?row.cells[primaryColumn.key]:row.id;
+    return recordLabel?\x60\x24{action.label}: \x24{recordLabel}\x60:action.label;
+  }
   activateRowAction(rowId:string,actionId:string,event:MouseEvent):void{
     const anchor=event.currentTarget;
     if(anchor instanceof HTMLElement)this.rowAction.emit({rowId,actionId,anchor});
