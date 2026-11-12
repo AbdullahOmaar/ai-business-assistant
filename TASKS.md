@@ -3840,3 +3840,6 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Raised invoice-card action targets to 44px on phone widths. Existing invoice status, print, pay, issue and void guards remain unchanged.
 - No invoice calculations, payment/allocation semantics, API, schema, database, authorization, or financial behavior changed.
 - Exact-head consolidated validation remains deferred until the November UX batch closes; no PR, merge or deployment.
+
+
+- **Review correction:** updated the existing Platform Admin user-directory regression assertion from horizontal-scroll behavior to the new labeled-card mobile contract; the prior assertion would have failed after the intended layout change.

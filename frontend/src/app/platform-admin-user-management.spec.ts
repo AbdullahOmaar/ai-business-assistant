@@ -34,8 +34,10 @@ test('the UI exposes only delegated roles and keeps root management out of band'
   assert.match(source, /Read-only access: you can inspect workspace status/);
 });
 
-test('the user directory supports narrow-screen scrolling and mobile navigation', () => {
-  assert.match(source, /user-directory-table\{min-width:850px\}/);
+test('the user directory uses labeled mobile record cards and mobile navigation', () => {
+  assert.match(source, /user-directory-table\{min-width:0\}/);
+  assert.match(source, /\[attr\.data-label\]="t\('المستخدم', 'User'\)"/);
+  assert.match(source, /\.table-wrap tbody tr\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.match(source, /@media\(max-width:760px\)/);
 });
 
