@@ -73,3 +73,16 @@ test('customer directory exposes only supported customer details and existing na
   assert.match(customerDirectory, /emitAction\(customer\.id, 'statement'/);
   assert.match(app, /item\.allocations\.length/);
 });
+
+
+test('shared motion uses short purposeful feedback and honors reduced-motion preferences',()=>{
+  assert.match(css,/--aiba-motion-fast:/);
+  assert.match(css,/--aiba-motion-standard:/);
+  assert.match(css,/--aiba-motion-spring:/);
+  assert.match(css,/@media \\(prefers-reduced-motion: no-preference\\)/);
+  assert.match(css,/\.nav-item\.active \.nav-icon/);
+  assert.match(css,/\.home-shortcut-link:active/);
+  assert.match(css,/@media \\(hover: hover\\) and \\(pointer: fine\\)/);
+  assert.match(css,/aiba-motion-menu-enter/);
+  assert.match(css,/animation: none !important/);
+});

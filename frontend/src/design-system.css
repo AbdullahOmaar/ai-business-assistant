@@ -63,6 +63,10 @@
   --aiba-shadow-card-hover: 0 8px 22px rgb(15 23 42 / 7%), 0 18px 38px rgb(15 23 42 / 5%);
   --aiba-shadow-popover: 0 18px 48px rgb(15 23 42 / 15%);
   --aiba-motion: 160ms cubic-bezier(.2, 0, 0, 1);
+  --aiba-motion-fast: 120ms cubic-bezier(.2, 0, 0, 1);
+  --aiba-motion-standard: 190ms cubic-bezier(.2, .8, .2, 1);
+  --aiba-motion-emphasized: 260ms cubic-bezier(.2, .9, .25, 1);
+  --aiba-motion-spring: 220ms cubic-bezier(.2, .9, .25, 1.12);
 }
 
 /* App-level rhythm and typography. */
@@ -1747,3 +1751,56 @@
 :root body .shell .aba-record-create__body,:root body .shell .aba-record-secondary__body{padding:12px}
 }
 @media(prefers-reduced-motion:reduce){:root body .shell .aba-record-create__icon{transition:none}}
+
+
+/* November Phase 1 motion layer — purposeful feedback, never motion for motion's sake.
+   Patterns adapted from the DesignBookmark Motion reference; no runtime dependency. */
+@media (prefers-reduced-motion: no-preference) {
+  :root body .shell :is(.nav-item, .home-shortcut-link, .module-directory-summary,
+    .aba-record-create > summary, .aba-record-secondary > summary, .aba-record-table__action) {
+    transition-property: color, background-color, border-color, box-shadow, opacity, transform;
+    transition-duration: var(--aiba-motion-standard);
+    transition-timing-function: cubic-bezier(.2, .8, .2, 1);
+  }
+
+  :root body .shell .nav-item .nav-icon {
+    transition: transform var(--aiba-motion-spring), background-color var(--aiba-motion-standard),
+      color var(--aiba-motion-standard);
+  }
+
+  :root body .shell .nav-item.active .nav-icon {
+    transform: scale(1.045);
+  }
+
+  :root body .shell :is(.nav-item, .home-shortcut-link, .aba-record-table__action):active {
+    transform: scale(.985);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    :root body .shell .home-shortcut-link:hover,
+    :root body .shell .module-directory-summary:hover {
+      transform: translateY(-2px);
+    }
+
+    :root body .shell .nav-item:hover:not(.active) {
+      transform: translateY(-1px);
+    }
+  }
+
+  :root body .shell .mobile-more-menu {
+    animation: aiba-motion-menu-enter var(--aiba-motion-standard) both;
+  }
+
+  @keyframes aiba-motion-menu-enter {
+    from { opacity: 0; transform: translateY(7px) scale(.99); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root body .shell :is(.nav-item, .nav-icon, .home-shortcut-link, .module-directory-summary,
+    .mobile-more-menu, .aba-record-create__icon, .aba-record-table__action) {
+    animation: none !important;
+    transition: none !important;
+  }
+}

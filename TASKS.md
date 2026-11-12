@@ -3958,3 +3958,12 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Follow-up regression coverage authored:** added structural checks for mobile More query reset on close, Escape focus restoration and selection dismissal; added Arabic/English Unicode NFKC compatibility-form search cases. These specs are authored but remain **NOT RUN** pending the exact-head CI-provider gate.
 
 - **Final static review checkpoint:** test-only follow-up commit `eda076532e022b65bc31dcd2c3ea34605e2da901` adds mobile More dismissal/focus-restoration and Arabic/English NFKC compatibility regression cases. A refreshed 18/18 focused source checks passed on that exact SHA. This is not a Node unit-test, Angular build, Playwright, security or CI PASS; all remain NOT RUN.
+
+
+## 2026-11-12 — Motion foundation reference pass
+
+- Reference reviewed: [DesignBookmark Motion](https://designbookmark.com/motion), a live component gallery including command buttons, springy inputs, rubber docks, pull-to-refresh, tab pills, bottom bars, sidebar collapse, loading-to-success and other interaction patterns.
+- Adopted a restrained subset appropriate to an operational ERP: short press feedback, active navigation icon emphasis, subtle desktop hover lift, and a quick mobile More-menu entrance. No 3D/parallax/scroll hijacking or new runtime dependency.
+- Added shared motion timing tokens and a reduced-motion override; hover-only movement is restricted to fine-pointer devices, while touch feedback uses active states.
+- Added a source-contract regression for the motion tokens, interaction states and reduced-motion guard. This test is authored; consolidated Node/Angular/Playwright/GitHub Actions validation remains pending on the final batch SHA.
+- Presentation-only change: no route, API, authorization, tenant, database, financial, inventory or payroll behavior changed.
