@@ -3973,3 +3973,29 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 
 
 - **Second exact-head CI correction — 2026-11-12:** run `43230030337` on `96a868bf1e2224b796044409ee2e6197161d512c` reported 453/455 frontend unit tests PASS and 2 FAIL. Remaining issues were one unconverted Home loop assertion in the later route-safety test and the motion test expecting a literal active selector while the stylesheet used an equivalent `:is(...):active` selector. Aligned the test and made the active selectors explicit; no app behavior or data contract changed. A fresh exact-head run is required.
+
+
+## 2026-11-12 — PR #393 post-merge review hotfix
+
+- PR #393 merged on main at `342a3867318fa12abac4f65f46f7229799218752`; exact-head GitHub Actions aggregate succeeded on `f7479d741aef9ea4862274893026e0b3327bb9b4`.
+- Automated Greptile review reported three actionable findings after merge: P1 mobile More search becomes untappable when the virtual keyboard hides the sidebar; P2 combined duration/easing token was incorrectly used as `transition-duration`; P2 Customer/Product sorting/filter tests asserted source text but did not execute sorting/filtering behavior.
+- To avoid releasing a known mobile P1, Web deployment `dpl_CP4gGvyCe6cjozkQYUowNmytE7PL` (merge SHA above) was canceled while BUILDING, before READY/alias promotion. Previous Production Web deployment `dpl_DzdBdKN47Z4cNbrKoFvf5xkofanF` on `e1a44c1578de06d2faa029a116b159b889a540e1` remains the live baseline. API deployment/alias remains unchanged.
+- Hotfix: keep an open More menu and dock above the visual keyboard inset, add a Playwright tap regression, split motion duration/easing tokens, and extract pure Customer/Product filter/sort helpers with behavioral tests for both directions, missing values, stock filters, mixed-currency grouping and stock ordering.
+- Follow-up branch: `master/nov-2026-phase-1-ux-hotfix`, based on merged main. No API/DB/schema, financial, inventory movement, tax, payroll or authorization-policy changes.
+- DesignBookmark's supplied `/motion` route was not directly retrievable by the web reader in this session; motion treatment remains restrained micro-interaction feedback, not copied assets or a pixel-level reproduction.
+- Exact-head checks for the hotfix are pending; no hotfix PR/merge/deploy is claimed yet.
+
+
+- **Hotfix browser-smoke correction — 2026-11-12:** run `43232384359` executed 22 Chromium E2E tests: 21 passed, 1 failed. The new keyboard/More-search regression itself passed and successfully tapped the filtered Products destination. The following pre-existing STAFF Home viewport sweep then ran while the test was still on the Products page and expected 12 Home cards. Added an explicit return to Home and asserted the 12 cards before the Arabic viewport sweep. No app runtime behavior changed. New exact-head browser smoke and aggregate are required.
+
+
+- **Keyboard containing-block correction — 2026-11-12:** Greptile's follow-up review correctly noted that `backdrop-filter` on `.sidebar` establishes the containing block for its fixed More menu. The keyboard inset was therefore being counted once in the sidebar bottom and again in the menu bottom. Corrected the menu bottom to remain dock-relative (`88px + safe-area`) while the sidebar alone is raised by the keyboard inset. Strengthened Playwright to assert the actual viewport rectangle/top/bottom gap, not merely CSS values. Exact-head CI must be rerun.
+
+
+## 2026-11-12 — Shared mobile record-card primary hierarchy
+
+- Confirmed Supplier, Purchasing, Payment, Recurring, Notification, Receivables Aging, Profit/Loss and Tax tables already start with their primary identifier/context field.
+- Confirmed three date-first table contracts whose semantic primary field was rendered after the date on phones: Expenses (Description), Audit (Action), and Customer Statement (Event).
+- Updated only the shared mobile card presentation to place the declared primary cell first. Desktop table column order and data contracts remain unchanged.
+- Added regression coverage for the shared primary-cell ordering rule and the three date-first contracts.
+- No API, database, authorization, financial, inventory, payroll or notification behavior changed. Consolidated exact-head CI is required before review/merge.

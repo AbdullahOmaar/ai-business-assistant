@@ -1,10 +1,8 @@
 import { ChangeDetectionStrategy, computed, Component, input, signal } from '@angular/core';
 import type { Product } from './api.service';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
+import { filterAndSortProducts, type ProductFilter, type ProductSortField, type SortDirection } from './directory-sort';
 
-type ProductFilter = 'all' | 'stock' | 'non-stock';
-type ProductSortField = 'name' | 'sku' | 'price' | 'stock';
-type SortDirection = 'asc' | 'desc';
 
 /**
  * Product catalogue presentation. Search is owned by the workspace screen;
@@ -130,34 +128,9 @@ export class ProductCatalogComponent {
 
   readonly stockCount = computed(() => this.products().filter(product => product.is_stock_tracked).length);
   readonly nonStockCount = computed(() => this.products().length - this.stockCount());
-  readonly visibleProducts = computed(() => {
-    const filtered = this.products().filter(product => {
-      if (this.filter() === 'stock') return product.is_stock_tracked;
-      if (this.filter() === 'non-stock') return !product.is_stock_tracked;
-      return true;
-    });
-    const field = this.sortField();
-    const direction = this.sortDirection() === 'asc' ? 1 : -1;
-    const collator = new Intl.Collator(this.locale(), { numeric: true, sensitivity: 'base', ignorePunctuation: true });
-    return filtered.sort((left, right) => {
-      if (field === 'price') {
-        const leftCurrency = left.currency_code || this.currencyCode();
-        const rightCurrency = right.currency_code || this.currencyCode();
-        const currencyOrder = collator.compare(leftCurrency, rightCurrency);
-        if (currencyOrder !== 0) return currencyOrder;
-        return (Number(left.unit_price) - Number(right.unit_price)) * direction;
-      }
-      if (field === 'stock') {
-        if (left.is_stock_tracked !== right.is_stock_tracked) return left.is_stock_tracked ? -1 : 1;
-        return (Number(left.stock_quantity ?? 0) - Number(right.stock_quantity ?? 0)) * direction;
-      }
-      const leftValue = field === 'name' ? left.name : left.sku || '';
-      const rightValue = field === 'name' ? right.name : right.sku || '';
-      if (!leftValue && rightValue) return 1;
-      if (leftValue && !rightValue) return -1;
-      return collator.compare(leftValue, rightValue) * direction;
-    });
-  });
+  readonly visibleProducts = computed(() =>
+    filterAndSortProducts(this.products(), this.filter(), this.sortField(), this.sortDirection(), this.locale(), this.currencyCode())
+  );
 
   get mobileSortValue(): string {
     return this.sortField() + ':' + this.sortDirection();

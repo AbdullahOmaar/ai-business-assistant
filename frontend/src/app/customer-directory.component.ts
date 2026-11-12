@@ -1,10 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
 import type { Customer } from './api.service';
 import type { AbaRecordTableActionEvent } from './shared/ui/aba-record-table.component';
+import { sortCustomers, type CustomerSortField, type SortDirection } from './directory-sort';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 
-type CustomerSortField = 'name' | 'email' | 'phone';
-type SortDirection = 'asc' | 'desc';
 
 /**
  * Customer-specific directory presentation.
@@ -143,18 +142,9 @@ export class CustomerDirectoryComponent {
   private readonly sortField = signal<CustomerSortField>('name');
   private readonly sortDirection = signal<SortDirection>('asc');
 
-  readonly sortedCustomers = computed(() => {
-    const field = this.sortField();
-    const direction = this.sortDirection() === 'asc' ? 1 : -1;
-    const collator = new Intl.Collator(this.locale(), { numeric: true, sensitivity: 'base', ignorePunctuation: true });
-    return [...this.customers()].sort((left, right) => {
-      const leftValue = (left[field] || '').trim();
-      const rightValue = (right[field] || '').trim();
-      if (!leftValue && rightValue) return 1;
-      if (leftValue && !rightValue) return -1;
-      return collator.compare(leftValue, rightValue) * direction;
-    });
-  });
+  readonly sortedCustomers = computed(() =>
+    sortCustomers(this.customers(), this.sortField(), this.sortDirection(), this.locale())
+  );
 
   get mobileSortValue(): string {
     return this.sortField() + ':' + this.sortDirection();

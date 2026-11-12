@@ -1363,10 +1363,52 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
     await expect(menu.getByRole('button', { name: available })).toBeVisible();
   }
 
+  // Focusing More search opens the virtual keyboard on phones. Keep the
+  // dock/menu above that keyboard so filtered destinations remain tappable.
+  await menu.getByRole('searchbox', { name: /Search sections/ }).fill('Products & inventory');
+  await page.locator('.shell').evaluate(shell => {
+    shell.classList.add('keyboard-open');
+    document.documentElement.style.setProperty('--aba-keyboard-inset', '300px');
+  });
+  const keyboardProductAction = menu.getByRole('button', { name: /Products & inventory/ });
+  await expect(menu).toBeVisible();
+  await expect(keyboardProductAction).toBeVisible();
+  await expect(keyboardProductAction).toHaveCSS('pointer-events', 'auto');
+  const keyboardMenuLayout = await menu.evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    return {
+      bottom: Number.parseFloat(getComputedStyle(element).bottom),
+      bottomGap: window.innerHeight - rect.bottom,
+      top: rect.top,
+      sidebarBottom: Number.parseFloat(getComputedStyle(element.parentElement!).bottom),
+      sidebarPointerEvents: getComputedStyle(element.parentElement!).pointerEvents,
+    };
+  });
+  // The blurred sidebar is the fixed-position containing block: apply the
+  // keyboard inset to the dock once, then leave the menu offset dock-relative.
+  expect(keyboardMenuLayout.bottom).toBe(88);
+  expect(keyboardMenuLayout.bottomGap).toBeGreaterThanOrEqual(388);
+  expect(keyboardMenuLayout.top).toBeGreaterThanOrEqual(0);
+  expect(keyboardMenuLayout.sidebarBottom).toBe(300);
+  expect(keyboardMenuLayout.sidebarPointerEvents).toBe('auto');
+  await keyboardProductAction.click();
+  await expect(menu).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: /Products & inventory/ })).toBeVisible();
+  await page.locator('.shell').evaluate(shell => {
+    shell.classList.remove('keyboard-open');
+    document.documentElement.style.removeProperty('--aba-keyboard-inset');
+  });
+  await moreTrigger.click();
+  await expect(menu).toBeVisible();
+
   // Repeat role filtering and responsive layout in Arabic RTL.
   await menu.locator('.mobile-menu-action').first().click();
   await page.keyboard.press('Escape');
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
+  // The keyboard regression navigates to Products; return Home before the
+  // following Home-directory viewport sweep.
+  await page.getByRole('button', { name: /Go to Home|العودة إلى الرئيسية/ }).click();
+  await expect(staffModuleDirectory.locator('aba-quick-access-card')).toHaveCount(12);
   for (const width of [360, 390, 430, 768, 1280]) {
     await assertStaffViewport(width, 'ar');
   }
