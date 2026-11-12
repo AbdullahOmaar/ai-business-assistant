@@ -43,3 +43,10 @@ test('customer screen preserves workspace search, owner CSV affordance and state
   assert.match(app, /customerStatementTableColumns/);
   assert.match(app, /statementOffset \+ customerStatement\.items\.length/);
 });
+
+test('main customer directory exposes the existing guarded pagination beyond the first page', () => {
+  assert.match(app, /\(click\)="loadMoreCustomers\(\)"/);
+  assert.match(app, /loadMoreCustomers\(\): Promise<void>/);
+  assert.match(app, /return this\.loadMoreInvoiceCustomers\(\)/);
+  assert.match(app, /fetchPage: \(id, offset\) => this\.api\.customers\(id, offset\)/);
+});

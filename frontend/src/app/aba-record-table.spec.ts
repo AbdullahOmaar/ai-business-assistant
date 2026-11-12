@@ -66,10 +66,10 @@ test('record dates remain localized after moving legacy lists into tables', () =
 
 test('customer directory exposes only supported customer details and existing navigation actions', () => {
   assert.doesNotMatch(customerDirectory, /customerInvoiceCount|invoiceCount/);
-  assert.match(customerDirectory, /customer\\.name/);
-  assert.match(customerDirectory, /customer\\.email/);
-  assert.match(customerDirectory, /customer\\.phone/);
-  assert.match(customerDirectory, /emitAction\\(customer\\.id, 'invoices'/);
-  assert.match(customerDirectory, /emitAction\\(customer\\.id, 'statement'/);
-  assert.match(app, /item\\.allocations\\.length/);
+  assert.match(customerDirectory, /customer\.name/);
+  assert.match(customerDirectory, /customer\.email/);
+  assert.match(customerDirectory, /customer\.phone/);
+  assert.match(customerDirectory, /emitAction\(customer\.id, 'invoices'/);
+  assert.match(customerDirectory, /emitAction\(customer\.id, 'statement'/);
+  assert.match(app, /item\.allocations\.length/);
 });

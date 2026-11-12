@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, computed, Component, input, signal } from '@an
 import type { Product } from './api.service';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 
-type ProductFilter = 'all' | 'stock' | 'service';
+type ProductFilter = 'all' | 'stock' | 'non-stock';
 type ProductSortField = 'name' | 'sku' | 'price' | 'stock';
 type SortDirection = 'asc' | 'desc';
 
@@ -20,7 +20,7 @@ type SortDirection = 'asc' | 'desc';
     <section class="product-catalog" [attr.aria-label]="ariaLabel()">
       @if (loading()) {
         <aba-state-message kind="loading" [description]="loadingDescription()" />
-      } @else if (visibleProducts().length) {
+      } @else {
         <div class="product-catalog__toolbar">
           <div class="product-catalog__filters" role="group" [attr.aria-label]="locale() === 'ar' ? 'تصفية نوع الصنف' : 'Filter item type'">
             <button type="button" [class.is-active]="filter() === 'all'" [attr.aria-pressed]="filter() === 'all'" (click)="setFilter('all')">
@@ -29,8 +29,8 @@ type SortDirection = 'asc' | 'desc';
             <button type="button" [class.is-active]="filter() === 'stock'" [attr.aria-pressed]="filter() === 'stock'" (click)="setFilter('stock')">
               {{ locale() === 'ar' ? 'مخزني' : 'Stock tracked' }} <span>{{ stockCount() }}</span>
             </button>
-            <button type="button" [class.is-active]="filter() === 'service'" [attr.aria-pressed]="filter() === 'service'" (click)="setFilter('service')">
-              {{ locale() === 'ar' ? 'خدمات' : 'Services' }} <span>{{ serviceCount() }}</span>
+            <button type="button" [class.is-active]="filter() === 'non-stock'" [attr.aria-pressed]="filter() === 'non-stock'" (click)="setFilter('non-stock')">
+              {{ locale() === 'ar' ? 'غير مخزني' : 'Non-stock' }} <span>{{ nonStockCount() }}</span>
             </button>
           </div>
           <label class="product-catalog__mobile-sort">
@@ -48,11 +48,12 @@ type SortDirection = 'asc' | 'desc';
           </label>
         </div>
 
+        @if (visibleProducts().length) {
         <div class="product-catalog__desktop" role="region" tabindex="0" [attr.aria-label]="ariaLabel()">
           <table>
             <caption class="product-catalog__sr-only">{{ ariaLabel() }}</caption>
             <thead><tr>
-              <th scope="col" [attr.aria-sort]="ariaSort('name')"><button type="button" (click)="toggleSort('name')">{{ locale() === 'ar' ? 'المنتج / الخدمة' : 'Product / service' }} <span aria-hidden="true">{{ sortIndicator('name') }}</span></button></th>
+              <th scope="col" [attr.aria-sort]="ariaSort('name')"><button type="button" (click)="toggleSort('name')">{{ locale() === 'ar' ? 'المنتج / غير مخزني' : 'Product / non-stock' }} <span aria-hidden="true">{{ sortIndicator('name') }}</span></button></th>
               <th scope="col" [attr.aria-sort]="ariaSort('sku')"><button type="button" (click)="toggleSort('sku')">SKU <span aria-hidden="true">{{ sortIndicator('sku') }}</span></button></th>
               <th scope="col" [attr.aria-sort]="ariaSort('price')"><button type="button" (click)="toggleSort('price')">{{ locale() === 'ar' ? 'سعر الوحدة' : 'Unit price' }} <span aria-hidden="true">{{ sortIndicator('price') }}</span></button></th>
               <th scope="col" [attr.aria-sort]="ariaSort('stock')"><button type="button" (click)="toggleSort('stock')">{{ locale() === 'ar' ? 'المخزون' : 'Inventory' }} <span aria-hidden="true">{{ sortIndicator('stock') }}</span></button></th>
@@ -68,7 +69,7 @@ type SortDirection = 'asc' | 'desc';
                       <span class="product-catalog__stock"><span class="product-catalog__dot" aria-hidden="true"></span>{{ locale() === 'ar' ? 'متابعة المخزون' : 'Stock tracked' }}</span>
                       <strong class="product-catalog__quantity"><bdi dir="ltr">{{ product.stock_quantity ?? '0' }}</bdi></strong>
                     } @else {
-                      <span class="product-catalog__service">{{ locale() === 'ar' ? 'خدمة / غير مخزني' : 'Service / non-stock' }}</span>
+                      <span class="product-catalog__service">{{ locale() === 'ar' ? 'غير مخزني' : 'Non-stock' }}</span>
                     }
                   </td>
                 </tr>
@@ -90,19 +91,24 @@ type SortDirection = 'asc' | 'desc';
                   <span class="product-catalog__stock"><span class="product-catalog__dot" aria-hidden="true"></span>{{ locale() === 'ar' ? 'مخزني' : 'Stock tracked' }}</span>
                   <span class="product-catalog__quantity">{{ locale() === 'ar' ? 'الكمية' : 'Qty' }}: <bdi dir="ltr">{{ product.stock_quantity ?? '0' }}</bdi></span>
                 } @else {
-                  <span class="product-catalog__service">{{ locale() === 'ar' ? 'خدمة / غير مخزني' : 'Service / non-stock' }}</span>
+                  <span class="product-catalog__service">{{ locale() === 'ar' ? 'غير مخزني' : 'Non-stock' }}</span>
                 }
               </div>
             </li>
           }
         </ol>
+        } @else {
+          <aba-state-message
+            kind="empty"
+            [title]="filter() !== 'all' ? (locale() === 'ar' ? 'لا توجد أصناف ضمن هذا التصنيف' : 'No items in this category') : emptyTitle()"
+            [description]="filter() !== 'all' ? (locale() === 'ar' ? 'جرّب نوعًا آخر أو اعرض كل الأصناف.' : 'Try another type or show all items.') : emptyDescription()"
+          />
+        }
         @if (filter() !== 'all') {
           <button class="product-catalog__clear-filter" type="button" (click)="setFilter('all')">
             {{ locale() === 'ar' ? 'عرض كل الأصناف' : 'Show all items' }}
           </button>
         }
-      } @else {
-        <aba-state-message kind="empty" [title]="emptyTitle()" [description]="emptyDescription()" />
       }
     </section>
   `,
@@ -123,11 +129,11 @@ export class ProductCatalogComponent {
   private readonly sortDirection = signal<SortDirection>('asc');
 
   readonly stockCount = computed(() => this.products().filter(product => product.is_stock_tracked).length);
-  readonly serviceCount = computed(() => this.products().length - this.stockCount());
+  readonly nonStockCount = computed(() => this.products().length - this.stockCount());
   readonly visibleProducts = computed(() => {
     const filtered = this.products().filter(product => {
       if (this.filter() === 'stock') return product.is_stock_tracked;
-      if (this.filter() === 'service') return !product.is_stock_tracked;
+      if (this.filter() === 'non-stock') return !product.is_stock_tracked;
       return true;
     });
     const field = this.sortField();

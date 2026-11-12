@@ -12,10 +12,13 @@ test('Products uses a dedicated catalogue presentation, not the shared generic r
   assert.doesNotMatch(app, /productTableRows|productTableColumns/);
 });
 
-test('catalogue filters stock-tracked and service items on the current searched result set', () => {
+test('catalogue filters stock-tracked and non-stock items on the current searched result set', () => {
   assert.match(component, /readonly filter = signal<ProductFilter>/);
   assert.match(component, /stockCount = computed/);
-  assert.match(component, /serviceCount = computed/);
+  assert.match(component, /nonStockCount = computed/);
+  assert.match(component, /filter\(\) === 'non-stock'/);
+  assert.match(component, /'Non-stock'/);
+  assert.doesNotMatch(component, /'Services'/);
   assert.match(component, /visibleProducts = computed/);
   assert.match(component, /product\.is_stock_tracked/);
   assert.match(component, /aria-pressed/);
@@ -43,4 +46,21 @@ test('mobile catalogue remains compact and readable in RTL/LTR with visible focu
   assert.match(css, /min-height:40px/);
   assert.match(css, /focus-visible/);
   assert.match(css, /forced-colors:active/);
+});
+
+test('catalogue keeps filters and a clear-filter action available when the selected filter has no results', () => {
+  const toolbar = component.indexOf('<div class="product-catalog__toolbar">');
+  const results = component.indexOf('@if (visibleProducts().length)');
+  const empty = component.indexOf('<aba-state-message\n            kind="empty"');
+  const clear = component.indexOf('class="product-catalog__clear-filter"');
+  assert.ok(toolbar >= 0 && results > toolbar && empty > results && clear > empty);
+  assert.match(component, /No items in this category/);
+  assert.match(component, /Try another type or show all items/);
+});
+
+test('main product directory exposes the existing guarded pagination beyond the first page', () => {
+  assert.match(app, /\(click\)="loadMoreProducts\(\)"/);
+  assert.match(app, /loadMoreProducts\(\): Promise<void>/);
+  assert.match(app, /return this\.loadMoreInvoiceProducts\(\)/);
+  assert.match(app, /fetchPage: \(id, offset\) => this\.api\.products\(id, offset\)/);
 });

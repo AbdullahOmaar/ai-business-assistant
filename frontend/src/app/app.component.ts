@@ -559,6 +559,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
                 <div class="list-tools aba-record-toolbar"><input name="customerSearch" type="search" [attr.aria-label]="t('البحث عن عميل', 'Search customers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف…', 'Search by name, email, or phone…')" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
                 <aba-customer-directory [ariaLabel]="t('دليل العملاء', 'Customer directory')" [customers]="filteredCustomers" [locale]="language" [loading]="loading && !customers.length" [loadingDescription]="t('جارٍ تحميل العملاء…', 'Loading customers…')" [emptyTitle]="t('لا يوجد عملاء', 'No customers yet')" [emptyDescription]="customerSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No customers match this search.') : t('أضف أول عميل لبدء ربطه بالفواتير.', 'Add your first customer to link them with invoices.')" (rowAction)="onCustomerRecordAction($event)" />
+                @if (customersHasMore || customersLoadingMore) {
+                  <div class="inline-form record-load-more" aria-live="polite">
+                    <span class="muted">{{ customers.length }} {{ t('عميل تم تحميلهم', 'customers loaded') }}</span>
+                    <button class="secondary" type="button" (click)="loadMoreCustomers()" [disabled]="customersLoadingMore">
+                      {{ customersLoadingMore ? t('جارٍ تحميل العملاء…', 'Loading customers…') : t('تحميل المزيد من العملاء', 'Load more customers') }}
+                    </button>
+                  </div>
+                }
 
                 @if (statementVisible) {
                   <section abaCard class="panel statement-panel">
@@ -637,6 +645,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
                 <div class="list-tools aba-record-toolbar"><input name="productSearch" type="search" [attr.aria-label]="t('البحث عن منتج', 'Search products')" [placeholder]="t('ابحث عن منتج أو رمز SKU…', 'Search products or SKU…')" [(ngModel)]="productSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
                 <aba-product-catalog [ariaLabel]="t('كتالوج المنتجات والمخزون', 'Product and inventory catalogue')" [products]="filteredProducts" [locale]="language" [currencyCode]="business?.currency_code || ''" [loading]="loading && !products.length" [loadingDescription]="t('جارٍ تحميل المنتجات…', 'Loading products…')" [emptyTitle]="t('لا توجد منتجات', 'No products yet')" [emptyDescription]="productSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No products match this search.') : t('أضف منتجًا أو خدمة لبدء إدارة الكتالوج والمخزون.', 'Add a product or service to start managing the catalogue and stock.')" />
+                @if (productsHasMore || productsLoadingMore) {
+                  <div class="inline-form record-load-more" aria-live="polite">
+                    <span class="muted">{{ products.length }} {{ t('صنف تم تحميله', 'items loaded') }}</span>
+                    <button class="secondary" type="button" (click)="loadMoreProducts()" [disabled]="productsLoadingMore">
+                      {{ productsLoadingMore ? t('جارٍ تحميل المنتجات…', 'Loading products…') : t('تحميل المزيد من الأصناف', 'Load more items') }}
+                    </button>
+                  </div>
+                }
 
             </section>
             }
@@ -2792,6 +2808,16 @@ export class AppComponent implements OnInit, OnDestroy {
       setHasMore: value => this.productsHasMore = value,
       setLoading: value => this.productsLoadingMore = value,
     });
+  }
+
+  // Reuse the same tenant-scoped, deduplicating page loader in the main
+  // directories and invoice editor; pagination state is shared intentionally.
+  loadMoreCustomers(): Promise<void> {
+    return this.loadMoreInvoiceCustomers();
+  }
+
+  loadMoreProducts(): Promise<void> {
+    return this.loadMoreInvoiceProducts();
   }
 
   loadMoreInvoices(): Promise<void> {
