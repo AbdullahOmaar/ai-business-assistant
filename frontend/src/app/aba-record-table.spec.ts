@@ -23,3 +23,19 @@ test('Customers, Products, Suppliers and Purchasing use the shared record contra
   assert.match(app,/business\?\.role==='owner'&&this\.canReceivePurchaseOrder\(order\)/);
   assert.match(app,/this\.requestPurchaseOrderReceipt\(order,action\.anchor\)/);
 });
+
+test('record table labels and loading states follow the selected app locale',()=>{
+  for(const fragment of [
+    "[loadingDescription]=\"t('جارٍ تحميل العملاء…', 'Loading customers…')\"",
+    "[loadingDescription]=\"t('جارٍ تحميل المنتجات…', 'Loading products…')\"",
+    "[loadingDescription]=\"t('جارٍ تحميل الموردين…', 'Loading suppliers…')\"",
+    "[loadingDescription]=\"t('جارٍ تحميل أوامر الشراء…', 'Loading purchase orders…')\"",
+    "[actionsHeading]=\"t('الإجراءات', 'Actions')\"",
+    "{{ t('إضافة عميل جديد', 'Add new customer') }}",
+    "{{ t('إضافة منتج أو خدمة', 'Add product or service') }}",
+    "{{ t('إضافة مورد', 'Add supplier') }}",
+    "{{ t('إنشاء أمر شراء', 'Create purchase order') }}",
+    "{{ t('استيراد العملاء من CSV', 'Import customers from CSV') }}",
+    "{{ t('استيراد المنتجات من CSV', 'Import products from CSV') }}",
+  ]) assert.ok(app.includes(fragment), 'missing localized record label: '+fragment);
+});
