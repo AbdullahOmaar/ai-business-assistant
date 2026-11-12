@@ -1772,7 +1772,9 @@
     transform: scale(1.045);
   }
 
-  :root body .shell :is(.nav-item, .home-shortcut-link, .aba-record-table__action):active {
+  :root body .shell .nav-item:active,
+  :root body .shell .home-shortcut-link:active,
+  :root body .shell .aba-record-table__action:active {
     transform: scale(.985);
   }
 

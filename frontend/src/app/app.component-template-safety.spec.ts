@@ -1383,7 +1383,7 @@ test('Home lists every role-authorized module in addition to the five quick-acce
   assert.ok(start >= 0 && end > start);
   assert.match(overview, /homeQuickAccessCards/);
   assert.match(overview, /All workspace modules/);
-  assert.match(overview, /@for \(module of homeModuleCards; track module\.tab\)/);
+  assert.match(overview, /@for \(module of filteredHomeModuleCards; track module\.tab\)/);
   assert.match(overview, /homeModuleCards\.length/);
   assert.match(source, /get homeModuleCards\(\): readonly WorkspaceModuleCard\[\]/);
   assert.match(source, /return WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
