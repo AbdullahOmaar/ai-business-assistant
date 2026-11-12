@@ -10,7 +10,8 @@ test('customer statement preserves separate currency balances and uses the share
   assert.match(componentSource, /customerStatementTableColumns/);
   assert.match(componentSource, /customerStatementTableRows/);
   assert.match(componentSource, /balance:\x60\$\{event\.balance\} \$\{event\.currency_code\}\x60/);
-  assert.match(componentSource, /formatDate\(event\.occurred_at,'short',this\.language==='ar'\?'ar-EG':'en-GB'\)/);
+  assert.match(componentSource, /formatCustomerStatementDate\(event\.occurred_at\)/);
+  assert.match(componentSource, /Intl\.DateTimeFormat/);
   assert.match(componentSource, /get statementBalanceEntries\(\)/);
   assert.doesNotMatch(componentSource, /customer statement table, horizontally scrollable/);
 });

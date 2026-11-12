@@ -1,4 +1,4 @@
-import { CommonModule, formatDate } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecordTableColumn, type AbaRecordTableRow } from './shared/ui/aba-record-table.component';
@@ -296,6 +296,14 @@ export class EmployeePayrollComponent implements OnChanges {
   }
 
 
+
+  formatPayrollPayoutDate(value: string | null | undefined): string {
+    if (!value || !Number.isFinite(Date.parse(value))) return '—';
+    return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en-GB', {
+      dateStyle: 'medium',
+    }).format(new Date(value));
+  }
+
   get employeeTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'name',label:this.t('الموظف','Employee'),primary:true},
     {key:'code',label:this.t('الكود','Code')},
@@ -327,7 +335,7 @@ export class EmployeePayrollComponent implements OnChanges {
     employee:payroll.employee_name,period:payroll.period,base:`${payroll.base_salary} ${this.currencyCode}`,
     additions:`${payroll.allowances} + ${payroll.bonuses} ${this.currencyCode}`,
     deductions:`${payroll.deductions} ${this.currencyCode}`,net:`${payroll.net_pay} ${this.currencyCode}`,
-    status:this.payrollStatusLabel(payroll.status),payout:payroll.paid_at && Number.isFinite(Date.parse(payroll.paid_at)) ? formatDate(payroll.paid_at,'mediumDate',this.language==='ar'?'ar-EG':'en-GB') : '—',
+    status:this.payrollStatusLabel(payroll.status),payout:this.formatPayrollPayoutDate(payroll.paid_at),
   },actions:payroll.status==='draft'?[
     {id:'edit',label:this.t('تعديل المسودة','Edit draft'),disabled:this.busy||!!this.operationId},
     {id:'approve',label:this.t('اعتماد','Approve'),disabled:this.busy||!!this.operationId},

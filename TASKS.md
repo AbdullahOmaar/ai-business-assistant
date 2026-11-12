@@ -3855,3 +3855,6 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Each debit, credit and balance value continues to carry its own currency code; no opening-balance, allocation, financial formula or ledger semantics changed.
 - Added regression coverage for the shared table, localized event date, per-currency values, pagination and range limitations.
 - No API, schema, database, authorization or data changes. Exact-head consolidated validation remains pending; no PR, merge or deployment.
+
+
+- **Locale review correction:** use native Intl.DateTimeFormat for customer-statement and payroll dates instead of Angular formatDate with an unregistered ar-EG locale; Arabic/English formatting no longer depends on missing Angular locale registration.

@@ -1,4 +1,4 @@
-import { CommonModule, formatDate } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, ApiRequestError, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
@@ -3410,6 +3410,14 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
 
+
+  formatCustomerStatementDate(value: string | null | undefined): string {
+    if (!value || !Number.isFinite(Date.parse(value))) return '—';
+    return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en-GB', {
+      dateStyle: 'short', timeStyle: 'short',
+    }).format(new Date(value));
+  }
+
   get customerStatementTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'date',label:this.t('التاريخ','Date')},
     {key:'event',label:this.t('الحركة','Event'),primary:true},
@@ -3421,7 +3429,7 @@ export class AppComponent implements OnInit, OnDestroy {
   get customerStatementTableRows(): readonly AbaRecordTableRow[] { return (this.customerStatement?.items||[]).map(event=>({
     id:event.source_id+event.event_type,
     cells:{
-      date:event.occurred_at && Number.isFinite(Date.parse(event.occurred_at)) ? formatDate(event.occurred_at,'short',this.language==='ar'?'ar-EG':'en-GB') : '—',
+      date:this.formatCustomerStatementDate(event.occurred_at),
       event:this.customerStatementEventLabel(event.event_type),reference:event.reference||event.source_id,
       debit:`${event.debit} ${event.currency_code}`,credit:`${event.credit} ${event.currency_code}`,
       balance:`${event.balance} ${event.currency_code}`,
