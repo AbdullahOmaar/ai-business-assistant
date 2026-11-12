@@ -31,6 +31,12 @@ export const FEATURE_CATALOG = [
         detailAr: 'داخل مساحة العمل، اضغط Tab لإظهار رابط ينقلك مباشرة إلى المحتوى الرئيسي.',
         detailEn: 'In a signed-in workspace, press Tab to reveal a link that moves keyboard focus directly to the main content.',
       },
+      {
+        titleAr: 'التنقل على الشاشات اللوحية',
+        titleEn: 'Tablet navigation',
+        detailAr: 'على الشاشات بعرض 761 إلى 900 بكسل، تتحول القائمة الجانبية إلى شريط أيقونات مضغوط لتوفير مساحة للمحتوى. تظهر أسماء الأقسام عند المرور بالمؤشر، وتظل متاحة لقارئات الشاشة؛ مرّر داخل الشريط للوصول إلى بقية الأقسام.',
+        detailEn: 'At 761–900px widths, the sidebar becomes a compact icon rail to leave more room for content. Module names appear on hover and remain available to screen readers; scroll within the rail to reach the remaining sections.',
+      },
     ],
   },
   {
