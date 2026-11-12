@@ -448,8 +448,8 @@ test('Arabic RTL navigation and eyebrow labels use natural tracking', () => {
 
 
 test('Arabic typography overrides stay RTL-scoped and preserve English heading tracking', () => {
-  assert.match(designSystemStyles, /:root body \\.shell\\[dir="rtl"\\] :is\\(h1, h2, h3\\) \\{\\s*letter-spacing: normal;/);
-  assert.match(designSystemStyles, /:root body \\.shell \\.topbar h1,[\\s\\S]*?letter-spacing: -\\.035em;/);
-  assert.match(designSystemStyles, /:root body \\.shell\\[dir="rtl"\\] :is\\(\\.eyebrow, \\.nav-label, \\.mobile-more-group h3\\) \\{\\s*letter-spacing: normal;/);
-  assert.doesNotMatch(designSystemStyles, /:root body \\.shell\\s+:is\\(h1, h2, h3\\) \\{\\s*letter-spacing: normal;/);
-});
+  assert.match(designSystemStyles, /:root body \.shell\[dir="rtl"\] :is\(h1, h2, h3\) \{\s*letter-spacing: normal;/);
+  assert.match(designSystemStyles, /:root body \.shell \.topbar h1,[\s\S]*?letter-spacing: -\.035em;/);
+  assert.match(designSystemStyles, /:root body \.shell\[dir="rtl"\] :is\(\.eyebrow, \.nav-label, \.mobile-more-group h3\) \{\s*letter-spacing: normal;/);
+  assert.doesNotMatch(designSystemStyles, /:root body \.shell\s+:is\(h1, h2, h3\) \{\s*letter-spacing: normal;/);
+});;
