@@ -85,3 +85,9 @@ test('Platform Admin business, membership, activity and user tables become label
   assert.match(source, /\.table-wrap tbody td::before\{content:attr\(data-label\)/);
   assert.match(source, /\.user-directory-table\{min-width:0\}/);
 });
+
+
+test('Platform Admin mobile table regions no longer advertise horizontal scrolling', () => {
+  assert.doesNotMatch(source, /horizontally scrollable table/);
+  assert.doesNotMatch(source, /جدول قابل للتمرير أفقيًا/);
+});
