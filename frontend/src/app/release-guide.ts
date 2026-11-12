@@ -34,8 +34,8 @@ export const FEATURE_CATALOG = [
       {
         titleAr: 'البحث في أقسام الموبايل',
         titleEn: 'Search mobile navigation',
-        detailAr: 'افتح «المزيد» واكتب اسم القسم بالعربية أو الإنجليزية للعثور عليه بسرعة؛ النتائج تقتصر على الأقسام المتاحة لدورك الحالي.',
-        detailEn: 'Open More and search by an Arabic or English section name; results include only destinations available to your current role.',
+        detailAr: 'ابحث من دليل الأقسام في الرئيسية أو افتح «المزيد» على الموبايل واكتب اسم القسم أو وصفه بالعربية أو الإنجليزية؛ النتائج تقتصر على الأقسام المتاحة لدورك الحالي.',
+        detailEn: 'Search the Home module directory or open More on mobile and search by an Arabic or English module name or description; results include only destinations available to your current role.',
       },
       {
         titleAr: 'التنقل على الشاشات اللوحية',
