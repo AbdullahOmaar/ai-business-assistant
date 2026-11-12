@@ -105,3 +105,10 @@ test('bilingual module search filters names and descriptions without expanding r
   assert.deepEqual(filterWorkspaceModules(staffModules, 'customers', 'en').map(module => module.tab), ['customers']);
   assert.equal(filterWorkspaceModules(staffModules, '   ', 'en'), staffModules);
 });
+
+
+test('bilingual search normalizes Unicode compatibility forms in Arabic and English', () => {
+  const ownerModules = visibleModules('owner', false);
+  assert.deepEqual(filterWorkspaceModules(ownerModules, 'ｉｎｖｅｎｔｏｒｙ', 'en').map(module => module.tab), ['products']);
+  assert.deepEqual(filterWorkspaceModules(ownerModules, 'ﻣﻨﺘﺠﺎﺕ', 'ar-EG').map(module => module.tab), ['products']);
+});

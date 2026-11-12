@@ -73,3 +73,23 @@ test('Home module directory exposes bilingual search and a localized empty state
   assert.match(home, /module-directory-empty" role="status"/);
   assert.match(source, /filterWorkspaceModules\(this\.homeModuleCards, this\.homeModuleSearch/);
 });
+
+
+test('mobile More search resets on close and restores keyboard focus', () => {
+  const toggleStart = source.indexOf('toggleMobileMore(): void {');
+  const escapeStart = source.indexOf('closeMobileMoreOnEscape(): void {');
+  const selectStart = source.indexOf('selectMobileMoreTab(tab: Tab): void {');
+  const outsideStart = source.indexOf('closeMobileMoreOnOutsidePointer(event: PointerEvent): void {');
+  const outsideEnd = source.indexOf('async installApp(): Promise<void>', outsideStart);
+  assert.ok(toggleStart >= 0 && escapeStart > toggleStart && selectStart > escapeStart && outsideStart > selectStart && outsideEnd > outsideStart);
+
+  const toggle = source.slice(toggleStart, escapeStart);
+  const escape = source.slice(escapeStart, selectStart);
+  const select = source.slice(selectStart, outsideStart);
+  const outside = source.slice(outsideStart, outsideEnd);
+
+  assert.match(toggle, /if \(this\.mobileMoreOpen\) this\.mobileMoreSearch = ''/);
+  assert.match(escape, /this\.mobileMoreOpen = false;[\s\S]*this\.mobileMoreSearch = '';[\s\S]*this\.mobileMoreTrigger\?\.nativeElement\.focus\(\)/);
+  assert.match(select, /this\.mobileMoreSearch = '';[\s\S]*this\.setTab\(tab\);[\s\S]*this\.mobileMoreTrigger\?\.nativeElement\.focus\(\)/);
+  assert.match(outside, /this\.mobileMoreOpen = false;[\s\S]*this\.mobileMoreSearch = ''/);
+});
