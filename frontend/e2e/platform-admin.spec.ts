@@ -397,7 +397,7 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   // Complete the 19th-destination visual evidence: Platform Admin is a separate
   // platform identity, so it is captured in its own fully mocked journey.
   const captureAdminViewport = async (
-    view: 'overview' | 'users',
+    view: 'overview' | 'businesses' | 'activity' | 'users' | 'permissions',
     language: 'en' | 'ar',
     width: number,
   ) => {
@@ -407,20 +407,45 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
     await expect(page.locator('.shell')).toHaveAttribute('dir', direction);
     await expect(page.locator('body')).toHaveCSS('direction', direction);
 
+    const nav = page.getByRole('navigation', {
+      name: language === 'en' ? /Platform administration sections/ : /أقسام إدارة المنصة/,
+    });
+    const navLabels = {
+      overview: language === 'en' ? /Overview/ : /نظرة عامة/,
+      businesses: language === 'en' ? /Workspaces/ : /مساحات العمل/,
+      activity: language === 'en' ? /Audit activity/ : /سجل التدقيق/,
+      users: language === 'en' ? /Users & access/ : /المستخدمون والصلاحيات/,
+      permissions: language === 'en' ? /Permissions/ : /الصلاحيات/,
+    };
+    const announcementLabels = {
+      overview: language === 'en' ? 'Opened Overview section' : 'تم فتح قسم نظرة عامة',
+      businesses: language === 'en' ? 'Opened Workspaces section' : 'تم فتح قسم مساحات العمل',
+      activity: language === 'en' ? 'Opened Audit activity section' : 'تم فتح قسم سجل التدقيق',
+      users: language === 'en' ? 'Opened Users and access section' : 'تم فتح قسم المستخدمين والصلاحيات',
+      permissions: language === 'en' ? 'Opened Permissions section' : 'تم فتح قسم الصلاحيات',
+    };
+    await nav.getByRole('button', { name: navLabels[view] }).click();
+    await expect(page.locator('.admin-section-announcement')).toHaveText(announcementLabels[view]);
+
     if (view === 'overview') {
-      await page.getByRole('button', { name: language === 'en' ? /Overview/ : /نظرة عامة/ }).click();
       await expect(page.getByRole('heading', { name: language === 'en' ? /Admin center/ : /مركز الإدارة/ })).toBeVisible();
-      // Wait for the mocked overview and runtime health data, not just the
-      // always-present system-status panel, before capturing the viewport.
       await expect(page.locator('.metric-card')).toHaveCount(4, { timeout: 20_000 });
       await expect(page.locator('.runtime-summary .status-pill')).toHaveText(language === 'en' ? 'Healthy' : 'سليم', { timeout: 20_000 });
-    } else {
-      await page.getByRole('button', { name: language === 'en' ? /Users & access/ : /المستخدمون والصلاحيات/ }).click();
+    } else if (view === 'businesses') {
+      await expect(page.getByRole('heading', { name: language === 'en' ? /Workspaces/ : /مساحات العمل/ })).toBeVisible();
+      await expect(page.getByText(language === 'en' ? 'No workspaces are registered yet' : 'لا توجد مساحات عمل مسجلة بعد')).toBeVisible();
+    } else if (view === 'activity') {
+      await expect(page.getByRole('heading', { name: language === 'en' ? /Audit & security activity/ : /سجل التدقيق والأمان/ })).toBeVisible();
+      await expect(page.getByText(language === 'en' ? 'No matching events' : 'لا توجد أحداث مطابقة')).toBeVisible();
+    } else if (view === 'users') {
       await expect(page.getByRole('heading', { name: language === 'en' ? /Users & access/ : /المستخدمون والصلاحيات/ })).toBeVisible();
       const search = page.getByLabel(/Email address or UID|البريد الإلكتروني أو UID/);
       await search.fill('');
       await page.getByRole('button', { name: /Search|بحث/ }).click();
       await expect(page.getByText('First Directory User')).toBeVisible();
+    } else {
+      await expect(page.getByRole('heading', { name: language === 'en' ? /Effective permission model/ : /نموذج الصلاحيات الفعلي/ })).toBeVisible();
+      await expect(page.getByText(language === 'en' ? 'Separate platform privilege' : 'صلاحية منصّة مستقلة')).toBeVisible();
     }
 
     const layout = await page.evaluate(() => ({
@@ -436,9 +461,9 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
     });
   };
 
+  const adminViews = ['overview', 'businesses', 'activity', 'users', 'permissions'] as const;
   for (const width of [360, 390, 430, 768, 1280]) {
-    await captureAdminViewport('overview', 'en', width);
-    await captureAdminViewport('users', 'en', width);
+    for (const view of adminViews) await captureAdminViewport(view, 'en', width);
   }
   // Platform Admin has no in-page locale switch. Exercise the persisted locale
   // preference through a reload while keeping the mocked Firebase session.
@@ -448,8 +473,7 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
   await expect(page.locator('.admin-shell')).toHaveAttribute('dir', 'rtl');
   await expect(page.getByRole('heading', { name: /مركز الإدارة/ })).toBeVisible({ timeout: 20_000 });
   for (const width of [360, 390, 430, 768, 1280]) {
-    await captureAdminViewport('overview', 'ar', width);
-    await captureAdminViewport('users', 'ar', width);
+    for (const view of adminViews) await captureAdminViewport(view, 'ar', width);
   }
   // The compact invoice summary belongs to Overview, not the Users directory.
   await page.getByRole('button', { name: /Overview|نظرة عامة/ }).click();
@@ -488,12 +512,33 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
     .toContainText(/not granted/i);
   await expect(page.locator('.runtime-summary')).toHaveCount(0);
 
-  // The admin navigation and directory remain keyboard-operable on mobile.
-  const usersAccessTab = page.getByRole('button', { name: /Users & access|المستخدمون والصلاحيات/ });
+  // Keyboard-only traversal announces and activates all five admin sections.
+  const adminNav = page.getByRole('navigation', { name: /Platform administration sections/ });
+  const adminNavButtons = adminNav.getByRole('button');
+  await expect(adminNavButtons).toHaveCount(5);
+  const keyboardSections = [
+    { announcement: 'Opened Overview section', heading: /Admin center/ },
+    { announcement: 'Opened Workspaces section', heading: /Workspaces/ },
+    { announcement: 'Opened Audit activity section', heading: /Audit & security activity/ },
+    { announcement: 'Opened Users and access section', heading: /Users & access/ },
+    { announcement: 'Opened Permissions section', heading: /Effective permission model/ },
+  ];
+  await adminNavButtons.first().focus();
+  for (let index = 0; index < keyboardSections.length; index += 1) {
+    await expect(adminNavButtons.nth(index)).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.locator('.admin-section-announcement')).toHaveText(keyboardSections[index].announcement);
+    await expect(page.locator('.section-content').getByRole('heading', { name: keyboardSections[index].heading })).toBeVisible();
+    if (index < keyboardSections.length - 1) {
+      await page.keyboard.press('Tab');
+      await expect(adminNavButtons.nth(index + 1)).toBeFocused();
+    }
+  }
+  const usersAccessTab = adminNav.getByRole('button', { name: /Users & access/ });
   await usersAccessTab.focus();
   await page.keyboard.press('Enter');
-  await expect(page.getByRole('heading', { name: /Users & access|المستخدمون والصلاحيات/ })).toBeVisible();
-  await expect(page.getByLabel(/Email address or UID|البريد الإلكتروني أو UID/)).toBeVisible();
+  await expect(page.getByRole('heading', { name: /Users & access/ })).toBeVisible();
+  await expect(page.getByLabel(/Email address or UID/)).toBeVisible();
 
   for (const width of [360, 390, 430, 768, 1280]) {
     await page.setViewportSize({ width, height: 844 });

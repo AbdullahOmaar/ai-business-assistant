@@ -47,6 +47,8 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
         <div class="notice success" role="status" aria-live="polite">{{ successMessage }}</div>
       }
 
+      <p class="admin-visually-hidden admin-section-announcement" role="status" aria-live="polite" aria-atomic="true">{{ sectionAnnouncement }}</p>
+
       <nav class="section-nav" [attr.aria-label]="t('أقسام إدارة المنصة', 'Platform administration sections')">
         <button type="button" [class.active]="section === 'overview'" [attr.aria-current]="section === 'overview' ? 'page' : null" (click)="setSection('overview')"><span aria-hidden="true">◫</span>{{ t('نظرة عامة', 'Overview') }}</button>
         <button type="button" [class.active]="section === 'businesses'" [attr.aria-current]="section === 'businesses' ? 'page' : null" (click)="setSection('businesses')"><span aria-hidden="true">▦</span>{{ t('مساحات العمل', 'Workspaces') }}<span class="nav-count">{{ overview?.businesses?.total ?? '—' }}</span></button>
@@ -303,6 +305,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
     .identity-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap;max-width:52%}.identity{display:flex;align-items:center;gap:10px;margin-inline-end:8px;min-width:0}.identity>span:last-child{display:grid;gap:3px;min-width:0}.identity strong{font-size:12px}.identity small{font-size:11px;color:var(--muted);max-width:220px;overflow-wrap:anywhere}.avatar{width:35px;height:35px;border-radius:12px;background:var(--aba-color-primary-soft);color:var(--aba-color-primary-strong);display:grid;place-items:center;font-weight:800;font-size:13px;flex:0 0 auto}
     .quiet-button,.outline-button,.primary-button,.text-action{border:1px solid var(--aba-color-border);background:var(--aba-color-surface);border-radius:9px;padding:9px 12px;color:var(--aba-color-text-primary);font-size:12px;font-weight:700;white-space:nowrap}.quiet-button:hover,.outline-button:hover{background:var(--aba-color-surface-hover);border-color:var(--aba-color-primary-border)}.signout{border-color:var(--aba-color-danger-border);color:var(--aba-color-danger-text)}.primary-button{background:var(--aba-color-primary);border-color:var(--aba-color-primary);color:white}.primary-button:hover{background:var(--aba-color-primary-strong)}.text-action{padding:0;border:0;background:transparent;color:var(--aba-color-primary)}
     .section-nav{display:flex;gap:6px;flex-wrap:wrap;padding:5px;background:var(--aba-color-surface-subtle);border:1px solid var(--aba-color-border-subtle);border-radius:12px;width:fit-content;max-width:100%}.section-nav button{display:flex;align-items:center;gap:8px;border:1px solid transparent;border-radius:9px;padding:10px 13px;color:var(--aba-color-text-secondary);background:transparent;font-size:12px;font-weight:700}.section-nav button.active{background:var(--aba-color-surface);border-color:var(--aba-color-border);color:var(--aba-color-primary);box-shadow:0 2px 8px #2033440b}.nav-count{background:var(--aba-color-primary-soft);color:var(--aba-color-primary);border-radius:20px;padding:2px 7px;font-size:10px}
+    .admin-visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
     .section-content{display:grid;gap:17px;min-width:0}.section-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;min-width:0}.section-heading>div{min-width:0}.section-heading .eyebrow{margin-bottom:5px}.section-heading h2{margin:0;font-size:22px;letter-spacing:-.025em}.section-heading p:not(.eyebrow){margin:6px 0 0;color:var(--muted);font-size:12px;line-height:1.55}.outline-button{flex:0 0 auto}.small-button{padding:6px 9px;font-size:11px}
     .system-status-panel{margin-bottom:16px}.runtime-summary{display:flex;align-items:center;gap:12px;flex-wrap:wrap;color:var(--muted);font-size:11px;margin:10px 0 14px}.runtime-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}.runtime-grid>div{display:grid;gap:6px;min-width:0;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--surface-soft)}.runtime-grid small{font-size:10px;color:var(--muted)}.runtime-grid strong{font-size:12px;overflow-wrap:anywhere}.runtime-grid .runtime-commit{font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.runtime-good{color:var(--aba-color-success-text,#18784c)}.runtime-bad{color:var(--aba-color-danger-text,#a74436)}.runtime-note{font-size:10px;line-height:1.5;color:var(--muted);margin:12px 0 0}
     .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.metric-card,.panel{background:var(--panel);border:1px solid var(--line);border-radius:15px;box-shadow:0 6px 18px #243b5307;min-width:0}.metric-card{padding:16px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;min-height:155px}.metric-icon{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;font-size:15px;margin-bottom:4px}.teal{background:var(--aba-color-primary-soft);color:var(--aba-color-primary)}.blue{background:var(--aba-color-info-soft);color:var(--aba-color-info-text)}.violet{background:#efeaff;color:#6c53ac}.amber{background:var(--aba-color-warning-soft);color:var(--aba-color-warning-text)}.metric-card>span:not(.metric-icon){font-size:12px;color:var(--aba-color-text-secondary);font-weight:650}.metric-card>strong{font-size:29px;letter-spacing:-.04em;color:var(--aba-color-text-primary);line-height:1.1;overflow-wrap:anywhere}.metric-card small{font-size:11px;color:var(--aba-color-text-secondary,#5d6878);line-height:1.45}
@@ -399,6 +402,7 @@ export class PlatformAdminComponent implements OnInit {
 
   readonly pageSize = 25;
   section: AdminSection = 'overview';
+  sectionAnnouncement = '';
   overview: PlatformAdminOverview | null = null;
   overviewLoading = false;
   overviewError = '';
@@ -489,7 +493,10 @@ export class PlatformAdminComponent implements OnInit {
     this.accessLoading = true;
     try {
       this.access = await this.api.platformAdminAccess();
-      if (!this.canViewUsers && this.section === 'users') this.section = 'overview';
+      if (!this.canViewUsers && this.section === 'users') {
+        this.section = 'overview';
+        this.sectionAnnouncement = this.sectionAnnouncementFor('overview');
+      }
     } catch (error) {
       this.access = null;
       this.pageError = this.errorText(error);
@@ -591,9 +598,21 @@ export class PlatformAdminComponent implements OnInit {
     }
   }
 
+  sectionAnnouncementFor(section: AdminSection): string {
+    const labels: Record<AdminSection, { ar: string; en: string }> = {
+      overview: { ar: 'تم فتح قسم نظرة عامة', en: 'Opened Overview section' },
+      businesses: { ar: 'تم فتح قسم مساحات العمل', en: 'Opened Workspaces section' },
+      activity: { ar: 'تم فتح قسم سجل التدقيق', en: 'Opened Audit activity section' },
+      users: { ar: 'تم فتح قسم المستخدمين والصلاحيات', en: 'Opened Users and access section' },
+      permissions: { ar: 'تم فتح قسم الصلاحيات', en: 'Opened Permissions section' },
+    };
+    return this.t(labels[section].ar, labels[section].en);
+  }
+
   setSection(section: AdminSection): void {
     if (section === 'users' && !this.canViewUsers) return;
     this.section = section;
+    this.sectionAnnouncement = this.sectionAnnouncementFor(section);
     if (section === 'businesses' && this.businesses.length === 0) void this.loadBusinesses(0);
     if (section === 'activity' && this.auditEvents.length === 0) void this.loadAudit(0);
     if (section === 'users' && this.users.length === 0) {

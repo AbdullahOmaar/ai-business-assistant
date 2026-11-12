@@ -523,3 +523,13 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - **HR keyboard acceptance:** all three mobile section controls retain at least 44px height; keyboard-only Enter/Tab/Shift+Tab navigation reaches Employees, Prepare pay and Payroll history in natural DOM order; the employee form disclosure opens/closes with Enter and preserves `aria-expanded` state. The form remains collapsed by default.
 - **Artifact:** [browser-smoke screenshots and JUnit](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43168710539/artifacts/13921421297). The 22/22 result includes mocked E2E flows; it does not prove live STAFF/API authorization or production behavior.
 - **Remaining acceptance:** physical Android Chrome/installed-PWA install-update-offline; actual browser zoom at 200%; full-product keyboard-only walkthrough beyond the tested HR controls; screen-reader/NVDA/VoiceOver; high-contrast/forced-colors rendered acceptance; direct authenticated cross-tenant API denial; live STAFF journey (BLOCKED by the absence of a supported invitation/create-membership workflow). Authenticated API smoke was skipped. Phase 1 remains PARTIALLY COMPLETE.
+
+
+## Platform Admin nested-surface accessibility follow-up — 2026-11-12
+
+- **Destination accounting:** the 19-entry Home catalogue consists of 18 workspace destinations plus the separately permissioned Platform Admin destination. The OWNER workspace sweep remains 18 routes; Platform Admin is tested with its own platform-admin identity rather than being forced into the workspace-owner session.
+- Expanded the mocked Platform Admin responsive route capture to all five internal surfaces: Overview, Workspaces, Audit activity, Users & access, and Permissions. Each surface is captured at 360, 390, 430, 768 and 1280 CSS px in both RTL and LTR (50 Platform Admin viewport captures; previously only Overview and Users were captured).
+- Added a persistent polite live-region announcement when keyboard or pointer navigation changes the active admin section. Revocation of Users visibility also announces the safe fallback to Overview.
+- Extended the Playwright keyboard path to Tab through and activate all five sections, checking the visible heading and matching announcement. This remains mocked browser evidence; it does not replace NVDA/VoiceOver or live platform-role verification.
+- No Platform Admin permission rules, identity, membership, API, data mutation, financial behavior, or backend changes.
+- Exact-head GitHub Actions validation is pending for the resulting branch candidate. Phase 1 remains PARTIALLY COMPLETE until manual screen-reader/high-contrast/actual-200%-zoom, physical Android/PWA and live role/tenant evidence is addressed.

@@ -3902,3 +3902,13 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Maintainer review:** the complete 18-path frontend/test/docs diff was reviewed at this candidate. No backend/API/schema/database/data change, new role/tenant authorization rule, financial/payroll/payout rule, payment/allocation semantic, inventory/receiving semantic, or tax/COGS/AP/GL behavior was introduced. Existing Owner-only purchase receiving and payroll controls remain guarded. This source review plus CI does not establish physical-device or assistive-technology acceptance.
 - **Still open / NOT RUN:** manual keyboard-only and screen-reader review; high-contrast/forced-colors; actual 200% browser zoom; physical Android Chrome and installed-PWA install/update/offline; live STAFF provisioning/journey; authenticated second-tenant API denial (API smoke was skipped). No verified live account/tenant evidence is claimed.
 - **Delivery:** Draft PR [#392](https://github.com/AbdullahOmaar/ai-business-assistant/pull/392) is open for review and exact-head evidence only. No merge, Vercel deployment, production DB write, migration, external notification or live financial operation. November Phase 1 remains **PARTIALLY COMPLETE** pending the manual/device/role-tenant acceptance above and separate Owner decisions for merge/deployment.
+
+
+## 2026-11-12 — Platform Admin nested-screen accessibility and route audit
+
+- Reconciled the Home catalogue: 19 total destinations = 18 workspace routes plus the independently permissioned Platform Admin destination. The existing OWNER route sweep covers the 18 workspace destinations; Platform Admin has a separate mocked authenticated E2E journey.
+- Expanded Platform Admin E2E viewport coverage from Overview/Users to all five inner sections (Overview, Workspaces, Audit activity, Users & access, Permissions), at 360/390/430/768/1280 CSS px in RTL/LTR (50 captures).
+- Added a polite screen-reader live announcement for admin section navigation and for the safe Overview fallback after Users permission revocation.
+- Added keyboard-only Tab/Enter coverage across all five sections, including matching active section announcements and heading visibility.
+- No platform authorization, identity, membership, API, database, financial, payroll, or operational data changes.
+- Full exact-head validation and route artifact review are pending on the resulting candidate. Physical Android/PWA, actual 200% zoom, real screen-reader/high-contrast, live STAFF and authenticated cross-tenant denial remain open. No merge or deployment.

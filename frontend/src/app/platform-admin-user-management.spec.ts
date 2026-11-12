@@ -87,6 +87,22 @@ test('Platform Admin business, membership, activity and user tables become label
 });
 
 
+test('Platform Admin announces SPA section changes to assistive technology', () => {
+  assert.match(source, /class="admin-visually-hidden admin-section-announcement" role="status" aria-live="polite" aria-atomic="true"/);
+  assert.match(source, /sectionAnnouncementFor\(section: AdminSection\): string/);
+  assert.match(source, /this\.sectionAnnouncement = this\.sectionAnnouncementFor\(section\)/);
+  assert.match(source, /this\.sectionAnnouncement = this\.sectionAnnouncementFor\('overview'\)/);
+  for (const label of [
+    'Opened Overview section',
+    'Opened Workspaces section',
+    'Opened Audit activity section',
+    'Opened Users and access section',
+    'Opened Permissions section',
+  ]) assert.ok(source.includes(label), 'missing accessible section announcement: '+label);
+  assert.match(source, /\.admin-visually-hidden\{/);
+});
+
+
 test('Platform Admin mobile table regions no longer advertise horizontal scrolling', () => {
   assert.doesNotMatch(source, /horizontally scrollable table/);
   assert.doesNotMatch(source, /جدول قابل للتمرير أفقيًا/);
