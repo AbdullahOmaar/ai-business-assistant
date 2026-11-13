@@ -108,10 +108,7 @@ export class ReleaseGuideComponent {
   readonly featureCatalog = FEATURE_CATALOG;
   readonly releaseHistory = RELEASE_HISTORY;
 
-  t(keyOrArabic: string, paramsOrEnglish?: Record<string, string | number> | string): string {
-    if (typeof paramsOrEnglish === 'string') {
-      return this.language === 'ar' ? keyOrArabic : paramsOrEnglish;
-    }
-    return this.localization.translate(keyOrArabic, paramsOrEnglish);
+  t(key: string, params?: Record<string, string | number>): string {
+    return this.localization.translate(key, params);
   }
 }
