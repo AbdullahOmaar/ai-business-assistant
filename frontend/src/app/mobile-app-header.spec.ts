@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers';
 
-const source = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8');
+const source = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
 const styles = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
-const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const appSource = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 
 test('mobile app header is an isolated standalone presentation component with explicit workspace and navigation contracts', () => {
