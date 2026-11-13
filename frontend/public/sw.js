@@ -4,6 +4,8 @@ const CACHE_PREFIX = 'aba-shell-';
 const SHELL_URLS = [
   // Public client bootstrap config; this contains no server credentials or business records.
   '/runtime-config.json',
+  '/i18n/ar.json',
+  '/i18n/en.json',
   '/manifest.webmanifest',
   '/icons/icon.svg',
   '/icons/icon-192.svg',
@@ -58,6 +60,20 @@ self.addEventListener('fetch', (event) => {
 
   // Runtime config is public bootstrap data. Refresh it online, but keep the last
   // successful version available when the network is unavailable.
+  if (/^\/i18n\/(?:ar|en)\.json$/.test(url.pathname)) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      try {
+        const response = await fetch(request);
+        if (response.ok) await cache.put(url.pathname, response.clone());
+        return response;
+      } catch {
+        return (await cache.match(url.pathname)) || Response.error();
+      }
+    })());
+    return;
+  }
+
   if (url.pathname === '/runtime-config.json') {
     event.respondWith((async () => {
       try {
