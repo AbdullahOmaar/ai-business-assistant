@@ -2277,11 +2277,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   auditActionLabel(action: string): string {
-    return formatAuditActionLabel(action, this.language);
+    return this.t(formatAuditActionLabel(action));
   }
 
   auditTargetLabel(target: string): string {
-    return formatAuditTargetLabel(target, this.language);
+    return this.t(formatAuditTargetLabel(target));
   }
 
   revenueBasisLabel(value: string): string {
