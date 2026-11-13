@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { expandTranslationCalls } from './localization-test-helpers';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
 
 const component = expandTranslationCalls(readFileSync(new URL('./product-catalog.component.ts', import.meta.url), 'utf8'));
 const sortHelper = readFileSync(new URL('./directory-sort.ts', import.meta.url), 'utf8');
