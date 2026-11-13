@@ -129,6 +129,9 @@ button, input, select { font: inherit; }
 /* Installed-PWA updates stay explicit and keyboard/touch accessible. */
 .app-update-notice {
   display: flex;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
