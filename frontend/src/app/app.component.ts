@@ -45,6 +45,12 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
         <a class="skip-link" href="#main-content">{{ t('تخطي إلى المحتوى الرئيسي', 'Skip to main content') }}</a>
       }
       @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('جارٍ التحميل…', 'Loading…') }}</span></div> }
+      @if (appUpdateAvailable) {
+        <aside class="app-update-notice" role="status" aria-live="polite">
+          <span>{{ t('تم تثبيت تحديث جديد للتطبيق. حدّث الصفحة لفتح أحدث إصدار بأمان.', 'A new app version is ready. Refresh to continue with the latest version.') }}</span>
+          <button class="secondary" type="button" (click)="reloadAppAfterUpdate()">{{ t('تحديث الآن', 'Refresh now') }}</button>
+        </aside>
+      }
       @if (!initialized) {
         <main class="auth-card" role="status" aria-live="polite">
           <div class="brand-mark">A</div>
@@ -1597,6 +1603,7 @@ export class AppComponent implements OnInit, OnDestroy {
   @ViewChild('chatLog') private chatLog?: ElementRef<HTMLElement>;
   isInstalled = false;
   installHelp = false;
+  appUpdateAvailable = false;
   private installPrompt: (Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }) | null = null;
 
   constructor(private readonly auth: AuthService, private readonly api: ApiService) {
@@ -1976,6 +1983,13 @@ export class AppComponent implements OnInit, OnDestroy {
     void this.loadApiVersion();
     void this.initializeApp();
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      const hadActiveController = Boolean(navigator.serviceWorker.controller);
+      let updateNoticeShown = false;
+      navigator.serviceWorker.addEventListener('controllerchange', () => {
+        if (!hadActiveController || updateNoticeShown) return;
+        updateNoticeShown = true;
+        this.appUpdateAvailable = true;
+      });
       const registerWorker = () => navigator.serviceWorker.register('/sw.js').catch(() => {
         // The app remains usable if service-worker registration is unavailable.
       });
@@ -2108,6 +2122,11 @@ export class AppComponent implements OnInit, OnDestroy {
       if (choice.outcome === 'accepted') { this.isInstalled = true; }
     } catch { this.installHelp = true; }
     finally { this.installPrompt = null; }
+  }
+
+  reloadAppAfterUpdate(): void {
+    this.appUpdateAvailable = false;
+    window.location.reload();
   }
 
   async initializeApp(): Promise<void> {
