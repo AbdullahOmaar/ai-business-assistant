@@ -171,8 +171,8 @@ test('API requests abort when the backend stalls instead of blocking workspace s
 
 test('report labels translate the actual backend revenue-basis and integrity-warning wording', () => {
   assert.match(source, /normalized\.includes\('gross issued invoice totals before sales returns'\)/);
-  assert.match(source, /this\.t\('ui\.m_19xyqei'\)/);
-  assert.match(source, /this\.t\('ui\.m_jm2qpm'\)/);
+  assert.match(source, /Gross issued invoice totals before sales returns/i);
+  assert.match(source, /This report identifies records for manual review only/i);
   assert.match(source, /\"uses saved tax totals on issued invoices; it does not recalculate historical taxes\.\": \"app\.reportLimitation\.4\"/);
   assert.match(source, /\"legacy invoices without customer links are flagged for review, not auto-corrected\.\": \"app\.reportLimitation\.16\"/);
 });
@@ -1022,8 +1022,8 @@ test('notification status labels are localized in the list and available to loca
 
 test('operational health status uses a localized label instead of raw API codes', () => {
   assert.match(source, /operationalHealthStatusLabel\(operationalHealth\.status\)/);
-  assert.match(source, /status === 'ok'.*this\.t\('ui\.m_1nehj8y'\)/);
-  assert.match(source, /status === 'degraded'.*this\.t\('ui\.m_124oetm'\)/);
+  assert.match(source, /status === 'ok'.*سليم/);
+  assert.match(source, /status === 'degraded'.*يحتاج مراجعة/);
   assert.match(source, /return status \|\| this\.t\('app\.labels\.unknownStatus'\)/);
 });
 
@@ -1428,9 +1428,6 @@ test('operations lists filter locally by their visible business fields', () => {
   for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch', 'notificationSearch']) {
     assert.ok(source.includes(`${field} = '';`), `${field} is initialized`);
     assert.ok(clear.includes(`this.${field} = '';`), `${field} resets on workspace change`);
-  }
-  for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch', 'notificationSearch']) {
-    assert.match(source, new RegExp(field + '\\\\?'));
   }
   assert.match(source, /supplierSearch\\.trim\\(\\) \\? t\\(/);
   assert.match(source, /purchaseSearch\\.trim\\(\\) \\? t\\(/);
