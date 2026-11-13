@@ -1802,6 +1802,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.recurringSchedules,
       this.recurringSearch,
       id => this.customerNameForInvoice(id),
+      active => this.t(active ? 'app.recurringSchedule.active' : 'app.recurringSchedule.inactive'),
     );
   }
 
@@ -1814,7 +1815,13 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredPayments(): Payment[] {
-    return filterPayments(this.payments, this.paymentSearch, id => this.customerNameForInvoice(id), method => this.paymentMethodLabel(method));
+    return filterPayments(
+      this.payments,
+      this.paymentSearch,
+      id => this.customerNameForInvoice(id),
+      method => this.paymentMethodLabel(method),
+      allocated => this.t(allocated ? 'app.paymentAllocation.allocated' : 'app.paymentAllocation.unallocated'),
+    );
   }
 
 
