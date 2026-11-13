@@ -56,7 +56,7 @@ test('mobile More navigation provides localized search over authorized destinati
   assert.match(menu, /@for \(group of filteredMobileMoreGroups; track group\.id\)/);
   assert.match(menu, /mobile-more-empty" role="status"/);
   assert.match(source, /get filteredMobileMoreGroups\(\)/);
-  assert.match(source, /module\.descriptionAr/);
+  assert.match(source, /module\.descriptionKey/);
   assert.match(source, /mobileMoreSearch = ''/);
 });
 
@@ -72,5 +72,5 @@ test('Home module directory exposes bilingual search and a localized empty state
   assert.match(source, /get filteredHomeModuleCards/);
   assert.match(home, /@for \(module of filteredHomeModuleCards; track module\.tab\)/);
   assert.match(home, /module-directory-empty" role="status"/);
-  assert.match(source, /filterWorkspaceModules\(this\.homeModuleCards, this\.homeModuleSearch/);
+  assert.match(source, /filterWorkspaceModules\(\s*this\.homeModuleCards,\s*this\.homeModuleSearch/);
 });
