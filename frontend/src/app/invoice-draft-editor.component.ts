@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LocalizationService } from './localization.service';
-import { localizeInvoiceDraftValidationMessage, removeInvoiceDraftLine, toInvoiceDraftPayload } from './invoice-draft';
+import { removeInvoiceDraftLine, toInvoiceDraftPayload } from './invoice-draft';
 import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, InvoiceDraftPayload, InvoiceDraftProduct, InvoiceDraftServerSummary } from './invoice-draft';
 
 @Component({
@@ -276,7 +276,7 @@ export class InvoiceDraftEditorComponent implements OnChanges {
     }
     return this.localization.translate(keyOrArabic, paramsOrEnglish);
   }
-  localize(message: string): string { return localizeInvoiceDraftValidationMessage(message, this.language); }
+  localize(message: string): string { return this.localization.translate(message); }
   productPrice(productId: string): string { return this.products.find(product => product.id === productId)?.unit_price ?? ''; }
 
   addLine(kind: InvoiceDraftLineKind = 'product'): void {
