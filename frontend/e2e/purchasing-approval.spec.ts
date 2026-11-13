@@ -10,6 +10,7 @@ type SetupOptions = {
   role?: 'owner' | 'staff';
   includeSecondBusiness?: boolean;
   approvalStatus?: number;
+  initialOrderStatus?: 'draft' | 'approved';
 };
 
 async function setupWorkspace(page: Page, options: SetupOptions = {}) {
@@ -17,7 +18,7 @@ async function setupWorkspace(page: Page, options: SetupOptions = {}) {
   const uid = role === 'owner' ? ownerUid : 'workspace-staff-uid';
   const apiRequests: ApiRequest[] = [];
   const uncaughtErrors: string[] = [];
-  let orderStatus = 'draft';
+  let orderStatus = options.initialOrderStatus ?? 'draft';
 
   const businesses = [
     { id: 'business-a', name: 'Demo Retail', currency_code: 'EGP', locale: 'en', timezone: 'Africa/Cairo', role },
@@ -254,7 +255,7 @@ test('OWNER approves a draft purchase order from the mobile layout without recor
   await dialog.getByRole('button', { name: 'Approve order', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Approve: PO-2026-001', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Receive remaining', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Receive remaining: PO-2026-001', exact: true })).toBeVisible();
 
   expect(harness.getOrderStatus()).toBe('approved');
   expect(harness.apiRequests.filter(item => item.method === 'POST' && item.path === '/api/v1/businesses/business-a/purchase-orders/po-a/approve')).toHaveLength(1);
@@ -278,10 +279,10 @@ test('approval failure stays in the confirmation dialog and does not show succes
 });
 
 test('STAFF cannot see purchase-order approval or receiving actions', async ({ page }) => {
-  const harness = await setupWorkspace(page, { role: 'staff' });
+  const harness = await setupWorkspace(page, { role: 'staff', initialOrderStatus: 'approved' });
   await openPurchases(page);
   await expect(page.getByRole('button', { name: /^Approve:/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Receive remaining', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Receive remaining:/ })).toHaveCount(0);
   expect(harness.apiRequests.some(item => item.method === 'POST' && item.path.endsWith('/approve'))).toBe(false);
   expect(harness.uncaughtErrors).toEqual([]);
 });
