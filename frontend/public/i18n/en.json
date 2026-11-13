@@ -1621,6 +1621,22 @@
         "workspace_operator": "Read access plus reasoned workspace activation/deactivation.",
         "user_manager": "Read all Firebase accounts and memberships; cannot grant platform roles."
       }
+    },
+    "invoicePrint": {
+      "title": "Invoice",
+      "customer": "Customer",
+      "item": "Item",
+      "quantity": "Quantity",
+      "price": "Unit price",
+      "amount": "Line total",
+      "total": "Total due",
+      "note": "Generated from saved business records.",
+      "print": "Print / Save PDF"
+    },
+    "payrollStatus": {
+      "draft": "Draft",
+      "approved": "Approved",
+      "paid": "Payout recorded"
     }
   }
 }
