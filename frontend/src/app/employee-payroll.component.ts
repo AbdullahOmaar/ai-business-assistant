@@ -299,11 +299,11 @@ export class EmployeePayrollComponent implements OnChanges {
   }
 
   get filteredEmployees(): EmployeeRecord[] {
-    const query = this.employeeSearch.trim().toLocaleLowerCase();
+    const query = this.employeeSearch.trim().normalize('NFKC').toLocaleLowerCase(this.localization.locale);
     if (!query) return this.employees;
     return this.employees.filter(employee =>
       [employee.name, employee.employee_code, employee.email, employee.department, employee.job_title]
-        .some(value => (value || '').toLocaleLowerCase().includes(query))
+        .some(value => (value || '').normalize('NFKC').toLocaleLowerCase(this.localization.locale).includes(query))
     );
   }
 
