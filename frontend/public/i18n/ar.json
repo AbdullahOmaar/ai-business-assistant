@@ -1640,6 +1640,14 @@
     },
     "audit": {
       "voidInvoiceReason": "أُلغي بواسطة مستخدم مخوّل في مساحة العمل"
+    },
+    "recurringSchedule": {
+      "active": "نشطة",
+      "inactive": "متوقفة"
+    },
+    "paymentAllocation": {
+      "allocated": "مخصصة",
+      "unallocated": "غير مخصصة"
     }
   }
 }
