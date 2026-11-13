@@ -13,9 +13,17 @@ type WorkerEvent = {
 const workerSource = readFileSync(new URL('../../public/sw.js', import.meta.url), 'utf8');
 const origin = 'https://aiba.test';
 
-function createWorkerHarness(options: { failingAsset?: string; failingRoot?: boolean } = {}) {
+const cacheNameMatch = workerSource.match(/const CACHE_NAME = '([^']+)'/);
+assert.ok(cacheNameMatch, 'the worker must declare a versioned AIBA cache name');
+const candidateCacheName = cacheNameMatch[1];
+
+function createWorkerHarness(options: {
+  failingAsset?: string;
+  failingRoot?: boolean;
+  existingCacheNames?: string[];
+} = {}) {
   const listeners = new Map<string, (event: WorkerEvent) => void>();
-  const entries = new Map<string, Response>();
+  const cacheStores = new Map<string, Map<string, Response>>();
   const calls = {
     shellUrls: [] as string[],
     assetUrls: [] as string[],
@@ -28,34 +36,52 @@ function createWorkerHarness(options: { failingAsset?: string; failingRoot?: boo
   const keyFor = (input: string | FakeRequest): string =>
     new URL(typeof input === 'string' ? input : input.url, origin).href;
 
-  const cache = {
-    async addAll(urls: string[]): Promise<void> {
-      calls.shellUrls.push(...urls);
-      for (const url of urls) {
-        const body = url === '/runtime-config.json' ? runtimeConfig : 'cached shell: ' + url;
-        entries.set(keyFor(url), new Response(body, { status: 200 }));
-      }
-    },
-    async put(request: string | FakeRequest, response: Response): Promise<void> {
-      entries.set(keyFor(request), response.clone());
-    },
-    async add(url: string): Promise<void> {
-      calls.assetUrls.push(url);
-      if (options.failingAsset === url) throw new Error('asset cache failure');
-      entries.set(keyFor(url), new Response('cached asset: ' + url, { status: 200 }));
-    },
+  for (const name of options.existingCacheNames ?? []) {
+    cacheStores.set(name, new Map([
+      [keyFor('/'), new Response('previous app shell', { status: 200 })],
+      [keyFor('/runtime-config.json'), new Response('previous runtime config', { status: 200 })],
+    ]));
+  }
+
+  const cacheFor = (name: string) => {
+    let entries = cacheStores.get(name);
+    if (!entries) {
+      entries = new Map<string, Response>();
+      cacheStores.set(name, entries);
+    }
+    return {
+      async addAll(urls: string[]): Promise<void> {
+        calls.shellUrls.push(...urls);
+        for (const url of urls) {
+          const body = url === '/runtime-config.json' ? runtimeConfig : 'cached shell: ' + url;
+          entries!.set(keyFor(url), new Response(body, { status: 200 }));
+        }
+      },
+      async put(request: string | FakeRequest, response: Response): Promise<void> {
+        entries!.set(keyFor(request), response.clone());
+      },
+      async add(url: string): Promise<void> {
+        calls.assetUrls.push(url);
+        if (options.failingAsset === url) throw new Error('asset cache failure');
+        entries!.set(keyFor(url), new Response('cached asset: ' + url, { status: 200 }));
+      },
+    };
   };
 
   const cacheStorage = {
-    async open(_name: string) { return cache; },
+    async open(name: string) { return cacheFor(name); },
     async match(request: string | FakeRequest): Promise<Response | null> {
-      return entries.get(keyFor(request))?.clone() ?? null;
+      const key = keyFor(request);
+      for (const entries of cacheStores.values()) {
+        const response = entries.get(key);
+        if (response) return response.clone();
+      }
+      return null;
     },
-    async keys(): Promise<string[]> { return []; },
+    async keys(): Promise<string[]> { return [...cacheStores.keys()]; },
     async delete(name: string): Promise<boolean> {
       calls.deletedCacheNames.push(name);
-      entries.clear();
-      return true;
+      return cacheStores.delete(name);
     },
   };
 
@@ -84,8 +110,11 @@ function createWorkerHarness(options: { failingAsset?: string; failingRoot?: boo
   runInNewContext(workerSource, { self: workerSelf, caches: cacheStorage, fetch: fetcher, URL, Response, Promise });
   return {
     listeners,
-    entries,
     calls,
+    hasCached(cacheName: string, url: string): boolean {
+      return cacheStores.get(cacheName)?.has(keyFor(url)) ?? false;
+    },
+    cacheNames(): string[] { return [...cacheStores.keys()]; },
     setOffline(value: boolean) { offline = value; },
     setRuntimeConfig(value: string) { runtimeConfig = value; },
   };
@@ -112,8 +141,8 @@ test('pre-caches public runtime config and all app-shell assets before activatin
   await runInstall(harness);
   assert.ok(harness.calls.shellUrls.includes('/runtime-config.json'));
   assert.ok(harness.calls.shellUrls.includes('/manifest.webmanifest'));
-  assert.ok(harness.entries.has(origin + '/runtime-config.json'));
-  assert.ok(harness.entries.has(origin + '/'));
+  assert.ok(harness.hasCached(candidateCacheName, '/runtime-config.json'));
+  assert.ok(harness.hasCached(candidateCacheName, '/'));
   assert.ok(harness.calls.assetUrls.includes(origin + '/main.js'));
   assert.ok(harness.calls.assetUrls.includes(origin + '/styles.css'));
   assert.equal(harness.calls.skipWaitingCount, 1);
@@ -123,8 +152,48 @@ test('does not activate an incomplete app-shell cache when a required bundle fai
   const harness = createWorkerHarness({ failingAsset: origin + '/main.js' });
   await assert.rejects(runInstall(harness), /asset cache failure/);
   assert.equal(harness.calls.skipWaitingCount, 0);
-  assert.equal(harness.calls.deletedCacheNames.length, 1);
-  assert.equal(harness.entries.size, 0);
+  assert.deepEqual(harness.calls.deletedCacheNames, [candidateCacheName]);
+  assert.equal(harness.hasCached(candidateCacheName, '/'), false);
+});
+
+
+test('a failed update install preserves the previously active app-shell cache', async () => {
+  const previousCacheName = 'aba-shell-v1.3.9-unknown';
+  const harness = createWorkerHarness({
+    failingAsset: origin + '/main.js',
+    existingCacheNames: [previousCacheName],
+  });
+
+  await assert.rejects(runInstall(harness), /asset cache failure/);
+
+  assert.deepEqual(harness.calls.deletedCacheNames, [candidateCacheName]);
+  assert.equal(harness.hasCached(previousCacheName, '/'), true);
+  assert.equal(harness.hasCached(previousCacheName, '/runtime-config.json'), true);
+  assert.equal(harness.hasCached(candidateCacheName, '/'), false);
+});
+
+async function runActivate(harness: ReturnType<typeof createWorkerHarness>): Promise<void> {
+  const handler = harness.listeners.get('activate');
+  assert.ok(handler, 'the service worker must register an activate handler');
+  let activationPromise: Promise<unknown> | undefined;
+  handler({ waitUntil: (promise) => { activationPromise = Promise.resolve(promise); } });
+  assert.ok(activationPromise, 'the activate handler must extend its lifetime');
+  await activationPromise;
+}
+
+test('activation removes only obsolete AIBA caches and preserves unrelated origin caches', async () => {
+  const previousCacheName = 'aba-shell-v1.3.9-unknown';
+  const unrelatedCacheName = 'another-app-cache-v1';
+  const harness = createWorkerHarness({
+    existingCacheNames: [previousCacheName, unrelatedCacheName],
+  });
+
+  await runInstall(harness);
+  await runActivate(harness);
+
+  assert.deepEqual(harness.calls.deletedCacheNames, [previousCacheName]);
+  assert.deepEqual(harness.cacheNames().sort(), [candidateCacheName, unrelatedCacheName].sort());
+  assert.equal(harness.hasCached(unrelatedCacheName, '/'), true);
 });
 
 test('does not activate when the root app shell cannot be cached', async () => {

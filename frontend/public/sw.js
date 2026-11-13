@@ -1,4 +1,6 @@
-const CACHE_NAME = 'aba-shell-v1.3.9-unknown';
+// Keep each worker release isolated so a failed install cannot delete the active worker's cache.
+const CACHE_NAME = 'aba-shell-v1.3.9-unknown-v2';
+const CACHE_PREFIX = 'aba-shell-';
 const SHELL_URLS = [
   // Public client bootstrap config; this contains no server credentials or business records.
   '/runtime-config.json',
@@ -41,7 +43,7 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
       .then((keys) => Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+        keys.filter((key) => key.startsWith(CACHE_PREFIX) && key !== CACHE_NAME).map((key) => caches.delete(key))
       ))
       .then(() => self.clients.claim())
   );
