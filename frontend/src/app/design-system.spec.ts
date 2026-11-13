@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { expandDictionaryBackedProperties, expandTranslationCalls } from './localization-test-helpers';
-import { expandTranslationCalls } from './localization-test-helpers';
+import { expandDictionaryBackedProperties, expandTranslationCalls } from './localization-test-helpers.ts';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
 
 const css = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const angular = JSON.parse(readFileSync(new URL('../../angular.json', import.meta.url), 'utf8'));
