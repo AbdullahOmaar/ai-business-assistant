@@ -38,3 +38,17 @@ export function expandTranslationCalls(source: string): string {
     return 't(' + singleQuoted(ar) + ', ' + singleQuoted(en);
   });
 }
+
+/**
+ * Adds a test-only bilingual view of catalogue fields that now store keys.
+ * Runtime catalogue objects remain key-based and production copy stays in JSON.
+ */
+export function expandDictionaryBackedProperties(source: string): string {
+  return source.replace(/\\b(title|note|detail|description)Key:\\s*(['"])([A-Za-z][A-Za-z0-9_.-]*)\\2/g,
+    (match, field: string, _quote: string, key: string) => {
+      const ar = lookup(arabic, key);
+      const en = lookup(english, key);
+      if (ar === undefined || en === undefined) return match;
+      return field + 'Ar: ' + singleQuoted(ar) + ', ' + field + 'En: ' + singleQuoted(en);
+    });
+}
