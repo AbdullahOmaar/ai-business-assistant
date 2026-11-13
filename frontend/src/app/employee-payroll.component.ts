@@ -13,126 +13,126 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     <section class="panel employee-panel" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" [attr.data-mobile-section]="mobileSection">
       <div class="section-head">
         <div>
-          <h2>{{ t("ui.m_4h0vw6") }}</h2>
-          <p>{{ t("ui.m_3j518t") }}</p>
+          <h2>{{ t('ui.m_4h0vw6') }}</h2>
+          <p>{{ t('ui.m_3j518t') }}</p>
         </div>
-        <span class="count">{{ employees.length }} {{ t("ui.m_3zsc2") }}</span>
+        <span class="count">{{ employees.length }} {{ t('ui.m_3zsc2') }}</span>
       </div>
 
       @if (error) { <p class="error" role="alert">{{ error }}</p> }
       @if (message) { <p class="notice success-notice" role="status">{{ message }}</p> }
 
-      <nav class="mobile-hr-nav" [attr.aria-label]="t("ui.m_1ntfciq")">
-        <button type="button" [class.active]="mobileSection === 'employees'" [attr.aria-current]="mobileSection === 'employees' ? 'page' : null" (click)="setMobileSection('employees')">{{ t("ui.m_1whxhp7") }}</button>
-        <button type="button" [class.active]="mobileSection === 'prepare'" [attr.aria-current]="mobileSection === 'prepare' ? 'page' : null" (click)="setMobileSection('prepare')">{{ t("ui.m_12qqxbq") }}</button>
-        <button type="button" [class.active]="mobileSection === 'history'" [attr.aria-current]="mobileSection === 'history' ? 'page' : null" (click)="setMobileSection('history')">{{ t("ui.m_g4qggl") }}</button>
+      <nav class="mobile-hr-nav" [attr.aria-label]="t('ui.m_1ntfciq')">
+        <button type="button" [class.active]="mobileSection === 'employees'" [attr.aria-current]="mobileSection === 'employees' ? 'page' : null" (click)="setMobileSection('employees')">{{ t('ui.m_1whxhp7') }}</button>
+        <button type="button" [class.active]="mobileSection === 'prepare'" [attr.aria-current]="mobileSection === 'prepare' ? 'page' : null" (click)="setMobileSection('prepare')">{{ t('ui.m_12qqxbq') }}</button>
+        <button type="button" [class.active]="mobileSection === 'history'" [attr.aria-current]="mobileSection === 'history' ? 'page' : null" (click)="setMobileSection('history')">{{ t('ui.m_g4qggl') }}</button>
       </nav>
 
       <section class="employee-workspace" data-mobile-pane="employees">
         <div class="employee-form-shell" [class.is-open]="employeeFormOpen">
           <button #employeeFormToggle class="employee-form-toggle" type="button" [attr.aria-expanded]="employeeFormOpen" aria-controls="employee-profile-form" (click)="toggleEmployeeForm()">
-            <span>{{ employeeFormOpen ? t("ui.m_2nnp9j") : editingEmployeeId ? t("ui.m_1hn4613") : t("ui.m_1xic4vk") }}</span>
+            <span>{{ employeeFormOpen ? t('ui.m_2nnp9j') : editingEmployeeId ? t('ui.m_1hn4613') : t('ui.m_1xic4vk') }}</span>
             <span aria-hidden="true">{{ employeeFormOpen ? '−' : '+' }}</span>
           </button>
           <form id="employee-profile-form" class="employee-form" (ngSubmit)="saveEmployee()">
-        <label>{{ t("ui.m_eqdww") }}
+        <label>{{ t('ui.m_eqdww') }}
           <input name="employeeName" maxlength="160" autocomplete="off" required [disabled]="busy" [(ngModel)]="employeeName">
         </label>
-        <label>{{ t("ui.m_jtu0fd") }}
+        <label>{{ t('ui.m_jtu0fd') }}
           <input name="employeeCode" maxlength="40" autocomplete="off" [disabled]="busy" [(ngModel)]="employeeCode">
         </label>
-        <label>{{ t("ui.m_112c7vo") }}
+        <label>{{ t('ui.m_112c7vo') }}
           <input name="employeeEmail" type="email" maxlength="254" autocomplete="off" [disabled]="busy" [(ngModel)]="employeeEmail">
         </label>
-        <label>{{ t("ui.m_n9dt9n") }}
+        <label>{{ t('ui.m_n9dt9n') }}
           <input name="employeePhone" maxlength="32" autocomplete="off" [disabled]="busy" [(ngModel)]="employeePhone">
         </label>
-        <label>{{ t("ui.m_fcawum") }}
+        <label>{{ t('ui.m_fcawum') }}
           <input name="employeeDepartment" maxlength="120" autocomplete="off" [disabled]="busy" [(ngModel)]="employeeDepartment">
         </label>
-        <label>{{ t("ui.m_qfhcd5") }}
+        <label>{{ t('ui.m_qfhcd5') }}
           <input name="employeeJobTitle" maxlength="120" autocomplete="off" [disabled]="busy" [(ngModel)]="employeeJobTitle">
         </label>
-        <label>{{ t("ui.m_fzbln8") }} · {{ currencyCode }}
+        <label>{{ t('ui.m_fzbln8') }} · {{ currencyCode }}
           <input name="employeeMonthlySalary" type="number" inputmode="decimal" min="0.01" step="0.01" required [disabled]="busy" [(ngModel)]="employeeMonthlySalary">
         </label>
         <div class="form-actions">
           <button class="primary" type="submit" [disabled]="busy || !employeeName.trim() || !employeeSalaryValid">
-            {{ editingEmployeeId ? t("ui.m_suv5n") : t("ui.m_ze7lpa") }}
+            {{ editingEmployeeId ? t('ui.m_suv5n') : t('ui.m_ze7lpa') }}
           </button>
           @if (editingEmployeeId) {
-            <button class="secondary" type="button" (click)="cancelEmployeeEdit()">{{ t("ui.m_defu9p") }}</button>
+            <button class="secondary" type="button" (click)="cancelEmployeeEdit()">{{ t('ui.m_defu9p') }}</button>
           }
         </div>
           </form>
         </div>
 
       <div class="employee-tools">
-        <label>{{ t("ui.m_k10p5m") }}
-          <input name="employeeSearch" [placeholder]="t("ui.m_1s1lu82")" [(ngModel)]="employeeSearch">
+        <label>{{ t('ui.m_k10p5m') }}
+          <input name="employeeSearch" [placeholder]="t('ui.m_1s1lu82')" [(ngModel)]="employeeSearch">
         </label>
-        <span class="count">{{ filteredEmployees.length }} {{ t("ui.m_1jg5410") }}</span>
+        <span class="count">{{ filteredEmployees.length }} {{ t('ui.m_1jg5410') }}</span>
       </div>
 
-      <aba-record-table [ariaLabel]="t("ui.m_1isrfeo")" [columns]="employeeTableColumns" [rows]="employeeTableRows" [loading]="busy && !employees.length" [loadingDescription]="t("ui.m_zwe2q6")" [actionsHeading]="t("ui.m_1dbhmlo")" [emptyTitle]="t("ui.m_q8ks9z")" [emptyDescription]="employeeSearch.trim() ? t("ui.m_mdi6vd") : t("ui.m_ej4qvb")" (rowAction)="onEmployeeRecordAction($event)" />
+      <aba-record-table [ariaLabel]="t('ui.m_1isrfeo')" [columns]="employeeTableColumns" [rows]="employeeTableRows" [loading]="busy && !employees.length" [loadingDescription]="t('ui.m_zwe2q6')" [actionsHeading]="t('ui.m_1dbhmlo')" [emptyTitle]="t('ui.m_q8ks9z')" [emptyDescription]="employeeSearch.trim() ? t('ui.m_mdi6vd') : t('ui.m_ej4qvb')" (rowAction)="onEmployeeRecordAction($event)" />
       </section>
 
       <section class="payroll-section payroll-preparation" data-mobile-pane="prepare">
         <div class="section-head">
           <div>
-            <h3 #prepareHeading tabindex="-1">{{ editingPayrollId ? t("ui.m_12xyelk") : t("ui.m_79zkdd") }}</h3>
-            <p>{{ t("ui.m_1vnth1i") }}</p>
+            <h3 #prepareHeading tabindex="-1">{{ editingPayrollId ? t('ui.m_12xyelk') : t('ui.m_79zkdd') }}</h3>
+            <p>{{ t('ui.m_1vnth1i') }}</p>
           </div>
         </div>
         <form class="payroll-form" (ngSubmit)="savePayroll()">
-          <label>{{ t("ui.m_18mgrmo") }}
+          <label>{{ t('ui.m_18mgrmo') }}
             <select name="payrollEmployeeId" required [disabled]="busy || !!editingPayrollId" [(ngModel)]="payrollEmployeeId">
-              <option value="">{{ t("ui.m_ph5hp0") }}</option>
+              <option value="">{{ t('ui.m_ph5hp0') }}</option>
               @for (employee of employees; track employee.id) {
-                <option [value]="employee.id" [disabled]="!employee.is_active">{{ employee.name }} · {{ employee.employee_code || t("ui.m_7yrjle") }}</option>
+                <option [value]="employee.id" [disabled]="!employee.is_active">{{ employee.name }} · {{ employee.employee_code || t('ui.m_7yrjle') }}</option>
               }
             </select>
           </label>
-          <label>{{ t("ui.m_jcps75") }}
+          <label>{{ t('ui.m_jcps75') }}
             <input name="payrollPeriod" type="month" required [disabled]="busy || !!editingPayrollId" [(ngModel)]="payrollPeriod">
           </label>
-          <label>{{ t("ui.m_v1202z") }}
+          <label>{{ t('ui.m_v1202z') }}
             <input name="payrollAllowances" type="number" inputmode="decimal" min="0" step="0.01" required [disabled]="busy" [(ngModel)]="payrollAllowances">
           </label>
-          <label>{{ t("ui.m_1xj0rsd") }}
+          <label>{{ t('ui.m_1xj0rsd') }}
             <input name="payrollBonuses" type="number" inputmode="decimal" min="0" step="0.01" required [disabled]="busy" [(ngModel)]="payrollBonuses">
           </label>
-          <label>{{ t("ui.m_oxttnb") }}
+          <label>{{ t('ui.m_oxttnb') }}
             <input name="payrollDeductions" type="number" inputmode="decimal" min="0" step="0.01" required [disabled]="busy" [(ngModel)]="payrollDeductions">
           </label>
           <div class="form-actions">
             <button class="primary" type="submit" [disabled]="busy || !payrollEmployeeId || !payrollPeriod">
-              {{ editingPayrollId ? t("ui.m_1ygqune") : t("ui.m_1rnrnw5") }}
+              {{ editingPayrollId ? t('ui.m_1ygqune') : t('ui.m_1rnrnw5') }}
             </button>
             @if (editingPayrollId) {
-              <button class="secondary" type="button" (click)="cancelPayrollEdit()">{{ t("ui.m_pw64as") }}</button>
+              <button class="secondary" type="button" (click)="cancelPayrollEdit()">{{ t('ui.m_pw64as') }}</button>
             }
           </div>
         </form>
         <div class="notice warning-notice">
-          {{ t("ui.m_1giayo7") }}
+          {{ t('ui.m_1giayo7') }}
         </div>
       </section>
 
       <section class="payroll-section payroll-history" data-mobile-pane="history">
         <div class="section-head">
           <div>
-            <h3 #historyHeading tabindex="-1">{{ t("ui.m_1lg62or") }}</h3>
-            <p>{{ t("ui.m_1dtta9v") }}</p>
+            <h3 #historyHeading tabindex="-1">{{ t('ui.m_1lg62or') }}</h3>
+            <p>{{ t('ui.m_1dtta9v') }}</p>
           </div>
-          <span class="count">{{ payrollRecords.length }} {{ t("ui.m_189ya4o") }}</span>
+          <span class="count">{{ payrollRecords.length }} {{ t('ui.m_189ya4o') }}</span>
         </div>
         <div class="payroll-history-filter">
-          <label>{{ t("ui.m_r58gmw") }}
+          <label>{{ t('ui.m_r58gmw') }}
             <input name="payrollFilterPeriod" type="month" [(ngModel)]="payrollFilterPeriod" (change)="loadEmployeesAndPayroll()">
           </label>
         </div>
-        <aba-record-table [ariaLabel]="t("ui.m_1p3jv9d")" [columns]="payrollTableColumns" [rows]="payrollTableRows" [loading]="busy && !payrollRecords.length" [loadingDescription]="t("ui.m_1vhhn22")" [emptyTitle]="t("ui.m_kvx8t8")" [emptyDescription]="t("ui.m_1yak0g9")" [actionsHeading]="t("ui.m_1dbhmlo")" (rowAction)="onPayrollRecordAction($event)" />
+        <aba-record-table [ariaLabel]="t('ui.m_1p3jv9d')" [columns]="payrollTableColumns" [rows]="payrollTableRows" [loading]="busy && !payrollRecords.length" [loadingDescription]="t('ui.m_1vhhn22')" [emptyTitle]="t('ui.m_kvx8t8')" [emptyDescription]="t('ui.m_1yak0g9')" [actionsHeading]="t('ui.m_1dbhmlo')" (rowAction)="onPayrollRecordAction($event)" />
       </section>
     </section>
   `,
@@ -323,31 +323,31 @@ export class EmployeePayrollComponent implements OnChanges {
   }
 
   get employeeTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'name',label:this.t("ui.m_18mgrmo"),primary:true},
-    {key:'code',label:this.t("ui.m_13ed6g7")},
-    {key:'department',label:this.t("ui.m_fcawum")},
-    {key:'jobTitle',label:this.t("ui.m_qfhcd5")},
-    {key:'contact',label:this.t("ui.m_oj3j6c")},
-    {key:'status',label:this.t("ui.m_jnmvwl"),kind:'status'},
+    {key:'name',label:this.t('ui.m_18mgrmo'),primary:true},
+    {key:'code',label:this.t('ui.m_13ed6g7')},
+    {key:'department',label:this.t('ui.m_fcawum')},
+    {key:'jobTitle',label:this.t('ui.m_qfhcd5')},
+    {key:'contact',label:this.t('ui.m_oj3j6c')},
+    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
   ]; }
   get employeeTableRows(): readonly AbaRecordTableRow[] { return this.filteredEmployees.map(employee=>({id:employee.id,cells:{
     name:employee.name,code:employee.employee_code||'—',department:employee.department||'—',
     jobTitle:employee.job_title||'—',contact:[employee.email,employee.phone].filter(Boolean).join(' · ')||'—',
-    status:employee.is_active?this.t("ui.m_sjpv56"):this.t("ui.m_1200s7g"),
+    status:employee.is_active?this.t('ui.m_sjpv56'):this.t('ui.m_1200s7g'),
   },actions:[
-    {id:'edit',label:this.t("ui.m_s21yyp"),disabled:this.busy},
-    {id:'prepare',label:this.t("ui.m_1dxu3h"),disabled:this.busy||!employee.is_active},
-    {id:'toggle',label:employee.is_active?this.t("ui.m_1m2o7qm"):this.t("ui.m_nu199a"),disabled:this.busy},
+    {id:'edit',label:this.t('ui.m_s21yyp'),disabled:this.busy},
+    {id:'prepare',label:this.t('ui.m_1dxu3h'),disabled:this.busy||!employee.is_active},
+    {id:'toggle',label:employee.is_active?this.t('ui.m_1m2o7qm'):this.t('ui.m_nu199a'),disabled:this.busy},
   ]})); }
   get payrollTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'employee',label:this.t("ui.m_18mgrmo"),primary:true},
-    {key:'period',label:this.t("ui.m_ziwhp0")},
-    {key:'base',label:this.t("ui.m_7go201"),kind:'numeric'},
-    {key:'additions',label:this.t("ui.m_s8dmdz"),kind:'numeric'},
-    {key:'deductions',label:this.t("ui.m_oxttnb"),kind:'numeric'},
-    {key:'net',label:this.t("ui.m_rym52c"),kind:'numeric'},
-    {key:'status',label:this.t("ui.m_jnmvwl"),kind:'status'},
-    {key:'payout',label:this.t("ui.m_y96e6r")},
+    {key:'employee',label:this.t('ui.m_18mgrmo'),primary:true},
+    {key:'period',label:this.t('ui.m_ziwhp0')},
+    {key:'base',label:this.t('ui.m_7go201'),kind:'numeric'},
+    {key:'additions',label:this.t('ui.m_s8dmdz'),kind:'numeric'},
+    {key:'deductions',label:this.t('ui.m_oxttnb'),kind:'numeric'},
+    {key:'net',label:this.t('ui.m_rym52c'),kind:'numeric'},
+    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
+    {key:'payout',label:this.t('ui.m_y96e6r')},
   ]; }
   get payrollTableRows(): readonly AbaRecordTableRow[] { return this.payrollRecords.map(payroll=>({id:payroll.id,cells:{
     employee:payroll.employee_name,period:payroll.period,base:`${payroll.base_salary} ${this.currencyCode}`,
@@ -355,10 +355,10 @@ export class EmployeePayrollComponent implements OnChanges {
     deductions:`${payroll.deductions} ${this.currencyCode}`,net:`${payroll.net_pay} ${this.currencyCode}`,
     status:this.payrollStatusLabel(payroll.status),payout:this.formatPayrollPayoutDate(payroll.paid_at),
   },actions:payroll.status==='draft'?[
-    {id:'edit',label:this.t("ui.m_s0gv7p"),disabled:this.busy||!!this.operationId},
-    {id:'approve',label:this.t("ui.m_1fxt7vn"),disabled:this.busy||!!this.operationId},
+    {id:'edit',label:this.t('ui.m_s0gv7p'),disabled:this.busy||!!this.operationId},
+    {id:'approve',label:this.t('ui.m_1fxt7vn'),disabled:this.busy||!!this.operationId},
   ]:payroll.status==='approved'?[
-    {id:'pay',label:this.t("ui.m_6uxmtn"),disabled:this.busy||!!this.operationId},
+    {id:'pay',label:this.t('ui.m_6uxmtn'),disabled:this.busy||!!this.operationId},
   ]:[]})); }
   onEmployeeRecordAction(action:AbaRecordTableActionEvent):void {
     const employee=this.filteredEmployees.find(item=>item.id===action.rowId); if(!employee)return;
@@ -407,7 +407,7 @@ export class EmployeePayrollComponent implements OnChanges {
   }
 
   private errorMessage(error: unknown): string {
-    return error instanceof Error ? error.message : this.t("ui.m_1ks1z7m");
+    return error instanceof Error ? error.message : this.t('ui.m_1ks1z7m');
   }
 
   private clearEmployeeForm(): void {
@@ -446,7 +446,7 @@ export class EmployeePayrollComponent implements OnChanges {
     const name = this.employeeName.trim();
     const monthlySalary = String(this.employeeMonthlySalary ?? '').trim();
     if (!this.businessId || !name || !this.employeeSalaryValid) {
-      this.error = this.t("ui.m_1cpyz98");
+      this.error = this.t('ui.m_1cpyz98');
       return;
     }
     const businessId = this.businessId;
@@ -480,7 +480,7 @@ export class EmployeePayrollComponent implements OnChanges {
       this.clearEmployeeForm();
       this.employeeFormOpen = false;
       this.focusAfterViewChange('employee-toggle');
-      this.message = this.t("ui.m_1b25esl");
+      this.message = this.t('ui.m_1b25esl');
       await this.loadEmployeesAndPayroll();
     } catch (error) {
       if (this.businessId === businessId) this.error = this.errorMessage(error);
@@ -498,8 +498,8 @@ export class EmployeePayrollComponent implements OnChanges {
       await this.api.updateEmployee(businessId, employee.id, { is_active: !employee.is_active });
       if (this.businessId !== businessId) return;
       this.message = employee.is_active
-        ? this.t("ui.m_16aif5r")
-        : this.t("ui.m_snw5ss");
+        ? this.t('ui.m_16aif5r')
+        : this.t('ui.m_snw5ss');
       await this.loadEmployeesAndPayroll();
     } catch (error) {
       if (this.businessId === businessId) this.error = this.errorMessage(error);
@@ -518,7 +518,7 @@ export class EmployeePayrollComponent implements OnChanges {
     this.payrollAllowances = '0.00';
     this.payrollBonuses = '0.00';
     this.payrollDeductions = '0.00';
-    this.message = this.t("ui.m_8iugq2");
+    this.message = this.t('ui.m_8iugq2');
     this.error = '';
   }
 
@@ -532,7 +532,7 @@ export class EmployeePayrollComponent implements OnChanges {
     this.payrollAllowances = record.allowances;
     this.payrollBonuses = record.bonuses;
     this.payrollDeductions = record.deductions;
-    this.message = this.t("ui.m_tvicvv");
+    this.message = this.t('ui.m_tvicvv');
     this.error = '';
   }
 
@@ -546,13 +546,13 @@ export class EmployeePayrollComponent implements OnChanges {
   async savePayroll(): Promise<void> {
     if (!this.businessId || !this.payrollEmployeeId) return;
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(this.payrollPeriod)) {
-      this.error = this.t("ui.m_5phvdg");
+      this.error = this.t('ui.m_5phvdg');
       return;
     }
     const amounts = [this.payrollAllowances, this.payrollBonuses, this.payrollDeductions]
       .map(value => Number(String(value ?? '').trim()));
     if (amounts.some(value => !Number.isFinite(value) || value < 0)) {
-      this.error = this.t("ui.m_18po2rz");
+      this.error = this.t('ui.m_18po2rz');
       return;
     }
     const businessId = this.businessId;
@@ -566,7 +566,7 @@ export class EmployeePayrollComponent implements OnChanges {
           bonuses: String(this.payrollBonuses).trim(),
           deductions: String(this.payrollDeductions).trim()
         });
-        this.message = this.t("ui.m_1kw9p17");
+        this.message = this.t('ui.m_1kw9p17');
       } else {
         await this.api.createPayroll(businessId, this.payrollEmployeeId, {
           period: this.payrollPeriod,
@@ -574,7 +574,7 @@ export class EmployeePayrollComponent implements OnChanges {
           bonuses: String(this.payrollBonuses).trim(),
           deductions: String(this.payrollDeductions).trim()
         });
-        this.message = this.t("ui.m_1nhx55s");
+        this.message = this.t('ui.m_1nhx55s');
       }
       if (this.businessId !== businessId) return;
       this.cancelPayrollEdit();
@@ -596,7 +596,7 @@ export class EmployeePayrollComponent implements OnChanges {
     try {
       await this.api.approvePayroll(businessId, record.id);
       if (this.businessId !== businessId) return;
-      this.message = this.t("ui.m_t0k8em");
+      this.message = this.t('ui.m_t0k8em');
       await this.loadEmployeesAndPayroll();
     } catch (error) {
       if (this.businessId === businessId) {
@@ -618,7 +618,7 @@ export class EmployeePayrollComponent implements OnChanges {
     try {
       await this.api.payPayroll(businessId, record.id);
       if (this.businessId !== businessId) return;
-      this.message = this.t("ui.m_i4zbum");
+      this.message = this.t('ui.m_i4zbum');
       this.payrollPaid.emit();
       await this.loadEmployeesAndPayroll();
     } catch (error) {

@@ -44,117 +44,117 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
-        <a class="skip-link" href="#main-content">{{ t("ui.m_1561v1f") }}</a>
+        <a class="skip-link" href="#main-content">{{ t('ui.m_1561v1f') }}</a>
       }
-      @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t("ui.m_1rza5t5") }}</span></div> }
+      @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('ui.m_1rza5t5') }}</span></div> }
       @if (appUpdateAvailable) {
         <aside class="app-update-notice" role="status" aria-live="polite">
-          <span>{{ t("ui.m_4cplhg") }}</span>
-          <button class="secondary" type="button" (click)="reloadAppAfterUpdate()">{{ t("ui.m_16hli7m") }}</button>
+          <span>{{ t('ui.m_4cplhg') }}</span>
+          <button class="secondary" type="button" (click)="reloadAppAfterUpdate()">{{ t('ui.m_16hli7m') }}</button>
         </aside>
       }
       @if (!initialized) {
         <main class="auth-card" role="status" aria-live="polite">
           <div class="brand-mark">A</div>
-          <span class="version-pill splash-version" [attr.title]="t("ui.m_g3351m") + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
-          <small class="splash-build-time">{{ t("ui.m_1y28k2h") }} {{ buildTimeLabel }}</small>
-          <h1>{{ t("ui.m_1dygc0g") }}</h1>
-          <p class="muted">{{ t("ui.m_1uzdlys") }}</p>
+          <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
+          <small class="splash-build-time">{{ t('ui.m_1y28k2h') }} {{ buildTimeLabel }}</small>
+          <h1>{{ t('ui.m_1dygc0g') }}</h1>
+          <p class="muted">{{ t('ui.m_1uzdlys') }}</p>
         </main>
       } @else if (startupFailed) {
         <main class="auth-card">
           <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
           <div class="brand-mark">A</div>
-          <h1>{{ t("ui.m_tee7tu") }}</h1>
+          <h1>{{ t('ui.m_tee7tu') }}</h1>
           <aba-state-message kind="error" [description]="error" />
-          <button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t("ui.m_1dc4cbo") : t("ui.m_lr6ezy") }}</button>
+          <button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t('ui.m_1dc4cbo') : t('ui.m_lr6ezy') }}</button>
         </main>
       } @else if (setupNeeded) {
         <main class="setup-card">
           <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
           <div class="brand-mark">A</div>
-          <p class="eyebrow">{{ t("ui.m_1yxyqru") }}</p>
-          <h1>{{ t("ui.m_11t8fki") }}</h1>
-          <p>{{ t("ui.m_1pg99q7") }}</p>
+          <p class="eyebrow">{{ t('ui.m_1yxyqru') }}</p>
+          <h1>{{ t('ui.m_11t8fki') }}</h1>
+          <p>{{ t('ui.m_1pg99q7') }}</p>
           <div class="setup-steps">
-            <p><strong>1.</strong> {{ t("ui.m_1ltjr2f") }} <code>frontend/public/runtime-config.json</code> {{ t("ui.m_11mqt0a") }}</p>
-            <p><strong>2.</strong> {{ t("ui.m_1lj5n4d") }} <code>apiBaseUrl</code> {{ t("ui.m_1aj80o5") }}</p>
-            <p><strong>3.</strong> {{ t("ui.m_15vm5ge") }} <code>apiKey</code>, <code>authDomain</code>, <code>projectId</code>, {{ t("ui.m_57gsye") }} <code>appId</code>.</p>
-            <p><strong>4.</strong> {{ t("ui.m_1rirx3l") }}</p>
+            <p><strong>1.</strong> {{ t('ui.m_1ltjr2f') }} <code>frontend/public/runtime-config.json</code> {{ t('ui.m_11mqt0a') }}</p>
+            <p><strong>2.</strong> {{ t('ui.m_1lj5n4d') }} <code>apiBaseUrl</code> {{ t('ui.m_1aj80o5') }}</p>
+            <p><strong>3.</strong> {{ t('ui.m_15vm5ge') }} <code>apiKey</code>, <code>authDomain</code>, <code>projectId</code>, {{ t('ui.m_57gsye') }} <code>appId</code>.</p>
+            <p><strong>4.</strong> {{ t('ui.m_1rirx3l') }}</p>
           </div>
-          <p class="footnote">{{ t("ui.m_1uk988r") }}</p>
+          <p class="footnote">{{ t('ui.m_1uk988r') }}</p>
         </main>
       } @else if (!signedIn) {
         <main class="auth-card">
           <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
           <div class="brand-mark">A</div>
-          <p class="eyebrow">{{ t("ui.m_ll4uy7") }}</p>
-          <h1 id="auth-form-heading">{{ signingUp ? t("ui.m_1cuf5gq") : t("ui.m_cfel9w") }}</h1>
-          <p class="muted">{{ t("ui.m_1euk0tm") }}</p>
+          <p class="eyebrow">{{ t('ui.m_ll4uy7') }}</p>
+          <h1 id="auth-form-heading">{{ signingUp ? t('ui.m_1cuf5gq') : t('ui.m_cfel9w') }}</h1>
+          <p class="muted">{{ t('ui.m_1euk0tm') }}</p>
           <form #authForm="ngForm" aria-labelledby="auth-form-heading" (ngSubmit)="authForm.valid && submitAuth()" class="stack">
-            <label>{{ t("ui.m_1jc8kzg") }}<input #emailModel="ngModel" name="email" type="email" autocomplete="email" required [(ngModel)]="email" [attr.aria-invalid]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'auth-email-error' : null">
+            <label>{{ t('ui.m_1jc8kzg') }}<input #emailModel="ngModel" name="email" type="email" autocomplete="email" required [(ngModel)]="email" [attr.aria-invalid]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'auth-email-error' : null">
               @if (emailModel.invalid && (emailModel.touched || authForm.submitted)) {
-                <small id="auth-email-error" class="field-error" aria-live="polite">{{ emailModel.errors?.['required'] ? t("ui.m_gxa0df") : t("ui.m_1afx9c8") }}</small>
+                <small id="auth-email-error" class="field-error" aria-live="polite">{{ emailModel.errors?.['required'] ? t('ui.m_gxa0df') : t('ui.m_1afx9c8') }}</small>
               }
             </label>
-            <label>{{ t("ui.m_eklfkj") }}<input #passwordModel="ngModel" name="password" type="password" [attr.autocomplete]="signingUp ? 'new-password' : 'current-password'" minlength="6" required [(ngModel)]="password" [attr.aria-invalid]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'auth-password-error' : null">
+            <label>{{ t('ui.m_eklfkj') }}<input #passwordModel="ngModel" name="password" type="password" [attr.autocomplete]="signingUp ? 'new-password' : 'current-password'" minlength="6" required [(ngModel)]="password" [attr.aria-invalid]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'auth-password-error' : null">
               @if (passwordModel.invalid && (passwordModel.touched || authForm.submitted)) {
-                <small id="auth-password-error" class="field-error" aria-live="polite">{{ passwordModel.errors?.['required'] ? t("ui.m_pfxpuv") : t("ui.m_1vnk3nk") }}</small>
+                <small id="auth-password-error" class="field-error" aria-live="polite">{{ passwordModel.errors?.['required'] ? t('ui.m_pfxpuv') : t('ui.m_1vnk3nk') }}</small>
               }
             </label>
-            <button class="primary" type="submit" [disabled]="loading">{{ loading ? t("ui.m_jxz3f3") : (signingUp ? t("ui.m_1hggna5") : t("ui.m_h8edye")) }}</button>
+            <button class="primary" type="submit" [disabled]="loading">{{ loading ? t('ui.m_jxz3f3') : (signingUp ? t('ui.m_1hggna5') : t('ui.m_h8edye')) }}</button>
           </form>
-          <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? t("ui.m_1uh3cl9") : t("ui.m_1fdki9f") }}</button>
+          <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? t('ui.m_1uh3cl9') : t('ui.m_1fdki9f') }}</button>
           @if (error) { <aba-state-message kind="error" [description]="error" /> }
           @if (!isInstalled) {
-            <section class="mobile-install-card auth-mobile-install" [attr.aria-label]="t("ui.m_1ig5s72")">
+            <section class="mobile-install-card auth-mobile-install" [attr.aria-label]="t('ui.m_1ig5s72')">
               <div class="mobile-install-copy">
                 <span class="mobile-install-icon" aria-hidden="true">⇧</span>
                 <div>
-                  <strong>{{ t("ui.m_1i6f7xh") }}</strong>
-                  <small>{{ t("ui.m_1ggnkh3") }}</small>
+                  <strong>{{ t('ui.m_1i6f7xh') }}</strong>
+                  <small>{{ t('ui.m_1ggnkh3') }}</small>
                 </div>
               </div>
-              <button class="secondary install-button mobile-install-button" type="button" (click)="installApp()">{{ t("ui.m_76lwbh") }}</button>
+              <button class="secondary install-button mobile-install-button" type="button" (click)="installApp()">{{ t('ui.m_76lwbh') }}</button>
             </section>
           }
           @if (installHelp && !isInstalled) {
             <div class="install-help install-help-inline" role="status">
-              {{ t("ui.m_14cdic2") }}
-              <button type="button" class="secondary" (click)="installHelp = false">{{ t("ui.m_1av23fu") }}</button>
+              {{ t('ui.m_14cdic2') }}
+              <button type="button" class="secondary" (click)="installHelp = false">{{ t('ui.m_1av23fu') }}</button>
             </div>
           }
         </main>
       } @else {
-        <aside class="sidebar" role="navigation" [attr.aria-label]="t("ui.m_9jbcg2")">
-          <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>{{ t("common.app_title") }}</span></a>
-          <p class="nav-label">{{ t("ui.m_criw1m") }}</p>
-          <button class="nav-item" [attr.aria-label]="t("ui.m_1sgyd06")" [attr.title]="t("ui.m_1sgyd06")" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t("ui.m_1sgyd06") }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_1k2jewg")" [attr.title]="t("ui.m_1k2jewg")" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t("ui.m_1k2jewg") }}</span></button>
-          @if (canAccessTab('taxes')) { <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_17hm8dv")" [attr.title]="t("ui.m_17hm8dv")" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t("ui.m_17hm8dv") }}</span></button> }
-          <button class="nav-item" [attr.aria-label]="t("ui.m_1h7f08p")" [attr.title]="t("ui.m_1h7f08p")" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t("ui.m_1h7f08p") }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_xpe4pk")" [attr.title]="t("ui.m_xpe4pk")" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t("ui.m_xpe4pk") }}</span></button>
-          <button class="nav-item" [attr.aria-label]="t("ui.m_tvy79l")" [attr.title]="t("ui.m_tvy79l")" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t("ui.m_tvy79l") }}</span></button>
-          @if (canAccessTab('employees')) { <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_1whxhp7")" [attr.title]="t("ui.m_1whxhp7")" [class.active]="tab === 'employees'" [attr.aria-current]="tab === 'employees' ? 'page' : null" (click)="setTab('employees')"><span class="nav-icon" aria-hidden="true">♙</span><span>{{ t("ui.m_1whxhp7") }}</span></button> }
-          @if (canAccessTab('platform-admin')) { <button class="nav-item platform-admin-nav" [attr.aria-label]="t("ui.m_1gkme2m")" [attr.title]="t("ui.m_1gkme2m")" [class.active]="tab === 'platform-admin'" [attr.aria-current]="tab === 'platform-admin' ? 'page' : null" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t("ui.m_1gkme2m") }}</span></button> }
-@if (canAccessTab('audit')) { <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_hd46sj")" [attr.title]="t("ui.m_hd46sj")" [class.active]="tab === 'audit'" [attr.aria-current]="tab === 'audit' ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t("ui.m_hd46sj") }}</span></button> }
-                    @if (canAccessTab('payments')) { <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_14ms9re")" [attr.title]="t("ui.m_14ms9re")" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t("ui.m_14ms9re") }}</span></button> }
-          <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_l71hva")" [attr.title]="t("ui.m_l71hva")" [class.active]="tab === 'expenses'" [attr.aria-current]="tab === 'expenses' ? 'page' : null" (click)="setTab('expenses')"><span class="nav-icon expense-icon" aria-hidden="true">−</span><span>{{ t("ui.m_l71hva") }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_vlrg7")" [attr.title]="t("ui.m_vlrg7")" [class.active]="tab === 'notifications'" [attr.aria-current]="tab === 'notifications' ? 'page' : null" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t("ui.m_vlrg7") }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_1yzd6rs")" [attr.title]="t("ui.m_1yzd6rs")" [class.active]="tab === 'suppliers'" [attr.aria-current]="tab === 'suppliers' ? 'page' : null" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t("ui.m_1yzd6rs") }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_s8z24b")" [attr.title]="t("ui.m_s8z24b")" [class.active]="tab === 'purchases'" [attr.aria-current]="tab === 'purchases' ? 'page' : null" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t("ui.m_s8z24b") }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_11lck86")" [attr.title]="t("ui.m_11lck86")" [class.active]="tab === 'recurring'" [attr.aria-current]="tab === 'recurring' ? 'page' : null" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t("ui.m_ccqp2u") }}</span></button>
-          @if (canAccessTab('health')) { <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_18z2l5z")" [attr.title]="t("ui.m_18z2l5z")" [class.active]="tab === 'health'" [attr.aria-current]="tab === 'health' ? 'page' : null" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t("ui.m_3lp8ed") }}</span></button> }
-          <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_dzn3ev")" [attr.title]="t("ui.m_dzn3ev")" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t("ui.m_dzn3ev") }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_a3qirn")" [attr.title]="t("ui.m_a3qirn")" [class.active]="tab === 'release-guide'" [attr.aria-current]="tab === 'release-guide' ? 'page' : null" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t("ui.m_a3qirn") }}</span></button>
-          <button #mobileMoreTrigger class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t("ui.m_nxf6ap")" [attr.aria-expanded]="mobileMoreOpen" [attr.aria-controls]="mobileMoreOpen ? 'mobile-more-menu' : null" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t("ui.m_dh4eov") }}</span></button>
+        <aside class="sidebar" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2')">
+          <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>{{ t('common.app_title') }}</span></a>
+          <p class="nav-label">{{ t('ui.m_criw1m') }}</p>
+          <button class="nav-item" [attr.aria-label]="t('ui.m_1sgyd06')" [attr.title]="t('ui.m_1sgyd06')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('ui.m_1sgyd06') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1k2jewg')" [attr.title]="t('ui.m_1k2jewg')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('ui.m_1k2jewg') }}</span></button>
+          @if (canAccessTab('taxes')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_17hm8dv')" [attr.title]="t('ui.m_17hm8dv')" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('ui.m_17hm8dv') }}</span></button> }
+          <button class="nav-item" [attr.aria-label]="t('ui.m_1h7f08p')" [attr.title]="t('ui.m_1h7f08p')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('ui.m_1h7f08p') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_xpe4pk')" [attr.title]="t('ui.m_xpe4pk')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('ui.m_xpe4pk') }}</span></button>
+          <button class="nav-item" [attr.aria-label]="t('ui.m_tvy79l')" [attr.title]="t('ui.m_tvy79l')" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('ui.m_tvy79l') }}</span></button>
+          @if (canAccessTab('employees')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1whxhp7')" [attr.title]="t('ui.m_1whxhp7')" [class.active]="tab === 'employees'" [attr.aria-current]="tab === 'employees' ? 'page' : null" (click)="setTab('employees')"><span class="nav-icon" aria-hidden="true">♙</span><span>{{ t('ui.m_1whxhp7') }}</span></button> }
+          @if (canAccessTab('platform-admin')) { <button class="nav-item platform-admin-nav" [attr.aria-label]="t('ui.m_1gkme2m')" [attr.title]="t('ui.m_1gkme2m')" [class.active]="tab === 'platform-admin'" [attr.aria-current]="tab === 'platform-admin' ? 'page' : null" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('ui.m_1gkme2m') }}</span></button> }
+@if (canAccessTab('audit')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_hd46sj')" [attr.title]="t('ui.m_hd46sj')" [class.active]="tab === 'audit'" [attr.aria-current]="tab === 'audit' ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('ui.m_hd46sj') }}</span></button> }
+                    @if (canAccessTab('payments')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_14ms9re')" [attr.title]="t('ui.m_14ms9re')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('ui.m_14ms9re') }}</span></button> }
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_l71hva')" [attr.title]="t('ui.m_l71hva')" [class.active]="tab === 'expenses'" [attr.aria-current]="tab === 'expenses' ? 'page' : null" (click)="setTab('expenses')"><span class="nav-icon expense-icon" aria-hidden="true">−</span><span>{{ t('ui.m_l71hva') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_vlrg7')" [attr.title]="t('ui.m_vlrg7')" [class.active]="tab === 'notifications'" [attr.aria-current]="tab === 'notifications' ? 'page' : null" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t('ui.m_vlrg7') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1yzd6rs')" [attr.title]="t('ui.m_1yzd6rs')" [class.active]="tab === 'suppliers'" [attr.aria-current]="tab === 'suppliers' ? 'page' : null" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('ui.m_1yzd6rs') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_s8z24b')" [attr.title]="t('ui.m_s8z24b')" [class.active]="tab === 'purchases'" [attr.aria-current]="tab === 'purchases' ? 'page' : null" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('ui.m_s8z24b') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_11lck86')" [attr.title]="t('ui.m_11lck86')" [class.active]="tab === 'recurring'" [attr.aria-current]="tab === 'recurring' ? 'page' : null" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('ui.m_ccqp2u') }}</span></button>
+          @if (canAccessTab('health')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_18z2l5z')" [attr.title]="t('ui.m_18z2l5z')" [class.active]="tab === 'health'" [attr.aria-current]="tab === 'health' ? 'page' : null" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('ui.m_3lp8ed') }}</span></button> }
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_dzn3ev')" [attr.title]="t('ui.m_dzn3ev')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('ui.m_dzn3ev') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_a3qirn')" [attr.title]="t('ui.m_a3qirn')" [class.active]="tab === 'release-guide'" [attr.aria-current]="tab === 'release-guide' ? 'page' : null" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('ui.m_a3qirn') }}</span></button>
+          <button #mobileMoreTrigger class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t('ui.m_nxf6ap')" [attr.aria-expanded]="mobileMoreOpen" [attr.aria-controls]="mobileMoreOpen ? 'mobile-more-menu' : null" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('ui.m_dh4eov') }}</span></button>
           @if (mobileMoreOpen) {
-            <nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t("ui.m_1c7twvy")">
+            <nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('ui.m_1c7twvy')">
               <label class="mobile-more-search">
-                <span class="sr-only">{{ t("ui.m_1eu8swe") }}</span>
+                <span class="sr-only">{{ t('ui.m_1eu8swe') }}</span>
                 <input type="search" name="mobileMoreSearch" autocomplete="off" enterkeyhint="search"
-                  [attr.aria-label]="t("ui.m_1eu8swe")"
-                  [placeholder]="t("ui.m_1uhhx5z")"
+                  [attr.aria-label]="t('ui.m_1eu8swe')"
+                  [placeholder]="t('ui.m_1uhhx5z')"
                   [(ngModel)]="mobileMoreSearch" />
               </label>
               @if (filteredMobileMoreGroups.length) {
@@ -170,33 +170,33 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 </section>
                 }
               } @else {
-                <p class="mobile-more-empty" role="status">{{ t("ui.m_ehdjlq") }}</p>
+                <p class="mobile-more-empty" role="status">{{ t('ui.m_ehdjlq') }}</p>
               }
               <div class="mobile-more-actions">
                 <button class="nav-item mobile-menu-action" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</span></button>
-                <button class="nav-item mobile-menu-action" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t("ui.m_r2b303") }}</span></button>
+                <button class="nav-item mobile-menu-action" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t('ui.m_r2b303') }}</span></button>
               </div>
             </nav>
           }
-          <div class="sidebar-bottom"><span class="status-dot"></span> {{ t("ui.m_17dx7ed") }}<small>{{ t("ui.m_ab5ft9") }}</small></div>
+          <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('ui.m_17dx7ed') }}<small>{{ t('ui.m_ab5ft9') }}</small></div>
         </aside>
         <main class="main" id="main-content" tabindex="-1">
           @if (!isInstalled) {
-            <section class="mobile-install-card" [attr.aria-label]="t("ui.m_1ig5s72")">
+            <section class="mobile-install-card" [attr.aria-label]="t('ui.m_1ig5s72')">
               <div class="mobile-install-copy">
                 <span class="mobile-install-icon" aria-hidden="true">⇧</span>
                 <div>
-                  <strong>{{ t("ui.m_1i6f7xh") }}</strong>
-                  <small>{{ t("ui.m_1itaw9f") }}</small>
+                  <strong>{{ t('ui.m_1i6f7xh') }}</strong>
+                  <small>{{ t('ui.m_1itaw9f') }}</small>
                 </div>
               </div>
-              <button class="secondary install-button mobile-install-button" type="button" (click)="installApp()">{{ t("ui.m_76lwbh") }}</button>
+              <button class="secondary install-button mobile-install-button" type="button" (click)="installApp()">{{ t('ui.m_76lwbh') }}</button>
             </section>
           }
           @if (installHelp && !isInstalled) {
             <div class="install-help install-help-inline" role="status">
-              {{ t("ui.m_14cdic2") }}
-              <button type="button" class="secondary" (click)="installHelp = false">{{ t("ui.m_1av23fu") }}</button>
+              {{ t('ui.m_14cdic2') }}
+              <button type="button" class="secondary" (click)="installHelp = false">{{ t('ui.m_1av23fu') }}</button>
             </div>
           }
           @if (tab === 'platform-admin' && platformAdminAvailable) {
@@ -204,40 +204,40 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               <aba-platform-admin [language]="language" [userEmail]="userEmail" (signOutRequested)="logout()" (languageToggleRequested)="toggleLanguage()" />
             } @placeholder {
               <section abaCard class="panel narrow">
-                <aba-state-message kind="loading" [description]="t("ui.m_icu2ib")" />
+                <aba-state-message kind="loading" [description]="t('ui.m_icu2ib')" />
               </section>
             }
           } @else {
           <header class="topbar">
-            <div class="topbar-heading"><p class="eyebrow">{{ t("ui.m_criw1m") }}</p><h1>{{ pageTitle }}</h1></div>
-            <div class="user-area">@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t("ui.m_1ig5s72") }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t("ui.m_r2b303") }}</button></div>
+            <div class="topbar-heading"><p class="eyebrow">{{ t('ui.m_criw1m') }}</p><h1>{{ pageTitle }}</h1></div>
+            <div class="user-area">@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('ui.m_1ig5s72') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('ui.m_r2b303') }}</button></div>
           </header>
-          @if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="sessionExpired ? t("ui.m_14surv3") : accessDenied ? t("ui.m_atfuse") : t("ui.m_worzj7")" (action)="sessionExpired ? logout() : accessDenied ? setTab('overview') : retry()" /> }
-          @if (loading) { <aba-state-message kind="loading" [description]="t("ui.m_1oo6dkn")" /> }
+          @if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="sessionExpired ? t('ui.m_14surv3') : accessDenied ? t('ui.m_atfuse') : t('ui.m_worzj7')" (action)="sessionExpired ? logout() : accessDenied ? setTab('overview') : retry()" /> }
+          @if (loading) { <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" /> }
 
           @if (!business) {
             <section abaCard class="panel narrow">
-              <p class="eyebrow">{{ t("ui.m_117ileb") }}</p><h2>{{ t("ui.m_sgf5dv") }}</h2>
-              <p class="muted">{{ t("ui.m_1bmd66c") }}</p>
+              <p class="eyebrow">{{ t('ui.m_117ileb') }}</p><h2>{{ t('ui.m_sgf5dv') }}</h2>
+              <p class="muted">{{ t('ui.m_1bmd66c') }}</p>
               <form #workspaceForm="ngForm" class="stack" (ngSubmit)="workspaceForm.valid && createWorkspace()">
-                <label>{{ t("ui.m_lzm3kh") }}<input #businessNameModel="ngModel" name="businessName" required maxlength="160" [(ngModel)]="businessName" [attr.aria-invalid]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'true' : null" [attr.aria-describedby]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'workspace-name-error' : null">
+                <label>{{ t('ui.m_lzm3kh') }}<input #businessNameModel="ngModel" name="businessName" required maxlength="160" [(ngModel)]="businessName" [attr.aria-invalid]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'true' : null" [attr.aria-describedby]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'workspace-name-error' : null">
                   @if (businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted)) {
-                    <small id="workspace-name-error" class="field-error" aria-live="polite">{{ businessNameModel.errors?.['required'] ? t("ui.m_dqqjgk") : t("ui.m_nclsue") }}</small>
+                    <small id="workspace-name-error" class="field-error" aria-live="polite">{{ businessNameModel.errors?.['required'] ? t('ui.m_dqqjgk') : t('ui.m_nclsue') }}</small>
                   }
                 </label>
-                <label>{{ t("ui.m_1n6idjh") }}<select name="currency" [(ngModel)]="currencyCode"><option value="EGP">{{ currencyName("EGP") }}</option><option value="USD">{{ currencyName("USD") }}</option><option value="EUR">{{ currencyName("EUR") }}</option><option value="GBP">{{ currencyName("GBP") }}</option><option value="SAR">{{ currencyName("SAR") }}</option><option value="AED">{{ currencyName("AED") }}</option></select></label>
-                <button class="primary" type="submit" [disabled]="loading">{{ t("ui.m_uddskc") }}</button>
+                <label>{{ t('ui.m_1n6idjh') }}<select name="currency" [(ngModel)]="currencyCode"><option value="EGP">{{ currencyName("EGP") }}</option><option value="USD">{{ currencyName("USD") }}</option><option value="EUR">{{ currencyName("EUR") }}</option><option value="GBP">{{ currencyName("GBP") }}</option><option value="SAR">{{ currencyName("SAR") }}</option><option value="AED">{{ currencyName("AED") }}</option></select></label>
+                <button class="primary" type="submit" [disabled]="loading">{{ t('ui.m_uddskc') }}</button>
               </form>
             </section>
           } @else {
-            <section class="workspace-bar" [attr.aria-label]="t("ui.m_qhibn3")">
-              <div class="workspace-current"><span class="eyebrow">{{ t("ui.m_k9m7mg") }}</span><strong id="workspace-current-name" aria-live="polite">{{ business.name }}</strong></div>
-              <select [attr.aria-label]="t("ui.m_10nmufl")" aria-describedby="workspace-current-name" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
+            <section class="workspace-bar" [attr.aria-label]="t('ui.m_qhibn3')">
+              <div class="workspace-current"><span class="eyebrow">{{ t('ui.m_k9m7mg') }}</span><strong id="workspace-current-name" aria-live="polite">{{ business.name }}</strong></div>
+              <select [attr.aria-label]="t('ui.m_10nmufl')" aria-describedby="workspace-current-name" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
                 @for (item of businesses; track item.id) { <option [value]="item.id">{{ item.name }}</option> }
               </select>
-              <div class="workspace-release-meta workspace-release-meta-inline" [attr.aria-label]="t("ui.m_zepwzq")">
-                <span class="version-pill" [attr.title]="t("ui.m_g3351m") + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
-                <small>{{ t("ui.m_1d7lshv") }} {{ buildTimeLabel }}</small>
+              <div class="workspace-release-meta workspace-release-meta-inline" [attr.aria-label]="t('ui.m_zepwzq')">
+                <span class="version-pill" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
+                <small>{{ t('ui.m_1d7lshv') }} {{ buildTimeLabel }}</small>
               </div>
             </section>
             <aba-mobile-app-header
@@ -258,32 +258,32 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'overview') {
               @if (dashboard) {
-                <section class="dashboard-period" [attr.aria-label]="t("ui.m_14yh7ls")">
+                <section class="dashboard-period" [attr.aria-label]="t('ui.m_14yh7ls')">
                   <div class="dashboard-period__heading">
-                    <h2 class="dashboard-period__title">{{ t("ui.m_1wch2zm") }}</h2>
-                    <strong>{{ t("ui.m_1ql1fm2") }}</strong>
+                    <h2 class="dashboard-period__title">{{ t('ui.m_1wch2zm') }}</h2>
+                    <strong>{{ t('ui.m_1ql1fm2') }}</strong>
                   </div>
                   <div class="dashboard-period__details">
-                    <span>{{ t("ui.m_15qcbwy") }} <bdi dir="ltr">{{ dashboard.period.start_date || '—' }}</bdi> {{ t("ui.m_8f9vz0") }} <bdi dir="ltr">{{ dashboard.period.end_date || '—' }}</bdi></span>
-                    <span>{{ t("ui.m_j805b6") }}: <bdi>{{ dashboard.period.timezone || '—' }}</bdi></span>
+                    <span>{{ t('ui.m_15qcbwy') }} <bdi dir="ltr">{{ dashboard.period.start_date || '—' }}</bdi> {{ t('ui.m_8f9vz0') }} <bdi dir="ltr">{{ dashboard.period.end_date || '—' }}</bdi></span>
+                    <span>{{ t('ui.m_j805b6') }}: <bdi>{{ dashboard.period.timezone || '—' }}</bdi></span>
                   </div>
                 </section>
-                <section class="metric-grid" [attr.aria-label]="t("ui.m_1gk81ud")">
-                  <aba-metric-card role="group" aria-labelledby="metric-invoiced-sales-label"><span id="metric-invoiced-sales-label" metricLabel>{{ t("ui.m_fnf54u") }}</span>
-                    @for (item of dashboard.invoiced_sales; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t("ui.m_18n4mlp") }}</small> } @if (!dashboard.invoiced_sales.length) { <strong>—</strong><small>{{ t("ui.m_e17yyr") }}</small> }<small class="metric-basis">{{ t("ui.m_zszhha") }}</small></aba-metric-card>
-                  <aba-metric-card role="group" aria-labelledby="metric-collected-payments-label"><span id="metric-collected-payments-label" metricLabel>{{ t("ui.m_1ukns6h") }}</span>
-                    @for (item of dashboard.collected_payments; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t("ui.m_1dedwxn") }}</small> } @if (!dashboard.collected_payments.length) { <strong>—</strong><small>{{ t("ui.m_5s5eo") }}</small> }<small class="metric-basis">{{ t("ui.m_nbfv39") }}</small></aba-metric-card>
-                  <aba-metric-card role="group" aria-labelledby="metric-expenses-label"><span id="metric-expenses-label" metricLabel>{{ t("ui.m_l71hva") }}</span>
-                    @for (item of dashboard.expenses; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t("ui.m_jgq8i") }}</small> } @if (!dashboard.expenses.length) { <strong>—</strong><small>{{ t("ui.m_53hyf8") }}</small> }<small class="metric-basis">{{ t("ui.m_1mhn6p1") }}</small></aba-metric-card>
-                  <aba-metric-card role="group" aria-labelledby="metric-outstanding-balances-label"><span id="metric-outstanding-balances-label" metricLabel>{{ t("ui.m_v5uwri") }}</span>
-                    @for (item of dashboard.outstanding_balances; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small class="metric-basis">{{ t("ui.m_1wagqaw") }}</small> } @if (!dashboard.outstanding_balances.length) { <strong>—</strong><small>{{ t("ui.m_1k06qyq") }}</small> }</aba-metric-card>
+                <section class="metric-grid" [attr.aria-label]="t('ui.m_1gk81ud')">
+                  <aba-metric-card role="group" aria-labelledby="metric-invoiced-sales-label"><span id="metric-invoiced-sales-label" metricLabel>{{ t('ui.m_fnf54u') }}</span>
+                    @for (item of dashboard.invoiced_sales; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('ui.m_18n4mlp') }}</small> } @if (!dashboard.invoiced_sales.length) { <strong>—</strong><small>{{ t('ui.m_e17yyr') }}</small> }<small class="metric-basis">{{ t('ui.m_zszhha') }}</small></aba-metric-card>
+                  <aba-metric-card role="group" aria-labelledby="metric-collected-payments-label"><span id="metric-collected-payments-label" metricLabel>{{ t('ui.m_1ukns6h') }}</span>
+                    @for (item of dashboard.collected_payments; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('ui.m_1dedwxn') }}</small> } @if (!dashboard.collected_payments.length) { <strong>—</strong><small>{{ t('ui.m_5s5eo') }}</small> }<small class="metric-basis">{{ t('ui.m_nbfv39') }}</small></aba-metric-card>
+                  <aba-metric-card role="group" aria-labelledby="metric-expenses-label"><span id="metric-expenses-label" metricLabel>{{ t('ui.m_l71hva') }}</span>
+                    @for (item of dashboard.expenses; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('ui.m_jgq8i') }}</small> } @if (!dashboard.expenses.length) { <strong>—</strong><small>{{ t('ui.m_53hyf8') }}</small> }<small class="metric-basis">{{ t('ui.m_1mhn6p1') }}</small></aba-metric-card>
+                  <aba-metric-card role="group" aria-labelledby="metric-outstanding-balances-label"><span id="metric-outstanding-balances-label" metricLabel>{{ t('ui.m_v5uwri') }}</span>
+                    @for (item of dashboard.outstanding_balances; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small class="metric-basis">{{ t('ui.m_1wagqaw') }}</small> } @if (!dashboard.outstanding_balances.length) { <strong>—</strong><small>{{ t('ui.m_1k06qyq') }}</small> }</aba-metric-card>
                 </section>
-                <section class="notice dashboard-trust-note" role="note"><strong>{{ t("ui.m_lgrza4") }}</strong><span>{{ t("ui.m_1yfmgqi") }}</span></section>
+                <section class="notice dashboard-trust-note" role="note"><strong>{{ t('ui.m_lgrza4') }}</strong><span>{{ t('ui.m_1yfmgqi') }}</span></section>
               } @else if (loading) {
                 <section class="dashboard-period dashboard-period--skeleton" aria-hidden="true">
                   <div class="dashboard-period__heading">
-                    <h2 class="dashboard-period__title">{{ t("ui.m_1wch2zm") }}</h2>
-                    <strong>{{ t("ui.m_1ql1fm2") }}</strong>
+                    <h2 class="dashboard-period__title">{{ t('ui.m_1wch2zm') }}</h2>
+                    <strong>{{ t('ui.m_1ql1fm2') }}</strong>
                   </div>
                   <div class="dashboard-period-skeleton__details">
                     <span></span><span></span>
@@ -297,11 +297,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 </section>
 
               } @else if (!error) {
-                <aba-state-message kind="empty" [description]="t("ui.m_1x7j987")" />
+                <aba-state-message kind="empty" [description]="t('ui.m_1x7j987')" />
               }
               <section abaCard class="panel module-launcher" aria-labelledby="module-launcher-title">
-                <aba-section-header [titleId]="'module-launcher-title'" [title]="t("ui.m_1423muo")" [description]="t("ui.m_1srbbxd")" [count]="homeQuickAccessCards.length" />
-                <nav class="home-shortcut-list" [attr.aria-label]="t("ui.m_1ufo715")">
+                <aba-section-header [titleId]="'module-launcher-title'" [title]="t('ui.m_1423muo')" [description]="t('ui.m_1srbbxd')" [count]="homeQuickAccessCards.length" />
+                <nav class="home-shortcut-list" [attr.aria-label]="t('ui.m_1ufo715')">
                   @for (module of homeQuickAccessCards; track module.tab) {
                     <button class="home-shortcut-link" type="button" (click)="setTab(module.tab)">
                       <span class="home-shortcut-link__icon" aria-hidden="true">{{ module.icon }}</span>
@@ -314,17 +314,17 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <details class="module-directory-disclosure">
                   <summary class="module-directory-summary">
                     <span class="module-directory-summary__copy">
-                      <span class="module-directory-summary__title" role="heading" aria-level="2" id="module-directory-title">{{ t("ui.m_1h6gxl7") }}</span>
-                      <small>{{ t("ui.m_ytvtiu") }}</small>
+                      <span class="module-directory-summary__title" role="heading" aria-level="2" id="module-directory-title">{{ t('ui.m_1h6gxl7') }}</span>
+                      <small>{{ t('ui.m_ytvtiu') }}</small>
                     </span>
                     <span class="count">{{ homeModuleCards.length }}</span>
                     <span class="module-directory-toggle" aria-hidden="true">＋</span>
                   </summary>
                   <label class="module-directory-search">
-                    <span class="sr-only">{{ t("ui.m_1yd5km1") }}</span>
+                    <span class="sr-only">{{ t('ui.m_1yd5km1') }}</span>
                     <input type="search" name="homeModuleSearch" autocomplete="off"
-                      [attr.aria-label]="t("ui.m_1yd5km1")"
-                      [placeholder]="t("ui.m_3bdru5")"
+                      [attr.aria-label]="t('ui.m_1yd5km1')"
+                      [placeholder]="t('ui.m_3bdru5')"
                       [(ngModel)]="homeModuleSearch" />
                   </label>
                   @if (filteredHomeModuleCards.length) {
@@ -338,7 +338,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     }
                   </div>
                   } @else {
-                    <p class="module-directory-empty" role="status">{{ t("ui.m_c4eu5t") }}</p>
+                    <p class="module-directory-empty" role="status">{{ t('ui.m_c4eu5t') }}</p>
                   }
                 </details>
               </section>
@@ -347,62 +347,62 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'notifications') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t("ui.m_6wit46") " [description]=" t("ui.m_1a21njv") "><span class="count">{{ filteredNotifications.length }} / {{ notifications.length }}</span></aba-section-header>
+                <aba-section-header [title]=" t('ui.m_6wit46') " [description]=" t('ui.m_1a21njv') "><span class="count">{{ filteredNotifications.length }} / {{ notifications.length }}</span></aba-section-header>
                 @if (business?.role === 'owner') {
                 <form #notificationForm="ngForm" class="stack" (ngSubmit)="notificationForm.valid && createNotification()">
-                  <label>{{ t("ui.m_1ulxyq2") }}<select #notificationKindControl="ngModel" name="notificationKind" required [attr.aria-invalid]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'notification-kind-error' : null" [(ngModel)]="notificationKind">
-                    <option value="business">{{ t("ui.m_1821fhb") }}</option>
-                    <option value="invoices">{{ t("ui.m_1h7f08p") }}</option>
-                    <option value="payments">{{ t("ui.m_14ms9re") }}</option>
-                    <option value="expenses">{{ t("ui.m_l71hva") }}</option>
-                    <option value="inventory">{{ t("ui.m_1w4exkr") }}</option>
-                    <option value="reminders">{{ t("ui.m_1f2h79i") }}</option>
-                    <option value="reports">{{ t("ui.m_zmcikc") }}</option>
-                    <option value="suppliers">{{ t("ui.m_1yzd6rs") }}</option>
-                    <option value="purchases">{{ t("ui.m_57w0yx") }}</option>
-                    <option value="recurring">{{ t("ui.m_11lck86") }}</option>
-                    <option value="assistant">{{ t("ui.m_dzn3ev") }}</option>
-                    <option value="system">{{ t("ui.m_kl4jvd") }}</option>
+                  <label>{{ t('ui.m_1ulxyq2') }}<select #notificationKindControl="ngModel" name="notificationKind" required [attr.aria-invalid]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'notification-kind-error' : null" [(ngModel)]="notificationKind">
+                    <option value="business">{{ t('ui.m_1821fhb') }}</option>
+                    <option value="invoices">{{ t('ui.m_1h7f08p') }}</option>
+                    <option value="payments">{{ t('ui.m_14ms9re') }}</option>
+                    <option value="expenses">{{ t('ui.m_l71hva') }}</option>
+                    <option value="inventory">{{ t('ui.m_1w4exkr') }}</option>
+                    <option value="reminders">{{ t('ui.m_1f2h79i') }}</option>
+                    <option value="reports">{{ t('ui.m_zmcikc') }}</option>
+                    <option value="suppliers">{{ t('ui.m_1yzd6rs') }}</option>
+                    <option value="purchases">{{ t('ui.m_57w0yx') }}</option>
+                    <option value="recurring">{{ t('ui.m_11lck86') }}</option>
+                    <option value="assistant">{{ t('ui.m_dzn3ev') }}</option>
+                    <option value="system">{{ t('ui.m_kl4jvd') }}</option>
                   </select></label>
-                  <label>{{ t("ui.m_1m8bms") }}<input #notificationTitleControl="ngModel" name="notificationTitle" required maxlength="160" [attr.aria-invalid]="notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted) ? 'notification-title-error' : null" [(ngModel)]="notificationTitle"></label>
-                  <label>{{ t("ui.m_cjak9a") }}<textarea #notificationBodyControl="ngModel" name="notificationBody" required maxlength="1000" rows="3" [attr.aria-invalid]="notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted) ? 'notification-body-error' : null" [(ngModel)]="notificationBody"></textarea></label>
-                  <label>{{ t("ui.m_1ocecai") }}<input name="notificationScheduledAt" type="datetime-local" [(ngModel)]="notificationScheduledAt"></label>
-                  <button class="primary" type="submit" [disabled]="notificationsLoading">{{ t("ui.m_d76gji") }}</button>
+                  <label>{{ t('ui.m_1m8bms') }}<input #notificationTitleControl="ngModel" name="notificationTitle" required maxlength="160" [attr.aria-invalid]="notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted) ? 'notification-title-error' : null" [(ngModel)]="notificationTitle"></label>
+                  <label>{{ t('ui.m_cjak9a') }}<textarea #notificationBodyControl="ngModel" name="notificationBody" required maxlength="1000" rows="3" [attr.aria-invalid]="notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted) ? 'notification-body-error' : null" [(ngModel)]="notificationBody"></textarea></label>
+                  <label>{{ t('ui.m_1ocecai') }}<input name="notificationScheduledAt" type="datetime-local" [(ngModel)]="notificationScheduledAt"></label>
+                  <button class="primary" type="submit" [disabled]="notificationsLoading">{{ t('ui.m_d76gji') }}</button>
                 </form>
                 @if ((notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted)) || (notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted)) || (notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted))) {
                   <div class="form-validation" aria-live="polite">
-                    @if (notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted)) { <small id="notification-kind-error" class="field-error">{{ t("ui.m_guqotm") }}</small> }
-                    @if (notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted)) { <small id="notification-title-error" class="field-error">{{ t("ui.m_92hmvu") }}</small> }
-                    @if (notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted)) { <small id="notification-body-error" class="field-error">{{ t("ui.m_1qli6jw") }}</small> }
+                    @if (notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted)) { <small id="notification-kind-error" class="field-error">{{ t('ui.m_guqotm') }}</small> }
+                    @if (notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted)) { <small id="notification-title-error" class="field-error">{{ t('ui.m_92hmvu') }}</small> }
+                    @if (notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted)) { <small id="notification-body-error" class="field-error">{{ t('ui.m_1qli6jw') }}</small> }
                   </div>
                 }
-                } @else { <aba-state-message kind="info" [description]="t("ui.m_1oi5fhe")" /> }
+                } @else { <aba-state-message kind="info" [description]="t('ui.m_1oi5fhe')" /> }
                 @if (operationsError && operationsErrorTab === 'notifications') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'notifications') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'notifications' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="notificationSearch" type="search" [attr.aria-label]="t("ui.m_1qze32v")" [placeholder]="t("ui.m_1aqo4qr")" [(ngModel)]="notificationSearch"></div>
-                <aba-record-table [ariaLabel]="t("ui.m_1qfr3uw")" [columns]="notificationTableColumns" [rows]="notificationTableRows" [loading]="notificationsLoading && !notifications.length" [loadingDescription]="t("ui.m_fwia2s")" [emptyTitle]="t("ui.m_1mw6u5")" [emptyDescription]="notificationSearch.trim() ? t("ui.m_23ba9u") : t("ui.m_1yt5n1a")" />
+                <div class="list-tools operations-search aba-record-toolbar"><input name="notificationSearch" type="search" [attr.aria-label]="t('ui.m_1qze32v')" [placeholder]="t('ui.m_1aqo4qr')" [(ngModel)]="notificationSearch"></div>
+                <aba-record-table [ariaLabel]="t('ui.m_1qfr3uw')" [columns]="notificationTableColumns" [rows]="notificationTableRows" [loading]="notificationsLoading && !notifications.length" [loadingDescription]="t('ui.m_fwia2s')" [emptyTitle]="t('ui.m_1mw6u5')" [emptyDescription]="notificationSearch.trim() ? t('ui.m_23ba9u') : t('ui.m_1yt5n1a')" />
               </section>
             }
 
 
 @if (tab === 'suppliers') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t("ui.m_3w60yt") " [description]=" t("ui.m_6u1nke") "><span class="count">{{ filteredSuppliers.length }} / {{ suppliers.length }}</span></aba-section-header>
+                <aba-section-header [title]=" t('ui.m_3w60yt') " [description]=" t('ui.m_6u1nke') "><span class="count">{{ filteredSuppliers.length }} / {{ suppliers.length }}</span></aba-section-header>
 <details class="aba-record-create">
-                  <summary><span>{{ t("ui.m_p2zqz3") }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
+                  <summary><span>{{ t('ui.m_p2zqz3') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
                 <form #supplierForm="ngForm" class="inline-form" (ngSubmit)="supplierForm.valid && createSupplier()">
-                  <input #supplierNameControl="ngModel" name="supplierName" required maxlength="160" [attr.aria-label]="t("ui.m_jj4jgj")" [attr.aria-invalid]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'supplier-name-error' : null" [placeholder]="t("ui.m_jj4jgj")" [(ngModel)]="supplierName">
-                  <input #supplierEmailControl="ngModel" name="supplierEmail" type="email" maxlength="254" [attr.aria-label]="t("ui.m_112c7vo")" [attr.aria-invalid]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'supplier-email-error' : null" [placeholder]="t("ui.m_u2wvbv")" [(ngModel)]="supplierEmail">
-                  <input name="supplierPhone" maxlength="32" [attr.aria-label]="t("ui.m_19jxea1")" [placeholder]="t("ui.m_1fpllb8")" [(ngModel)]="supplierPhone">
-                  <input name="supplierAddress" maxlength="500" [attr.aria-label]="t("ui.m_1d6x93e")" [placeholder]="t("ui.m_1dvmwnl")" [(ngModel)]="supplierAddress">
-                  <button class="primary" type="submit" [disabled]="suppliersLoading">{{ t("ui.m_p2zqz3") }}</button>
+                  <input #supplierNameControl="ngModel" name="supplierName" required maxlength="160" [attr.aria-label]="t('ui.m_jj4jgj')" [attr.aria-invalid]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'supplier-name-error' : null" [placeholder]="t('ui.m_jj4jgj')" [(ngModel)]="supplierName">
+                  <input #supplierEmailControl="ngModel" name="supplierEmail" type="email" maxlength="254" [attr.aria-label]="t('ui.m_112c7vo')" [attr.aria-invalid]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'supplier-email-error' : null" [placeholder]="t('ui.m_u2wvbv')" [(ngModel)]="supplierEmail">
+                  <input name="supplierPhone" maxlength="32" [attr.aria-label]="t('ui.m_19jxea1')" [placeholder]="t('ui.m_1fpllb8')" [(ngModel)]="supplierPhone">
+                  <input name="supplierAddress" maxlength="500" [attr.aria-label]="t('ui.m_1d6x93e')" [placeholder]="t('ui.m_1dvmwnl')" [(ngModel)]="supplierAddress">
+                  <button class="primary" type="submit" [disabled]="suppliersLoading">{{ t('ui.m_p2zqz3') }}</button>
                 </form>
                 @if ((supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted)) || (supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted))) {
                   <div class="form-validation" aria-live="polite">
-                    @if (supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted)) { <small id="supplier-name-error" class="field-error">{{ t("ui.m_1840rkw") }}</small> }
-                    @if (supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted)) { <small id="supplier-email-error" class="field-error">{{ t("ui.m_stzy3f") }}</small> }
+                    @if (supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted)) { <small id="supplier-name-error" class="field-error">{{ t('ui.m_1840rkw') }}</small> }
+                    @if (supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted)) { <small id="supplier-email-error" class="field-error">{{ t('ui.m_stzy3f') }}</small> }
                   </div>
                 }
 
@@ -411,8 +411,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (operationsError && operationsErrorTab === 'suppliers') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'suppliers') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'suppliers' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="supplierSearch" type="search" [attr.aria-label]="t("ui.m_1mc30sn")" [placeholder]="t("ui.m_jtec0a")" [(ngModel)]="supplierSearch"></div>
-                <aba-record-table [ariaLabel]="t("ui.m_13lj997")" [columns]="supplierTableColumns" [rows]="supplierTableRows" [loading]="suppliersLoading && !suppliers.length" [loadingDescription]="t("ui.m_16wb349")" [emptyTitle]="t("ui.m_1u3jkgy")" [emptyDescription]="supplierSearch.trim() ? t("ui.m_ka2uzv") : t("ui.m_9e3ceh")" />
+                <div class="list-tools operations-search aba-record-toolbar"><input name="supplierSearch" type="search" [attr.aria-label]="t('ui.m_1mc30sn')" [placeholder]="t('ui.m_jtec0a')" [(ngModel)]="supplierSearch"></div>
+                <aba-record-table [ariaLabel]="t('ui.m_13lj997')" [columns]="supplierTableColumns" [rows]="supplierTableRows" [loading]="suppliersLoading && !suppliers.length" [loadingDescription]="t('ui.m_16wb349')" [emptyTitle]="t('ui.m_1u3jkgy')" [emptyDescription]="supplierSearch.trim() ? t('ui.m_ka2uzv') : t('ui.m_9e3ceh')" />
 
               </section>
             }
@@ -420,24 +420,24 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
 @if (tab === 'purchases') {
               <section abaCard class="panel">
-                <aba-section-header id="purchases-section-heading" tabindex="-1" [title]=" t("ui.m_1x15ykz") " [description]=" t("ui.m_roz4sr") "><span class="count">{{ filteredPurchaseOrders.length }} / {{ purchaseOrders.length }}</span></aba-section-header>
+                <aba-section-header id="purchases-section-heading" tabindex="-1" [title]=" t('ui.m_1x15ykz') " [description]=" t('ui.m_roz4sr') "><span class="count">{{ filteredPurchaseOrders.length }} / {{ purchaseOrders.length }}</span></aba-section-header>
 <details class="aba-record-create">
-                  <summary><span>{{ t("ui.m_iqb29f") }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
+                  <summary><span>{{ t('ui.m_iqb29f') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
                 <form #purchaseForm="ngForm" class="stack" (ngSubmit)="purchaseForm.valid && createPurchaseOrder()">
-                  <label>{{ t("ui.m_19p1zn3") }}<input #purchaseOrderNumberControl="ngModel" name="purchaseOrderNumber" required maxlength="64" [attr.aria-invalid]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'purchase-number-error' : null" [(ngModel)]="purchaseOrderNumber"></label>
-                  <label>{{ t("ui.m_x27ir1") }}<select #purchaseSupplierControl="ngModel" name="purchaseSupplierId" required [attr.aria-invalid]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'purchase-supplier-error' : null" [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t("ui.m_el3aam") }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
-                  <label>{{ t("ui.m_7fwfk0") }}<select #purchaseProductControl="ngModel" name="purchaseProductId" required [attr.aria-invalid]="purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted) ? 'purchase-product-error' : null" [(ngModel)]="purchaseProductId"><option value="" disabled>{{ t("ui.m_1kwxnkp") }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.sku || product.id.slice(0,8) }}</option> }</select></label>
-                  <div class="inline-form"><label>{{ t("ui.m_ocneuo") }}<input #purchaseQuantityControl="ngModel" name="purchaseQuantity" type="number" min="0.001" step="0.001" required [attr.aria-invalid]="purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted) ? 'purchase-quantity-error' : null" [(ngModel)]="purchaseQuantity"></label><label>{{ t("ui.m_19mrznv") }}<input #purchaseUnitCostControl="ngModel" name="purchaseUnitCost" type="number" min="0" step="0.01" required [attr.aria-invalid]="purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted) ? 'purchase-unit-cost-error' : null" [(ngModel)]="purchaseUnitCost"></label></div>
-                  <button class="primary" type="submit" [disabled]="purchasesLoading || !suppliers.length || !products.length">{{ t("ui.m_iqb29f") }}</button>
+                  <label>{{ t('ui.m_19p1zn3') }}<input #purchaseOrderNumberControl="ngModel" name="purchaseOrderNumber" required maxlength="64" [attr.aria-invalid]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'purchase-number-error' : null" [(ngModel)]="purchaseOrderNumber"></label>
+                  <label>{{ t('ui.m_x27ir1') }}<select #purchaseSupplierControl="ngModel" name="purchaseSupplierId" required [attr.aria-invalid]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'purchase-supplier-error' : null" [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('ui.m_el3aam') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
+                  <label>{{ t('ui.m_7fwfk0') }}<select #purchaseProductControl="ngModel" name="purchaseProductId" required [attr.aria-invalid]="purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted) ? 'purchase-product-error' : null" [(ngModel)]="purchaseProductId"><option value="" disabled>{{ t('ui.m_1kwxnkp') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.sku || product.id.slice(0,8) }}</option> }</select></label>
+                  <div class="inline-form"><label>{{ t('ui.m_ocneuo') }}<input #purchaseQuantityControl="ngModel" name="purchaseQuantity" type="number" min="0.001" step="0.001" required [attr.aria-invalid]="purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted) ? 'purchase-quantity-error' : null" [(ngModel)]="purchaseQuantity"></label><label>{{ t('ui.m_19mrznv') }}<input #purchaseUnitCostControl="ngModel" name="purchaseUnitCost" type="number" min="0" step="0.01" required [attr.aria-invalid]="purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted) ? 'purchase-unit-cost-error' : null" [(ngModel)]="purchaseUnitCost"></label></div>
+                  <button class="primary" type="submit" [disabled]="purchasesLoading || !suppliers.length || !products.length">{{ t('ui.m_iqb29f') }}</button>
                 </form>
                 @if ((purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted)) || (purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted)) || (purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted)) || (purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted)) || (purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted))) {
                   <div class="form-validation" aria-live="polite">
-                    @if (purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted)) { <small id="purchase-number-error" class="field-error">{{ t("ui.m_lv9gfw") }}</small> }
-                    @if (purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted)) { <small id="purchase-supplier-error" class="field-error">{{ t("ui.m_17l7adv") }}</small> }
-                    @if (purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted)) { <small id="purchase-product-error" class="field-error">{{ t("ui.m_lkov6w") }}</small> }
-                    @if (purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted)) { <small id="purchase-quantity-error" class="field-error">{{ t("ui.m_jsv2pg") }}</small> }
-                    @if (purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted)) { <small id="purchase-unit-cost-error" class="field-error">{{ t("ui.m_13qo8kh") }}</small> }
+                    @if (purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted)) { <small id="purchase-number-error" class="field-error">{{ t('ui.m_lv9gfw') }}</small> }
+                    @if (purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted)) { <small id="purchase-supplier-error" class="field-error">{{ t('ui.m_17l7adv') }}</small> }
+                    @if (purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted)) { <small id="purchase-product-error" class="field-error">{{ t('ui.m_lkov6w') }}</small> }
+                    @if (purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted)) { <small id="purchase-quantity-error" class="field-error">{{ t('ui.m_jsv2pg') }}</small> }
+                    @if (purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted)) { <small id="purchase-unit-cost-error" class="field-error">{{ t('ui.m_13qo8kh') }}</small> }
                   </div>
                 }
 
@@ -446,8 +446,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (operationsError && operationsErrorTab === 'purchases') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'purchases') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'purchases' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="purchaseSearch" type="search" [attr.aria-label]="t("ui.m_x2km9j")" [placeholder]="t("ui.m_1bqn1oi")" [(ngModel)]="purchaseSearch"></div>
-                <aba-record-table [ariaLabel]="t("ui.m_1xlq4zq")" [columns]="purchaseTableColumns" [rows]="purchaseTableRows" [loading]="purchasesLoading && !purchaseOrders.length" [loadingDescription]="t("ui.m_1c93aea")" [actionsHeading]="t("ui.m_1dbhmlo")" [emptyTitle]="t("ui.m_1skqw0x")" [emptyDescription]="purchaseSearch.trim() ? t("ui.m_ckscgw") : t("ui.m_1yhbnd3")" (rowAction)="onPurchaseRecordAction($event)" />
+                <div class="list-tools operations-search aba-record-toolbar"><input name="purchaseSearch" type="search" [attr.aria-label]="t('ui.m_x2km9j')" [placeholder]="t('ui.m_1bqn1oi')" [(ngModel)]="purchaseSearch"></div>
+                <aba-record-table [ariaLabel]="t('ui.m_1xlq4zq')" [columns]="purchaseTableColumns" [rows]="purchaseTableRows" [loading]="purchasesLoading && !purchaseOrders.length" [loadingDescription]="t('ui.m_1c93aea')" [actionsHeading]="t('ui.m_1dbhmlo')" [emptyTitle]="t('ui.m_1skqw0x')" [emptyDescription]="purchaseSearch.trim() ? t('ui.m_ckscgw') : t('ui.m_1yhbnd3')" (rowAction)="onPurchaseRecordAction($event)" />
 
               </section>
             }
@@ -455,161 +455,161 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
 @if (tab === 'recurring') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t("ui.m_slegw7") " [description]=" t("ui.m_1e0c20g") "><span class="count">{{ filteredRecurringSchedules.length }} / {{ recurringSchedules.length }}</span></aba-section-header>
+                <aba-section-header [title]=" t('ui.m_slegw7') " [description]=" t('ui.m_1e0c20g') "><span class="count">{{ filteredRecurringSchedules.length }} / {{ recurringSchedules.length }}</span></aba-section-header>
                 @if (business?.role === 'owner') {
                 <form #recurringForm="ngForm" class="stack" (ngSubmit)="recurringForm.valid && createRecurringSchedule()">
-                  <label>{{ t("ui.m_eoh95l") }}<select name="recurringCustomerId" [(ngModel)]="recurringCustomerId"><option value="">{{ t("ui.m_8pt45d") }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
-                  <div class="inline-form"><label>{{ t("ui.m_py5g30") }}<input #recurringIntervalControl="ngModel" name="recurringIntervalDays" type="number" min="1" max="3650" required [attr.aria-invalid]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'recurring-interval-error' : null" [(ngModel)]="recurringIntervalDays"></label><label>{{ t("ui.m_1e7ftdu") }}<input #recurringNextRunControl="ngModel" name="recurringNextRunAt" type="datetime-local" required [attr.aria-invalid]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'recurring-next-run-error' : null" [(ngModel)]="recurringNextRunAt"></label></div>
-                  <label>{{ t("ui.m_z76sxh") }}<input #recurringTimezoneControl="ngModel" name="recurringTimezone" required maxlength="64" [attr.aria-invalid]="recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted) ? 'recurring-timezone-error' : null" [(ngModel)]="recurringTimezone"></label>
-                  <button class="primary" type="submit" [disabled]="recurringLoading">{{ t("ui.m_r0fiju") }}</button>
+                  <label>{{ t('ui.m_eoh95l') }}<select name="recurringCustomerId" [(ngModel)]="recurringCustomerId"><option value="">{{ t('ui.m_8pt45d') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
+                  <div class="inline-form"><label>{{ t('ui.m_py5g30') }}<input #recurringIntervalControl="ngModel" name="recurringIntervalDays" type="number" min="1" max="3650" required [attr.aria-invalid]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'recurring-interval-error' : null" [(ngModel)]="recurringIntervalDays"></label><label>{{ t('ui.m_1e7ftdu') }}<input #recurringNextRunControl="ngModel" name="recurringNextRunAt" type="datetime-local" required [attr.aria-invalid]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'recurring-next-run-error' : null" [(ngModel)]="recurringNextRunAt"></label></div>
+                  <label>{{ t('ui.m_z76sxh') }}<input #recurringTimezoneControl="ngModel" name="recurringTimezone" required maxlength="64" [attr.aria-invalid]="recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted) ? 'recurring-timezone-error' : null" [(ngModel)]="recurringTimezone"></label>
+                  <button class="primary" type="submit" [disabled]="recurringLoading">{{ t('ui.m_r0fiju') }}</button>
                 </form>
                 @if ((recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted)) || (recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted)) || (recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted))) {
                   <div class="form-validation" aria-live="polite">
-                    @if (recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted)) { <small id="recurring-interval-error" class="field-error">{{ t("ui.m_9goc5p") }}</small> }
-                    @if (recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted)) { <small id="recurring-next-run-error" class="field-error">{{ t("ui.m_1husn1x") }}</small> }
-                    @if (recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted)) { <small id="recurring-timezone-error" class="field-error">{{ t("ui.m_1t55sm0") }}</small> }
+                    @if (recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted)) { <small id="recurring-interval-error" class="field-error">{{ t('ui.m_9goc5p') }}</small> }
+                    @if (recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted)) { <small id="recurring-next-run-error" class="field-error">{{ t('ui.m_1husn1x') }}</small> }
+                    @if (recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted)) { <small id="recurring-timezone-error" class="field-error">{{ t('ui.m_1t55sm0') }}</small> }
                   </div>
                 }
-                } @else { <aba-state-message kind="info" [description]="t("ui.m_t5zhtj")" /> }
+                } @else { <aba-state-message kind="info" [description]="t('ui.m_t5zhtj')" /> }
                 @if (operationsError && operationsErrorTab === 'recurring') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'recurring') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'recurring' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="recurringSearch" type="search" [attr.aria-label]="t("ui.m_aljqyp")" [placeholder]="t("ui.m_z7f6xc")" [(ngModel)]="recurringSearch"></div>
-                <aba-record-table [ariaLabel]="t("ui.m_uxwqg9")" [columns]="recurringTableColumns" [rows]="recurringTableRows" [loading]="recurringLoading && !recurringSchedules.length" [loadingDescription]="t("ui.m_10b19k6")" [emptyTitle]="t("ui.m_4r8x8c")" [emptyDescription]="recurringSearch.trim() ? t("ui.m_11cvrt7") : t("ui.m_kxnfs6")" />
+                <div class="list-tools operations-search aba-record-toolbar"><input name="recurringSearch" type="search" [attr.aria-label]="t('ui.m_aljqyp')" [placeholder]="t('ui.m_z7f6xc')" [(ngModel)]="recurringSearch"></div>
+                <aba-record-table [ariaLabel]="t('ui.m_uxwqg9')" [columns]="recurringTableColumns" [rows]="recurringTableRows" [loading]="recurringLoading && !recurringSchedules.length" [loadingDescription]="t('ui.m_10b19k6')" [emptyTitle]="t('ui.m_4r8x8c')" [emptyDescription]="recurringSearch.trim() ? t('ui.m_11cvrt7') : t('ui.m_kxnfs6')" />
               </section>
             }
 
 
 @if (tab === 'health' && business?.role === 'owner') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t("ui.m_18z2l5z") " [description]=" t("ui.m_1ps0q5f") "><span class="count">{{ operationalHealth ? operationalHealthStatusLabel(operationalHealth.status) : t("ui.m_159bgv6") }}</span></aba-section-header>
-                <button class="primary" type="button" (click)="loadOperationalHealth()" [disabled]="healthLoading">{{ healthLoading ? t("ui.m_1v22gnm") : t("ui.m_9aw201") }}</button>
+                <aba-section-header [title]=" t('ui.m_18z2l5z') " [description]=" t('ui.m_1ps0q5f') "><span class="count">{{ operationalHealth ? operationalHealthStatusLabel(operationalHealth.status) : t('ui.m_159bgv6') }}</span></aba-section-header>
+                <button class="primary" type="button" (click)="loadOperationalHealth()" [disabled]="healthLoading">{{ healthLoading ? t('ui.m_1v22gnm') : t('ui.m_9aw201') }}</button>
                 @if (healthError) { <aba-state-message kind="error" [description]="healthError" /> }
                 @if (operationalHealth) {
                   <div class="metric-grid">
-                    <article class="metric"><span>{{ t("ui.m_1ko8298") }}</span><strong>{{ operationalHealth.database_connected ? t("ui.m_1mjv33c") : t("ui.m_1mbcqq8") }}</strong></article>
-                    <article class="metric"><span>{{ t("ui.m_e3dmsb") }}</span><strong>{{ operationalHealth.migration_table_available ? t("ui.m_bq5tlp") : t("ui.m_1izwear") }}</strong><small>{{ operationalHealth.migration_revision || t("ui.m_18sx15n") }}</small></article>
-                    <article class="metric"><span>{{ t("ui.m_1jpiz8c") }}</span><strong>{{ operationalHealth.ai_configured ? t("ui.m_1irrjj2") : t("ui.m_1aa7dsy") }}</strong></article>
-                    <article class="metric"><span>{{ t("ui.m_fc2ud1") }}</span><strong>{{ operationalHealth.notification_delivery_configured ? t("ui.m_1irrjj2") : t("ui.m_1aa7dsy") }}</strong></article>
-                    <article class="metric"><span>{{ t("ui.m_1hq6krq") }}</span><strong>{{ operationalHealth.recurring_invoice_worker_configured ? t("ui.m_1irrjj2") : t("ui.m_1aa7dsy") }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_1ko8298') }}</span><strong>{{ operationalHealth.database_connected ? t('ui.m_1mjv33c') : t('ui.m_1mbcqq8') }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_e3dmsb') }}</span><strong>{{ operationalHealth.migration_table_available ? t('ui.m_bq5tlp') : t('ui.m_1izwear') }}</strong><small>{{ operationalHealth.migration_revision || t('ui.m_18sx15n') }}</small></article>
+                    <article class="metric"><span>{{ t('ui.m_1jpiz8c') }}</span><strong>{{ operationalHealth.ai_configured ? t('ui.m_1irrjj2') : t('ui.m_1aa7dsy') }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_fc2ud1') }}</span><strong>{{ operationalHealth.notification_delivery_configured ? t('ui.m_1irrjj2') : t('ui.m_1aa7dsy') }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_1hq6krq') }}</span><strong>{{ operationalHealth.recurring_invoice_worker_configured ? t('ui.m_1irrjj2') : t('ui.m_1aa7dsy') }}</strong></article>
                   </div>
-                  <p class="muted">{{ t("ui.m_1je9a30") }} {{ formatRecordDate(operationalHealth.checked_at) }}. {{ t("ui.m_3o0ahe") }}</p>
+                  <p class="muted">{{ t('ui.m_1je9a30') }} {{ formatRecordDate(operationalHealth.checked_at) }}. {{ t('ui.m_3o0ahe') }}</p>
                 }
               </section>
             }
 
 @if (tab === 'reports') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t("ui.m_1k2jewg") " [description]=" t("ui.m_7hhfvq") "><span class="count">{{ t("ui.m_7xexd4") }}</span></aba-section-header>
+                <aba-section-header [title]=" t('ui.m_1k2jewg') " [description]=" t('ui.m_7hhfvq') "><span class="count">{{ t('ui.m_7xexd4') }}</span></aba-section-header>
                 <form #profitLossForm="ngForm" class="inline-form" (ngSubmit)="profitLossForm.valid && loadProfitLoss()">
-                  <select name="profitLossPeriod" [attr.aria-label]="t("ui.m_cwfche")" [(ngModel)]="profitLossPeriod"><option value="30d">{{ t("ui.m_1ql1fm2") }}</option><option value="month">{{ t("ui.m_1sm3j94") }}</option><option value="all">{{ t("ui.m_bp8vk5") }}</option><option value="custom">{{ t("ui.m_57v6ro") }}</option></select>
+                  <select name="profitLossPeriod" [attr.aria-label]="t('ui.m_cwfche')" [(ngModel)]="profitLossPeriod"><option value="30d">{{ t('ui.m_1ql1fm2') }}</option><option value="month">{{ t('ui.m_1sm3j94') }}</option><option value="all">{{ t('ui.m_bp8vk5') }}</option><option value="custom">{{ t('ui.m_57v6ro') }}</option></select>
                   @if (profitLossPeriod === 'custom') {
-                    <label>{{ t("ui.m_15qcbwy") }}<input #profitLossStartControl="ngModel" type="date" name="profitLossStart" required [attr.aria-invalid]="profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted) ? 'true' : null" [attr.aria-describedby]="profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted) ? 'profit-loss-start-error' : null" [(ngModel)]="profitLossStart">@if (profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted)) { <small id="profit-loss-start-error" class="field-error" role="alert">{{ t("ui.m_c9vs17") }}</small> }</label>
-                    <label>{{ t("ui.m_8ibmd8") }}<input #profitLossEndControl="ngModel" type="date" name="profitLossEnd" required [attr.aria-invalid]="profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted) ? 'true' : null" [attr.aria-describedby]="profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted) ? 'profit-loss-end-error' : null" [(ngModel)]="profitLossEnd">@if (profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted)) { <small id="profit-loss-end-error" class="field-error" role="alert">{{ t("ui.m_146gz4o") }}</small> }</label>
+                    <label>{{ t('ui.m_15qcbwy') }}<input #profitLossStartControl="ngModel" type="date" name="profitLossStart" required [attr.aria-invalid]="profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted) ? 'true' : null" [attr.aria-describedby]="profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted) ? 'profit-loss-start-error' : null" [(ngModel)]="profitLossStart">@if (profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted)) { <small id="profit-loss-start-error" class="field-error" role="alert">{{ t('ui.m_c9vs17') }}</small> }</label>
+                    <label>{{ t('ui.m_8ibmd8') }}<input #profitLossEndControl="ngModel" type="date" name="profitLossEnd" required [attr.aria-invalid]="profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted) ? 'true' : null" [attr.aria-describedby]="profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted) ? 'profit-loss-end-error' : null" [(ngModel)]="profitLossEnd">@if (profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted)) { <small id="profit-loss-end-error" class="field-error" role="alert">{{ t('ui.m_146gz4o') }}</small> }</label>
                   }
-                  <button class="primary" type="submit" [disabled]="reportLoading">{{ reportLoading ? t("ui.m_1k98007") : t("ui.m_10jsbot") }}</button>
+                  <button class="primary" type="submit" [disabled]="reportLoading">{{ reportLoading ? t('ui.m_1k98007') : t('ui.m_10jsbot') }}</button>
                 </form>
                 @if (reportError) { <aba-state-message kind="error" [description]="reportError" /> }
                 @if (profitLoss) {
-                  <p class="muted">{{ profitLoss.period.start_date || t("ui.m_ixi82b") }} — {{ profitLoss.period.end_date || t("ui.m_1pfkmow") }} · {{ profitLoss.period.timezone || 'UTC' }}</p>
-                  <p class="muted"><strong>{{ t("ui.m_8hpy6m") }}</strong> {{ revenueBasisLabel(profitLoss.revenue_basis) }}</p>
-                  <aba-record-table [ariaLabel]="t("ui.m_1irq6mk")" [columns]="profitLossTableColumns" [rows]="profitLossTableRows" [emptyTitle]="t("ui.m_zlnr36")" [emptyDescription]="t("ui.m_q1rdjf")" />
-                  <div class="notice"><strong>{{ t("ui.m_1tz1k9k") }}</strong><span>{{ t("ui.m_ujpaej") }}</span></div>
+                  <p class="muted">{{ profitLoss.period.start_date || t('ui.m_ixi82b') }} — {{ profitLoss.period.end_date || t('ui.m_1pfkmow') }} · {{ profitLoss.period.timezone || 'UTC' }}</p>
+                  <p class="muted"><strong>{{ t('ui.m_8hpy6m') }}</strong> {{ revenueBasisLabel(profitLoss.revenue_basis) }}</p>
+                  <aba-record-table [ariaLabel]="t('ui.m_1irq6mk')" [columns]="profitLossTableColumns" [rows]="profitLossTableRows" [emptyTitle]="t('ui.m_zlnr36')" [emptyDescription]="t('ui.m_q1rdjf')" />
+                  <div class="notice"><strong>{{ t('ui.m_1tz1k9k') }}</strong><span>{{ t('ui.m_ujpaej') }}</span></div>
                 }
                 <div class="divider"></div>
-                <aba-section-header [level]="3" [title]="t("ui.m_2oaefr")" [description]="t("ui.m_1dmo8qz")" />
-                <form #agingForm="ngForm" class="inline-form" (ngSubmit)="agingForm.valid && loadReceivablesAging()"><label>{{ t("ui.m_tyw1lj") }}<input #agingAsOfControl="ngModel" type="date" name="agingAsOf" required [attr.aria-invalid]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'true' : null" [attr.aria-describedby]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'aging-as-of-error' : null" [(ngModel)]="agingAsOf">@if (agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted)) { <small id="aging-as-of-error" class="field-error" role="alert">{{ t("ui.m_4apqf4") }}</small> }</label><button class="primary" type="submit" [disabled]="agingLoading">{{ agingLoading ? t("ui.m_1rza5t5") : t("ui.m_1gsyti0") }}</button></form>
+                <aba-section-header [level]="3" [title]="t('ui.m_2oaefr')" [description]="t('ui.m_1dmo8qz')" />
+                <form #agingForm="ngForm" class="inline-form" (ngSubmit)="agingForm.valid && loadReceivablesAging()"><label>{{ t('ui.m_tyw1lj') }}<input #agingAsOfControl="ngModel" type="date" name="agingAsOf" required [attr.aria-invalid]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'true' : null" [attr.aria-describedby]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'aging-as-of-error' : null" [(ngModel)]="agingAsOf">@if (agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted)) { <small id="aging-as-of-error" class="field-error" role="alert">{{ t('ui.m_4apqf4') }}</small> }</label><button class="primary" type="submit" [disabled]="agingLoading">{{ agingLoading ? t('ui.m_1rza5t5') : t('ui.m_1gsyti0') }}</button></form>
                 @if (agingError) { <aba-state-message kind="error" [description]="agingError" /> }
                 @if (agingReport) {
-                  <div class="section-head"><p class="muted">{{ t("ui.m_vnv6l5") }} {{ agingReport.as_of_date }} · {{ agingReport.invoice_count }} {{ t("ui.m_pe8fvb") }}</p><button class="secondary" type="button" (click)="exportReceivablesAgingCsv()" [disabled]="!agingReport.invoices.length">{{ t("ui.m_nbsw3y") }}</button></div>
+                  <div class="section-head"><p class="muted">{{ t('ui.m_vnv6l5') }} {{ agingReport.as_of_date }} · {{ agingReport.invoice_count }} {{ t('ui.m_pe8fvb') }}</p><button class="secondary" type="button" (click)="exportReceivablesAgingCsv()" [disabled]="!agingReport.invoices.length">{{ t('ui.m_nbsw3y') }}</button></div>
                   @for (summary of agingReport.by_currency; track summary.currency_code) {
-                    <article class="metric"><span>{{ t("ui.m_1dusybc") }} · {{ summary.currency_code }}</span><strong>{{ summary.total_outstanding }} {{ summary.currency_code }}</strong><div class="aging-buckets">@for (bucket of summary.buckets; track bucket.bucket) { <div><small>{{ agingBucketLabel(bucket.bucket) }}</small><strong>{{ bucket.outstanding_amount }} {{ summary.currency_code }}</strong></div> }</div></article>
+                    <article class="metric"><span>{{ t('ui.m_1dusybc') }} · {{ summary.currency_code }}</span><strong>{{ summary.total_outstanding }} {{ summary.currency_code }}</strong><div class="aging-buckets">@for (bucket of summary.buckets; track bucket.bucket) { <div><small>{{ agingBucketLabel(bucket.bucket) }}</small><strong>{{ bucket.outstanding_amount }} {{ summary.currency_code }}</strong></div> }</div></article>
                   }
                   @if (agingReport.data_quality_warnings.length) {
-                    <div class="notice warning-notice"><strong>{{ t("ui.m_fhk738") }}</strong>
+                    <div class="notice warning-notice"><strong>{{ t('ui.m_fhk738') }}</strong>
                       @for (warning of agingReport.data_quality_warnings; track warning.invoice_id + warning.type) {
                         <p><strong>{{ warning.invoice_number }}</strong> — {{ agingWarningLabel(warning.type) }}</p>
-                        @if (warning.excess_allocated) { <p>{{ t("ui.m_29qoiu") }} {{ warning.excess_allocated }} {{ warning.invoice_currency || '' }}</p> }
-                        @if (warning.mismatched_allocations_amount) { <p>{{ t("ui.m_1hrsgrk") }} {{ warning.mismatched_allocations_amount }}</p> }
+                        @if (warning.excess_allocated) { <p>{{ t('ui.m_29qoiu') }} {{ warning.excess_allocated }} {{ warning.invoice_currency || '' }}</p> }
+                        @if (warning.mismatched_allocations_amount) { <p>{{ t('ui.m_1hrsgrk') }} {{ warning.mismatched_allocations_amount }}</p> }
                       }
                     </div>
                   }
-                  <aba-record-table [ariaLabel]="t("ui.m_15doge2")" [columns]="agingTableColumns" [rows]="agingTableRows" [emptyTitle]="t("ui.m_1fbb4i1")" [emptyDescription]="t("ui.m_18nc6st")" />
-                  @if (agingReport.limitations.length) { <div class="notice"><strong>{{ t("ui.m_akne82") }}</strong>@for (limitation of agingReport.limitations; track limitation) { <p>{{ reportLimitationLabel(limitation) }}</p> }</div> }
+                  <aba-record-table [ariaLabel]="t('ui.m_15doge2')" [columns]="agingTableColumns" [rows]="agingTableRows" [emptyTitle]="t('ui.m_1fbb4i1')" [emptyDescription]="t('ui.m_18nc6st')" />
+                  @if (agingReport.limitations.length) { <div class="notice"><strong>{{ t('ui.m_akne82') }}</strong>@for (limitation of agingReport.limitations; track limitation) { <p>{{ reportLimitationLabel(limitation) }}</p> }</div> }
                 }
               </section>
             }
 
             @if (tab === 'customers') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t("ui.m_1lifkl9") " [description]=" t("ui.m_15gmqko") "><span class="count">{{ filteredCustomers.length }} / {{ customers.length }} {{ t("ui.m_15kaq4w") }}</span></aba-section-header>
+                <aba-section-header [title]=" t('ui.m_1lifkl9') " [description]=" t('ui.m_15gmqko') "><span class="count">{{ filteredCustomers.length }} / {{ customers.length }} {{ t('ui.m_15kaq4w') }}</span></aba-section-header>
 <details class="aba-record-create">
-                  <summary><span>{{ t("ui.m_1yvcfg6") }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
+                  <summary><span>{{ t('ui.m_1yvcfg6') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
                 <form #customerForm="ngForm" class="inline-form" (ngSubmit)="customerForm.valid && createCustomer()">
-                  <input #customerNameModel="ngModel" [attr.aria-label]="t("ui.m_e80x9i")" name="customerName" [placeholder]="t("ui.m_e80x9i")" required maxlength="160" [(ngModel)]="customerName" [attr.aria-invalid]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'customer-name-error' : null">
+                  <input #customerNameModel="ngModel" [attr.aria-label]="t('ui.m_e80x9i')" name="customerName" [placeholder]="t('ui.m_e80x9i')" required maxlength="160" [(ngModel)]="customerName" [attr.aria-invalid]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'customer-name-error' : null">
                   @if (customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted)) {
-                    <small id="customer-name-error" class="field-error" aria-live="polite">{{ t("ui.m_1ucyubn") }}</small>
+                    <small id="customer-name-error" class="field-error" aria-live="polite">{{ t('ui.m_1ucyubn') }}</small>
                   }
-                  <input #customerEmailModel="ngModel" [attr.aria-label]="t("ui.m_1hdfjhy")" name="customerEmail" type="email" maxlength="254" [placeholder]="t("ui.m_u2wvbv")" [(ngModel)]="customerEmail" [attr.aria-invalid]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'customer-email-error' : null">
+                  <input #customerEmailModel="ngModel" [attr.aria-label]="t('ui.m_1hdfjhy')" name="customerEmail" type="email" maxlength="254" [placeholder]="t('ui.m_u2wvbv')" [(ngModel)]="customerEmail" [attr.aria-invalid]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'customer-email-error' : null">
                   @if (customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted)) {
-                    <small id="customer-email-error" class="field-error" aria-live="polite">{{ t("ui.m_stzy3f") }}</small>
+                    <small id="customer-email-error" class="field-error" aria-live="polite">{{ t('ui.m_stzy3f') }}</small>
                   }
-                  <input [attr.aria-label]="t("ui.m_jf17kv")" name="customerPhone" maxlength="32" [placeholder]="t("ui.m_1fpllb8")" [(ngModel)]="customerPhone">
-                  <button class="primary" type="submit" [disabled]="loading">{{ t("ui.m_zesk98") }}</button>
+                  <input [attr.aria-label]="t('ui.m_jf17kv')" name="customerPhone" maxlength="32" [placeholder]="t('ui.m_1fpllb8')" [(ngModel)]="customerPhone">
+                  <button class="primary" type="submit" [disabled]="loading">{{ t('ui.m_zesk98') }}</button>
                 </form>
 
                   </div>
                 </details>
                 @if (customerMessage) { <aba-state-message [kind]="customerMessageKind" [description]="customerMessage" /> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t("ui.m_p4xhry") }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t("ui.m_1cobl8b")">
-                  <h3>{{ t("ui.m_p4xhry") }}</h3>
-                  <p>{{ t("ui.m_1239wd4") }}</p>
-                  <input type="file" accept=".csv,text/csv" [attr.aria-label]="t("ui.m_1m32l6p")" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('ui.m_p4xhry') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
+                  <h3>{{ t('ui.m_p4xhry') }}</h3>
+                  <p>{{ t('ui.m_1239wd4') }}</p>
+                  <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1m32l6p')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
                   @if (customerImportFileName) { <small>{{ customerImportFileName }}</small> }
                   <div class="csv-import-actions">
-                    <button class="secondary" type="button" (click)="previewCustomerImport()" [disabled]="customerImportLoading || !customerImportCsvText">{{ customerImportLoading ? t("ui.m_1idcscy") : t("ui.m_fa926w") }}</button>
-                    @if (customerImportPreview?.valid) { <button class="primary" type="button" (click)="confirmCustomerImport()" [disabled]="customerImportLoading">{{ t("ui.m_1njm451") }} {{ customerImportPreview?.row_count }} {{ t("ui.m_xwx2zw") }}</button> }
+                    <button class="secondary" type="button" (click)="previewCustomerImport()" [disabled]="customerImportLoading || !customerImportCsvText">{{ customerImportLoading ? t('ui.m_1idcscy') : t('ui.m_fa926w') }}</button>
+                    @if (customerImportPreview?.valid) { <button class="primary" type="button" (click)="confirmCustomerImport()" [disabled]="customerImportLoading">{{ t('ui.m_1njm451') }} {{ customerImportPreview?.row_count }} {{ t('ui.m_xwx2zw') }}</button> }
                   </div>
                   @if (customerImportPreview) {
-                    <aba-state-message [kind]="customerImportPreview.valid ? 'info' : 'warning'" [description]="customerImportPreview.valid ? t("ui.m_17hi1u7") + ' · ' + customerImportPreview.row_count + ' ' + t("ui.m_xwx2zw") : t("ui.m_187ekp") + ' · ' + customerImportPreview.row_count + ' ' + t("ui.m_xwx2zw")" />
+                    <aba-state-message [kind]="customerImportPreview.valid ? 'info' : 'warning'" [description]="customerImportPreview.valid ? t('ui.m_17hi1u7') + ' · ' + customerImportPreview.row_count + ' ' + t('ui.m_xwx2zw') : t('ui.m_187ekp') + ' · ' + customerImportPreview.row_count + ' ' + t('ui.m_xwx2zw')" />
                     @if (customerImportPreview.errors.length) {
                       <ul class="csv-import-errors">
                         @for (item of customerImportPreview.errors; track $index) {
-                          <li>{{ t("ui.m_foews7") }} {{ item.row }} · {{ item.field }} · {{ importErrorLabel(item.code) }}@if (item.max_length) { ({{ t("ui.m_a9jpls") }} {{ item.max_length }}) }</li>
+                          <li>{{ t('ui.m_foews7') }} {{ item.row }} · {{ item.field }} · {{ importErrorLabel(item.code) }}@if (item.max_length) { ({{ t('ui.m_a9jpls') }} {{ item.max_length }}) }</li>
                         }
                       </ul>
                     }
                   }
                   @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
-                </section></div></details> } @else { <aba-state-message kind="info" [description]="t("ui.m_15zjjtn")" /> }
-                <div class="list-tools aba-record-toolbar"><input name="customerSearch" type="search" [attr.aria-label]="t("ui.m_cbuclg")" [placeholder]="t("ui.m_oe2vue")" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t("ui.m_nbsw3y") }}</button> }</div>
-                <aba-customer-directory [ariaLabel]="t("ui.m_5lit5y")" [customers]="filteredCustomers" [locale]="locale" [loading]="loading && !customers.length" [loadingDescription]="t("ui.m_14qa8nk")" [emptyTitle]="t("ui.m_v7mhxb")" [emptyDescription]="customerSearch.trim() ? t("ui.m_1lfpojf") : t("ui.m_9nmick")" (rowAction)="onCustomerRecordAction($event)" />
+                </section></div></details> } @else { <aba-state-message kind="info" [description]="t('ui.m_15zjjtn')" /> }
+                <div class="list-tools aba-record-toolbar"><input name="customerSearch" type="search" [attr.aria-label]="t('ui.m_cbuclg')" [placeholder]="t('ui.m_oe2vue')" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }</div>
+                <aba-customer-directory [ariaLabel]="t('ui.m_5lit5y')" [customers]="filteredCustomers" [locale]="locale" [loading]="loading && !customers.length" [loadingDescription]="t('ui.m_14qa8nk')" [emptyTitle]="t('ui.m_v7mhxb')" [emptyDescription]="customerSearch.trim() ? t('ui.m_1lfpojf') : t('ui.m_9nmick')" (rowAction)="onCustomerRecordAction($event)" />
                 @if (customersHasMore || customersLoadingMore) {
                   <div class="inline-form record-load-more" aria-live="polite">
-                    <span class="muted">{{ customers.length }} {{ t("ui.m_1sao2d6") }}</span>
+                    <span class="muted">{{ customers.length }} {{ t('ui.m_1sao2d6') }}</span>
                     <button class="secondary" type="button" (click)="loadMoreCustomers()" [disabled]="customersLoadingMore">
-                      {{ customersLoadingMore ? t("ui.m_14qa8nk") : t("ui.m_1m9ykss") }}
+                      {{ customersLoadingMore ? t('ui.m_14qa8nk') : t('ui.m_1m9ykss') }}
                     </button>
                   </div>
                 }
 
                 @if (statementVisible) {
                   <section abaCard class="panel statement-panel">
-                    <aba-section-header [level]="3" [title]="t("ui.m_152dm1w") + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t("ui.m_ysb7zm")"><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t("ui.m_1whnkun") }}</button></aba-section-header>
+                    <aba-section-header [level]="3" [title]="t('ui.m_152dm1w') + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t('ui.m_ysb7zm')"><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('ui.m_1whnkun') }}</button></aba-section-header>
                     <div class="inline-form statement-filters">
-                      <label>{{ t("ui.m_6ousik") }}<input type="date" name="statementFromDate" [(ngModel)]="statementFromDate"></label>
-                      <label>{{ t("ui.m_hltyrq") }}<input type="date" name="statementToDate" [(ngModel)]="statementToDate"></label>
-                      <button class="primary" type="button" (click)="applyCustomerStatementFilters()" [disabled]="statementLoading">{{ t("ui.m_1vs0iyd") }}</button>
-                      <button class="secondary" type="button" (click)="clearCustomerStatementFilters()" [disabled]="statementLoading || (!statementFromDate && !statementToDate)">{{ t("ui.m_1kg6ptq") }}</button>
+                      <label>{{ t('ui.m_6ousik') }}<input type="date" name="statementFromDate" [(ngModel)]="statementFromDate"></label>
+                      <label>{{ t('ui.m_hltyrq') }}<input type="date" name="statementToDate" [(ngModel)]="statementToDate"></label>
+                      <button class="primary" type="button" (click)="applyCustomerStatementFilters()" [disabled]="statementLoading">{{ t('ui.m_1vs0iyd') }}</button>
+                      <button class="secondary" type="button" (click)="clearCustomerStatementFilters()" [disabled]="statementLoading || (!statementFromDate && !statementToDate)">{{ t('ui.m_1kg6ptq') }}</button>
                     </div>
-                    @if (statementFromDate || statementToDate) { <p class="muted">{{ t("ui.m_gqq69s") }}</p> }
-                    @if (statementLoading) { <aba-state-message kind="loading" [description]="t("ui.m_1jqptmt")" /> }
+                    @if (statementFromDate || statementToDate) { <p class="muted">{{ t('ui.m_gqq69s') }}</p> }
+                    @if (statementLoading) { <aba-state-message kind="loading" [description]="t('ui.m_1jqptmt')" /> }
                     @if (statementError) { <aba-state-message kind="error" [description]="statementError" /> }
                     @if (customerStatement) {
-                      <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t("ui.m_lyblb3") }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
-                      <aba-record-table [ariaLabel]="t("ui.m_152dm1w")" [columns]="customerStatementTableColumns" [rows]="customerStatementTableRows" [emptyTitle]="t("ui.m_3op8q6")" [emptyDescription]="t("ui.m_18o73kt")" />
-                      <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t("ui.m_14wy3hz") }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t("ui.m_thb9eg") }}</button></div>
+                      <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t('ui.m_lyblb3') }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
+                      <aba-record-table [ariaLabel]="t('ui.m_152dm1w')" [columns]="customerStatementTableColumns" [rows]="customerStatementTableRows" [emptyTitle]="t('ui.m_3op8q6')" [emptyDescription]="t('ui.m_18o73kt')" />
+                      <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t('ui.m_14wy3hz') }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('ui.m_thb9eg') }}</button></div>
                       @for (limitation of customerStatement.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
                     }
                   </section>
@@ -619,63 +619,63 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'products') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t("ui.m_137u0ee") " [description]=" t("ui.m_snu8sb") "><span class="count">{{ filteredProducts.length }} / {{ products.length }} {{ t("ui.m_1hpnko") }}</span></aba-section-header>
+                <aba-section-header [title]=" t('ui.m_137u0ee') " [description]=" t('ui.m_snu8sb') "><span class="count">{{ filteredProducts.length }} / {{ products.length }} {{ t('ui.m_1hpnko') }}</span></aba-section-header>
 <details class="aba-record-create">
-                  <summary><span>{{ t("ui.m_1nbakc8") }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
+                  <summary><span>{{ t('ui.m_1nbakc8') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
                 <form #productForm="ngForm" class="inline-form" (ngSubmit)="productForm.valid && createProduct()">
-                  <label>{{ t("ui.m_h0c2cm") }}<input #productNameModel="ngModel" [attr.aria-label]="t("ui.m_h0c2cm")" name="productName" [placeholder]="t("ui.m_h0c2cm")" required [(ngModel)]="productName" [attr.aria-invalid]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'product-name-error' : null">
+                  <label>{{ t('ui.m_h0c2cm') }}<input #productNameModel="ngModel" [attr.aria-label]="t('ui.m_h0c2cm')" name="productName" [placeholder]="t('ui.m_h0c2cm')" required [(ngModel)]="productName" [attr.aria-invalid]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'product-name-error' : null">
                     @if (productNameModel.invalid && (productNameModel.touched || productForm.submitted)) {
-                      <small id="product-name-error" class="field-error" aria-live="polite">{{ t("ui.m_1ymmcl") }}</small>
+                      <small id="product-name-error" class="field-error" aria-live="polite">{{ t('ui.m_1ymmcl') }}</small>
                     }
                   </label>
-                  <label>{{ t("ui.m_1iz2xk3") }}<input #productPriceModel="ngModel" [attr.aria-label]="t("ui.m_1iz2xk3")" name="productPrice" type="number" min="0" step="0.01" [placeholder]="t("ui.m_1iz2xk3")" required [(ngModel)]="productPrice" [attr.aria-invalid]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'product-price-error' : null">
+                  <label>{{ t('ui.m_1iz2xk3') }}<input #productPriceModel="ngModel" [attr.aria-label]="t('ui.m_1iz2xk3')" name="productPrice" type="number" min="0" step="0.01" [placeholder]="t('ui.m_1iz2xk3')" required [(ngModel)]="productPrice" [attr.aria-invalid]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'product-price-error' : null">
                     @if (productPriceModel.invalid && (productPriceModel.touched || productForm.submitted)) {
-                      <small id="product-price-error" class="field-error" aria-live="polite">{{ productPriceModel.errors?.['required'] ? t("ui.m_9pqcpe") : t("ui.m_1hiyjor") }}</small>
+                      <small id="product-price-error" class="field-error" aria-live="polite">{{ productPriceModel.errors?.['required'] ? t('ui.m_9pqcpe') : t('ui.m_1hiyjor') }}</small>
                     }
                   </label>
-                  <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> {{ t("ui.m_13pn7xu") }}</label>
+                  <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> {{ t('ui.m_13pn7xu') }}</label>
                   @if (stockTracked) {
                     @if (business?.role === 'owner') {
-                      <label>{{ t("ui.m_dsef9m") }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t("ui.m_1tupg8c") : t("ui.m_1rtcb8u") }}</small> }</label>
+                      <label>{{ t('ui.m_dsef9m') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('ui.m_1tupg8c') : t('ui.m_1rtcb8u') }}</small> }</label>
                     } @else {
-                      <small class="muted">{{ t("ui.m_1xw7d7y") }}</small>
+                      <small class="muted">{{ t('ui.m_1xw7d7y') }}</small>
                     }
                   }
-                  <button class="primary" type="submit" [disabled]="loading">{{ t("ui.m_eex0xa") }}</button>
+                  <button class="primary" type="submit" [disabled]="loading">{{ t('ui.m_eex0xa') }}</button>
                 </form>
 
                   </div>
                 </details>
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t("ui.m_1wgx28b") }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t("ui.m_ps78ce")">
-                  <h3>{{ t("ui.m_1wgx28b") }}</h3>
-                  <p>{{ t("ui.m_1kaqi1p") }}</p>
-                  <input type="file" accept=".csv,text/csv" [attr.aria-label]="t("ui.m_1yr2ptt")" (change)="onImportFileSelected($event)" [disabled]="importLoading">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('ui.m_1wgx28b') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_ps78ce')">
+                  <h3>{{ t('ui.m_1wgx28b') }}</h3>
+                  <p>{{ t('ui.m_1kaqi1p') }}</p>
+                  <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1yr2ptt')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
                   @if (importFileName) { <small>{{ importFileName }}</small> }
                   <div class="csv-import-actions">
-                    <button class="secondary" type="button" (click)="previewProductImport()" [disabled]="importLoading || !importCsvText">{{ importLoading ? t("ui.m_1idcscy") : t("ui.m_fa926w") }}</button>
-                    @if (importPreview?.valid) { <button class="primary" type="button" (click)="confirmProductImport()" [disabled]="importLoading">{{ t("ui.m_1njm451") }} {{ importPreview?.row_count }} {{ t("ui.m_xwx2zw") }}</button> }
+                    <button class="secondary" type="button" (click)="previewProductImport()" [disabled]="importLoading || !importCsvText">{{ importLoading ? t('ui.m_1idcscy') : t('ui.m_fa926w') }}</button>
+                    @if (importPreview?.valid) { <button class="primary" type="button" (click)="confirmProductImport()" [disabled]="importLoading">{{ t('ui.m_1njm451') }} {{ importPreview?.row_count }} {{ t('ui.m_xwx2zw') }}</button> }
                   </div>
                   @if (importPreview) {
-                    <aba-state-message [kind]="importPreview.valid ? 'info' : 'warning'" [description]="importPreview.valid ? t("ui.m_17hi1u7") + ' · ' + importPreview.row_count + ' ' + t("ui.m_xwx2zw") : t("ui.m_187ekp") + ' · ' + importPreview.row_count + ' ' + t("ui.m_xwx2zw")" />
+                    <aba-state-message [kind]="importPreview.valid ? 'info' : 'warning'" [description]="importPreview.valid ? t('ui.m_17hi1u7') + ' · ' + importPreview.row_count + ' ' + t('ui.m_xwx2zw') : t('ui.m_187ekp') + ' · ' + importPreview.row_count + ' ' + t('ui.m_xwx2zw')" />
                     @if (importPreview.errors.length) {
                       <ul class="csv-import-errors">
                         @for (item of importPreview.errors; track $index) {
-                          <li>{{ t("ui.m_foews7") }} {{ item.row }} · {{ item.field }} · {{ importErrorLabel(item.code) }}@if (item.first_row) { ({{ t("ui.m_q66wuq") }} {{ item.first_row }}) }@if (item.max_length) { ({{ t("ui.m_a9jpls") }} {{ item.max_length }}) }</li>
+                          <li>{{ t('ui.m_foews7') }} {{ item.row }} · {{ item.field }} · {{ importErrorLabel(item.code) }}@if (item.first_row) { ({{ t('ui.m_q66wuq') }} {{ item.first_row }}) }@if (item.max_length) { ({{ t('ui.m_a9jpls') }} {{ item.max_length }}) }</li>
                         }
                       </ul>
                     }
                   }
                   @if (importMessage) { <aba-state-message [kind]="importMessageKind" [description]="importMessage" /> }
-                </section></div></details> } @else { <aba-state-message kind="info" [description]="t("ui.m_15zjjtn")" /> }
-                <div class="list-tools aba-record-toolbar"><input name="productSearch" type="search" [attr.aria-label]="t("ui.m_1y4yidi")" [placeholder]="t("ui.m_12onvgc")" [(ngModel)]="productSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t("ui.m_nbsw3y") }}</button> }</div>
-                <aba-product-catalog [ariaLabel]="t("ui.m_1q9q53d")" [products]="filteredProducts" [locale]="language" [currencyCode]="business?.currency_code || ''" [loading]="loading && !products.length" [loadingDescription]="t("ui.m_dm5wol")" [emptyTitle]="t("ui.m_12dkqai")" [emptyDescription]="productSearch.trim() ? t("ui.m_87y3du") : t("ui.m_nd32m5")" />
+                </section></div></details> } @else { <aba-state-message kind="info" [description]="t('ui.m_15zjjtn')" /> }
+                <div class="list-tools aba-record-toolbar"><input name="productSearch" type="search" [attr.aria-label]="t('ui.m_1y4yidi')" [placeholder]="t('ui.m_12onvgc')" [(ngModel)]="productSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }</div>
+                <aba-product-catalog [ariaLabel]="t('ui.m_1q9q53d')" [products]="filteredProducts" [locale]="language" [currencyCode]="business?.currency_code || ''" [loading]="loading && !products.length" [loadingDescription]="t('ui.m_dm5wol')" [emptyTitle]="t('ui.m_12dkqai')" [emptyDescription]="productSearch.trim() ? t('ui.m_87y3du') : t('ui.m_nd32m5')" />
                 @if (productsHasMore || productsLoadingMore) {
                   <div class="inline-form record-load-more" aria-live="polite">
-                    <span class="muted">{{ products.length }} {{ t("ui.m_1s9tcxi") }}</span>
+                    <span class="muted">{{ products.length }} {{ t('ui.m_1s9tcxi') }}</span>
                     <button class="secondary" type="button" (click)="loadMoreProducts()" [disabled]="productsLoadingMore">
-                      {{ productsLoadingMore ? t("ui.m_dm5wol") : t("ui.m_iziq6h") }}
+                      {{ productsLoadingMore ? t('ui.m_dm5wol') : t('ui.m_iziq6h') }}
                     </button>
                   </div>
                 }
@@ -685,10 +685,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'invoices') {
               <section abaCard class="panel">
-                <aba-section-header id="invoices-section-heading" tabindex="-1" [title]=" t("ui.m_5lvhyt") " [description]=" t("ui.m_61q6l7") "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t("ui.m_pe8fvb") }}</span></aba-section-header>
+                <aba-section-header id="invoices-section-heading" tabindex="-1" [title]=" t('ui.m_5lvhyt') " [description]=" t('ui.m_61q6l7') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('ui.m_pe8fvb') }}</span></aba-section-header>
                 <div class="invoice-toolbar">
                   @if (invoiceCreateOpen) {
-                    <section class="invoice-create-panel" [attr.aria-label]="t("ui.m_h8xosr")">
+                    <section class="invoice-create-panel" [attr.aria-label]="t('ui.m_h8xosr')">
                       <aba-invoice-draft-editor
                         [language]="language" [products]="products" [customers]="customers"
                         [currencyCode]="business.currency_code" [invoiceNumber]="invoiceNumber"
@@ -705,7 +705,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     </section>
                   } @else {
                     <button type="button" class="primary invoice-create-button" (click)="startNewInvoiceDraft()">
-                      {{ t("ui.m_12vszs4") }}
+                      {{ t('ui.m_12vszs4') }}
                     </button>
                   }
                 </div>
@@ -713,35 +713,35 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <div class="invoice-controls">
                   <label class="invoice-search">
                     <svg class="invoice-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                    <input name="invoiceSearch" type="search" [attr.aria-label]="t("ui.m_qwjq9v")" [placeholder]="t("ui.m_2onysz")" [(ngModel)]="invoiceSearch">
+                    <input name="invoiceSearch" type="search" [attr.aria-label]="t('ui.m_qwjq9v')" [placeholder]="t('ui.m_2onysz')" [(ngModel)]="invoiceSearch">
                   </label>
-                  <label class="invoice-filter"><span>{{ t("ui.m_jnmvwl") }}</span>
-                    <select name="invoiceStatusFilter" [attr.aria-label]="t("ui.m_1v8j5sa")" [(ngModel)]="invoiceStatusFilter">
-                      <option value="all">{{ t("ui.m_1cyu9lp") }}</option>
-                      <option value="draft">{{ t("ui.m_1vbs2bw") }}</option>
-                      <option value="issued">{{ t("ui.m_7bugfd") }}</option>
-                      <option value="void">{{ t("ui.m_1a2uk7t") }}</option>
+                  <label class="invoice-filter"><span>{{ t('ui.m_jnmvwl') }}</span>
+                    <select name="invoiceStatusFilter" [attr.aria-label]="t('ui.m_1v8j5sa')" [(ngModel)]="invoiceStatusFilter">
+                      <option value="all">{{ t('ui.m_1cyu9lp') }}</option>
+                      <option value="draft">{{ t('ui.m_1vbs2bw') }}</option>
+                      <option value="issued">{{ t('ui.m_7bugfd') }}</option>
+                      <option value="void">{{ t('ui.m_1a2uk7t') }}</option>
                     </select>
                   </label>
-                  <label class="invoice-filter"><span>{{ t("ui.m_ubgrc2") }}</span>
-                    <select name="invoiceFilterCustomer" [attr.aria-label]="t("ui.m_1k3k63e")" [(ngModel)]="invoiceFilterCustomerId">
-                      <option value="">{{ t("ui.m_1c6r7y7") }}</option>
+                  <label class="invoice-filter"><span>{{ t('ui.m_ubgrc2') }}</span>
+                    <select name="invoiceFilterCustomer" [attr.aria-label]="t('ui.m_1k3k63e')" [(ngModel)]="invoiceFilterCustomerId">
+                      <option value="">{{ t('ui.m_1c6r7y7') }}</option>
                       @for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }
                     </select>
                   </label>
                   @if (customersHasMore) {
                     <button class="secondary invoice-load-more-customers" type="button" (click)="loadMoreInvoiceCustomers()" [disabled]="customersLoadingMore">
-                      {{ customersLoadingMore ? t("ui.m_14qa8nk") : t("ui.m_8ighyf") }}
+                      {{ customersLoadingMore ? t('ui.m_14qa8nk') : t('ui.m_8ighyf') }}
                     </button>
                   }
-                  @if (business?.role === 'owner') { <button class="secondary invoice-export" type="button" (click)="exportCurrentList()" [disabled]="!filteredInvoices.length">{{ t("ui.m_nbsw3y") }}</button> }
+                  @if (business?.role === 'owner') { <button class="secondary invoice-export" type="button" (click)="exportCurrentList()" [disabled]="!filteredInvoices.length">{{ t('ui.m_nbsw3y') }}</button> }
                 </div>
                 @if (loading && !invoices.length) {
-                  <p class="invoice-list-state" role="status" aria-live="polite">{{ t("ui.m_x2q4oa") }}</p>
+                  <p class="invoice-list-state" role="status" aria-live="polite">{{ t('ui.m_x2q4oa') }}</p>
                 } @else if (error && !invoices.length) {
                   <aba-state-message kind="error" [description]="error" />
                 } @else if (!filteredInvoices.length) {
-                  <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId) ? t("ui.m_1rrfha5") : t("ui.m_1ehm2eq")" />
+                  <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId) ? t('ui.m_1rrfha5') : t('ui.m_1ehm2eq')" />
                 } @else {
                   <div class="invoice-cards">
                     @for (invoice of filteredInvoices; track invoice.id) {
@@ -751,7 +751,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                             <span class="invoice-customer-avatar" aria-hidden="true">{{ customerInitialForInvoice(invoice.customer_id) }}</span>
                             <div class="invoice-card-customer-copy">
                               <strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong>
-                              <small class="invoice-card-meta">{{ invoice.invoice_number }} · {{ invoice.issue_date ? formatRecordDate(invoice.issue_date, 'date') : (invoice.created_at ? t("ui.m_1ipvpcp") + formatRecordDate(invoice.created_at, 'date') : t("ui.m_8ghcxc")) }} · <bdi dir="ltr">{{ invoice.currency_code }}</bdi></small>
+                              <small class="invoice-card-meta">{{ invoice.invoice_number }} · {{ invoice.issue_date ? formatRecordDate(invoice.issue_date, 'date') : (invoice.created_at ? t('ui.m_1ipvpcp') + formatRecordDate(invoice.created_at, 'date') : t('ui.m_8ghcxc')) }} · <bdi dir="ltr">{{ invoice.currency_code }}</bdi></small>
                             </div>
                           </div>
                           <span class="invoice-status-badge"
@@ -764,17 +764,17 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                         </header>
                         <div class="invoice-card-financials">
                           <div>
-                            <small>{{ t("ui.m_l97slj") }}</small>
+                            <small>{{ t('ui.m_l97slj') }}</small>
                             <strong><bdi dir="ltr">{{ formatNumber(invoice.total) }}</bdi></strong>
                           </div>
                           <div>
-                            <small>{{ t("ui.m_twygqw") }}</small>
+                            <small>{{ t('ui.m_twygqw') }}</small>
                             <strong>@if (invoice.allocated_payments !== undefined) {
                               <bdi dir="ltr">{{ formatNumber(invoice.allocated_payments) }}</bdi>
                             } @else { — }</strong>
                           </div>
                           <div>
-                            <small>{{ t("ui.m_1e1esfj") }}</small>
+                            <small>{{ t('ui.m_1e1esfj') }}</small>
                             <strong>@if (invoice.status === 'issued' && invoice.outstanding_amount !== undefined) {
                               <bdi dir="ltr">{{ formatNumber(invoice.outstanding_amount) }}</bdi>
                             } @else { — }</strong>
@@ -786,7 +786,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                             [class.tone-partial]="invoicePaymentTone(invoice) === 'partial'"
                             [class.tone-unpaid]="invoicePaymentTone(invoice) === 'unpaid'"
                             role="progressbar"
-                            [attr.aria-label]="t("ui.m_18e9r9q")"
+                            [attr.aria-label]="t('ui.m_18e9r9q')"
                             [attr.aria-valuemin]="0" [attr.aria-valuemax]="100"
                             [attr.aria-valuenow]="invoicePaymentProgress(invoice)">
                             <span [style.width.%]="invoicePaymentProgress(invoice)"></span>
@@ -800,16 +800,16 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                         }
                         <div class="invoice-actions">
                           @if (invoice.status === 'draft') {
-                            <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t("ui.m_s21yyp") }}</button>
+                            <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('ui.m_s21yyp') }}</button>
                             @if (business?.role === 'owner') {
-                              <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t("ui.m_ninief") }}</button>
-                              <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t("ui.m_lnwycg") }}</button>
+                              <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('ui.m_ninief') }}</button>
+                              <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('ui.m_lnwycg') }}</button>
                             }
                           } @else if (invoice.status === 'issued') {
-                            <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t("ui.m_qskvru") }}</button>
+                            <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('ui.m_qskvru') }}</button>
                             @if (business?.role === 'owner') {
-                              @if (hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t("ui.m_1r6bzbj") }}</button> }
-                              <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t("ui.m_lnwycg") }}</button>
+                              @if (hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('ui.m_1r6bzbj') }}</button> }
+                              <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('ui.m_lnwycg') }}</button>
                             }
                           }
                         </div>
@@ -817,48 +817,48 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     }
                   </div>
                 }
-                @if (invoicesHasMore) { <button class="secondary" type="button" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore">{{ invoicesLoadingMore ? t("ui.m_1dwk1vm") : t("ui.m_14d2jh7") }}</button> }
-                <p class="footnote">{{ t("ui.m_lpprue") }}</p>
+                @if (invoicesHasMore) { <button class="secondary" type="button" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore">{{ invoicesLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_14d2jh7') }}</button> }
+                <p class="footnote">{{ t('ui.m_lpprue') }}</p>
               </section>
             }
 
             @if (tab === 'payments' && business?.role !== 'owner') {
-              <section abaCard class="panel"><aba-state-message kind="error" [description]="t("ui.m_1ju8ouz")" /></section>
+              <section abaCard class="panel"><aba-state-message kind="error" [description]="t('ui.m_1ju8ouz')" /></section>
             }
             @if (tab === 'payments' && business.role === 'owner') {
-              <section abaCard class="panel"><aba-section-header [title]="t("ui.m_3k0fux")" [description]="t("ui.m_cj3m99")">
-                  <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t("ui.m_1ouah2m") }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t("ui.m_nbsw3y") }}</button></div>
+              <section abaCard class="panel"><aba-section-header [title]="t('ui.m_3k0fux')" [description]="t('ui.m_cj3m99')">
+                  <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t('ui.m_1ouah2m') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('ui.m_nbsw3y') }}</button></div>
                 </aba-section-header>
                 <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="(paymentRetryPending || paymentForm.valid) && createPayment()">
-                  <input #paymentAmountModel="ngModel" [attr.aria-label]="t("ui.m_q9mxbb")" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t("ui.m_1smcjxm")" required [(ngModel)]="paymentAmount" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t("ui.m_me0lkl") }}</small> }
-                  <select #paymentCustomerModel="ngModel" [attr.aria-label]="t("ui.m_edaho8")" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'payment-customer-error' : null"><option value="" disabled>{{ t("ui.m_p0vza7") }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>@if (paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted)) { <small id="payment-customer-error" class="field-error" aria-live="polite">{{ t("ui.m_5b5dll") }}</small> }
-                  <select [attr.aria-label]="t("ui.m_h7ngs9")" name="paymentMethod" [(ngModel)]="paymentMethod" [disabled]="paymentRetryPending"><option value="cash">{{ t("ui.m_1xk4i7j") }}</option><option value="bank_transfer">{{ t("ui.m_bof380") }}</option><option value="card">{{ t("ui.m_tq9n36") }}</option><option value="wallet">{{ t("ui.m_1bho9og") }}</option><option value="other">{{ t("ui.m_47rh1w") }}</option></select>
-                  <select [attr.aria-label]="t("ui.m_vkei9c")" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" [disabled]="paymentRetryPending" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t("ui.m_1xrgrqj") }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
-                  @if (invoicesHasMore) { <button type="button" class="secondary" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore || paymentRetryPending">{{ invoicesLoadingMore ? t("ui.m_1dwk1vm") : t("ui.m_14d2jh7") }}</button> }
-                  @if (paymentInvoiceId) { <input [attr.aria-label]="t("ui.m_lc0rf5")" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t("ui.m_1okokqi")" [(ngModel)]="paymentAllocationAmount" [disabled]="paymentRetryPending"> }
-                  <input [attr.aria-label]="t("ui.m_15jj1na")" name="paymentReference" maxlength="128" [placeholder]="t("ui.m_v160u1")" [(ngModel)]="paymentReference" [disabled]="paymentRetryPending">
-                  <button class="primary" type="submit" [disabled]="paymentLoading">{{ paymentLoading ? t("ui.m_1ty0fxd") : paymentRetryPending ? t("ui.m_1pvlpdc") : t("ui.m_3k0fux") }}</button>
+                  <input #paymentAmountModel="ngModel" [attr.aria-label]="t('ui.m_q9mxbb')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_1smcjxm')" required [(ngModel)]="paymentAmount" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('ui.m_me0lkl') }}</small> }
+                  <select #paymentCustomerModel="ngModel" [attr.aria-label]="t('ui.m_edaho8')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'payment-customer-error' : null"><option value="" disabled>{{ t('ui.m_p0vza7') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>@if (paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted)) { <small id="payment-customer-error" class="field-error" aria-live="polite">{{ t('ui.m_5b5dll') }}</small> }
+                  <select [attr.aria-label]="t('ui.m_h7ngs9')" name="paymentMethod" [(ngModel)]="paymentMethod" [disabled]="paymentRetryPending"><option value="cash">{{ t('ui.m_1xk4i7j') }}</option><option value="bank_transfer">{{ t('ui.m_bof380') }}</option><option value="card">{{ t('ui.m_tq9n36') }}</option><option value="wallet">{{ t('ui.m_1bho9og') }}</option><option value="other">{{ t('ui.m_47rh1w') }}</option></select>
+                  <select [attr.aria-label]="t('ui.m_vkei9c')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" [disabled]="paymentRetryPending" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t('ui.m_1xrgrqj') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
+                  @if (invoicesHasMore) { <button type="button" class="secondary" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore || paymentRetryPending">{{ invoicesLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_14d2jh7') }}</button> }
+                  @if (paymentInvoiceId) { <input [attr.aria-label]="t('ui.m_lc0rf5')" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_1okokqi')" [(ngModel)]="paymentAllocationAmount" [disabled]="paymentRetryPending"> }
+                  <input [attr.aria-label]="t('ui.m_15jj1na')" name="paymentReference" maxlength="128" [placeholder]="t('ui.m_v160u1')" [(ngModel)]="paymentReference" [disabled]="paymentRetryPending">
+                  <button class="primary" type="submit" [disabled]="paymentLoading">{{ paymentLoading ? t('ui.m_1ty0fxd') : paymentRetryPending ? t('ui.m_1pvlpdc') : t('ui.m_3k0fux') }}</button>
                 </form>
-                @if (paymentRetryPending) { <p class="footnote" role="status">{{ t("ui.m_1yhgb5f") }}</p> }
+                @if (paymentRetryPending) { <p class="footnote" role="status">{{ t('ui.m_1yhgb5f') }}</p> }
                 @if (paymentMessage) { <aba-state-message [kind]="paymentMessageKind" [description]="paymentMessage" /> }
-                <p class="footnote">{{ t("ui.m_1c93fyv") }} {{ business.currency_code }} {{ t("ui.m_1sweklr") }}</p>
-                <div class="list-tools operations-search aba-record-toolbar"><input name="paymentSearch" type="search" [attr.aria-label]="t("ui.m_nmj0be")" [placeholder]="t("ui.m_hoei9y")" [(ngModel)]="paymentSearch"></div>
-                <aba-record-table [ariaLabel]="t("ui.m_mxsp4b")" [columns]="paymentTableColumns" [rows]="paymentTableRows" [loading]="paymentLoading && !payments.length" [loadingDescription]="t("ui.m_1kn1f7h")" [emptyTitle]="t("ui.m_1c2srea")" [emptyDescription]="paymentSearch.trim() ? t("ui.m_1igz78g") : t("ui.m_1nttjd")" />
-                @if (paymentsHasMore) { <button class="secondary" type="button" (click)="loadMorePayments()" [disabled]="paymentsLoadingMore">{{ paymentsLoadingMore ? t("ui.m_1dwk1vm") : t("ui.m_1olqej1") }}</button> }
+                <p class="footnote">{{ t('ui.m_1c93fyv') }} {{ business.currency_code }} {{ t('ui.m_1sweklr') }}</p>
+                <div class="list-tools operations-search aba-record-toolbar"><input name="paymentSearch" type="search" [attr.aria-label]="t('ui.m_nmj0be')" [placeholder]="t('ui.m_hoei9y')" [(ngModel)]="paymentSearch"></div>
+                <aba-record-table [ariaLabel]="t('ui.m_mxsp4b')" [columns]="paymentTableColumns" [rows]="paymentTableRows" [loading]="paymentLoading && !payments.length" [loadingDescription]="t('ui.m_1kn1f7h')" [emptyTitle]="t('ui.m_1c2srea')" [emptyDescription]="paymentSearch.trim() ? t('ui.m_1igz78g') : t('ui.m_1nttjd')" />
+                @if (paymentsHasMore) { <button class="secondary" type="button" (click)="loadMorePayments()" [disabled]="paymentsLoadingMore">{{ paymentsLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_1olqej1') }}</button> }
               </section>
             }
 
             @if (tab === 'taxes' && business.role === 'owner') {
               <section abaCard class="panel">
-                <aba-section-header [title]="t("ui.m_nxo405")" [description]="t("ui.m_1dw63nh")" />
+                <aba-section-header [title]="t('ui.m_nxo405')" [description]="t('ui.m_1dw63nh')" />
                 <form class="inline-form" (ngSubmit)="loadTaxSummary()">
-                  <label>{{ t("ui.m_10pndrs") }}<input name="taxStartDate" type="date" [(ngModel)]="taxStartDate"></label>
-                  <label>{{ t("ui.m_aulmks") }}<input name="taxEndDate" type="date" [(ngModel)]="taxEndDate"></label>
-                  <button class="primary" type="submit" [disabled]="taxLoading">{{ taxLoading ? t("ui.m_1k98007") : t("ui.m_10jsbot") }}</button>
+                  <label>{{ t('ui.m_10pndrs') }}<input name="taxStartDate" type="date" [(ngModel)]="taxStartDate"></label>
+                  <label>{{ t('ui.m_aulmks') }}<input name="taxEndDate" type="date" [(ngModel)]="taxEndDate"></label>
+                  <button class="primary" type="submit" [disabled]="taxLoading">{{ taxLoading ? t('ui.m_1k98007') : t('ui.m_10jsbot') }}</button>
                 </form>
                 @if (taxError) { <aba-state-message kind="error" [description]="taxError" /> }
                 @if (taxSummaryReport) {
-                  <aba-record-table [ariaLabel]="t("ui.m_1ciqipn")" [columns]="taxTableColumns" [rows]="taxTableRows" [emptyTitle]="t("ui.m_1xb2mzp")" [emptyDescription]="t("ui.m_j6qlz4")" />
+                  <aba-record-table [ariaLabel]="t('ui.m_1ciqipn')" [columns]="taxTableColumns" [rows]="taxTableRows" [emptyTitle]="t('ui.m_1xb2mzp')" [emptyDescription]="t('ui.m_j6qlz4')" />
                   @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ reportLimitationLabel(limitation) }}</p> }
                 }
               </section>
@@ -866,55 +866,55 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'audit') {
               <section abaCard class="panel">
-                <aba-section-header [title]="t("ui.m_hd46sj")" [description]="t("ui.m_fie4u1")"><span class="count">{{ auditTotal }} {{ t("ui.m_187o97") }}</span></aba-section-header>
+                <aba-section-header [title]="t('ui.m_hd46sj')" [description]="t('ui.m_fie4u1')"><span class="count">{{ auditTotal }} {{ t('ui.m_187o97') }}</span></aba-section-header>
                  <form class="inline-form" (ngSubmit)="loadAuditEvents(0)">
-                  <label>{{ t("ui.m_16u0xte") }}<select name="auditAction" [(ngModel)]="auditAction">
-                    <option value="">{{ t("ui.m_s5wvrw") }}</option>
-                    <option value="invoice.issued">{{ t("ui.m_1dgwo7k") }}</option>
-                    <option value="invoice.created">{{ t("ui.m_s89hy1") }}</option>
-                    <option value="invoice.draft_updated">{{ t("ui.m_1h1mtay") }}</option>
-                    <option value="invoice.voided">{{ t("ui.m_1b7zju0") }}</option>
-                    <option value="payment.recorded">{{ t("ui.m_1fzpn4c") }}</option>
-                    <option value="expense.created">{{ t("ui.m_1eswv36") }}</option>
-                    <option value="customer.created">{{ t("ui.m_7ayrnh") }}</option>
-                    <option value="product.created">{{ t("ui.m_w0ko2p") }}</option>
-                    <option value="stock.movement_recorded">{{ t("ui.m_1jl8qoq") }}</option>
-                    <option value="supplier.created">{{ t("ui.m_n1vp0a") }}</option>
-                    <option value="customer.updated">{{ t("ui.m_1j81wf0") }}</option>
-                    <option value="customer.deactivated">{{ t("ui.m_11zlj4h") }}</option>
-                    <option value="product.updated">{{ t("ui.m_bu5930") }}</option>
-                    <option value="product.deactivated">{{ t("ui.m_8y4ee1") }}</option>
-                    <option value="purchase_order.created">{{ t("ui.m_1ghnskj") }}</option>
-                    <option value="purchase_order.approved">{{ t("ui.m_xyjlem") }}</option>
-                    <option value="purchase_order.received">{{ t("ui.m_5cn0in") }}</option>
-                    <option value="sales_return.created">{{ t("ui.m_6u7t2s") }}</option>
-                    <option value="sales_return.approved">{{ t("ui.m_kb0bxp") }}</option>
-                    <option value="recurring_invoice_schedule.created">{{ t("ui.m_xaohcb") }}</option>
-                    <option value="data_import.completed">{{ t("ui.m_rs4k6j") }}</option>
-                    <option value="pricing_rule.created">{{ t("ui.m_yytv5x") }}</option>
+                  <label>{{ t('ui.m_16u0xte') }}<select name="auditAction" [(ngModel)]="auditAction">
+                    <option value="">{{ t('ui.m_s5wvrw') }}</option>
+                    <option value="invoice.issued">{{ t('ui.m_1dgwo7k') }}</option>
+                    <option value="invoice.created">{{ t('ui.m_s89hy1') }}</option>
+                    <option value="invoice.draft_updated">{{ t('ui.m_1h1mtay') }}</option>
+                    <option value="invoice.voided">{{ t('ui.m_1b7zju0') }}</option>
+                    <option value="payment.recorded">{{ t('ui.m_1fzpn4c') }}</option>
+                    <option value="expense.created">{{ t('ui.m_1eswv36') }}</option>
+                    <option value="customer.created">{{ t('ui.m_7ayrnh') }}</option>
+                    <option value="product.created">{{ t('ui.m_w0ko2p') }}</option>
+                    <option value="stock.movement_recorded">{{ t('ui.m_1jl8qoq') }}</option>
+                    <option value="supplier.created">{{ t('ui.m_n1vp0a') }}</option>
+                    <option value="customer.updated">{{ t('ui.m_1j81wf0') }}</option>
+                    <option value="customer.deactivated">{{ t('ui.m_11zlj4h') }}</option>
+                    <option value="product.updated">{{ t('ui.m_bu5930') }}</option>
+                    <option value="product.deactivated">{{ t('ui.m_8y4ee1') }}</option>
+                    <option value="purchase_order.created">{{ t('ui.m_1ghnskj') }}</option>
+                    <option value="purchase_order.approved">{{ t('ui.m_xyjlem') }}</option>
+                    <option value="purchase_order.received">{{ t('ui.m_5cn0in') }}</option>
+                    <option value="sales_return.created">{{ t('ui.m_6u7t2s') }}</option>
+                    <option value="sales_return.approved">{{ t('ui.m_kb0bxp') }}</option>
+                    <option value="recurring_invoice_schedule.created">{{ t('ui.m_xaohcb') }}</option>
+                    <option value="data_import.completed">{{ t('ui.m_rs4k6j') }}</option>
+                    <option value="pricing_rule.created">{{ t('ui.m_yytv5x') }}</option>
                   </select></label>
-                  <label>{{ t("ui.m_1bu5iqp") }}<select name="auditTarget" [(ngModel)]="auditTargetType">
-                    <option value="">{{ t("ui.m_1c69yfk") }}</option>
-                    <option value="invoice">{{ t("ui.m_1nfhuv2") }}</option>
-                    <option value="payment">{{ t("ui.m_p9fxzd") }}</option>
-                    <option value="expense">{{ t("ui.m_q7obp1") }}</option>
-                    <option value="customer">{{ t("ui.m_1uow5er") }}</option>
-                    <option value="product">{{ t("ui.m_13rez2z") }}</option>
-                    <option value="business">{{ t("ui.m_1evo6p1") }}</option>
-                    <option value="supplier">{{ t("ui.m_1ec9f70") }}</option>
-                    <option value="stock_movement">{{ t("ui.m_1yixbf5") }}</option>
-                    <option value="purchase_order">{{ t("ui.m_zu2vq6") }}</option>
-                    <option value="sales_return">{{ t("ui.m_1b010yp") }}</option>
-                    <option value="recurring_invoice_schedule">{{ t("ui.m_3pds34") }}</option>
-                    <option value="import_job">{{ t("ui.m_g2eok7") }}</option>
-                    <option value="pricing_rule">{{ t("ui.m_9ckn2u") }}</option>
+                  <label>{{ t('ui.m_1bu5iqp') }}<select name="auditTarget" [(ngModel)]="auditTargetType">
+                    <option value="">{{ t('ui.m_1c69yfk') }}</option>
+                    <option value="invoice">{{ t('ui.m_1nfhuv2') }}</option>
+                    <option value="payment">{{ t('ui.m_p9fxzd') }}</option>
+                    <option value="expense">{{ t('ui.m_q7obp1') }}</option>
+                    <option value="customer">{{ t('ui.m_1uow5er') }}</option>
+                    <option value="product">{{ t('ui.m_13rez2z') }}</option>
+                    <option value="business">{{ t('ui.m_1evo6p1') }}</option>
+                    <option value="supplier">{{ t('ui.m_1ec9f70') }}</option>
+                    <option value="stock_movement">{{ t('ui.m_1yixbf5') }}</option>
+                    <option value="purchase_order">{{ t('ui.m_zu2vq6') }}</option>
+                    <option value="sales_return">{{ t('ui.m_1b010yp') }}</option>
+                    <option value="recurring_invoice_schedule">{{ t('ui.m_3pds34') }}</option>
+                    <option value="import_job">{{ t('ui.m_g2eok7') }}</option>
+                    <option value="pricing_rule">{{ t('ui.m_9ckn2u') }}</option>
                   </select></label>
-                  <button class="primary" type="submit" [disabled]="auditLoading">{{ t("ui.m_11q6v6c") }}</button>
-                  <button class="secondary" type="button" (click)="auditAction=''; auditTargetType=''; loadAuditEvents(0)" [disabled]="auditLoading">{{ t("ui.m_1np7zc4") }}</button>
+                  <button class="primary" type="submit" [disabled]="auditLoading">{{ t('ui.m_11q6v6c') }}</button>
+                  <button class="secondary" type="button" (click)="auditAction=''; auditTargetType=''; loadAuditEvents(0)" [disabled]="auditLoading">{{ t('ui.m_1np7zc4') }}</button>
                 </form>
                 @if (auditError) { <aba-state-message kind="error" [description]="auditError" /> }
-                <aba-record-table [ariaLabel]="t("ui.m_j3pe5o")" [columns]="auditTableColumns" [rows]="auditTableRows" [loading]="auditLoading && !auditEvents.length" [loadingDescription]="t("ui.m_19p9gnl")" [emptyTitle]="t("ui.m_1en86jm")" [emptyDescription]="t("ui.m_1f0oymq")" />
-                <div class="inline-form"><span class="muted">{{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} / {{ auditTotal }}</span><button class="secondary" type="button" (click)="loadAuditEvents((auditOffset > 50 ? auditOffset - 50 : 0))" [disabled]="auditLoading || auditOffset === 0">{{ t("ui.m_14wy3hz") }}</button><button class="secondary" type="button" (click)="loadAuditEvents(auditOffset + 50)" [disabled]="auditLoading || auditOffset + auditEvents.length >= auditTotal">{{ t("ui.m_thb9eg") }}</button></div>
+                <aba-record-table [ariaLabel]="t('ui.m_j3pe5o')" [columns]="auditTableColumns" [rows]="auditTableRows" [loading]="auditLoading && !auditEvents.length" [loadingDescription]="t('ui.m_19p9gnl')" [emptyTitle]="t('ui.m_1en86jm')" [emptyDescription]="t('ui.m_1f0oymq')" />
+                <div class="inline-form"><span class="muted">{{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} / {{ auditTotal }}</span><button class="secondary" type="button" (click)="loadAuditEvents((auditOffset > 50 ? auditOffset - 50 : 0))" [disabled]="auditLoading || auditOffset === 0">{{ t('ui.m_14wy3hz') }}</button><button class="secondary" type="button" (click)="loadAuditEvents(auditOffset + 50)" [disabled]="auditLoading || auditOffset + auditEvents.length >= auditTotal">{{ t('ui.m_thb9eg') }}</button></div>
               </section>
             }
 
@@ -923,7 +923,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <aba-release-guide [language]="language" [appVersion]="appVersion" />
               } @placeholder {
                 <section abaCard class="panel narrow">
-                  <aba-state-message kind="loading" [description]="t("ui.m_111geup")" />
+                  <aba-state-message kind="loading" [description]="t('ui.m_111geup')" />
                 </section>
               }
             }
@@ -933,69 +933,69 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <aba-employee-payroll [businessId]="business.id" [currencyCode]="business.currency_code" [language]="language" (payrollPaid)="refreshAfterPayrollPayment()"></aba-employee-payroll>
               } @placeholder {
                 <section abaCard class="panel narrow">
-                  <aba-state-message kind="loading" [description]="t("ui.m_9hwp1p")" />
+                  <aba-state-message kind="loading" [description]="t('ui.m_9hwp1p')" />
                 </section>
               }
             }
 
             @if (tab === 'expenses') {
               <section abaCard class="panel">
-                <aba-section-header [title]="t("ui.m_p4p38y")" [description]="t("ui.m_ehnfke")" [count]="filteredExpenses.length + ' / ' + expenses.length + ' ' + t("ui.m_7rwk8h")" />
+                <aba-section-header [title]="t('ui.m_p4p38y')" [description]="t('ui.m_ehnfke')" [count]="filteredExpenses.length + ' / ' + expenses.length + ' ' + t('ui.m_7rwk8h')" />
                 <form #expenseForm="ngForm" class="inline-form expense-form" (ngSubmit)="expenseForm.valid && createExpense()">
-                  <label class="expense-category-field">{{ t("ui.m_10l7fjw") }}<select #expenseCategoryControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t("ui.m_10l7fjw")" [attr.aria-invalid]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'expense-category-error' : null" name="expenseCategory" required [(ngModel)]="expenseCategory">
-                    <option value="General">{{ t("ui.m_uchan8") }}</option>
-                    <option value="Supplies">{{ t("ui.m_rsaf82") }}</option>
-                    <option value="Rent">{{ t("ui.m_9liqbp") }}</option>
-                    <option value="Utilities">{{ t("ui.m_sgynvi") }}</option>
-                    <option value="Transport">{{ t("ui.m_dby46m") }}</option>
-                    <option value="Marketing">{{ t("ui.m_1psm7ne") }}</option>
-                    <option value="Payroll">{{ t("ui.m_vn50om") }}</option>
-                    <option value="Maintenance">{{ t("ui.m_db4mz5") }}</option>
-                    <option value="Other">{{ t("ui.m_47rh1w") }}</option>
+                  <label class="expense-category-field">{{ t('ui.m_10l7fjw') }}<select #expenseCategoryControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_10l7fjw')" [attr.aria-invalid]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'expense-category-error' : null" name="expenseCategory" required [(ngModel)]="expenseCategory">
+                    <option value="General">{{ t('ui.m_uchan8') }}</option>
+                    <option value="Supplies">{{ t('ui.m_rsaf82') }}</option>
+                    <option value="Rent">{{ t('ui.m_9liqbp') }}</option>
+                    <option value="Utilities">{{ t('ui.m_sgynvi') }}</option>
+                    <option value="Transport">{{ t('ui.m_dby46m') }}</option>
+                    <option value="Marketing">{{ t('ui.m_1psm7ne') }}</option>
+                    <option value="Payroll">{{ t('ui.m_vn50om') }}</option>
+                    <option value="Maintenance">{{ t('ui.m_db4mz5') }}</option>
+                    <option value="Other">{{ t('ui.m_47rh1w') }}</option>
                   </select></label>
-                  <input #expenseDescriptionControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t("ui.m_tfnzm8")" [attr.aria-invalid]="expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted) ? 'expense-description-error' : null" name="expenseDescription" maxlength="500" [placeholder]="t("ui.m_1552j8m")" required [(ngModel)]="expenseDescription">
-                  <input #expenseAmountControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t("ui.m_19u7acj")" [attr.aria-invalid]="expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted) ? 'expense-amount-error' : null" name="expenseAmount" type="number" min="0.01" step="0.01" [placeholder]="t("ui.m_i3lh6b")" required [(ngModel)]="expenseAmount">
-                  <input #expenseDateControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t("ui.m_1tz0tea")" [attr.aria-invalid]="expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted) ? 'expense-date-error' : null" name="expenseDate" type="datetime-local" required [(ngModel)]="expenseDate">
-                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t("ui.m_w7k03r")" name="expenseVendor" maxlength="160" [placeholder]="t("ui.m_1klr7r6")" [(ngModel)]="expenseVendor">
-                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t("ui.m_8m31k6")" name="expenseReference" maxlength="128" [placeholder]="t("ui.m_v160u1")" [(ngModel)]="expenseReference">
-                  <button class="primary" type="submit" [disabled]="loading || expenseSubmissionUncertain">{{ t("ui.m_xi9fpn") }}</button>
+                  <input #expenseDescriptionControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_tfnzm8')" [attr.aria-invalid]="expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted) ? 'expense-description-error' : null" name="expenseDescription" maxlength="500" [placeholder]="t('ui.m_1552j8m')" required [(ngModel)]="expenseDescription">
+                  <input #expenseAmountControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_19u7acj')" [attr.aria-invalid]="expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted) ? 'expense-amount-error' : null" name="expenseAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_i3lh6b')" required [(ngModel)]="expenseAmount">
+                  <input #expenseDateControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_1tz0tea')" [attr.aria-invalid]="expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted) ? 'expense-date-error' : null" name="expenseDate" type="datetime-local" required [(ngModel)]="expenseDate">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_w7k03r')" name="expenseVendor" maxlength="160" [placeholder]="t('ui.m_1klr7r6')" [(ngModel)]="expenseVendor">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_8m31k6')" name="expenseReference" maxlength="128" [placeholder]="t('ui.m_v160u1')" [(ngModel)]="expenseReference">
+                  <button class="primary" type="submit" [disabled]="loading || expenseSubmissionUncertain">{{ t('ui.m_xi9fpn') }}</button>
                 </form>
                 @if ((expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted)) || (expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted)) || (expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted)) || (expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted))) {
                   <div class="expense-validation" aria-live="polite">
-                    @if (expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted)) { <small id="expense-category-error" class="field-error">{{ t("ui.m_hshr2e") }}</small> }
-                    @if (expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted)) { <small id="expense-description-error" class="field-error">{{ t("ui.m_pzmh99") }}</small> }
-                    @if (expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted)) { <small id="expense-amount-error" class="field-error">{{ t("ui.m_1sa72kc") }}</small> }
-                    @if (expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted)) { <small id="expense-date-error" class="field-error">{{ t("ui.m_17vb8am") }}</small> }
+                    @if (expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted)) { <small id="expense-category-error" class="field-error">{{ t('ui.m_hshr2e') }}</small> }
+                    @if (expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted)) { <small id="expense-description-error" class="field-error">{{ t('ui.m_pzmh99') }}</small> }
+                    @if (expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted)) { <small id="expense-amount-error" class="field-error">{{ t('ui.m_1sa72kc') }}</small> }
+                    @if (expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted)) { <small id="expense-date-error" class="field-error">{{ t('ui.m_17vb8am') }}</small> }
                   </div>
                 }
-                <p class="expense-cash-semantics">{{ t("ui.m_xenywp") }}</p>
-                <p class="footnote">{{ t("ui.m_ks5nuz") }} {{ business.currency_code }}. {{ t("ui.m_1r2awxh") }}</p>
+                <p class="expense-cash-semantics">{{ t('ui.m_xenywp') }}</p>
+                <p class="footnote">{{ t('ui.m_ks5nuz') }} {{ business.currency_code }}. {{ t('ui.m_1r2awxh') }}</p>
                 @if (expenseMessage) { <aba-state-message kind="success" [description]="expenseMessage" /> }
                 @if (expenseSubmissionUncertain) {
-                  <aba-state-message kind="error" [description]="t("ui.m_bv3h04")" [actionLabel]="t("ui.m_r6p4yr")" [actionDisabled]="loading" (action)="checkExpenseSubmissionOutcome()" />
+                  <aba-state-message kind="error" [description]="t('ui.m_bv3h04')" [actionLabel]="t('ui.m_r6p4yr')" [actionDisabled]="loading" (action)="checkExpenseSubmissionOutcome()" />
                 }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="expenseSearch" type="search" [attr.aria-label]="t("ui.m_qat44q")" [placeholder]="t("ui.m_34prmq")" [(ngModel)]="expenseSearch"></div>
-                <aba-record-table [ariaLabel]="t("ui.m_zyptez")" [columns]="expenseTableColumns" [rows]="expenseTableRows" [loading]="loading && !expenses.length" [loadingDescription]="t("ui.m_luj2e5")" [emptyTitle]="t("ui.m_ia2bhy")" [emptyDescription]="expenseSearch.trim() ? t("ui.m_1ow9n49") : t("ui.m_1xx6js5")" />
+                <div class="list-tools operations-search aba-record-toolbar"><input name="expenseSearch" type="search" [attr.aria-label]="t('ui.m_qat44q')" [placeholder]="t('ui.m_34prmq')" [(ngModel)]="expenseSearch"></div>
+                <aba-record-table [ariaLabel]="t('ui.m_zyptez')" [columns]="expenseTableColumns" [rows]="expenseTableRows" [loading]="loading && !expenses.length" [loadingDescription]="t('ui.m_luj2e5')" [emptyTitle]="t('ui.m_ia2bhy')" [emptyDescription]="expenseSearch.trim() ? t('ui.m_1ow9n49') : t('ui.m_1xx6js5')" />
               </section>
             }
 
             @if (tab === 'integrity' && business.role === 'owner') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t("ui.m_3j4vfw") " [description]=" t("ui.m_rq55ji") "><span class="count">{{ formatRecordDate(dataIntegrityReport?.generated_at, 'short') || t("ui.m_xo2kma") }}</span></aba-section-header>
-                <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t("ui.m_1v22gnm") : t("ui.m_t1s0tt") }}</button>
+                <aba-section-header [title]=" t('ui.m_3j4vfw') " [description]=" t('ui.m_rq55ji') "><span class="count">{{ formatRecordDate(dataIntegrityReport?.generated_at, 'short') || t('ui.m_xo2kma') }}</span></aba-section-header>
+                <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t('ui.m_1v22gnm') : t('ui.m_t1s0tt') }}</button>
                 @if (integrityError) { <aba-state-message kind="error" [description]="integrityError" /> }
                 @if (dataIntegrityReport) {
-                  <div class="notice warning-notice"><strong>{{ t("ui.m_8kfz56") }}</strong><span>{{ integrityWarningLabel(dataIntegrityReport.warning) }}</span></div>
+                  <div class="notice warning-notice"><strong>{{ t('ui.m_8kfz56') }}</strong><span>{{ integrityWarningLabel(dataIntegrityReport.warning) }}</span></div>
                   <div class="metric-grid">
-                    <article class="metric"><span>{{ t("ui.m_r33nse") }}</span><strong>{{ dataIntegrityReport.unlinked_issued_invoices.total }}</strong></article>
-                    <article class="metric"><span>{{ t("ui.m_56uiuq") }}</span><strong>{{ dataIntegrityReport.currency_mismatched_allocations.total }}</strong></article>
-                    <article class="metric"><span>{{ t("ui.m_15jyanv") }}</span><strong>{{ dataIntegrityReport.customer_mismatched_allocations.total }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_r33nse') }}</span><strong>{{ dataIntegrityReport.unlinked_issued_invoices.total }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_56uiuq') }}</span><strong>{{ dataIntegrityReport.currency_mismatched_allocations.total }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_15jyanv') }}</span><strong>{{ dataIntegrityReport.customer_mismatched_allocations.total }}</strong></article>
                   </div>
-                  <h3>{{ t("ui.m_h5fuqc") }}</h3>
-                  <aba-record-table [ariaLabel]="t("ui.m_1muvs8z")" [columns]="integrityInvoiceColumns" [rows]="integrityInvoiceRows" [emptyTitle]="t("ui.m_ej8yte")" [emptyDescription]="t("ui.m_ydex7x")" />
-                  <h3>{{ t("ui.m_ord1a3") }}</h3>
-                  <aba-record-table [ariaLabel]="t("ui.m_xbtfmu")" [columns]="integrityAllocationColumns" [rows]="integrityAllocationRows" [emptyTitle]="t("ui.m_hrqqij")" [emptyDescription]="t("ui.m_uxsaek")" />
-                  <div class="inline-form"><span class="muted">{{ t("ui.m_3dypht") }} {{ dataIntegrityReport.offset }} · {{ t("ui.m_1o0uw0o") }} {{ dataIntegrityReport.limit }}</span><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset > 0 ? dataIntegrityReport.offset - dataIntegrityReport.limit : 0)" [disabled]="integrityLoading || dataIntegrityReport.offset === 0">{{ t("ui.m_14wy3hz") }}</button><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset + dataIntegrityReport.limit)" [disabled]="integrityLoading || dataIntegrityReport.offset + dataIntegrityReport.limit >= maxIntegrityTotal">{{ t("ui.m_thb9eg") }}</button></div>
+                  <h3>{{ t('ui.m_h5fuqc') }}</h3>
+                  <aba-record-table [ariaLabel]="t('ui.m_1muvs8z')" [columns]="integrityInvoiceColumns" [rows]="integrityInvoiceRows" [emptyTitle]="t('ui.m_ej8yte')" [emptyDescription]="t('ui.m_ydex7x')" />
+                  <h3>{{ t('ui.m_ord1a3') }}</h3>
+                  <aba-record-table [ariaLabel]="t('ui.m_xbtfmu')" [columns]="integrityAllocationColumns" [rows]="integrityAllocationRows" [emptyTitle]="t('ui.m_hrqqij')" [emptyDescription]="t('ui.m_uxsaek')" />
+                  <div class="inline-form"><span class="muted">{{ t('ui.m_3dypht') }} {{ dataIntegrityReport.offset }} · {{ t('ui.m_1o0uw0o') }} {{ dataIntegrityReport.limit }}</span><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset > 0 ? dataIntegrityReport.offset - dataIntegrityReport.limit : 0)" [disabled]="integrityLoading || dataIntegrityReport.offset === 0">{{ t('ui.m_14wy3hz') }}</button><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset + dataIntegrityReport.limit)" [disabled]="integrityLoading || dataIntegrityReport.offset + dataIntegrityReport.limit >= maxIntegrityTotal">{{ t('ui.m_thb9eg') }}</button></div>
                 }
               </section>
             }
@@ -1003,54 +1003,54 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @if (tab === 'assistant') {
               <div class="assistant-workspace" [class.has-chat]="chatMessages.length > 0">
               <section abaCard class="panel chat-panel">
-                <aba-section-header [title]=" t("ui.m_1ajyrpz") " [description]=" t("ui.m_1yriqyt") ">
+                <aba-section-header [title]=" t('ui.m_1ajyrpz') " [description]=" t('ui.m_1yriqyt') ">
                   <div class="chat-header-actions">
-                    <span class="count">{{ t("ui.m_1bvwx8l") }}</span>
-                    <button type="button" class="chat-new-button" (click)="startNewChat()" [disabled]="chatSending || (!chatMessages.length && !chatDraft.trim())">{{ t("ui.m_gz9o3g") }}</button>
+                    <span class="count">{{ t('ui.m_1bvwx8l') }}</span>
+                    <button type="button" class="chat-new-button" (click)="startNewChat()" [disabled]="chatSending || (!chatMessages.length && !chatDraft.trim())">{{ t('ui.m_gz9o3g') }}</button>
                   </div>
                 </aba-section-header>
-                <div #chatLog class="chat-log" role="log" tabindex="0" aria-live="polite" aria-relevant="additions" aria-atomic="false" [attr.aria-busy]="chatSending ? 'true' : null" [attr.aria-label]="t("ui.m_180k0we")">
-                  @if (!chatMessages.length) { <aba-state-message kind="empty" [description]="t("ui.m_1dsxkpa")" /> }
+                <div #chatLog class="chat-log" role="log" tabindex="0" aria-live="polite" aria-relevant="additions" aria-atomic="false" [attr.aria-busy]="chatSending ? 'true' : null" [attr.aria-label]="t('ui.m_180k0we')">
+                  @if (!chatMessages.length) { <aba-state-message kind="empty" [description]="t('ui.m_1dsxkpa')" /> }
                   @for (message of chatMessages; track $index; let messageIndex = $index) {
                     <article class="chat-message" [class.user-message]="message.role === 'user'">
                       <div class="chat-message-head">
-                        <span>{{ message.role === 'user' ? t("ui.m_ma3u89") : t("ui.m_dzn3ev") }}</span>
+                        <span>{{ message.role === 'user' ? t('ui.m_ma3u89') : t('ui.m_dzn3ev') }}</span>
                         @if (message.role === 'assistant') {
-                          <button type="button" class="chat-copy-button" (click)="copyAssistantMessage(message.content, messageIndex)" [attr.aria-label]="t("ui.m_14dh0xk")">
-                            <span aria-live="polite">{{ chatCopyStatus?.index === messageIndex ? (chatCopyStatus?.success ? t("ui.m_d2vkge") : t("ui.m_qenrab")) : t("ui.m_1dtdc5p") }}</span>
+                          <button type="button" class="chat-copy-button" (click)="copyAssistantMessage(message.content, messageIndex)" [attr.aria-label]="t('ui.m_14dh0xk')">
+                            <span aria-live="polite">{{ chatCopyStatus?.index === messageIndex ? (chatCopyStatus?.success ? t('ui.m_d2vkge') : t('ui.m_qenrab')) : t('ui.m_1dtdc5p') }}</span>
                           </button>
                         }
                       </div>
-                      @if (message.mode === 'local-fallback') { <small class="source-list">{{ t("ui.m_1raguvh") }}</small> }
+                      @if (message.mode === 'local-fallback') { <small class="source-list">{{ t('ui.m_1raguvh') }}</small> }
                       <p>{{ message.content }}</p>
-                      @if (message.sources?.length) { <small class="source-list">{{ t("ui.m_1uui693") }} @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? t("ui.m_1nfhuv2") : (source.type === 'expense' ? t("ui.m_q7obp1") : source.type) }} · {{ source.invoice_number || (source.type === 'expense' && source.category ? expenseCategoryLabel(source.category) : (source.category || source.id)) }}</span> }</small> }
+                      @if (message.sources?.length) { <small class="source-list">{{ t('ui.m_1uui693') }} @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? t('ui.m_1nfhuv2') : (source.type === 'expense' ? t('ui.m_q7obp1') : source.type) }} · {{ source.invoice_number || (source.type === 'expense' && source.category ? expenseCategoryLabel(source.category) : (source.category || source.id)) }}</span> }</small> }
                     </article>
                   }
                 </div>
                 
-                @if (chatError) { <aba-state-message kind="error" [description]="chatError" [actionLabel]="chatConfigurationMissing ? '' : t("ui.m_worzj7")" [actionDisabled]="chatSending || !chatDraft.trim()" (action)="sendChat()" /> }
-                @if (chatSending) { <aba-state-message kind="loading" [description]="t("ui.m_1xguwi5")" /> }
-                <form #chatForm="ngForm" class="chat-form" (ngSubmit)="chatForm.valid && chatDraft.trim() && sendChat()"><textarea #chatMessageControl="ngModel" name="chatMessage" rows="2" maxlength="2000" enterkeyhint="send" (keydown.enter)="handleChatKeydown($any($event))" [attr.aria-label]="t("ui.m_1d2fatg")" [attr.aria-invalid]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'true' : null" [attr.aria-describedby]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'chat-message-hint chat-message-error' : 'chat-message-hint'" [placeholder]="t("ui.m_1pafgoq")" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t("ui.m_1sgwbzd") : t("ui.m_rf7y63") }}</button></form>
-                <div class="chat-composer-meta"><small id="chat-message-hint">{{ t("ui.m_vdvf9x") }}</small><small>{{ chatDraft.length }} / 2000</small></div>
-                @if ((chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted)) { <small id="chat-message-error" class="field-error" role="alert">{{ t("ui.m_18j0gfn") }}</small> }
-                <p class="footnote">{{ t("ui.m_118u9lx") }}</p>
+                @if (chatError) { <aba-state-message kind="error" [description]="chatError" [actionLabel]="chatConfigurationMissing ? '' : t('ui.m_worzj7')" [actionDisabled]="chatSending || !chatDraft.trim()" (action)="sendChat()" /> }
+                @if (chatSending) { <aba-state-message kind="loading" [description]="t('ui.m_1xguwi5')" /> }
+                <form #chatForm="ngForm" class="chat-form" (ngSubmit)="chatForm.valid && chatDraft.trim() && sendChat()"><textarea #chatMessageControl="ngModel" name="chatMessage" rows="2" maxlength="2000" enterkeyhint="send" (keydown.enter)="handleChatKeydown($any($event))" [attr.aria-label]="t('ui.m_1d2fatg')" [attr.aria-invalid]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'true' : null" [attr.aria-describedby]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'chat-message-hint chat-message-error' : 'chat-message-hint'" [placeholder]="t('ui.m_1pafgoq')" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t('ui.m_1sgwbzd') : t('ui.m_rf7y63') }}</button></form>
+                <div class="chat-composer-meta"><small id="chat-message-hint">{{ t('ui.m_vdvf9x') }}</small><small>{{ chatDraft.length }} / 2000</small></div>
+                @if ((chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted)) { <small id="chat-message-error" class="field-error" role="alert">{{ t('ui.m_18j0gfn') }}</small> }
+                <p class="footnote">{{ t('ui.m_118u9lx') }}</p>
               </section>
-              <aside class="assistant-suggestions" aria-label="{{ t("ui.m_1is9ve0") }}"><p>{{ t("ui.m_lxd4e7") }}</p><div class="suggestion-grid"><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t("ui.m_1clvjpr"))"><span class="suggestion-icon">↗</span><strong>{{ t("ui.m_1dkpjlm") }}</strong><small>{{ t("ui.m_70o2ur") }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t("ui.m_1ij9tr8"))"><span class="suggestion-icon">✦</span><strong>{{ t("ui.m_159lqb4") }}</strong><small>{{ t("ui.m_1ktypo7") }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t("ui.m_4tgkt3"))"><span class="suggestion-icon">▦</span><strong>{{ t("ui.m_yezco3") }}</strong><small>{{ t("ui.m_1a12moo") }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t("ui.m_xc417r"))"><span class="suggestion-icon">◎</span><strong>{{ t("ui.m_b2oroc") }}</strong><small>{{ t("ui.m_ap19ks") }}</small></button></div></aside>
+              <aside class="assistant-suggestions" aria-label="{{ t('ui.m_1is9ve0') }}"><p>{{ t('ui.m_lxd4e7') }}</p><div class="suggestion-grid"><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_1clvjpr'))"><span class="suggestion-icon">↗</span><strong>{{ t('ui.m_1dkpjlm') }}</strong><small>{{ t('ui.m_70o2ur') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_1ij9tr8'))"><span class="suggestion-icon">✦</span><strong>{{ t('ui.m_159lqb4') }}</strong><small>{{ t('ui.m_1ktypo7') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_4tgkt3'))"><span class="suggestion-icon">▦</span><strong>{{ t('ui.m_yezco3') }}</strong><small>{{ t('ui.m_1a12moo') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_xc417r'))"><span class="suggestion-icon">◎</span><strong>{{ t('ui.m_b2oroc') }}</strong><small>{{ t('ui.m_ap19ks') }}</small></button></div></aside>
               </div>
             }
           }
-          <footer>{{ t("ui.m_1ajyrpz") }} <span>{{ t("ui.m_1f5dk3e") }}</span></footer>
+          <footer>{{ t('ui.m_1ajyrpz') }} <span>{{ t('ui.m_1f5dk3e') }}</span></footer>
           }
         </main>
       }
       @if (pendingInvoiceVoid) {
         <aba-confirm-dialog
-          [title]="t("ui.m_azron7") + ' · ' + pendingInvoiceVoid.invoice_number"
-          [message]="t("ui.m_13c8e52")"
-          [warning]="t("ui.m_1rhb2df")"
-          [confirmLabel]="t("ui.m_p2fc6q")"
-          [cancelLabel]="t("ui.m_mbs8k3")"
-          [busyLabel]="t("ui.m_1ex5gf4")"
+          [title]="t('ui.m_azron7') + ' · ' + pendingInvoiceVoid.invoice_number"
+          [message]="t('ui.m_13c8e52')"
+          [warning]="t('ui.m_1rhb2df')"
+          [confirmLabel]="t('ui.m_p2fc6q')"
+          [cancelLabel]="t('ui.m_mbs8k3')"
+          [busyLabel]="t('ui.m_1ex5gf4')"
           [busy]="loading"
           [confirmDisabled]="!!invoiceVoidError"
           [error]="invoiceVoidError"
@@ -1062,14 +1062,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       }
       @if (pendingPurchaseApproval) {
         <aba-confirm-dialog
-          [title]="t("ui.m_1pj46jy") + ' · ' + pendingPurchaseApproval.order_number"
-          [message]="t("ui.m_o7tlrf")"
-          [warning]="t("ui.m_wvb17f")"
-          [detailsTitle]="t("ui.m_14aur8c")"
+          [title]="t('ui.m_1pj46jy') + ' · ' + pendingPurchaseApproval.order_number"
+          [message]="t('ui.m_o7tlrf')"
+          [warning]="t('ui.m_wvb17f')"
+          [detailsTitle]="t('ui.m_14aur8c')"
           [details]="pendingPurchaseApprovalDetails"
-          [confirmLabel]="t("ui.m_4bqrmd")"
-          [cancelLabel]="t("ui.m_1233hg7")"
-          [busyLabel]="t("ui.m_z167k8")"
+          [confirmLabel]="t('ui.m_4bqrmd')"
+          [cancelLabel]="t('ui.m_1233hg7')"
+          [busyLabel]="t('ui.m_z167k8')"
           [busy]="purchasesLoading"
           [confirmDisabled]="!!purchaseApprovalError"
           [error]="purchaseApprovalError"
@@ -1081,14 +1081,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       }
       @if (pendingPurchaseReceipt) {
         <aba-confirm-dialog
-          [title]="t("ui.m_qssa8w") + ' · ' + pendingPurchaseReceipt.order_number"
-          [message]="t("ui.m_1srrito")"
-          [warning]="t("ui.m_e0ddqk")"
-          [detailsTitle]="t("ui.m_126kkr6")"
+          [title]="t('ui.m_qssa8w') + ' · ' + pendingPurchaseReceipt.order_number"
+          [message]="t('ui.m_1srrito')"
+          [warning]="t('ui.m_e0ddqk')"
+          [detailsTitle]="t('ui.m_126kkr6')"
           [details]="pendingPurchaseReceiptDetails"
-          [confirmLabel]="t("ui.m_vc9tiw")"
-          [cancelLabel]="t("ui.m_1gc2kb4")"
-          [busyLabel]="t("ui.m_k3q67h")"
+          [confirmLabel]="t('ui.m_vc9tiw')"
+          [cancelLabel]="t('ui.m_1gc2kb4')"
+          [busyLabel]="t('ui.m_k3q67h')"
           [busy]="purchasesLoading"
           [confirmDisabled]="!!purchaseReceiptError"
           [error]="purchaseReceiptError"
@@ -1403,7 +1403,7 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly appVersion = APP_BUILD_INFO.version;
   readonly uiCommitLabel = APP_BUILD_INFO.commit;
   get buildTimeLabel(): string {
-    if (!APP_BUILD_INFO.builtAt) return this.t("ui.m_1ilhynh");
+    if (!APP_BUILD_INFO.builtAt) return this.t('ui.m_1ilhynh');
     return this.localization.formatDate(APP_BUILD_INFO.builtAt, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Cairo' });
   }
   apiVersionLabel = '';
@@ -1659,15 +1659,15 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   customerNameForInvoice(customerId?: string | null): string {
-    if (!customerId) return this.t("ui.m_f2sjwn");
+    if (!customerId) return this.t('ui.m_f2sjwn');
     return this.customers.find(customer => customer.id === customerId)?.name
-      || this.t("ui.m_30i7q4");
+      || this.t('ui.m_30i7q4');
   }
 
   customerInitialForInvoice(customerId?: string | null): string {
-    if (!customerId) return this.t("ui.m_14aibpr");
+    if (!customerId) return this.t('ui.m_14aibpr');
     const name = this.customers.find(customer => customer.id === customerId)?.name?.trim();
-    return name ? Array.from(name)[0] ?? this.t("ui.m_14aibpr") : this.t("ui.m_14aibpr");
+    return name ? Array.from(name)[0] ?? this.t('ui.m_14aibpr') : this.t('ui.m_14aibpr');
   }
 
   invoicePaymentTone(invoice: Invoice): 'paid' | 'partial' | 'unpaid' | null {
@@ -1691,7 +1691,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const progress = this.invoicePaymentProgress(invoice);
     if (progress === null) return '';
     const percent = Math.round(progress);
-    return this.t("ui.m_15p0qq6", { percent: percent });
+    return this.t('ui.m_15p0qq6', { percent: percent });
   }
 
   invoiceCardStatusTone(invoice: Invoice): string {
@@ -1701,9 +1701,9 @@ export class AppComponent implements OnInit, OnDestroy {
 
   invoiceCardStatusLabel(invoice: Invoice): string {
     const tone = this.invoicePaymentTone(invoice);
-    if (tone === 'paid') return this.t("ui.m_bpbe6s");
-    if (tone === 'partial') return this.t("ui.m_rlfln6");
-    if (tone === 'unpaid') return this.t("ui.m_1przb3c");
+    if (tone === 'paid') return this.t('ui.m_bpbe6s');
+    if (tone === 'partial') return this.t('ui.m_rlfln6');
+    if (tone === 'unpaid') return this.t('ui.m_1przb3c');
     return this.invoiceStatusLabel(invoice.status);
   }
 
@@ -1717,27 +1717,27 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get supplierTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'name',label:this.t("ui.m_x27ir1"),primary:true},
-    {key:'email',label:this.t("ui.m_112c7vo")},
-    {key:'phone',label:this.t("ui.m_19jxea1")},
-    {key:'address',label:this.t("ui.m_1d6x93e")},
-    {key:'status',label:this.t("ui.m_jnmvwl"),kind:'status'},
+    {key:'name',label:this.t('ui.m_x27ir1'),primary:true},
+    {key:'email',label:this.t('ui.m_112c7vo')},
+    {key:'phone',label:this.t('ui.m_19jxea1')},
+    {key:'address',label:this.t('ui.m_1d6x93e')},
+    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
   ]; }
   get supplierTableRows(): readonly AbaRecordTableRow[] { return this.filteredSuppliers.map(supplier=>({
     id:supplier.id,cells:{
-      name:supplier.name,email:supplier.email||this.t("ui.m_2wkjj4"),
-      phone:supplier.phone||this.t("ui.m_2wkjj4"),
-      address:supplier.address||this.t("ui.m_2wkjj4"),
-      status:supplier.is_active?this.t("ui.m_sjpv56"):this.t("ui.m_1200s7g"),
+      name:supplier.name,email:supplier.email||this.t('ui.m_2wkjj4'),
+      phone:supplier.phone||this.t('ui.m_2wkjj4'),
+      address:supplier.address||this.t('ui.m_2wkjj4'),
+      status:supplier.is_active?this.t('ui.m_sjpv56'):this.t('ui.m_1200s7g'),
     },
   })); }
   get purchaseTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'order',label:this.t("ui.m_1ehdmao"),primary:true},
-    {key:'supplier',label:this.t("ui.m_x27ir1")},
-    {key:'products',label:this.t("ui.m_i0oou8")},
-    {key:'received',label:this.t("ui.m_17gz66i")},
-    {key:'status',label:this.t("ui.m_jnmvwl"),kind:'status'},
-    {key:'total',label:this.t("ui.m_l97slj"),kind:'numeric'},
+    {key:'order',label:this.t('ui.m_1ehdmao'),primary:true},
+    {key:'supplier',label:this.t('ui.m_x27ir1')},
+    {key:'products',label:this.t('ui.m_i0oou8')},
+    {key:'received',label:this.t('ui.m_17gz66i')},
+    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
+    {key:'total',label:this.t('ui.m_l97slj'),kind:'numeric'},
   ]; }
   get purchaseTableRows(): readonly AbaRecordTableRow[] { return this.filteredPurchaseOrders.map(order=>({
     id:order.id,cells:{
@@ -1747,9 +1747,9 @@ export class AppComponent implements OnInit, OnDestroy {
     },
     actions:this.business?.role==='owner'
       ? this.canApprovePurchaseOrder(order)
-        ? [{id:'approve',label:this.t("ui.m_12b6e8x"),disabled:this.purchasesLoading}]
+        ? [{id:'approve',label:this.t('ui.m_12b6e8x'),disabled:this.purchasesLoading}]
         : this.canReceivePurchaseOrder(order)
-          ? [{id:'receive',label:this.t("ui.m_1hw0oss"),disabled:this.purchasesLoading}]
+          ? [{id:'receive',label:this.t('ui.m_1hw0oss'),disabled:this.purchasesLoading}]
           : []
       : [],
   })); }
@@ -1831,60 +1831,60 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
   get paymentTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'customer',label:this.t("ui.m_ubgrc2"),primary:true},
-    {key:'amount',label:this.t("ui.m_i3lh6b"),kind:'numeric'},
-    {key:'received',label:this.t("ui.m_10i3wh4")},
-    {key:'method',label:this.t("ui.m_nic0dr")},
-    {key:'reference',label:this.t("ui.m_eimrhe")},
-    {key:'allocation',label:this.t("ui.m_1s2dqci"),kind:'status'},
+    {key:'customer',label:this.t('ui.m_ubgrc2'),primary:true},
+    {key:'amount',label:this.t('ui.m_i3lh6b'),kind:'numeric'},
+    {key:'received',label:this.t('ui.m_10i3wh4')},
+    {key:'method',label:this.t('ui.m_nic0dr')},
+    {key:'reference',label:this.t('ui.m_eimrhe')},
+    {key:'allocation',label:this.t('ui.m_1s2dqci'),kind:'status'},
   ]; }
   get paymentTableRows(): readonly AbaRecordTableRow[] { return this.filteredPayments.map(item=>({id:item.id,cells:{
     customer:this.customerNameForInvoice(item.customer_id),amount:`${item.amount} ${item.currency_code}`,
-    received:this.formatRecordDate(item.received_at),method:item.method?this.paymentMethodLabel(item.method):this.t("ui.m_1q43mlw"),
-    reference:item.reference||'—',allocation:item.allocations.length?`${item.allocations.length} ${this.t("ui.m_3fih4j")}`:this.t("ui.m_lcn3j8"),
+    received:this.formatRecordDate(item.received_at),method:item.method?this.paymentMethodLabel(item.method):this.t('ui.m_1q43mlw'),
+    reference:item.reference||'—',allocation:item.allocations.length?`${item.allocations.length} ${this.t('ui.m_3fih4j')}`:this.t('ui.m_lcn3j8'),
   }})); }
   get expenseTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'date',label:this.t("ui.m_1fcm91o")},
-    {key:'description',label:this.t("ui.m_1552j8m"),primary:true},
-    {key:'category',label:this.t("ui.m_1ebfv92"),kind:'status'},
-    {key:'vendor',label:this.t("ui.m_w7k03r")},
-    {key:'reference',label:this.t("ui.m_eimrhe")},
-    {key:'amount',label:this.t("ui.m_i3lh6b"),kind:'numeric'},
+    {key:'date',label:this.t('ui.m_1fcm91o')},
+    {key:'description',label:this.t('ui.m_1552j8m'),primary:true},
+    {key:'category',label:this.t('ui.m_1ebfv92'),kind:'status'},
+    {key:'vendor',label:this.t('ui.m_w7k03r')},
+    {key:'reference',label:this.t('ui.m_eimrhe')},
+    {key:'amount',label:this.t('ui.m_i3lh6b'),kind:'numeric'},
   ]; }
   get expenseTableRows(): readonly AbaRecordTableRow[] { return this.filteredExpenses.map(item=>({id:item.id,cells:{
     date:this.formatRecordDate(item.incurred_at),description:item.description,category:this.expenseCategoryLabel(item.category),
-    vendor:item.vendor_name||this.t("ui.m_xt63l4"),reference:item.reference||'—',amount:`${item.amount} ${item.currency_code}`,
+    vendor:item.vendor_name||this.t('ui.m_xt63l4'),reference:item.reference||'—',amount:`${item.amount} ${item.currency_code}`,
   }})); }
   get recurringTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'customer',label:this.t("ui.m_ubgrc2"),primary:true},
-    {key:'interval',label:this.t("ui.m_soswtl")},
-    {key:'nextRun',label:this.t("ui.m_1e7ftdu")},
-    {key:'timezone',label:this.t("ui.m_z76sxh")},
-    {key:'status',label:this.t("ui.m_jnmvwl"),kind:'status'},
+    {key:'customer',label:this.t('ui.m_ubgrc2'),primary:true},
+    {key:'interval',label:this.t('ui.m_soswtl')},
+    {key:'nextRun',label:this.t('ui.m_1e7ftdu')},
+    {key:'timezone',label:this.t('ui.m_z76sxh')},
+    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
   ]; }
   get recurringTableRows(): readonly AbaRecordTableRow[] { return this.filteredRecurringSchedules.map(item=>({id:item.id,cells:{
-    customer:item.customer_id?this.customerNameForInvoice(item.customer_id):this.t("ui.m_j3ewjv"),
-    interval:`${item.interval_days} ${this.t("ui.m_5mk40x")}`,nextRun:this.formatRecordDate(item.next_run_at),timezone:item.timezone,
-    status:item.is_active?this.t("ui.m_1vhpjk3"):this.t("ui.m_vspcsf"),
+    customer:item.customer_id?this.customerNameForInvoice(item.customer_id):this.t('ui.m_j3ewjv'),
+    interval:`${item.interval_days} ${this.t('ui.m_5mk40x')}`,nextRun:this.formatRecordDate(item.next_run_at),timezone:item.timezone,
+    status:item.is_active?this.t('ui.m_1vhpjk3'):this.t('ui.m_vspcsf'),
   }})); }
   get notificationTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'title',label:this.t("ui.m_r04zvh"),primary:true},
-    {key:'kind',label:this.t("ui.m_1uc2roh"),kind:'status'},
-    {key:'status',label:this.t("ui.m_jnmvwl"),kind:'status'},
-    {key:'scheduled',label:this.t("ui.m_15oe042")},
-    {key:'created',label:this.t("ui.m_1pb5uxl")},
-    {key:'body',label:this.t("ui.m_cjak9a")},
+    {key:'title',label:this.t('ui.m_r04zvh'),primary:true},
+    {key:'kind',label:this.t('ui.m_1uc2roh'),kind:'status'},
+    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
+    {key:'scheduled',label:this.t('ui.m_15oe042')},
+    {key:'created',label:this.t('ui.m_1pb5uxl')},
+    {key:'body',label:this.t('ui.m_cjak9a')},
   ]; }
   get notificationTableRows(): readonly AbaRecordTableRow[] { return this.filteredNotifications.map(item=>({id:item.id,cells:{
     title:item.title,kind:this.notificationKindLabel(item.kind),status:this.notificationStatusLabel(item.status),
-    scheduled:item.scheduled_at?this.formatRecordDate(item.scheduled_at):this.t("ui.m_6apaf4"),created:this.formatRecordDate(item.created_at,'short'),body:item.body,
+    scheduled:item.scheduled_at?this.formatRecordDate(item.scheduled_at):this.t('ui.m_6apaf4'),created:this.formatRecordDate(item.created_at,'short'),body:item.body,
   }})); }
   get auditTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'date',label:this.t("ui.m_1fcm91o")},
-    {key:'action',label:this.t("ui.m_bnvfl5"),primary:true},
-    {key:'target',label:this.t("ui.m_p4bngz")},
-    {key:'recordId',label:this.t("ui.m_1bdb1fj")},
-    {key:'actor',label:this.t("ui.m_s2x2wd")},
+    {key:'date',label:this.t('ui.m_1fcm91o')},
+    {key:'action',label:this.t('ui.m_bnvfl5'),primary:true},
+    {key:'target',label:this.t('ui.m_p4bngz')},
+    {key:'recordId',label:this.t('ui.m_1bdb1fj')},
+    {key:'actor',label:this.t('ui.m_s2x2wd')},
   ]; }
   get auditTableRows(): readonly AbaRecordTableRow[] { return this.auditEvents.map(item=>({id:item.id,cells:{
     date:this.formatRecordDate(item.created_at,'short'),action:this.auditActionLabel(item.action),target:this.auditTargetLabel(item.target_type),
@@ -1893,67 +1893,67 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
   get agingTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'invoice',label:this.t("ui.m_rblc1v"),primary:true},
-    {key:'outstanding',label:this.t("ui.m_11hlijv"),kind:'numeric'},
-    {key:'bucket',label:this.t("ui.m_bgcabs"),kind:'status'},
-    {key:'dueDate',label:this.t("ui.m_1i1a5f0")},
-    {key:'customer',label:this.t("ui.m_1c1fxy9"),kind:'status'},
+    {key:'invoice',label:this.t('ui.m_rblc1v'),primary:true},
+    {key:'outstanding',label:this.t('ui.m_11hlijv'),kind:'numeric'},
+    {key:'bucket',label:this.t('ui.m_bgcabs'),kind:'status'},
+    {key:'dueDate',label:this.t('ui.m_1i1a5f0')},
+    {key:'customer',label:this.t('ui.m_1c1fxy9'),kind:'status'},
   ]; }
   get agingTableRows(): readonly AbaRecordTableRow[] { return (this.agingReport?.invoices||[]).map(invoice=>({id:invoice.invoice_id,cells:{
     invoice:invoice.invoice_number,outstanding:`${invoice.outstanding_amount} ${invoice.currency_code}`,
-    bucket:this.agingBucketLabel(invoice.aging_bucket),dueDate:invoice.due_date?this.formatRecordDate(invoice.due_date,'date'):this.t("ui.m_frwrnt"),
-    customer:invoice.customer_link_missing?this.t("ui.m_15owwjm"):this.t("ui.m_e1gxkn"),
+    bucket:this.agingBucketLabel(invoice.aging_bucket),dueDate:invoice.due_date?this.formatRecordDate(invoice.due_date,'date'):this.t('ui.m_frwrnt'),
+    customer:invoice.customer_link_missing?this.t('ui.m_15owwjm'):this.t('ui.m_e1gxkn'),
   }})); }
   get profitLossTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'currency',label:this.t("ui.m_1jd5ck6"),primary:true},
-    {key:'revenue',label:this.t("ui.m_4635nj"),kind:'numeric'},
-    {key:'returns',label:this.t("ui.m_x5f4g8"),kind:'numeric'},
-    {key:'expenses',label:this.t("ui.m_l71hva"),kind:'numeric'},
-    {key:'result',label:this.t("ui.m_1jzh8n6"),kind:'numeric'},
+    {key:'currency',label:this.t('ui.m_1jd5ck6'),primary:true},
+    {key:'revenue',label:this.t('ui.m_4635nj'),kind:'numeric'},
+    {key:'returns',label:this.t('ui.m_x5f4g8'),kind:'numeric'},
+    {key:'expenses',label:this.t('ui.m_l71hva'),kind:'numeric'},
+    {key:'result',label:this.t('ui.m_1jzh8n6'),kind:'numeric'},
   ]; }
   get profitLossTableRows(): readonly AbaRecordTableRow[] { return (this.profitLoss?.currencies||[]).map(row=>({id:row.currency_code,cells:{
-    currency:row.currency_code,revenue:`${row.revenue} · ${row.revenue_invoice_count} ${this.t("ui.m_pe8fvb")}`,
-    returns:`${row.approved_return_total} · ${row.approved_return_count} ${this.t("ui.m_1wap8ub")}`,
-    expenses:`${row.expenses} · ${row.expense_count} ${this.t("ui.m_1ghkia")}`,
+    currency:row.currency_code,revenue:`${row.revenue} · ${row.revenue_invoice_count} ${this.t('ui.m_pe8fvb')}`,
+    returns:`${row.approved_return_total} · ${row.approved_return_count} ${this.t('ui.m_1wap8ub')}`,
+    expenses:`${row.expenses} · ${row.expense_count} ${this.t('ui.m_1ghkia')}`,
     result:row.operating_result_before_cost_of_goods,
   }})); }
   get taxTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'currency',label:this.t("ui.m_1jd5ck6"),primary:true},
-    {key:'tax',label:this.t("ui.m_129leiq"),kind:'numeric'},
-    {key:'count',label:this.t("ui.m_1dnybga"),kind:'numeric'},
+    {key:'currency',label:this.t('ui.m_1jd5ck6'),primary:true},
+    {key:'tax',label:this.t('ui.m_129leiq'),kind:'numeric'},
+    {key:'count',label:this.t('ui.m_1dnybga'),kind:'numeric'},
   ]; }
   get taxTableRows(): readonly AbaRecordTableRow[] { return (this.taxSummaryReport?.currencies||[]).map(row=>({id:row.currency_code,cells:{
     currency:row.currency_code,tax:`${row.tax_total} ${row.currency_code}`,count:String(row.invoice_count),
   }})); }
   get integrityInvoiceColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'invoice',label:this.t("ui.m_1cuzqu5"),primary:true},
-    {key:'total',label:this.t("ui.m_l97slj"),kind:'numeric'},
-    {key:'date',label:this.t("ui.m_1pb5uxl")},
-    {key:'record',label:this.t("ui.m_356wdy")},
+    {key:'invoice',label:this.t('ui.m_1cuzqu5'),primary:true},
+    {key:'total',label:this.t('ui.m_l97slj'),kind:'numeric'},
+    {key:'date',label:this.t('ui.m_1pb5uxl')},
+    {key:'record',label:this.t('ui.m_356wdy')},
   ]; }
   get integrityInvoiceRows(): readonly AbaRecordTableRow[] { return (this.dataIntegrityReport?.unlinked_issued_invoices.items||[]).map(row=>({id:row.invoice_id,cells:{
     invoice:row.invoice_number,total:`${row.total} ${row.currency_code}`,date:this.formatRecordDate(row.created_at,'short'),record:row.invoice_id,
   }})); }
   get integrityAllocationColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'invoice',label:this.t("ui.m_1cuzqu5"),primary:true},
-    {key:'issue',label:this.t("ui.m_1jiia8p"),kind:'status'},
-    {key:'amount',label:this.t("ui.m_i3lh6b"),kind:'numeric'},
-    {key:'paymentCurrency',label:this.t("ui.m_1ghw6ju")},
-    {key:'invoiceCurrency',label:this.t("ui.m_uoq0dn")},
-    {key:'customers',label:this.t("ui.m_xwq7hv")},
-    {key:'reference',label:this.t("ui.m_15jj1na")},
+    {key:'invoice',label:this.t('ui.m_1cuzqu5'),primary:true},
+    {key:'issue',label:this.t('ui.m_1jiia8p'),kind:'status'},
+    {key:'amount',label:this.t('ui.m_i3lh6b'),kind:'numeric'},
+    {key:'paymentCurrency',label:this.t('ui.m_1ghw6ju')},
+    {key:'invoiceCurrency',label:this.t('ui.m_uoq0dn')},
+    {key:'customers',label:this.t('ui.m_xwq7hv')},
+    {key:'reference',label:this.t('ui.m_15jj1na')},
   ]; }
   get integrityAllocationRows(): readonly AbaRecordTableRow[] {
     const currency=(this.dataIntegrityReport?.currency_mismatched_allocations.items||[]).map(row=>({id:`currency-${row.allocation_id}`,cells:{
-      invoice:row.invoice_number,issue:this.t("ui.m_4oned"),
+      invoice:row.invoice_number,issue:this.t('ui.m_4oned'),
       amount:`${row.allocated_amount} ${row.payment_currency}`,paymentCurrency:row.payment_currency,
       invoiceCurrency:row.invoice_currency,customers:'—',reference:row.payment_reference||row.payment_id,
     }}));
     const customer=(this.dataIntegrityReport?.customer_mismatched_allocations.items||[]).map(row=>({id:`customer-${row.allocation_id}`,cells:{
-      invoice:row.invoice_number,issue:this.t("ui.m_1pczd49"),
+      invoice:row.invoice_number,issue:this.t('ui.m_1pczd49'),
       amount:`${row.allocated_amount} ${row.invoice_currency}`,paymentCurrency:row.payment_currency,
       invoiceCurrency:row.invoice_currency,
-      customers:`${this.t("ui.m_1i2qel0")} ${row.payment_customer_id||'—'} · ${this.t("ui.m_1k6zcv")} ${row.invoice_customer_id||'—'}`,
+      customers:`${this.t('ui.m_1i2qel0')} ${row.payment_customer_id||'—'} · ${this.t('ui.m_1k6zcv')} ${row.invoice_customer_id||'—'}`,
       reference:row.payment_reference||row.payment_id,
     }}));
     return [...currency,...customer];
@@ -2100,7 +2100,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.apiVersionLabel = release.version;
       this.apiCommitLabel = release.commit || 'unknown';
     } catch {
-      this.apiVersionLabel = this.t("ui.m_1qagjrx");
+      this.apiVersionLabel = this.t('ui.m_1qagjrx');
       this.apiCommitLabel = 'unknown';
     }
   }
@@ -2362,7 +2362,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.profitLossLoadGuard.invalidate();
       this.profitLoss = null;
       this.reportLoading = false;
-      this.reportError = this.t("ui.m_unhyh1");
+      this.reportError = this.t('ui.m_unhyh1');
       return;
     }
     const loadVersion = this.profitLossLoadGuard.begin();
@@ -2397,7 +2397,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.taxSummaryLoadGuard.invalidate();
       this.taxSummaryReport = null;
       this.taxLoading = false;
-      this.taxError = this.t("ui.m_mbbjx0");
+      this.taxError = this.t('ui.m_mbbjx0');
       return;
     }
     this.taxLoading = true;
@@ -2484,7 +2484,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private setOperationsFailure(tab: OperationsMessageTab, error: unknown): void {
     if (this.operationsMessageTab === tab && this.operationsMessage) {
-      this.operationsWarning = this.t("ui.m_1ngg92z") + ' ' + this.message(error);
+      this.operationsWarning = this.t('ui.m_1ngg92z') + ' ' + this.message(error);
       return;
     }
     this.operationsError = this.message(error);
@@ -2523,7 +2523,7 @@ export class AppComponent implements OnInit, OnDestroy {
         scheduled_at: this.notificationScheduledAt ? new Date(this.notificationScheduledAt).toISOString() : undefined,
       });
       if (this.business?.id !== businessId) return;
-      this.setOperationsSuccess('notifications', this.t("ui.m_1618gqb"));
+      this.setOperationsSuccess('notifications', this.t('ui.m_1618gqb'));
       this.notificationTitle = '';
       this.notificationBody = '';
       this.notificationScheduledAt = '';
@@ -2574,7 +2574,7 @@ export class AppComponent implements OnInit, OnDestroy {
         address: this.supplierAddress.trim() || undefined,
       });
       if (this.business?.id !== businessId) return;
-      this.setOperationsSuccess('suppliers', this.t("ui.m_oddjud"));
+      this.setOperationsSuccess('suppliers', this.t('ui.m_oddjud'));
       this.supplierName = '';
       this.supplierEmail = '';
       this.supplierPhone = '';
@@ -2593,7 +2593,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const quantity = Number(this.purchaseQuantity);
     const unitCost = Number(this.purchaseUnitCost);
     if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost < 0) {
-      this.operationsError = this.t("ui.m_12jqxlj");
+      this.operationsError = this.t('ui.m_12jqxlj');
       this.operationsErrorTab = 'purchases';
       return;
     }
@@ -2607,7 +2607,7 @@ export class AppComponent implements OnInit, OnDestroy {
         lines: [{ product_id: this.purchaseProductId, quantity: this.purchaseQuantity, unit_cost: this.purchaseUnitCost }],
       });
       if (this.business?.id !== businessId) return;
-      this.setOperationsSuccess('purchases', this.t("ui.m_1ouzvty"));
+      this.setOperationsSuccess('purchases', this.t('ui.m_1ouzvty'));
       this.purchaseOrderNumber = '';
       this.purchaseQuantity = '1';
       this.purchaseUnitCost = '0';
@@ -2650,12 +2650,12 @@ export class AppComponent implements OnInit, OnDestroy {
     const order = this.pendingPurchaseApproval;
     if (!order) return [];
     const lineDetails = order.lines.map(line =>
-      `${this.productNameFor(line.product_id)} × ${line.quantity} · ${this.t("ui.m_19mrznv")}: ${line.unit_cost} ${order.currency_code}`
+      `${this.productNameFor(line.product_id)} × ${line.quantity} · ${this.t('ui.m_19mrznv')}: ${line.unit_cost} ${order.currency_code}`
     );
     return [
-      `${this.t("ui.m_x27ir1")}: ${this.supplierNameFor(order.supplier_id)}`,
+      `${this.t('ui.m_x27ir1')}: ${this.supplierNameFor(order.supplier_id)}`,
       ...lineDetails,
-      `${this.t("ui.m_l97slj")}: ${order.total} ${order.currency_code}`,
+      `${this.t('ui.m_l97slj')}: ${order.total} ${order.currency_code}`,
     ];
   }
 
@@ -2670,12 +2670,12 @@ export class AppComponent implements OnInit, OnDestroy {
       const approved = await this.api.approvePurchaseOrder(businessId, order.id);
       if (this.business?.id !== businessId) return;
       if (approved.id !== order.id || approved.status !== 'approved') {
-        throw new Error(this.t("ui.m_v2cy1w"));
+        throw new Error(this.t('ui.m_v2cy1w'));
       }
       this.purchaseOrders = this.purchaseOrders.map(item => item.id === order.id ? { ...item, ...approved } : item);
       this.pendingPurchaseApproval = null;
       this.confirmationReturnFocus = null;
-      this.setOperationsSuccess('purchases', this.t("ui.m_vgcvj1"));
+      this.setOperationsSuccess('purchases', this.t('ui.m_vgcvj1'));
     } catch (error) {
       if (this.business?.id === businessId) {
         this.setOperationsFailure('purchases', error);
@@ -2706,7 +2706,7 @@ export class AppComponent implements OnInit, OnDestroy {
   get pendingPurchaseReceiptDetails(): string[] {
     return (this.pendingPurchaseReceipt?.lines || [])
       .filter(line => this.hasRemainingQuantity(line))
-      .map(line => `${this.productNameFor(line.product_id)} · ${line.remaining_quantity} ${this.t("ui.m_ung25p")}`);
+      .map(line => `${this.productNameFor(line.product_id)} · ${line.remaining_quantity} ${this.t('ui.m_ung25p')}`);
   }
 
   async confirmPurchaseOrderReceipt(): Promise<void> {
@@ -2728,7 +2728,7 @@ export class AppComponent implements OnInit, OnDestroy {
       if (this.business?.id !== businessId) return;
       this.pendingPurchaseReceipt = null;
       this.confirmationReturnFocus = null;
-      this.setOperationsSuccess('purchases', this.t("ui.m_1tmkq6x"));
+      this.setOperationsSuccess('purchases', this.t('ui.m_1tmkq6x'));
       try {
         const [orders, products, dashboard] = await Promise.all([
           this.api.purchaseOrders(businessId),
@@ -2757,7 +2757,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.beginOperationsAction();
     const interval = Number(this.recurringIntervalDays);
     if (!Number.isInteger(interval) || interval < 1 || interval > 3650) {
-      this.operationsError = this.t("ui.m_1jvv49p");
+      this.operationsError = this.t('ui.m_1jvv49p');
       this.operationsErrorTab = 'recurring';
       return;
     }
@@ -2771,7 +2771,7 @@ export class AppComponent implements OnInit, OnDestroy {
         next_run_at: new Date(this.recurringNextRunAt).toISOString(),
       });
       if (this.business?.id !== businessId) return;
-      this.setOperationsSuccess('recurring', this.t("ui.m_6a3p89"));
+      this.setOperationsSuccess('recurring', this.t('ui.m_6a3p89'));
       const items = await this.api.recurringSchedules(businessId);
       if (this.business?.id === businessId) this.recurringSchedules = items;
     } catch (error) {
@@ -2936,12 +2936,12 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get customerStatementTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'date',label:this.t("ui.m_1fcm91o")},
-    {key:'event',label:this.t("ui.m_1ktv9rs"),primary:true},
-    {key:'reference',label:this.t("ui.m_eimrhe")},
-    {key:'debit',label:this.t("ui.m_b173yr"),kind:'numeric'},
-    {key:'credit',label:this.t("ui.m_12mq4cg"),kind:'numeric'},
-    {key:'balance',label:this.t("ui.m_lyblb3"),kind:'numeric'},
+    {key:'date',label:this.t('ui.m_1fcm91o')},
+    {key:'event',label:this.t('ui.m_1ktv9rs'),primary:true},
+    {key:'reference',label:this.t('ui.m_eimrhe')},
+    {key:'debit',label:this.t('ui.m_b173yr'),kind:'numeric'},
+    {key:'credit',label:this.t('ui.m_12mq4cg'),kind:'numeric'},
+    {key:'balance',label:this.t('ui.m_lyblb3'),kind:'numeric'},
   ]; }
   get customerStatementTableRows(): readonly AbaRecordTableRow[] { return (this.customerStatement?.items||[]).map((event,index)=>({
     id:`${event.source_id}:${event.event_type}:${event.invoice_id||''}:${event.occurred_at}:${index}`,
@@ -2967,7 +2967,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async applyCustomerStatementFilters(): Promise<void> {
     if (this.statementFromDate && this.statementToDate && this.statementFromDate > this.statementToDate) {
-      this.statementError = this.t("ui.m_r5b60p");
+      this.statementError = this.t('ui.m_r5b60p');
       return;
     }
     await this.loadCustomerStatementPage(0);
@@ -3038,7 +3038,7 @@ export class AppComponent implements OnInit, OnDestroy {
       });
       if (this.business?.id !== businessId) return;
       this.customerName = ''; this.customerEmail = ''; this.customerPhone = '';
-      this.customerMessage = this.t("ui.m_vj0603");
+      this.customerMessage = this.t('ui.m_vj0603');
       try {
         const customers = await this.api.customers(businessId);
         if (this.business?.id !== businessId) return;
@@ -3047,7 +3047,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (this.business?.id === businessId) {
           this.customerMessageKind = 'warning';
-          this.customerMessage = this.t("ui.m_9r6c8a");
+          this.customerMessage = this.t('ui.m_9r6c8a');
         }
       }
     } catch (error) {
@@ -3069,12 +3069,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.importFileName = '';
     if (!file) return;
     if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv') {
-      this.error = this.t("ui.m_1meqsrn");
+      this.error = this.t('ui.m_1meqsrn');
       input.value = '';
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      this.error = this.t("ui.m_uiq9m8");
+      this.error = this.t('ui.m_uiq9m8');
       input.value = '';
       return;
     }
@@ -3085,7 +3085,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.importFileName = file.name;
       this.error = '';
     } catch {
-      if (this.business?.id === businessId) this.error = this.t("ui.m_fq4yp3");
+      if (this.business?.id === businessId) this.error = this.t('ui.m_fq4yp3');
       input.value = '';
     }
   }
@@ -3120,7 +3120,7 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const result = await this.api.importProductCsv(businessId, csvText);
       if (this.business?.id !== businessId) return;
-      this.importMessage = this.t("ui.m_r5bt5z", { row_count: result.row_count });
+      this.importMessage = this.t('ui.m_r5bt5z', { row_count: result.row_count });
       this.importPreview = null;
       this.importCsvText = '';
       this.importFileName = '';
@@ -3132,7 +3132,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (this.business?.id === businessId) {
           this.importMessageKind = 'warning';
-          this.importMessage = this.t("ui.m_1lap6fd");
+          this.importMessage = this.t('ui.m_1lap6fd');
         }
       }
     } catch (error) {
@@ -3154,12 +3154,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.customerImportFileName = '';
     if (!file) return;
     if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv') {
-      this.error = this.t("ui.m_1meqsrn");
+      this.error = this.t('ui.m_1meqsrn');
       input.value = '';
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      this.error = this.t("ui.m_uiq9m8");
+      this.error = this.t('ui.m_uiq9m8');
       input.value = '';
       return;
     }
@@ -3170,7 +3170,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.customerImportFileName = file.name;
       this.error = '';
     } catch {
-      if (this.business?.id === businessId) this.error = this.t("ui.m_fq4yp3");
+      if (this.business?.id === businessId) this.error = this.t('ui.m_fq4yp3');
       input.value = '';
     }
   }
@@ -3206,7 +3206,7 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const result = await this.api.importCustomerCsv(businessId, csvText);
       if (this.business?.id !== businessId) return;
-      this.customerImportMessage = this.t("ui.m_r5bt5z", { row_count: result.row_count });
+      this.customerImportMessage = this.t('ui.m_r5bt5z', { row_count: result.row_count });
       this.customerImportPreview = null;
       this.customerImportCsvText = '';
       this.customerImportFileName = '';
@@ -3220,7 +3220,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (this.business?.id === businessId) {
           this.customerImportMessageKind = 'warning';
-          this.customerImportMessage = this.t("ui.m_l4fw90");
+          this.customerImportMessage = this.t('ui.m_l4fw90');
         }
       }
     } catch (error) {
@@ -3244,7 +3244,7 @@ export class AppComponent implements OnInit, OnDestroy {
       });
       if (this.business?.id !== businessId) return;
       this.productName = ''; this.productPrice = ''; this.stockTracked = false; this.productOpeningQuantity = '0';
-      this.productMessage = this.t("ui.m_b4kbxp");
+      this.productMessage = this.t('ui.m_b4kbxp');
       try {
         const products = await this.api.products(businessId);
         if (this.business?.id !== businessId) return;
@@ -3253,7 +3253,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (this.business?.id === businessId) {
           this.productMessageKind = 'warning';
-          this.productMessage = this.t("ui.m_h29v8u");
+          this.productMessage = this.t('ui.m_h29v8u');
         }
       }
     } catch (error) {
@@ -3300,7 +3300,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const taxRate = Number(this.invoiceTaxRate);
     if (!Number.isFinite(discountRate) || discountRate < 0 || discountRate > 100 ||
         !Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) {
-      this.error = this.t("ui.m_1szpit2");
+      this.error = this.t('ui.m_1szpit2');
       return;
     }
     const businessId = this.business.id;
@@ -3345,8 +3345,8 @@ export class AppComponent implements OnInit, OnDestroy {
         total: saved.total,
       };
       this.invoiceMessage = editingInvoiceId
-        ? this.t("ui.m_1nk3bl8")
-        : this.t("ui.m_fxutv5");
+        ? this.t('ui.m_1nk3bl8')
+        : this.t('ui.m_fxutv5');
       this.invoiceMessageKind = 'success';
       this.invoiceCreateOpen = true;
 
@@ -3361,7 +3361,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (isCurrent()) {
           this.invoiceMessageKind = 'warning';
-          this.invoiceMessage = this.t("ui.m_nltda1");
+          this.invoiceMessage = this.t('ui.m_nltda1');
         }
       }
     } catch (error) {
@@ -3372,14 +3372,14 @@ export class AppComponent implements OnInit, OnDestroy {
         this.invoiceDraftUncertain = false;
         this.error = this.message(error);
         this.invoiceMessageKind = 'warning';
-        this.invoiceMessage = this.t("ui.m_1tgnhbq");
+        this.invoiceMessage = this.t('ui.m_1tgnhbq');
       } else {
         if (!isCurrent()) return;
         this.pendingInvoiceDraftOutcome = outcomeSnapshot;
         this.invoiceDraftUncertain = true;
         this.error = this.message(error);
         this.invoiceMessageKind = 'warning';
-        this.invoiceMessage = this.t("ui.m_1l6qzdy");
+        this.invoiceMessage = this.t('ui.m_1l6qzdy');
       }
     } finally {
       if (isCurrent()) {
@@ -3408,7 +3408,7 @@ export class AppComponent implements OnInit, OnDestroy {
       const match = findInvoiceDraftRecoveryMatch(invoices, pending);
       if (!match) {
         this.invoiceMessageKind = 'warning';
-        this.invoiceMessage = this.t("ui.m_1kah5c4");
+        this.invoiceMessage = this.t('ui.m_1kah5c4');
         return;
       }
 
@@ -3434,12 +3434,12 @@ export class AppComponent implements OnInit, OnDestroy {
       this.invoiceDraftOutcomeVault.delete(authUid, businessId);
       this.invoiceCreateOpen = true;
       this.invoiceMessageKind = 'warning';
-      this.invoiceMessage = this.t("ui.m_18n49hx");
+      this.invoiceMessage = this.t('ui.m_18n49hx');
     } catch (error) {
       if (isCurrent()) {
         this.error = this.message(error);
         this.invoiceMessageKind = 'warning';
-        this.invoiceMessage = this.t("ui.m_1y7z87x");
+        this.invoiceMessage = this.t('ui.m_1y7z87x');
       }
     } finally {
       if (isCurrent()) this.loading = false;
@@ -3463,7 +3463,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const businessCurrency = businessSnapshot.currency_code;
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      this.error = this.t("ui.m_1ki7klw");
+      this.error = this.t('ui.m_1ki7klw');
       return;
     }
     this.loading = true;
@@ -3475,7 +3475,7 @@ export class AppComponent implements OnInit, OnDestroy {
         return;
       }
       if (detail.status !== 'issued') {
-        throw new Error(this.t("ui.m_mfugf1"));
+        throw new Error(this.t('ui.m_mfugf1'));
       }
       const rows = detail.lines.map(line =>
         '<tr><td>' + this.escapePrintHtml(line.description) + '</td><td class="number">' +
@@ -3541,7 +3541,7 @@ export class AppComponent implements OnInit, OnDestroy {
       const detail = await this.api.invoiceDetail(businessId, invoice.id);
       if (!isCurrent()) return;
       if (!detail.lines.length) {
-        throw new Error(this.t("ui.m_a38j3f"));
+        throw new Error(this.t('ui.m_a38j3f'));
       }
       this.editingInvoiceId = invoice.id;
       this.invoiceNumber = detail.invoice_number;
@@ -3596,7 +3596,7 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       await this.api.issueInvoice(businessId, invoice.id);
       if (!isCurrent()) return;
-      this.invoiceMessage = this.t("ui.m_18zpfhv");
+      this.invoiceMessage = this.t('ui.m_18zpfhv');
       try {
         const [invoices, dashboard, products] = await Promise.all([
           this.api.invoices(businessId),
@@ -3610,7 +3610,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (isCurrent()) {
           this.invoiceMessageKind = 'warning';
-          this.invoiceMessage = this.t("ui.m_7nu8k8");
+          this.invoiceMessage = this.t('ui.m_7nu8k8');
         }
       }
     } catch (error) {
@@ -3653,7 +3653,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.pendingInvoiceVoid = null;
       this.confirmationReturnFocus = null;
       if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
-      this.invoiceMessage = this.t("ui.m_15f0lzn");
+      this.invoiceMessage = this.t('ui.m_15f0lzn');
       try {
         const [invoices, dashboard, products] = await Promise.all([
           this.api.invoices(businessId),
@@ -3667,14 +3667,14 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (isCurrent()) {
           this.invoiceMessageKind = 'warning';
-          this.invoiceMessage = this.t("ui.m_1ovfo1u");
+          this.invoiceMessage = this.t('ui.m_1ovfo1u');
         }
       }
     } catch (error) {
       if (isCurrent()) {
         this.invoiceVoidError = this.message(error);
         this.invoiceMessageKind = 'warning';
-        this.invoiceMessage = this.t("ui.m_cbiq5f");
+        this.invoiceMessage = this.t('ui.m_cbiq5f');
       }
     } finally {
       if (isCurrent()) this.loading = false;
@@ -3688,17 +3688,17 @@ export class AppComponent implements OnInit, OnDestroy {
 
   payInvoice(invoice: Invoice): void {
     if (this.paymentLoading || this.paymentRetryPending) {
-      this.error = this.t("ui.m_1c87pqx");
+      this.error = this.t('ui.m_1c87pqx');
       return;
     }
     if (!this.business || this.business.role !== 'owner' || invoice.status !== 'issued') return;
     if (!invoice.customer_id || invoice.outstanding_amount === undefined) {
-      this.error = this.t("ui.m_b6y553");
+      this.error = this.t('ui.m_b6y553');
       return;
     }
     const outstanding = Number(invoice.outstanding_amount);
     if (!Number.isFinite(outstanding) || outstanding <= 0) {
-      this.error = this.t("ui.m_iaurud");
+      this.error = this.t('ui.m_iaurud');
       return;
     }
     this.error = '';
@@ -3707,7 +3707,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.paymentInvoiceId = invoice.id;
     this.paymentAmount = outstanding.toFixed(2);
     this.paymentAllocationAmount = outstanding.toFixed(2);
-    this.paymentMessage = this.t("ui.m_qxhoxi");
+    this.paymentMessage = this.t('ui.m_qxhoxi');
     this.paymentMessageKind = 'info';
   }
 
@@ -3719,11 +3719,11 @@ export class AppComponent implements OnInit, OnDestroy {
     const amount = Number(this.expenseAmount);
     const occurredAt = new Date(this.expenseDate);
     if (!category || !description || !String(this.expenseAmount ?? '').trim() || !Number.isFinite(amount) || amount <= 0) {
-      this.error = this.t("ui.m_i7atfd");
+      this.error = this.t('ui.m_i7atfd');
       return;
     }
     if (!this.expenseDate || !Number.isFinite(occurredAt.getTime())) {
-      this.error = this.t("ui.m_10t3tvt");
+      this.error = this.t('ui.m_10t3tvt');
       return;
     }
     const currencyCode = this.business.currency_code;
@@ -3747,7 +3747,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.expenseDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
       this.expenseVendor = '';
       this.expenseReference = '';
-      this.expenseMessage = this.t("ui.m_h0kei5");
+      this.expenseMessage = this.t('ui.m_h0kei5');
       try {
         const [expenses, dashboard] = await Promise.all([
           this.api.expenses(businessId),
@@ -3758,13 +3758,13 @@ export class AppComponent implements OnInit, OnDestroy {
         this.dashboard = dashboard;
       } catch {
         if (this.business?.id === businessId) {
-          this.error = this.t("ui.m_14xth7t");
+          this.error = this.t('ui.m_14xth7t');
         }
       }
     } catch (error) {
       if (this.business?.id === businessId) {
         this.expenseSubmissionUncertain = true;
-        this.error = this.t("ui.m_1womw08") + ' ' + this.message(error);
+        this.error = this.t('ui.m_1womw08') + ' ' + this.message(error);
       }
     } finally {
       if (this.business?.id === businessId) this.loading = false;
@@ -3785,7 +3785,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.expenses = expenses;
       this.dashboard = dashboard;
       this.expenseSubmissionUncertain = false;
-      this.expenseMessage = this.t("ui.m_1arh565");
+      this.expenseMessage = this.t('ui.m_1arh565');
     } catch (error) {
       if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
@@ -3837,12 +3837,12 @@ export class AppComponent implements OnInit, OnDestroy {
     } else {
       const amount = String(this.paymentAmount ?? '').trim();
       if (!amount || !this.paymentCustomerId) {
-        this.error = this.t("ui.m_9n1g6u");
+        this.error = this.t('ui.m_9n1g6u');
         return;
       }
       const allocation = String(this.paymentAllocationAmount ?? '').trim();
       if (this.paymentInvoiceId && !allocation) {
-        this.error = this.t("ui.m_1oyq50a");
+        this.error = this.t('ui.m_1oyq50a');
         return;
       }
       if (!this.paymentIdempotencyKey) {
@@ -3880,7 +3880,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.paymentAllocationAmount = '';
       this.paymentReference = '';
       this.paymentIdempotencyKey = '';
-      this.paymentMessage = this.t("ui.m_mw2rdb");
+      this.paymentMessage = this.t('ui.m_mw2rdb');
       this.paymentMessageKind = 'success';
 
       try {
@@ -3895,7 +3895,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.setInvoicePage(invoices);
       } catch {
         if (isCurrent()) {
-          this.paymentMessage = this.t("ui.m_vbnvuw");
+          this.paymentMessage = this.t('ui.m_vbnvuw');
           this.paymentMessageKind = 'warning';
         }
       }
@@ -3911,7 +3911,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } else {
         this.pendingPaymentRetrySnapshot = retrySnapshot;
         this.paymentRetryPending = true;
-        this.paymentMessage = this.t("ui.m_1pkbfrw");
+        this.paymentMessage = this.t('ui.m_1pkbfrw');
         this.paymentMessageKind = 'warning';
       }
     } finally {

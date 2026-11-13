@@ -11,18 +11,18 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
   imports: [AbaCardComponent, AbaSectionHeaderComponent],
   template: `
     <section abaCard class="panel release-guide-panel" aria-labelledby="release-guide-title">
-      <p class="release-guide-eyebrow">{{ t("ui.m_mlq284") }}</p>
+      <p class="release-guide-eyebrow">{{ t('ui.m_mlq284') }}</p>
       <aba-section-header
         [titleId]="'release-guide-title'"
-        [title]="t("ui.m_1og12ws")"
-        [description]="t("ui.m_oaeatq")">
-        <span class="release-guide-version-pill">{{ t("ui.m_1tydjt4") }} · v{{ appVersion }}</span>
+        [title]="t('ui.m_1og12ws')"
+        [description]="t('ui.m_oaeatq')">
+        <span class="release-guide-version-pill">{{ t('ui.m_1tydjt4') }} · v{{ appVersion }}</span>
       </aba-section-header>
 
       <aba-section-header
         [level]="3"
-        [title]="t("ui.m_16pb0nw")"
-        [description]="t("ui.m_mnc283")" />
+        [title]="t('ui.m_16pb0nw')"
+        [description]="t('ui.m_mnc283')" />
       <div class="release-guide-groups">
         @for (group of featureCatalog; track group.id) {
           <details class="release-feature-group">
@@ -44,8 +44,8 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 
       <div class="release-history-title">
         <aba-section-header
-          [title]="t("ui.m_g7xbwh")"
-          [description]="t("ui.m_idm045")" />
+          [title]="t('ui.m_g7xbwh')"
+          [description]="t('ui.m_idm045')" />
       </div>
       <div class="release-history">
         @for (release of releaseHistory; track release.version) {
@@ -54,7 +54,7 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
               <span class="release-guide-version-pill">v{{ release.version }}</span>
               <strong>{{ t(release.titleKey) }}</strong>
               @if (release.version === appVersion) {
-                <span class="release-guide-current-badge">{{ t("ui.m_186wqlb") }}</span>
+                <span class="release-guide-current-badge">{{ t('ui.m_186wqlb') }}</span>
               }
             </summary>
             <ul>
@@ -63,7 +63,7 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
           </details>
         }
       </div>
-      <p class="release-guide-footnote">{{ t("ui.m_1bg4xxc") }}</p>
+      <p class="release-guide-footnote">{{ t('ui.m_1bg4xxc') }}</p>
     </section>
   `,
   styles: [`
