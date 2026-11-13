@@ -125,3 +125,78 @@ export function toInvoiceDraftPayload(
         }),
   };
 }
+
+export function removeInvoiceDraftLine<T>(lines: readonly T[], index: number): T[] {
+  if (index < 0 || index >= lines.length || lines.length <= 1) return [...lines];
+  return lines.filter((_, currentIndex) => currentIndex !== index);
+}
+
+/** Converts persisted draft lines into editable catalog/manual editor rows. */
+export function invoiceDraftLinesFromExisting(lines: readonly {
+  product_id: string | null;
+  description: string;
+  quantity: string;
+  unit_price: string;
+}[]): InvoiceDraftLine[] {
+  return lines.map((line, index) => ({
+    id: 'existing-invoice-line-' + (index + 1),
+    kind: line.product_id ? 'product' : 'manual',
+    product_id: line.product_id || '',
+    description: line.description || '',
+    quantity: line.quantity,
+    unit_price: line.product_id ? '' : line.unit_price,
+  }));
+}
+
+
+export interface InvoiceDraftOutcomeSnapshot {
+  readonly businessId: string;
+  readonly invoiceNumber: string;
+  readonly customerId: string;
+  readonly discountRate: string;
+  readonly taxRate: string;
+  readonly editingInvoiceId: string | null;
+}
+
+/** Identity-scoped, memory-only recovery marker for an uncertain invoice mutation. */
+export class InvoiceDraftOutcomeVault {
+  private readonly records = new Map<string, InvoiceDraftOutcomeSnapshot>();
+
+  private key(authUid: string, businessId: string): string {
+    const uid = authUid.trim();
+    const business = businessId.trim();
+    if (!uid || !business) throw new RangeError('An authenticated user and business are required for an invoice draft outcome.');
+    return JSON.stringify([uid, business]);
+  }
+
+  save(authUid: string, snapshot: InvoiceDraftOutcomeSnapshot): void {
+    const copy = Object.freeze({ ...snapshot, businessId: snapshot.businessId.trim() });
+    this.records.set(this.key(authUid, copy.businessId), copy);
+  }
+
+  get(authUid: string, businessId: string): InvoiceDraftOutcomeSnapshot | null {
+    return this.records.get(this.key(authUid, businessId)) ?? null;
+  }
+
+  delete(authUid: string, businessId: string): void {
+    this.records.delete(this.key(authUid, businessId));
+  }
+}
+
+
+/** Resolve an uncertain invoice write without relying on a mutable invoice number for edits. */
+export function findInvoiceDraftRecoveryMatch<T extends {
+  id: string;
+  invoice_number: string;
+  customer_id?: string | null;
+}>(
+  invoices: readonly T[],
+  pending: Pick<InvoiceDraftOutcomeSnapshot, 'editingInvoiceId' | 'invoiceNumber' | 'customerId'>,
+): T | null {
+  if (pending.editingInvoiceId) {
+    return invoices.find(invoice => invoice.id === pending.editingInvoiceId) ?? null;
+  }
+  return invoices.find(invoice =>
+    invoice.invoice_number === pending.invoiceNumber && invoice.customer_id === pending.customerId
+  ) ?? null;
+}
