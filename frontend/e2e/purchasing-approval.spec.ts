@@ -227,7 +227,7 @@ async function openPurchases(page: Page): Promise<void> {
   const directory = page.locator('details.module-directory-disclosure');
   const isOpen = await directory.evaluate(element => (element as HTMLDetailsElement).open);
   if (!isOpen) await directory.locator('summary').click();
-  const purchasingCard = page.locator('aba-quick-access-card').filter({ hasText: 'Purchasing' });
+  const purchasingCard = directory.locator('aba-quick-access-card').filter({ hasText: 'Purchasing' });
   await expect(purchasingCard).toHaveCount(1);
   await expect(purchasingCard).toBeVisible();
   await purchasingCard.getByRole('button').click();
