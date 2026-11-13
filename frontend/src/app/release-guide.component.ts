@@ -27,14 +27,14 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
         @for (group of featureCatalog; track group.id) {
           <details class="release-feature-group">
             <summary>
-              <strong>{{ t(group.titleAr, group.titleEn) }}</strong>
-              <small>{{ t(group.noteAr, group.noteEn) }}</small>
+              <strong>{{ t(group.titleKey) }}</strong>
+              <small>{{ t(group.noteKey) }}</small>
             </summary>
             <ul>
               @for (feature of group.features; track feature.titleEn) {
                 <li>
-                  <strong>{{ t(feature.titleAr, feature.titleEn) }}</strong>
-                  <span>{{ t(feature.detailAr, feature.detailEn) }}</span>
+                  <strong>{{ t(feature.titleKey) }}</strong>
+                  <span>{{ t(feature.detailKey) }}</span>
                 </li>
               }
             </ul>
@@ -52,20 +52,14 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
           <details class="release-version" [open]="release.version === appVersion">
             <summary>
               <span class="release-guide-version-pill">v{{ release.version }}</span>
-              <strong>{{ t(release.titleAr, release.titleEn) }}</strong>
+              <strong>{{ t(release.titleKey) }}</strong>
               @if (release.version === appVersion) {
                 <span class="release-guide-current-badge">{{ t("ui.m_186wqlb") }}</span>
               }
             </summary>
-            @if (language === 'ar') {
-              <ul>
-                @for (change of release.changesAr; track change) { <li>{{ change }}</li> }
-              </ul>
-            } @else {
-              <ul>
-                @for (change of release.changesEn; track change) { <li>{{ change }}</li> }
-              </ul>
-            }
+            <ul>
+              @for (change of release.changes; track change) { <li>{{ t(change) }}</li> }
+            </ul>
           </details>
         }
       </div>
