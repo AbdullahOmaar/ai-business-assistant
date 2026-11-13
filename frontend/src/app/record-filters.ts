@@ -18,22 +18,23 @@ export interface InvoiceSearchItem {
   customer_id?: string | null;
 }
 
-function normalized(value: unknown): string {
-  return String(value ?? '').trim().toLocaleLowerCase();
+function normalized(value: unknown, locale = 'en'): string {
+  return String(value ?? '').trim().normalize('NFKC').toLocaleLowerCase(locale);
 }
 
-export function filterCustomers<T extends CustomerSearchItem>(items: readonly T[], query: string): T[] {
-  const q = normalized(query);
-  return items.filter(item => !q || [item.name, item.email, item.phone].some(value => normalized(value).includes(q)));
+export function filterCustomers<T extends CustomerSearchItem>(items: readonly T[], query: string, locale = 'en'): T[] {
+  const q = normalized(query, locale);
+  return items.filter(item => !q || [item.name, item.email, item.phone].some(value => normalized(value, locale).includes(q)));
 }
 
 export function filterProducts<T extends ProductSearchItem>(
   items: readonly T[],
   query: string,
   currencyCode = '',
+  locale = 'en',
 ): T[] {
-  const q = normalized(query);
-  return items.filter(item => !q || [item.name, item.sku, item.unit_price, currencyCode].some(value => normalized(value).includes(q)));
+  const q = normalized(query, locale);
+  return items.filter(item => !q || [item.name, item.sku, item.unit_price, currencyCode].some(value => normalized(value, locale).includes(q)));
 }
 
 export function filterInvoices<T extends InvoiceSearchItem>(
@@ -43,12 +44,13 @@ export function filterInvoices<T extends InvoiceSearchItem>(
   customerId = '',
   statusLabel: (status: string) => string = status => status,
   customerName: (customerId: string | null | undefined) => string = () => '',
+  locale = 'en',
 ): T[] {
-  const q = normalized(query);
+  const q = normalized(query, locale);
   return items.filter(item =>
     (!customerId || item.customer_id === customerId)
     && (statusFilter === 'all' || item.status === statusFilter)
-    && (!q || [item.invoice_number, customerName(item.customer_id), item.currency_code, item.status, statusLabel(item.status), item.total].some(value => normalized(value).includes(q))),
+    && (!q || [item.invoice_number, customerName(item.customer_id), item.currency_code, item.status, statusLabel(item.status), item.total].some(value => normalized(value, locale).includes(q))),
   );
 }
 
@@ -93,9 +95,9 @@ export interface NotificationSearchItem {
   created_at?: string | null;
 }
 
-export function filterSuppliers<T extends SupplierSearchItem>(items: readonly T[], query: string): T[] {
-  const q = normalized(query);
-  return items.filter(item => !q || [item.name, item.email, item.phone, item.address].some(value => normalized(value).includes(q)));
+export function filterSuppliers<T extends SupplierSearchItem>(items: readonly T[], query: string, locale = 'en'): T[] {
+  const q = normalized(query, locale);
+  return items.filter(item => !q || [item.name, item.email, item.phone, item.address].some(value => normalized(value, locale).includes(q)));
 }
 
 export function filterPurchaseOrders<T extends PurchaseOrderSearchItem>(
@@ -104,14 +106,15 @@ export function filterPurchaseOrders<T extends PurchaseOrderSearchItem>(
   supplierName: (supplierId: string) => string,
   productName: (productId: string) => string,
   statusLabel: (status: string) => string = status => status,
+  locale = 'en',
 ): T[] {
-  const q = normalized(query);
+  const q = normalized(query, locale);
   return items.filter(item => !q || [
     item.order_number, item.status, statusLabel(item.status), item.total, item.currency_code, supplierName(item.supplier_id),
     ...item.lines.flatMap(line => [
       productName(line.product_id), line.quantity, line.received_quantity, line.remaining_quantity,
     ]),
-  ].some(value => normalized(value).includes(q)));
+  ].some(value => normalized(value, locale).includes(q)));
 }
 
 export function filterRecurringSchedules<T extends RecurringScheduleSearchItem>(
@@ -119,8 +122,9 @@ export function filterRecurringSchedules<T extends RecurringScheduleSearchItem>(
   query: string,
   customerName: (customerId: string) => string,
   activeStateLabel: (active: boolean) => string = active => active ? 'active' : 'inactive',
+  locale = 'en',
 ): T[] {
-  const q = normalized(query);
+  const q = normalized(query, locale);
   return items.filter(item => {
     if (!q) return true;
     const searchable = [
@@ -128,8 +132,8 @@ export function filterRecurringSchedules<T extends RecurringScheduleSearchItem>(
       item.interval_days, item.timezone, item.next_run_at,
     ];
     const stateLabel = activeStateLabel(item.is_active);
-    return searchable.some(value => normalized(value).includes(q))
-      || normalized(stateLabel) === q;
+    return searchable.some(value => normalized(value, locale).includes(q))
+      || normalized(stateLabel, locale) === q;
   });
 }
 
@@ -138,11 +142,12 @@ export function filterNotifications<T extends NotificationSearchItem>(
   query: string,
   kindLabel: (kind: string) => string = kind => kind,
   statusLabel: (status: string) => string = status => status,
+  locale = 'en',
 ): T[] {
-  const q = normalized(query);
+  const q = normalized(query, locale);
   return items.filter(item => !q || [
     item.title, item.body, item.kind, kindLabel(item.kind), item.status, statusLabel(item.status), item.scheduled_at, item.created_at,
-  ].some(value => normalized(value).includes(q)));
+  ].some(value => normalized(value, locale).includes(q)));
 }
 
 
@@ -170,11 +175,12 @@ export function filterExpenses<T extends ExpenseSearchItem>(
   items: readonly T[],
   query: string,
   categoryLabel: (category: string) => string = category => category,
+  locale = 'en',
 ): T[] {
-  const q = normalized(query);
+  const q = normalized(query, locale);
   return items.filter(item => !q || [
     item.category, categoryLabel(item.category), item.description, item.amount, item.currency_code, item.incurred_at, item.vendor_name, item.reference,
-  ].some(value => normalized(value).includes(q)));
+  ].some(value => normalized(value, locale).includes(q)));
 }
 
 export function filterPayments<T extends PaymentSearchItem>(
@@ -183,8 +189,9 @@ export function filterPayments<T extends PaymentSearchItem>(
   customerName: (customerId: string) => string,
   methodLabel: (method: string) => string = method => method,
   allocationLabel: (allocated: boolean) => string = allocated => allocated ? 'allocated' : 'unallocated',
+  locale = 'en',
 ): T[] {
-  const q = normalized(query);
+  const q = normalized(query, locale);
   return items.filter(item => {
     if (!q) return true;
     const searchable = [
@@ -193,8 +200,8 @@ export function filterPayments<T extends PaymentSearchItem>(
       item.method, item.method ? methodLabel(item.method) : '', item.reference, item.allocations.length,
     ];
     const allocationStatusLabel = allocationLabel(item.allocations.length > 0);
-    return searchable.some(value => normalized(value).includes(q))
-      || normalized(allocationStatusLabel) === q;
+    return searchable.some(value => normalized(value, locale).includes(q))
+      || normalized(allocationStatusLabel, locale) === q;
   });
 }
 
