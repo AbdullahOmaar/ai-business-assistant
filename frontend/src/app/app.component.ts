@@ -2162,11 +2162,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get sessionExpired(): boolean {
-    return this.lastErrorKind === 'session-expired';
+    return this.lastErrorKind === 'session-expired' && this.error === this.lastErrorMessage;
   }
 
   get accessDenied(): boolean {
-    return this.lastErrorKind === 'access-denied';
+    return this.lastErrorKind === 'access-denied' && this.error === this.lastErrorMessage;
   }
 
   retry(): void {
@@ -4765,12 +4765,14 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private lastErrorKind: 'session-expired' | 'access-denied' | null = null;
+  private lastErrorMessage: string | null = null;
 
   private message(error: unknown, context: 'auth' | 'api' = 'api'): string {
     const value = error as { code?: string; message?: string };
     const code = typeof value?.code === 'string' ? value.code : '';
     const message = typeof value?.message === 'string' ? value.message : '';
     this.lastErrorKind = null;
+    this.lastErrorMessage = null;
 
     const authKeys: Record<string, string> = {
       'auth/email-already-in-use': 'app.authError.auth_email_already_in_use',
@@ -4786,11 +4788,15 @@ export class AppComponent implements OnInit, OnDestroy {
     const deniedMessage = message.trim();
     if (deniedMessage === 'Authentication required' || deniedMessage === 'Authenticated subject is missing') {
       this.lastErrorKind = 'session-expired';
-      return this.t('ui.m_agj0gj');
+      const translated = this.t('ui.m_agj0gj');
+      this.lastErrorMessage = translated;
+      return translated;
     }
     if (deniedMessage === 'Platform administrator access is not granted.') {
       this.lastErrorKind = 'access-denied';
-      return this.t('ui.m_1404mrg');
+      const translated = this.t('ui.m_1404mrg');
+      this.lastErrorMessage = translated;
+      return translated;
     }
     if ([
       'No active membership for this business',
@@ -4798,7 +4804,9 @@ export class AppComponent implements OnInit, OnDestroy {
       'No access to this business workspace.',
     ].includes(deniedMessage) || /^(?:forbidden|permission denied|not authorized|access denied)\b/i.test(deniedMessage)) {
       this.lastErrorKind = 'access-denied';
-      return this.t('ui.m_1nbaoyf');
+      const translated = this.t('ui.m_1nbaoyf');
+      this.lastErrorMessage = translated;
+      return translated;
     }
     if (/AI chat is not configured/i.test(message)) return this.t('ui.m_1kpvtc1');
     if (/timed out/i.test(message)) return this.t('ui.m_1wa8x7o');
