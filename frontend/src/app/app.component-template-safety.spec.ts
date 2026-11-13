@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { createServiceWorkerUpdateHandler } from './service-worker-update';
+import { createServiceWorkerUpdateHandler } from './service-worker-update.ts';
 
 const globalStyles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
