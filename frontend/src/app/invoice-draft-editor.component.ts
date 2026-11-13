@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from '@angular/core';
+import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { LocalizationService } from './localization.service';
 import { localizeInvoiceDraftValidationMessage, removeInvoiceDraftLine, toInvoiceDraftPayload } from './invoice-draft';
 import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, InvoiceDraftPayload, InvoiceDraftProduct, InvoiceDraftServerSummary } from './invoice-draft';
 
@@ -11,38 +12,38 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
   template: `
     <section class="invoice-editor-shell" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
       <header class="editor-topbar">
-        <button type="button" class="back-button" (click)="cancel.emit()" [disabled]="saving || blocked" [attr.aria-label]="t('العودة إلى الفواتير', 'Back to invoices')">{{ language === 'ar' ? '→' : '←' }}</button>
+        <button type="button" class="back-button" (click)="cancel.emit()" [disabled]="saving || blocked" [attr.aria-label]="t("ui.m_1957hpl")">{{ language === 'ar' ? '→' : '←' }}</button>
         <div class="editor-title">
-          <h3>{{ editing ? t('تعديل مسودة الفاتورة', 'Edit invoice draft') : t('إنشاء فاتورة جديدة', 'Create a new invoice') }}</h3>
-          <p>{{ t('احفظ الفاتورة كمسودة أولاً؛ لن يتم إصدارها من هذه الشاشة.', 'Save the invoice as a draft first; this screen does not issue it.') }}</p>
+          <h3>{{ editing ? t("ui.m_14af0fe") : t("ui.m_l3826b") }}</h3>
+          <p>{{ t("ui.m_gz13w8") }}</p>
         </div>
-        <span class="draft-status">{{ t('مسودة', 'Draft') }}</span>
+        <span class="draft-status">{{ t("ui.m_1vbs2bw") }}</span>
       </header>
 
       <section class="editor-card" aria-labelledby="invoice-details-heading">
         <div class="section-heading"><div>
-          <h4 id="invoice-details-heading">{{ t('بيانات الفاتورة', 'Invoice details') }}</h4>
-          <p>{{ t('حدد بيانات الفاتورة والعميل.', 'Set the invoice details and customer.') }}</p>
+          <h4 id="invoice-details-heading">{{ t("ui.m_1la02fb") }}</h4>
+          <p>{{ t("ui.m_da2qjb") }}</p>
         </div></div>
         <div class="invoice-details-grid">
           <label class="field">
-            <span>{{ t('رقم الفاتورة', 'Invoice number') }} *</span>
-            <input name="invoiceNumber" [(ngModel)]="invoiceNumber" (ngModelChange)="markDirty()" maxlength="64" autocomplete="off" [disabled]="locked" [placeholder]="t('أدخل رقم الفاتورة', 'Enter invoice number')" />
+            <span>{{ t("ui.m_1et6j5w") }} *</span>
+            <input name="invoiceNumber" [(ngModel)]="invoiceNumber" (ngModelChange)="markDirty()" maxlength="64" autocomplete="off" [disabled]="locked" [placeholder]="t("ui.m_937ke4")" />
           </label>
           <label class="field">
-            <span>{{ t('العملة', 'Currency') }}</span>
+            <span>{{ t("ui.m_1jd5ck6") }}</span>
             <input class="readonly-field" [value]="currencyCode" readonly aria-readonly="true" />
           </label>
           <label class="field customer-field">
-            <span>{{ t('العميل', 'Customer') }} *</span>
+            <span>{{ t("ui.m_ubgrc2") }} *</span>
             <select class="invoice-customer-select" name="customerId" [(ngModel)]="customerId" (ngModelChange)="markDirty()" [disabled]="locked">
-              <option value="">{{ t('اختَر العميل', 'Choose customer') }}</option>
+              <option value="">{{ t("ui.m_1oqobkx") }}</option>
               @for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }
             </select>
           </label>
           @if (hasMoreCustomers) {
             <button type="button" class="subtle-action customer-more" (click)="loadMoreCustomers.emit()" [disabled]="locked || loadingMoreCustomers">
-              {{ loadingMoreCustomers ? t('جارٍ تحميل العملاء…', 'Loading customers…') : t('تحميل عملاء إضافيين', 'Load more customers') }}
+              {{ loadingMoreCustomers ? t("ui.m_14qa8nk") : t("ui.m_1wufohw") }}
             </button>
           }
         </div>
@@ -51,58 +52,58 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
       <section class="editor-card lines-card" aria-labelledby="invoice-lines-heading">
         <div class="section-heading">
           <div>
-            <h4 id="invoice-lines-heading">{{ t('بنود الفاتورة', 'Invoice items') }}</h4>
-            <p>{{ t('اختر منتجًا من الكتالوج أو أضف خدمة بسعر يدوي.', 'Choose a catalog product or add a service with a manual price.') }}</p>
+            <h4 id="invoice-lines-heading">{{ t("ui.m_1o7erce") }}</h4>
+            <p>{{ t("ui.m_uxykti") }}</p>
           </div>
-          <span class="line-count">{{ lines.length }} {{ t('بنود', 'items') }}</span>
+          <span class="line-count">{{ lines.length }} {{ t("ui.m_1prn1ui") }}</span>
         </div>
         <div class="line-list">
           @for (line of lines; track line.id; let index = $index) {
             <article class="line-card">
               <div class="line-card-heading">
-                <strong>{{ t('البند', 'Item') }} {{ index + 1 }}</strong>
-                <button type="button" class="remove-line" (click)="removeLine(index)" [disabled]="locked || lines.length <= 1" [attr.aria-label]="t('حذف البند', 'Remove line') + ' ' + (index + 1)">
-                  <span aria-hidden="true">×</span><span>{{ t('حذف', 'Remove') }}</span>
+                <strong>{{ t("ui.m_lofxac") }} {{ index + 1 }}</strong>
+                <button type="button" class="remove-line" (click)="removeLine(index)" [disabled]="locked || lines.length <= 1" [attr.aria-label]="t("ui.m_1hepg03") + ' ' + (index + 1)">
+                  <span aria-hidden="true">×</span><span>{{ t("ui.m_i15g6p") }}</span>
                 </button>
               </div>
-              <div class="line-kind-switch" role="group" [attr.aria-label]="t('نوع البند', 'Line type')">
-                <button type="button" class="kind-option" [class.active]="line.kind === 'product'" [attr.aria-pressed]="line.kind === 'product' ? 'true' : 'false'" (click)="changeKind(line, 'product')" [disabled]="locked">{{ t('منتج', 'Product') }}</button>
-                <button type="button" class="kind-option" [class.active]="line.kind === 'manual'" [attr.aria-pressed]="line.kind === 'manual' ? 'true' : 'false'" (click)="changeKind(line, 'manual')" [disabled]="locked">{{ t('خدمة', 'Service') }}</button>
+              <div class="line-kind-switch" role="group" [attr.aria-label]="t("ui.m_8e5oum")">
+                <button type="button" class="kind-option" [class.active]="line.kind === 'product'" [attr.aria-pressed]="line.kind === 'product' ? 'true' : 'false'" (click)="changeKind(line, 'product')" [disabled]="locked">{{ t("ui.m_13rez2z") }}</button>
+                <button type="button" class="kind-option" [class.active]="line.kind === 'manual'" [attr.aria-pressed]="line.kind === 'manual' ? 'true' : 'false'" (click)="changeKind(line, 'manual')" [disabled]="locked">{{ t("ui.m_1nanu1j") }}</button>
               </div>
               @if (line.kind === 'product') {
                 <div class="line-fields product-line">
                   <label class="field product-picker">
-                    <span>{{ t('المنتج من الكتالوج', 'Catalog product') }} *</span>
+                    <span>{{ t("ui.m_1kfbsbf") }} *</span>
                     <select [name]="'product-' + line.id" [(ngModel)]="line.product_id" (ngModelChange)="markDirty()" [disabled]="locked">
-                      <option value="">{{ t('اختَر المنتج', 'Choose product') }}</option>
+                      <option value="">{{ t("ui.m_1dttg5z") }}</option>
                       @for (product of products; track product.id) { <option [value]="product.id">{{ product.name }}</option> }
                     </select>
                   </label>
                   <label class="field catalog-price">
-                    <span>{{ t('سعر الوحدة', 'Unit price') }} ({{ currencyCode }})</span>
+                    <span>{{ t("ui.m_1iz2xk3") }} ({{ currencyCode }})</span>
                     <input class="readonly-field" [value]="productPrice(line.product_id) || '—'" readonly aria-readonly="true" />
                   </label>
                   <label class="field line-description-field">
-                    <span>{{ t('وصف إضافي (اختياري)', 'Additional description (optional)') }}</span>
+                    <span>{{ t("ui.m_12gxjqg") }}</span>
                     <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="300" [disabled]="locked" />
                   </label>
                   <label class="field quantity-field">
-                    <span>{{ t('الكمية', 'Quantity') }} *</span>
+                    <span>{{ t("ui.m_ocneuo") }} *</span>
                     <input [name]="'quantity-' + line.id" inputmode="decimal" [(ngModel)]="line.quantity" (ngModelChange)="markDirty()" placeholder="1" [disabled]="locked" />
                   </label>
                 </div>
               } @else {
                 <div class="line-fields service-line">
                   <label class="field service-description-field">
-                    <span>{{ t('وصف الخدمة', 'Service description') }} *</span>
+                    <span>{{ t("ui.m_1wasllg") }} *</span>
                     <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="300" [disabled]="locked" />
                   </label>
                   <label class="field unit-price-field">
-                    <span>{{ t('سعر الوحدة', 'Unit price') }} ({{ currencyCode }}) *</span>
+                    <span>{{ t("ui.m_1iz2xk3") }} ({{ currencyCode }}) *</span>
                     <input [name]="'price-' + line.id" inputmode="decimal" [(ngModel)]="line.unit_price" (ngModelChange)="markDirty()" placeholder="0.00" [disabled]="locked" />
                   </label>
                   <label class="field quantity-field">
-                    <span>{{ t('الكمية', 'Quantity') }} *</span>
+                    <span>{{ t("ui.m_ocneuo") }} *</span>
                     <input [name]="'quantity-' + line.id" inputmode="decimal" [(ngModel)]="line.quantity" (ngModelChange)="markDirty()" placeholder="1" [disabled]="locked" />
                   </label>
                 </div>
@@ -111,10 +112,10 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
           }
         </div>
         <div class="line-list-footer">
-          <button type="button" class="add-line-action" (click)="addLine()" [disabled]="locked"><span aria-hidden="true">＋</span> {{ t('إضافة بند آخر', 'Add another line') }}</button>
+          <button type="button" class="add-line-action" (click)="addLine()" [disabled]="locked"><span aria-hidden="true">＋</span> {{ t("ui.m_13ygch9") }}</button>
           @if (hasMoreProducts) {
             <button type="button" class="subtle-action" (click)="loadMoreProducts.emit()" [disabled]="locked || loadingMoreProducts">
-              {{ loadingMoreProducts ? t('جارٍ تحميل المنتجات…', 'Loading products…') : t('تحميل منتجات إضافية', 'Load more products') }}
+              {{ loadingMoreProducts ? t("ui.m_dm5wol") : t("ui.m_3h0eh6") }}
             </button>
           }
         </div>
@@ -123,56 +124,56 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
       @if (error) { <p class="editor-error" role="alert">{{ localize(error) }}</p> }
       @if (blocked) {
         <div class="editor-error blocked-message" role="alert">
-          <p>{{ t('نتيجة حفظ المسودة غير مؤكدة. لا تعاود الإرسال؛ تحقّق من حالة الفاتورة أولاً.', 'The draft save outcome is uncertain. Do not submit again; check the invoice status first.') }}</p>
-          <button type="button" class="secondary-action" (click)="refreshStatus.emit()" [disabled]="saving">{{ t('التحقق من حالة الفاتورة', 'Check invoice status') }}</button>
+          <p>{{ t("ui.m_1cgqwnl") }}</p>
+          <button type="button" class="secondary-action" (click)="refreshStatus.emit()" [disabled]="saving">{{ t("ui.m_1k7u2cz") }}</button>
         </div>
       }
 
       <section class="editor-card summary-card" aria-labelledby="invoice-summary-heading" aria-live="polite">
         <div class="section-heading"><div>
-          <h4 id="invoice-summary-heading">{{ t('ملخص الفاتورة', 'Invoice summary') }}</h4>
-          <p>{{ t('الخصم والضريبة للعرض فقط؛ الحساب النهائي من الخادم.', 'Discount and tax are display-only; the server calculates final totals.') }}</p>
+          <h4 id="invoice-summary-heading">{{ t("ui.m_h8mgmz") }}</h4>
+          <p>{{ t("ui.m_d7k44x") }}</p>
         </div></div>
         @if (serverSummary && serverSummary.subtotal !== null && serverSummary.subtotal !== undefined) {
-          <div class="summary-row"><span>{{ t('الإجمالي قبل الخصم', 'Subtotal') }}</span><strong>{{ serverSummary.subtotal | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
+          <div class="summary-row"><span>{{ t("ui.m_1qtlbee") }}</span><strong>{{ serverSummary.subtotal | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
         }
         <div class="readonly-rates">
           <label class="field rate-field">
-            <span>{{ t('الخصم', 'Discount') }} %</span>
+            <span>{{ t("ui.m_1ihygh1") }} %</span>
             <input name="invoiceDiscountRate" [value]="discountRate || '0'" readonly aria-readonly="true" />
             @if (serverSummary?.discount_total !== null && serverSummary?.discount_total !== undefined) { <small>{{ serverSummary?.discount_total | number:'1.2-2' }} {{ serverSummary?.currency_code }}</small> }
           </label>
           <label class="field rate-field">
-            <span>{{ t('الضريبة', 'Tax') }} %</span>
+            <span>{{ t("ui.m_1qsg5t9") }} %</span>
             <input name="invoiceTaxRate" [value]="taxRate || '0'" readonly aria-readonly="true" />
             @if (serverSummary?.tax_total !== null && serverSummary?.tax_total !== undefined) { <small>{{ serverSummary?.tax_total | number:'1.2-2' }} {{ serverSummary?.currency_code }}</small> }
           </label>
         </div>
         @if (serverSummary) {
-          <div class="summary-total"><span>{{ t('الإجمالي النهائي', 'Grand total') }}</span><strong>{{ serverSummary.total | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
-          <button type="button" class="subtle-action new-invoice-action" (click)="startNewDraft()" [disabled]="saving">{{ t('إنشاء فاتورة أخرى', 'Create another invoice') }}</button>
+          <div class="summary-total"><span>{{ t("ui.m_sqxwdc") }}</span><strong>{{ serverSummary.total | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
+          <button type="button" class="subtle-action new-invoice-action" (click)="startNewDraft()" [disabled]="saving">{{ t("ui.m_4c76v") }}</button>
         } @else {
-          <p class="summary-pending-note">{{ t('ستظهر الإجماليات بعد حفظ المسودة. لا يتم تقدير أي مبلغ داخل المتصفح.', 'Totals appear after saving the draft. No amounts are estimated in the browser.') }}</p>
+          <p class="summary-pending-note">{{ t("ui.m_fbcm87") }}</p>
         }
       </section>
 
       <section class="editor-card notes-card" aria-labelledby="invoice-notes-heading">
         <div class="section-heading"><div>
-          <h4 id="invoice-notes-heading">{{ t('ملاحظات', 'Notes') }}</h4>
-          <p>{{ t('أضف أي تفاصيل إضافية مرتبطة بالمسودة.', 'Add any additional details for this draft.') }}</p>
+          <h4 id="invoice-notes-heading">{{ t("ui.m_mpjnzc") }}</h4>
+          <p>{{ t("ui.m_1nbo20g") }}</p>
         </div></div>
         <label class="field">
-          <span>{{ t('ملاحظات الفاتورة (اختياري)', 'Invoice notes (optional)') }}</span>
-          <textarea name="invoiceNotes" [(ngModel)]="notes" (ngModelChange)="markDirty()" maxlength="2000" rows="3" [disabled]="locked" [placeholder]="t('اكتب ملاحظاتك هنا…', 'Write your notes here…')"></textarea>
+          <span>{{ t("ui.m_f3kt9t") }}</span>
+          <textarea name="invoiceNotes" [(ngModel)]="notes" (ngModelChange)="markDirty()" maxlength="2000" rows="3" [disabled]="locked" [placeholder]="t("ui.m_gauklj")"></textarea>
         </label>
         <small class="notes-counter">{{ notes.length }} / 2000</small>
       </section>
 
       <footer class="editor-actions">
-        <p>{{ t('سيتم حفظها كمسودة دون إصدار الفاتورة.', 'This saves a draft; it does not issue the invoice.') }}</p>
+        <p>{{ t("ui.m_1b0glke") }}</p>
         <div class="action-buttons">
-          <button type="button" class="secondary-action" (click)="cancel.emit()" [disabled]="saving || blocked">{{ t('إلغاء', 'Cancel') }}</button>
-          <button type="button" class="primary-action" (click)="submit()" [disabled]="locked">{{ saving ? t('جارٍ الحفظ…', 'Saving…') : t('حفظ المسودة', 'Save draft') }}</button>
+          <button type="button" class="secondary-action" (click)="cancel.emit()" [disabled]="saving || blocked">{{ t("ui.m_pw64as") }}</button>
+          <button type="button" class="primary-action" (click)="submit()" [disabled]="locked">{{ saving ? t("ui.m_jol8r9") : t("ui.m_1ygqune") }}</button>
         </div>
       </footer>
     </section>
@@ -215,6 +216,7 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
   @media(max-width:760px){.editor-actions{bottom:calc(92px + env(safe-area-inset-bottom));}}\n    `],
 })
 export class InvoiceDraftEditorComponent implements OnChanges {
+  private readonly localization = inject(LocalizationService);
   @Input() language: 'ar' | 'en' = 'ar';
   @Input() products: InvoiceDraftProduct[] = [];
   @Input() customers: InvoiceDraftCustomer[] = [];
@@ -268,7 +270,12 @@ export class InvoiceDraftEditorComponent implements OnChanges {
     this.newDraft.emit();
   }
 
-  t(arabic: string, english: string): string { return this.language === 'ar' ? arabic : english; }
+  t(keyOrArabic: string, paramsOrEnglish?: Record<string, string | number> | string): string {
+    if (typeof paramsOrEnglish === 'string') {
+      return this.language === 'ar' ? keyOrArabic : paramsOrEnglish;
+    }
+    return this.localization.translate(keyOrArabic, paramsOrEnglish);
+  }
   localize(message: string): string { return localizeInvoiceDraftValidationMessage(message, this.language); }
   productPrice(productId: string): string { return this.products.find(product => product.id === productId)?.unit_price ?? ''; }
 
