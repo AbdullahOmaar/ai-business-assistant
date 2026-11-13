@@ -1,20 +1,21 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers';
 import { createServiceWorkerUpdateHandler } from './service-worker-update.ts';
 
-const globalStyles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
-const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
-const invoiceEditorSource = readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8');
-const invoiceDraftSource = readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8');
-const releaseGuideSource = readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8');
-const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
-const stateMessageSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
-const recordTableSource = readFileSync(new URL('./shared/ui/aba-record-table.component.ts', import.meta.url), 'utf8');
-const quickAccessSource = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
-const workspaceLoadGuardSource = readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8');
-const auditLabelsSource = readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8');
-const mobileHeaderSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8');
+const globalStyles = expandTranslationCalls(readFileSync(new URL('../styles.css', import.meta.url), 'utf8'));
+const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const invoiceEditorSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8'));
+const invoiceDraftSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8'));
+const releaseGuideSource = expandTranslationCalls(readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8'));
+const platformAdminSource = expandTranslationCalls(readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8'));
+const stateMessageSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8'));
+const recordTableSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-record-table.component.ts', import.meta.url), 'utf8'));
+const quickAccessSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8'));
+const workspaceLoadGuardSource = expandTranslationCalls(readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8'));
+const auditLabelsSource = expandTranslationCalls(readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8'));
+const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
 
 test('workspace shell imports every tenant guard helper used by its async views', () => {
   assert.match(workspaceLoadGuardSource, /export function isCurrentTenantRequest/);
@@ -33,7 +34,7 @@ test('mobile More menu has a correctly delimited active-class attribute', () => 
   assert.equal(line.includes('isMobileMoreTab(tab)""'), false);
 });
 
-const authSource = readFileSync(new URL('./auth.service.ts', import.meta.url), 'utf8');
+const authSource = expandTranslationCalls(readFileSync(new URL('./auth.service.ts', import.meta.url), 'utf8'));
 
 test('startup config fetch has a bounded wait and allows retry after failure', () => {
   assert.match(authSource, /new AbortController\(\)/);
@@ -154,7 +155,7 @@ test('financial and integrity report basis labels are localized', () => {
   assert.match(source, /reportLimitationLabel\(limitation\)/);
 });
 
-const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
+const apiSource = expandTranslationCalls(readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8'));
 
 test('API requests abort when the backend stalls instead of blocking workspace startup indefinitely', () => {
   assert.match(apiSource, /new AbortController\(\)/);
@@ -218,7 +219,7 @@ test('customer CSV import requires preview before confirmation and localizes fee
 });
 
 test('customer CSV import API methods target customer preview and execution routes', () => {
-  const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
+  const apiSource = expandTranslationCalls(readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8'));
   assert.match(apiSource, /previewCustomerCsv\(businessId: string, csvText: string\)/);
   assert.match(apiSource, /imports\/customers\.csv\/preview/);
   assert.match(apiSource, /importCustomerCsv\(businessId: string, csvText: string\)/);
@@ -347,10 +348,10 @@ test('chat send preserves retry draft behavior and keeps the existing API contra
   assert.doesNotMatch(method, /this\.api\.chat\(this\.business\.id/);
 });
 
-const sharedStateSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
-const sharedCardSource = readFileSync(new URL('./shared/ui/aba-card.component.ts', import.meta.url), 'utf8');
-const sharedMetricSource = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
-const globalStylesSource = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
+const sharedStateSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8'));
+const sharedCardSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-card.component.ts', import.meta.url), 'utf8'));
+const sharedMetricSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8'));
+const globalStylesSource = expandTranslationCalls(readFileSync(new URL('../styles.css', import.meta.url), 'utf8'));
 
 test('shared state feedback owns info, warning, success, error and accessible action behavior', () => {
   assert.ok(sharedStateSource.includes("AbaStateKind = 'loading' | 'empty' | 'error' | 'success' | 'info' | 'warning'"));
