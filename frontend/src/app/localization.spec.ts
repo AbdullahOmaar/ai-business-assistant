@@ -76,7 +76,7 @@ test('UI source files contain no inline Arabic copy or legacy bilingual componen
   const arabicCopy: string[] = [];
   const localePipes: string[] = [];
 
-  for (const path of componentFiles(appDirectory)) {
+  for (const path of sourceFiles(appDirectory)) {
     const source = readFileSync(path, 'utf8');
     if (/\b(?:keyOrArabic|paramsOrEnglish)\b/.test(source)) legacyHelpers.push(path);
     if (/\bt\(\s*['"][^'"]+['"]\s*,\s*['"][^'"]+['"]\s*\)/.test(source)) inlinePairs.push(path);
