@@ -65,8 +65,11 @@ self.addEventListener('fetch', (event) => {
       const cache = await caches.open(CACHE_NAME);
       try {
         const response = await fetch(request);
-        if (response.ok) await cache.put(url.pathname, response.clone());
-        return response;
+        if (response.ok) {
+          await cache.put(url.pathname, response.clone());
+          return response;
+        }
+        return (await cache.match(url.pathname)) || response;
       } catch {
         return (await cache.match(url.pathname)) || Response.error();
       }

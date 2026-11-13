@@ -20,6 +20,7 @@ const candidateCacheName = cacheNameMatch[1];
 function createWorkerHarness(options: {
   failingAsset?: string;
   failingRoot?: boolean;
+  failingTranslation?: boolean;
   existingCacheNames?: string[];
 } = {}) {
   const listeners = new Map<string, (event: WorkerEvent) => void>();
@@ -100,6 +101,9 @@ function createWorkerHarness(options: {
     }
     if (url === origin + '/runtime-config.json') {
       return new Response(runtimeConfig, { status: 200, headers: { 'content-type': 'application/json' } });
+    }
+    if (options.failingTranslation && url === origin + '/i18n/ar.json') {
+      return new Response('translation unavailable', { status: 503 });
     }
     return new Response('asset', { status: 200 });
   };
@@ -207,6 +211,20 @@ test('does not activate when the root app shell cannot be cached', async () => {
   await assert.rejects(runInstall(harness), /App shell cache request failed/);
   assert.equal(harness.calls.skipWaitingCount, 0);
   assert.equal(harness.calls.deletedCacheNames.length, 1);
+});
+
+test('uses the last successful translation dictionary when the server returns an error', async () => {
+  const harness = createWorkerHarness({ failingTranslation: true });
+  await runInstall(harness);
+  const fetchHandler = harness.listeners.get('fetch');
+  assert.ok(fetchHandler);
+  const response = await responseFromWorker(fetchHandler, {
+    method: 'GET',
+    url: origin + '/i18n/ar.json',
+    mode: 'cors',
+  });
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), 'cached shell: /i18n/ar.json');
 });
 
 test('serves cached translation JSON when the network is offline', async () => {
