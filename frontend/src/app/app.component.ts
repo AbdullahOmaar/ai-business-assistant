@@ -493,7 +493,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     <article class="metric"><span>{{ t("ui.m_fc2ud1") }}</span><strong>{{ operationalHealth.notification_delivery_configured ? t("ui.m_1irrjj2") : t("ui.m_1aa7dsy") }}</strong></article>
                     <article class="metric"><span>{{ t("ui.m_1hq6krq") }}</span><strong>{{ operationalHealth.recurring_invoice_worker_configured ? t("ui.m_1irrjj2") : t("ui.m_1aa7dsy") }}</strong></article>
                   </div>
-                  <p class="muted">{{ t("ui.m_1je9a30") }} {{ operationalHealth.checked_at | date:'medium' }}. {{ t("ui.m_3o0ahe") }}</p>
+                  <p class="muted">{{ t("ui.m_1je9a30") }} {{ formatRecordDate(operationalHealth.checked_at) }}. {{ t("ui.m_3o0ahe") }}</p>
                 }
               </section>
             }
@@ -751,7 +751,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                             <span class="invoice-customer-avatar" aria-hidden="true">{{ customerInitialForInvoice(invoice.customer_id) }}</span>
                             <div class="invoice-card-customer-copy">
                               <strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong>
-                              <small class="invoice-card-meta">{{ invoice.invoice_number }} · {{ invoice.issue_date ? (invoice.issue_date | date:'mediumDate') : (invoice.created_at ? t("ui.m_1ipvpcp") + (invoice.created_at | date:'mediumDate') : t("ui.m_8ghcxc")) }} · <bdi dir="ltr">{{ invoice.currency_code }}</bdi></small>
+                              <small class="invoice-card-meta">{{ invoice.invoice_number }} · {{ invoice.issue_date ? formatRecordDate(invoice.issue_date, 'date') : (invoice.created_at ? t("ui.m_1ipvpcp") + formatRecordDate(invoice.created_at, 'date') : t("ui.m_8ghcxc")) }} · <bdi dir="ltr">{{ invoice.currency_code }}</bdi></small>
                             </div>
                           </div>
                           <span class="invoice-status-badge"
@@ -765,18 +765,18 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                         <div class="invoice-card-financials">
                           <div>
                             <small>{{ t("ui.m_l97slj") }}</small>
-                            <strong><bdi dir="ltr">{{ invoice.total | number:'1.2-2' }}</bdi></strong>
+                            <strong><bdi dir="ltr">{{ formatNumber(invoice.total) }}</bdi></strong>
                           </div>
                           <div>
                             <small>{{ t("ui.m_twygqw") }}</small>
                             <strong>@if (invoice.allocated_payments !== undefined) {
-                              <bdi dir="ltr">{{ invoice.allocated_payments | number:'1.2-2' }}</bdi>
+                              <bdi dir="ltr">{{ formatNumber(invoice.allocated_payments) }}</bdi>
                             } @else { — }</strong>
                           </div>
                           <div>
                             <small>{{ t("ui.m_1e1esfj") }}</small>
                             <strong>@if (invoice.status === 'issued' && invoice.outstanding_amount !== undefined) {
-                              <bdi dir="ltr">{{ invoice.outstanding_amount | number:'1.2-2' }}</bdi>
+                              <bdi dir="ltr">{{ formatNumber(invoice.outstanding_amount) }}</bdi>
                             } @else { — }</strong>
                           </div>
                         </div>
@@ -981,7 +981,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'integrity' && business.role === 'owner') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t("ui.m_3j4vfw") " [description]=" t("ui.m_rq55ji") "><span class="count">{{ (dataIntegrityReport?.generated_at | date:'short') || t("ui.m_xo2kma") }}</span></aba-section-header>
+                <aba-section-header [title]=" t("ui.m_3j4vfw") " [description]=" t("ui.m_rq55ji") "><span class="count">{{ formatRecordDate(dataIntegrityReport?.generated_at, 'short') || t("ui.m_xo2kma") }}</span></aba-section-header>
                 <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t("ui.m_1v22gnm") : t("ui.m_t1s0tt") }}</button>
                 @if (integrityError) { <aba-state-message kind="error" [description]="integrityError" /> }
                 @if (dataIntegrityReport) {
@@ -2908,6 +2908,16 @@ export class AppComponent implements OnInit, OnDestroy {
     return new Intl.DateTimeFormat(locale, options).format(parsed);
   }
 
+  formatNumber(value: string | number | null | undefined, fractionDigits = 2): string {
+    if (value === null || value === undefined || value === '') return '—';
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return String(value);
+    return new Intl.NumberFormat(this.localization.locale, {
+      minimumFractionDigits: fractionDigits,
+      maximumFractionDigits: fractionDigits,
+    }).format(numeric);
+  }
+
   formatCustomerStatementDate(value: string | null | undefined): string {
     if (!value || !Number.isFinite(Date.parse(value))) return '—';
     return new Intl.DateTimeFormat(this.localization.locale, {
@@ -3628,7 +3638,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoiceMessageKind = 'success';
     this.invoiceVoidError = '';
     try {
-      await this.api.voidInvoice(businessId, invoice.id, 'أُلغي بواسطة مستخدم مخوّل في مساحة العمل');
+      await this.api.voidInvoice(businessId, invoice.id, this.t('app.audit.voidInvoiceReason'));
       if (!isCurrent()) return;
       this.pendingInvoiceVoid = null;
       this.confirmationReturnFocus = null;
