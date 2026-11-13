@@ -80,11 +80,12 @@ export function filterWorkspaceModules(
   modules: readonly WorkspaceModuleCard[],
   query: string,
   locale: string,
+  translate: (key: string) => string,
 ): readonly WorkspaceModuleCard[] {
   const normalizedQuery = query.trim().normalize('NFKC').toLocaleLowerCase(locale);
   if (!normalizedQuery) return modules;
   return modules.filter(module =>
-    `${module.titleAr} ${module.titleEn} ${module.descriptionAr} ${module.descriptionEn}`
+    `${translate(module.titleKey)} ${translate(module.descriptionKey)}`
       .normalize('NFKC')
       .toLocaleLowerCase(locale)
       .includes(normalizedQuery),

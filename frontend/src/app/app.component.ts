@@ -2841,7 +2841,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
   /** Home quick access stays focused on the five existing key destinations. */
   get filteredHomeModuleCards(): readonly WorkspaceModuleCard[] {
-    return filterWorkspaceModules(this.homeModuleCards, this.homeModuleSearch, this.language === 'ar' ? 'ar-EG' : 'en');
+    return filterWorkspaceModules(
+      this.homeModuleCards,
+      this.homeModuleSearch,
+      this.localization.locale,
+      key => this.t(key),
+    );
   }
 
   get homeQuickAccessCards(): readonly WorkspaceModuleCard[] {
@@ -2869,8 +2874,13 @@ export class AppComponent implements OnInit, OnDestroy {
     if (!query) return this.mobileMoreGroups;
     return this.mobileMoreGroups.map(group => {
       const locale = this.language === 'ar' ? 'ar-EG' : 'en';
-      const groupMatches = `${group.titleAr} ${group.titleEn}`.normalize('NFKC').toLocaleLowerCase(locale).includes(query);
-      const modules = groupMatches ? group.modules : filterWorkspaceModules(group.modules, this.mobileMoreSearch, locale);
+      const groupMatches = this.t(group.titleKey).normalize('NFKC').toLocaleLowerCase(locale).includes(query);
+      const modules = groupMatches ? group.modules : filterWorkspaceModules(
+        group.modules,
+        this.mobileMoreSearch,
+        locale,
+        key => this.t(key),
+      );
       return { ...group, modules };
     }).filter(group => group.modules.length > 0);
   }

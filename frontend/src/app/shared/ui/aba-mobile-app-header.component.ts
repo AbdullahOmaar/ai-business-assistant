@@ -11,33 +11,33 @@ import { LocalizationService } from '../../localization.service';
   template: `
     <section class="mobile-app-header"
       [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'"
-      [attr.aria-label]="t("ui.m_kaqjkm")">
+      [attr.aria-label]="t('ui.m_kaqjkm')">
       <div class="page-context">
         <button class="brand-button" type="button" (click)="homeRequested.emit()"
-          [attr.aria-label]="t("ui.m_1a1fpcr")">
+          [attr.aria-label]="t('ui.m_1a1fpcr')">
           <span class="brand-mark" aria-hidden="true">A</span>
         </button>
         <div class="page-copy">
           @if (showGreeting) {
-            <p class="greeting">{{ t("ui.m_16yi12b") }}</p>
+            <p class="greeting">{{ t('ui.m_16yi12b') }}</p>
           }
           <h1 aria-live="polite" aria-atomic="true">{{ pageTitle }}</h1>
         </div>
         <div class="header-actions">
           <button class="assistant-shortcut" type="button"
-            [attr.aria-label]="t("ui.m_13ly4yi")"
+            [attr.aria-label]="t('ui.m_13ly4yi')"
             (click)="assistantRequested.emit()">
             <span aria-hidden="true">✦</span>
-            <span>{{ t("ui.m_1k5kzkx") }}</span>
+            <span>{{ t('ui.m_1k5kzkx') }}</span>
           </button>
           <button class="icon-button notification-button" type="button"
-            [attr.aria-label]="t("ui.m_vlrg7")"
-            [attr.title]="t("ui.m_vlrg7")"
+            [attr.aria-label]="t('ui.m_vlrg7')"
+            [attr.title]="t('ui.m_vlrg7')"
             (click)="notificationsRequested.emit()">
             <span aria-hidden="true">♢</span>
           </button>
           <button #profileTrigger class="profile-trigger" type="button"
-            [attr.aria-label]="t("ui.m_1l0ize9")"
+            [attr.aria-label]="t('ui.m_1l0ize9')"
             [attr.aria-expanded]="profileMenuOpen"
             [attr.aria-controls]="profileMenuOpen ? 'mobile-account-menu' : null"
             (click)="toggleProfileMenu()">
@@ -47,7 +47,7 @@ import { LocalizationService } from '../../localization.service';
       </div>
       @if (profileMenuOpen) {
         <div #accountMenu id="mobile-account-menu" class="account-menu" role="group"
-          [attr.aria-label]="t("ui.m_1l0ize9")">
+          [attr.aria-label]="t('ui.m_1l0ize9')">
           <p class="account-email">{{ userEmail }}</p>
           <button type="button" class="account-action" (click)="requestLanguageToggle()">
             <span aria-hidden="true">文</span>
@@ -55,19 +55,19 @@ import { LocalizationService } from '../../localization.service';
           </button>
           <button type="button" class="account-action sign-out-action" (click)="requestSignOut()">
             <span aria-hidden="true">↪</span>
-            <span>{{ t("ui.m_r2b303") }}</span>
+            <span>{{ t('ui.m_r2b303') }}</span>
           </button>
         </div>
       }
       <div class="workspace-context">
         <div class="workspace-copy">
-          <span class="context-label">{{ t("ui.m_qhibn3") }}</span>
+          <span class="context-label">{{ t('ui.m_qhibn3') }}</span>
           <strong aria-live="polite" aria-atomic="true">{{ workspaceName }}</strong>
         </div>
         @if (businesses.length > 1) {
           <label class="workspace-switch">
-            <span class="sr-only">{{ t("ui.m_2ifq4l") }}</span>
-            <select [attr.aria-label]="t("ui.m_2ifq4l")"
+            <span class="sr-only">{{ t('ui.m_2ifq4l') }}</span>
+            <select [attr.aria-label]="t('ui.m_2ifq4l')"
               [ngModel]="selectedBusinessId" (ngModelChange)="businessChange.emit($event)">
               @for (business of businesses; track business.id) {
                 <option [value]="business.id">{{ business.name }}</option>
