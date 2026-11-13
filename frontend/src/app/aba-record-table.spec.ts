@@ -40,7 +40,7 @@ test('Customers and Products use dedicated presentations while Suppliers and Pur
 test('record table labels and loading states follow the selected app locale',()=>{
   assert.ok(app.includes('Loading customers') || app.includes('Loading suppliers'));
   assert.ok(app.includes('Loading purchase orders'));
-  assert.ok(app.includes("t('الإجراءات', 'Actions')"));
+  assert.match(app, /actionsHeading.*t\('الإجراءات',\s*'Actions'\)/);
   assert.ok(customerDirectory.includes("t('إضافة عميل جديد', 'Add new customer')"));
   assert.ok(productCatalog.includes("t('إضافة منتج أو خدمة', 'Add product or service')"));
   assert.ok(app.includes("t('إضافة مورد', 'Add supplier')"));
