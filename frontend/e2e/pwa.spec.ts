@@ -3,20 +3,25 @@ import { expect, test, type Page } from '@playwright/test';
 async function openPublicMobileAuthShell(page: Page, hasActiveController = false): Promise<void> {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.addInitScript((controllerActive) => {
-    const listeners = new Map<string, (event: Event) => void>();
-    Object.defineProperty(window, '__aibaServiceWorkerListeners', {
+    const serviceWorker = new EventTarget() as EventTarget & {
+      controller: object | null;
+      register: () => Promise<Record<string, never>>;
+    };
+    Object.defineProperty(serviceWorker, 'controller', {
       configurable: true,
-      value: listeners,
+      value: controllerActive ? {} : null,
+    });
+    Object.defineProperty(serviceWorker, 'register', {
+      configurable: true,
+      value: async () => ({}),
+    });
+    Object.defineProperty(window, '__aibaServiceWorker', {
+      configurable: true,
+      value: serviceWorker,
     });
     Object.defineProperty(navigator, 'serviceWorker', {
       configurable: true,
-      value: {
-        controller: controllerActive ? {} : null,
-        addEventListener: (type: string, listener: (event: Event) => void) => {
-          listeners.set(type, listener);
-        },
-        register: async () => ({}),
-      },
+      value: serviceWorker,
     });
   }, hasActiveController);
 
@@ -51,9 +56,8 @@ async function openPublicMobileAuthShell(page: Page, hasActiveController = false
 
 async function dispatchControllerChange(page: Page): Promise<void> {
   await page.evaluate(() => {
-    const listeners = (window as any).__aibaServiceWorkerListeners as
-      Map<string, (event: Event) => void>;
-    listeners.get('controllerchange')?.(new Event('controllerchange'));
+    const serviceWorker = (window as any).__aibaServiceWorker as EventTarget;
+    serviceWorker.dispatchEvent(new Event('controllerchange'));
   });
 }
 
