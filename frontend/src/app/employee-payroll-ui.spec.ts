@@ -35,7 +35,7 @@ test('employee workflows expose localized create, edit, deactivate, search, and 
   assert.match(component, /onEmployeeRecordAction\(\$event\)/);
   assert.match(component, /onPayrollRecordAction\(\$event\)/);
   assert.match(component, /formatPayrollPayoutDate\(payroll\.paid_at\)/);
-  assert.match(component, /Intl\.DateTimeFormat/);
+  assert.match(component, /this\.localization\.formatDate\(value, \{ dateStyle: 'medium' \}\)/);
   assert.match(component, /t\('الموظفون والمرتبات', 'Employees & payroll'\)/);
   assert.match(component, /Net pay is calculated on the server/);
   assert.match(component, /A different owner must approve the payroll draft/);
