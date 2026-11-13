@@ -611,6 +611,7 @@ test('expired API sessions offer sign-out and re-authentication instead of a fut
   assert.match(source, /\[actionLabel\]="sessionExpired \? t\('تسجيل الدخول مجددًا', 'Sign in again'\) : accessDenied \? t\('العودة للرئيسية', 'Go to Home'\) : t\('إعادة المحاولة', 'Retry'\)"/);
   assert.match(source, /\(action\)="sessionExpired \? logout\(\) : accessDenied \? setTab\('overview'\) : retry\(\)"/);
   assert.match(source, /get sessionExpired\(\): boolean/);
+  assert.match(source, /this\.lastErrorKind === 'session-expired' && this\.error === this\.lastErrorMessage/);
   const formatter = source.slice(source.indexOf('private message(error: unknown'));
   assert.match(formatter, /Authentication required/);
   assert.match(formatter, /Authenticated subject is missing/);
@@ -621,6 +622,7 @@ test('permission-denied feedback offers a safe return home instead of retrying a
   assert.match(source, /\[actionLabel\]="sessionExpired \? t\('تسجيل الدخول مجددًا', 'Sign in again'\) : accessDenied \? t\('العودة للرئيسية', 'Go to Home'\) : t\('إعادة المحاولة', 'Retry'\)"/);
   assert.match(source, /\(action\)="sessionExpired \? logout\(\) : accessDenied \? setTab\('overview'\) : retry\(\)"/);
   assert.match(source, /get accessDenied\(\): boolean/);
+  assert.match(source, /this\.lastErrorKind === 'access-denied' && this\.error === this\.lastErrorMessage/);
   assert.match(source, /Your account is not authorized to access platform administration/);
 });
 
