@@ -65,6 +65,10 @@ test('offers mobile PWA installation on the public sign-in screen before authent
   await openPublicMobileAuthShell(page);
   const installCard = page.locator('.auth-mobile-install');
   await expect(installCard).toBeVisible();
+  const hasHorizontalOverflow = await page.evaluate(
+    () => document.documentElement.scrollWidth > window.innerWidth,
+  );
+  expect(hasHorizontalOverflow).toBe(false);
   await installCard.getByRole('button', { name: /تثبيت|Install/ }).click();
   await expect(page.getByText(/لو لم تظهر نافذة التثبيت|If no install prompt appears/)).toBeVisible();
 });
