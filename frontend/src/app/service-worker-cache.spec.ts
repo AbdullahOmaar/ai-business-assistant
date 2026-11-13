@@ -60,6 +60,10 @@ function createWorkerHarness(options: {
       async put(request: string | FakeRequest, response: Response): Promise<void> {
         entries!.set(keyFor(request), response.clone());
       },
+      async match(request: string | FakeRequest): Promise<Response | null> {
+        const response = entries!.get(keyFor(request));
+        return response ? response.clone() : null;
+      },
       async add(url: string): Promise<void> {
         calls.assetUrls.push(url);
         if (options.failingAsset === url) throw new Error('asset cache failure');
@@ -215,7 +219,7 @@ test('refreshes runtime config online, falls back offline, and bypasses API requ
   const onlineBody = await onlineResponse.text();
   assert.equal(onlineBody, updatedConfig);
   harness.setOffline(true);
-  const offlineResponse = await requestFromWorker(fetchHandler, request);
+  const offlineResponse = await responseFromWorker(fetchHandler, request);
   assert.equal(await offlineResponse.text(), onlineBody);
   let apiWasIntercepted = false;
   fetchHandler({ request: { method: 'GET', url: origin + '/api/dashboard', mode: 'cors' }, respondWith: () => { apiWasIntercepted = true; } });
