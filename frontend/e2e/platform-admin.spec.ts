@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test';
 
+// Keep this mocked Firebase/API journey independent of Service Worker fetches.
+// Worker-origin requests bypass Playwright page.route mocks, including on reload.
+test.use({ serviceWorkers: 'block' });
+
 const apiBaseUrl = 'https://mock-api.test';
 const projectId = 'mock-project';
 const adminUid = 'bootstrap-admin-uid';
