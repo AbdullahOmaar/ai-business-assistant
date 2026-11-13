@@ -3337,6 +3337,12 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const approved = await this.api.approvePurchaseOrder(businessId, order.id);
       if (this.business?.id !== businessId) return;
+      if (approved.id !== order.id || approved.status !== 'approved') {
+        throw new Error(this.t(
+          'لم يؤكد الخادم اعتماد أمر الشراء المتوقع. حدّث القائمة قبل إعادة المحاولة.',
+          'The server did not confirm the expected purchase-order approval. Refresh the order list before retrying.'
+        ));
+      }
       this.purchaseOrders = this.purchaseOrders.map(item => item.id === order.id ? { ...item, ...approved } : item);
       this.pendingPurchaseApproval = null;
       this.confirmationReturnFocus = null;
