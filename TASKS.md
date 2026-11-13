@@ -4219,3 +4219,11 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - This CI evidence is exact for `27e2c57...`. This documentation append advances the branch; rerun the approved workflow on the new ledger head before calling that new head the exact candidate.
 - Remaining acceptance remains: physical Android installed-PWA install/cold-start/offline/update/recovery (device offline); actual browser 200% zoom; full workspace keyboard-only, screen reader and OS forced-colors; authenticated OWNER/STAFF/two-tenant API smoke (STAFF provisioning blocked by no supported POST/invitation route; T43 dependency). Candidate not deployed. No PR/merge/production release.
 - T50 remains PARTIALLY COMPLETE.
+
+
+### Browser-emulated forced-colors regression — 2026-11-13
+
+- Added a seventh PWA browser case using Playwright `page.emulateMedia({ forcedColors: 'active' })`. It verifies the update notice and refresh button remain visible and receive non-transparent system foreground/background/border colors in forced-colors mode.
+- This is browser-emulated forced-colors coverage for the PWA notice only. It does not replace OS-level forced-colors acceptance across the full workspace or real assistive-technology testing.
+- The prior exact-head run on `5157cab8168be3951d8f5cc83635881dd8252b23` completed SUCCESS: all six standard jobs + aggregate PASS; 477 frontend unit, 33 browser, 283 backend tests passed; API smoke skipped by branch-dispatch policy. The new forced-colors test is not yet run; CI must be repeated on the final ledger head.
+- Current code head before this ledger append: `bcd74a9ae1a7dc96d64e30900803dc60d34534ec`. No backend/API/schema/financial/tenant changes.
