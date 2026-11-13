@@ -4200,3 +4200,22 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Rechecked current main `backend/app/core_features_api.py`: membership endpoints are OWNER-only GET list, PATCH role change and DELETE removal; no POST/create-membership or invitation route is present. Current production deployment docs also state there is no safe user-directory/invitation workflow. T43 remains the proper owner; do not use direct DB or hidden admin paths to provision STAFF.
 - Current T50 status remains PARTIALLY COMPLETE. Full frontend unit, Playwright, Angular build and exact-head CI remain NOT RUN. The isolated Node 22.16.0 handler harness passed 2/2; this is not a full repository test.
 - No PR, merge, deployment, database write, migration, business record mutation or external notification.
+
+
+## 2026-11-13 — Exact-head CI acceptance result (supersedes prior NOT RUN checkpoint)
+
+- **CI authority resolution:** the approved Owner decision recorded in MWOS (2026-11-10), reinforced by current main `AGENTS.md` (2026-11-12), makes GitHub Actions the sole active CI provider and retires CircleCI. This supersedes the older CircleCI-only provider note in this ledger and the DRAFT ABA-KNOW-03 text. No CircleCI pipeline was triggered.
+- **Exact candidate:** `master/nov-2026-phase-1-ux-foundation@27e2c57b3cc89ec64a7f98aacb1288f04b7ff23b`.
+- **Workflow:** `ci.yml`, workflow run [43389824781](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43389824781), event `workflow_dispatch`, completed 2026-11-13 08:04:16 UTC. The workflow verified the exact source SHA. All six standard jobs and the aggregate `all-checks-passed` are SUCCESS:
+  - `backend-accounting`: PASS; 283 pytest tests passed, 23 warnings; `pip-audit`: no known vulnerabilities.
+  - `frontend-unit-tests`: PASS; 477/477, zero failed/skipped.
+  - `frontend-production-build`: PASS; initial bundle 882.22 kB, exceeding 700 kB warning budget by 182.22 kB.
+  - `frontend-dependency-audit`: PASS; npm audit reports 18 moderate advisories, no high/critical gate failure. Lockfile review shows the identified Hono/minimatch packages are development-only dependencies; no forced breaking upgrade was applied.
+  - `frontend-browser-smoke`: PASS; 33/33 Playwright cases, including all six PWA tests and the explicit update-refresh action.
+  - `backend-container`: PASS; image build and FastAPI import checks passed.
+  - `all-checks-passed`: PASS; all six standard jobs were success.
+  - `authenticated-api-smoke`: SKIPPED by branch-dispatch policy (`REQUIRE_API_SMOKE=false)); do not describe it as PASS.
+- **Non-blocking warnings retained:** Angular NG8107 optional-chain warnings (13 in the build output); npm EBADENGINE for `@firebase/auth@1.13.8` requiring Node >=24.12 while CI uses Node 22.23.4; 18 moderate npm advisories in development dependency chains; initial bundle budget exceeded. Main baseline at the same build configuration was 878.49 kB; this candidate is 882.22 kB (+3.73 kB). No warning was silently waived or force-fixed in this PWA scope.
+- This CI evidence is exact for `27e2c57...`. This documentation append advances the branch; rerun the approved workflow on the new ledger head before calling that new head the exact candidate.
+- Remaining acceptance remains: physical Android installed-PWA install/cold-start/offline/update/recovery (device offline); actual browser 200% zoom; full workspace keyboard-only, screen reader and OS forced-colors; authenticated OWNER/STAFF/two-tenant API smoke (STAFF provisioning blocked by no supported POST/invitation route; T43 dependency). Candidate not deployed. No PR/merge/production release.
+- T50 remains PARTIALLY COMPLETE.
