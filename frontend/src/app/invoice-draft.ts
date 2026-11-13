@@ -87,8 +87,11 @@ export function validateInvoiceDraft(
       if (line.description.trim().length > 300) return "invoiceDraft.validation.descriptionLength";
       continue;
     }
-    if (!line.description.trim() || line.description.trim().length > 300) {
+    if (!line.description.trim()) {
       return "invoiceDraft.validation.manualDescription";
+    }
+    if (line.description.trim().length > 300) {
+      return "invoiceDraft.validation.descriptionLength";
     }
     const price = line.unit_price.trim();
     if (!DECIMAL_PRICE.test(price) || !Number.isFinite(Number(price)) || Number(price) < 0 ||
