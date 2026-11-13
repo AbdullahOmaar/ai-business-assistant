@@ -1429,10 +1429,10 @@ test('operations lists filter locally by their visible business fields', () => {
     assert.ok(source.includes(`${field} = '';`), `${field} is initialized`);
     assert.ok(clear.includes(`this.${field} = '';`), `${field} resets on workspace change`);
   }
-  assert.match(source, /supplierSearch\\.trim\\(\\) \\? t\\(/);
-  assert.match(source, /purchaseSearch\\.trim\\(\\) \\? t\\(/);
-  assert.match(source, /recurringSearch\\.trim\\(\\) \\? t\\(/);
-  assert.match(source, /notificationSearch\\.trim\\(\\) \\? t\\(/);
+  assert.match(source, /supplierSearch\.trim\(\) \? t\(/);
+  assert.match(source, /purchaseSearch\.trim\(\) \? t\(/);
+  assert.match(source, /recurringSearch\.trim\(\) \? t\(/);
+  assert.match(source, /notificationSearch\.trim\(\) \? t\(/);
 });
 
 
