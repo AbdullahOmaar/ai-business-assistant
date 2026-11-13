@@ -523,18 +523,14 @@ export class PlatformAdminComponent implements OnInit {
   money(value: string): string {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return value;
-    return new Intl.NumberFormat(this.localization.locale, {
-      minimumFractionDigits: 2, maximumFractionDigits: 2
-    }).format(parsed);
+    return this.localization.formatNumber(parsed, 2, 2);
   }
 
   formatDate(value: string | null | undefined): string {
     if (!value) return this.t("ui.m_1tnh3kh");
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return this.t("ui.m_1tnh3kh");
-    return new Intl.DateTimeFormat(this.localization.locale, {
-      dateStyle: 'medium', timeStyle: 'short'
-    }).format(date);
+    return this.localization.formatDate(date, { dateStyle: 'medium', timeStyle: 'short' });
   }
 
   auditActionLabel(action: string): string {
