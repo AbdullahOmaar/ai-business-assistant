@@ -1654,8 +1654,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get locale(): string { return this.localization.locale; }
 
-  t(key: string, params?: Record<string, string | number>): string {
-    return this.localization.translate(key, params);
+  t(keyOrArabic: string, englishOrParams?: string | Record<string, string | number>, params?: Record<string, string | number>): string {
+    if (typeof englishOrParams === 'string') {
+      return this.language === 'ar' ? keyOrArabic : englishOrParams;
+    }
+    return this.localization.translate(keyOrArabic, englishOrParams ?? params);
   }
 
   customerNameForInvoice(customerId?: string | null): string {
@@ -2105,6 +2108,672 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  private async checkPlatformAdminAccess(): Promise<void> {
+    const requestUid = this.currentAuthUid;
+    this.platformAdminAvailable = false;
+    try {
+      const access = await this.api.platformAdminAccess();
+      if (requestUid !== this.currentAuthUid) return;
+      this.platformAdminAvailable = access.is_platform_admin === true;
+    } catch {
+      if (requestUid !== this.currentAuthUid) return;
+      // A missing backend endpoint, unconfigured allowlist, or a 403 keeps admin navigation hidden.
+      this.platformAdminAvailable = false;
+      if (this.tab === 'platform-admin') this.tab = 'overview';
+    }
+  }
+
+  async submitAuth(): Promise<void> {
+    this.authFlowInProgress = true;
+    this.loading = true;
+    this.error = '';
+    try {
+      const user = this.signingUp
+        ? await this.auth.signUp(this.email, this.password)
+        : await this.auth.signIn(this.email, this.password);
+      this.currentAuthUid = user.uid;
+      this.currentAuthEmail = user.email ?? null;
+      this.signedIn = true;
+      this.userEmail = user.email || 'مستخدم مسجّل الدخول';
+      await this.checkPlatformAdminAccess();
+      await this.loadBusinesses();
+    } catch (error) {
+      this.error = this.message(error, 'auth');
+    } finally {
+      this.authFlowInProgress = false;
+      this.loading = false;
+      this.applyPendingAuthSnapshot();
+    }
+  }
+
+  async logout(): Promise<void> {
+    this.authFlowInProgress = true;
+    this.loading = true;
+    try {
+      await this.auth.signOut();
+      this.currentAuthUid = null;
+      this.currentAuthEmail = null;
+      this.resetSignedOutState();
+      this.error = '';
+    } catch (error) {
+      this.error = this.message(error);
+    } finally {
+      this.authFlowInProgress = false;
+      this.loading = false;
+      this.applyPendingAuthSnapshot();
+    }
+  }
+
+  get sessionExpired(): boolean {
+    // Keep recovery behavior stable when the user changes the UI language
+    // after the original error message was created.
+    return [
+      'انتهت صلاحية جلسة الدخول أو تعذر التحقق منها. سجّل الخروج ثم سجّل الدخول مرة أخرى.',
+      'Your sign-in session is no longer valid or could not be verified. Sign out and sign in again.'
+    ].includes(this.error);
+  }
+
+  get accessDenied(): boolean {
+    // The stored error may be in the previous language after a language toggle.
+    return [
+      'لا تملك الصلاحية للوصول إلى مساحة العمل أو تنفيذ هذا الإجراء. اطلب من مالك مساحة العمل مراجعة دورك.',
+      'You do not have permission to access this workspace or perform this action.',
+      'حسابك غير مخوّل للوصول إلى إدارة المنصة. إذا كنت تحتاج هذه الصلاحية، راجع مسؤول المنصة.',
+      'Your account is not authorized to access platform administration. Contact the platform administrator if you need this access.'
+    ].includes(this.error);
+  }
+
+  retry(): void {
+    if (this.signedIn) {
+      void this.loadBusinesses();
+      return;
+    }
+    void this.initializeApp();
+  }
+
+  async loadBusinesses(): Promise<void> {
+    const requestVersion = ++this.businessListRequestVersion;
+    const requestUid = this.currentAuthUid;
+    this.loading = true;
+    this.error = '';
+    try {
+      const businesses = await this.api.listBusinesses();
+      if (requestVersion !== this.businessListRequestVersion ||
+          !this.signedIn || requestUid !== this.currentAuthUid) return;
+      this.businesses = businesses;
+      if (!this.businesses.length) {
+        this.business = null;
+        this.selectedBusinessId = '';
+        this.clearWorkspaceData();
+        // Keep the global control plane accessible to admins without workspace memberships.
+        // If the platform capability was revoked, do not retain its previously selected tab.
+        if (this.platformAdminAvailable) this.setTab('platform-admin');
+        else this.setTab('overview');
+        return;
+      }
+      const chosen = this.businesses.find(item => item.id === this.selectedBusinessId) || this.businesses[0];
+      const workspaceAccessChanged = this.business?.id !== chosen.id || this.business?.role !== chosen.role;
+      this.selectedBusinessId = chosen.id;
+      this.business = chosen;
+      // A membership or platform-role refresh can invalidate the currently selected tab.
+      // Reuse the same navigation guard as interactive tab changes before reloading data.
+      if (!this.canAccessTab(this.tab)) this.setTab('overview');
+      if (workspaceAccessChanged) this.clearWorkspaceData();
+      await this.loadWorkspaceData();
+    } catch (error) {
+      if (requestVersion !== this.businessListRequestVersion ||
+          !this.signedIn || requestUid !== this.currentAuthUid) return;
+      this.business = null;
+      this.selectedBusinessId = '';
+      this.clearWorkspaceData();
+      this.error = this.message(error);
+    } finally {
+      if (requestVersion === this.businessListRequestVersion) this.loading = false;
+    }
+  }
+
+  private clearWorkspaceData(): void {
+    this.invoiceSaveGuard.invalidate();
+    this.invoiceEditRequestGuard.invalidate();
+    this.invoiceMutationGuard.invalidate();
+    this.printRequestGuard.invalidate();
+    this.paymentMutationGuard.invalidate();
+    this.paymentLoading = false;
+    this.paymentRetryPending = false;
+    this.pendingPaymentRetrySnapshot = null;
+    this.invoiceDraftSaving = false;
+    this.invoiceDraftSummary = null;
+    this.invoiceDraftInitialLines = null;
+    this.invoiceDraftUncertain = false;
+    this.pendingInvoiceDraftOutcome = null;
+    this.invoiceDraftRevision += 1;
+    this.invoiceCreateOpen = false;
+    this.pendingInvoiceVoid = null;
+    this.invoiceVoidError = '';
+    this.pendingPurchaseReceipt = null;
+    this.purchaseReceiptError = '';
+    this.pendingPurchaseApproval = null;
+    this.purchaseApprovalError = '';
+    this.confirmationReturnFocus = null;
+    this.chatRequestGuard.invalidate();
+    this.payrollRefreshGuard.invalidate();
+    this.dataIntegrityLoadGuard.invalidate();
+    this.operationalHealthLoadGuard.invalidate();
+    this.taxSummaryLoadGuard.invalidate();
+    // Invalidate the top-level workspace load too; otherwise an old load's finally
+    // block can still mutate loading state while a new identity is being resolved.
+    this.workspaceLoadGuard.invalidate();
+    this.profitLossLoadGuard.invalidate();
+    this.auditLoadGuard.invalidate();
+    this.statementLoadGuard.invalidate();
+    this.auditEvents = [];
+    this.auditTotal = 0;
+    this.auditOffset = 0;
+    this.auditLoading = false;
+    this.auditError = '';
+    this.auditAction = '';
+    this.auditTargetType = '';
+    this.customerStatement = null;
+    this.statementLoading = false;
+    this.statementError = '';
+    this.statementVisible = false;
+    this.statementCustomerName = '';
+    this.statementCustomerId = '';
+    this.statementOffset = 0;
+    this.receivablesAgingLoadGuard.invalidate();
+    this.dashboard = null;
+    this.homeDashboardError = '';
+    this.profitLoss = null;
+    this.taxSummaryReport = null;
+    this.dataIntegrityReport = null;
+    this.integrityError = '';
+    this.integrityLoading = false;
+    this.integrityOffset = 0;
+    this.taxError = '';
+    this.taxLoading = false;
+    this.agingReport = null;
+    // Never carry an OWNER-only opening-stock value into another workspace or role.
+    this.productOpeningQuantity = '0';
+    // Import previews are workspace-scoped; never carry a pending CSV into another business.
+    this.importCsvText = '';
+    this.importFileName = '';
+    this.importPreview = null;
+    this.importMessage = '';
+    this.importMessageKind = 'success';
+    this.importLoading = false;
+    this.customerImportCsvText = '';
+    this.customerImportFileName = '';
+    this.customerImportPreview = null;
+    this.customerImportMessage = '';
+    this.customerImportMessageKind = 'success';
+    this.customerImportLoading = false;
+    this.customers = [];
+    this.products = [];
+    this.invoices = [];
+    this.payments = [];
+    this.expenses = [];
+    this.customerPickerLoadGuard.invalidate();
+    this.productPickerLoadGuard.invalidate();
+    this.invoiceListLoadGuard.invalidate();
+    this.paymentListLoadGuard.invalidate();
+    this.customersHasMore = false;
+    this.productsHasMore = false;
+    this.invoicesHasMore = false;
+    this.paymentsHasMore = false;
+    this.customersLoadingMore = false;
+    this.productsLoadingMore = false;
+    this.invoicesLoadingMore = false;
+    this.paymentsLoadingMore = false;
+    this.customerOffset = 0;
+    this.productOffset = 0;
+    this.invoiceOffset = 0;
+    this.paymentOffset = 0;
+    this.suppliers = [];
+    this.purchaseOrders = [];
+    this.recurringSchedules = [];
+    this.notifications = [];
+    this.supplierSearch = '';
+    this.paymentSearch = '';
+    this.expenseSearch = '';
+    this.purchaseSearch = '';
+    this.recurringSearch = '';
+    this.notificationSearch = '';
+    this.operationalHealth = null;
+    this.operationsError = '';
+    this.operationsErrorTab = null;
+    this.operationsMessage = '';
+    this.operationsMessageTab = null;
+    this.operationsWarning = '';
+    this.healthError = '';
+    this.notificationTitle = '';
+    this.notificationBody = '';
+    this.supplierName = '';
+    this.purchaseOrderNumber = '';
+    this.purchaseSupplierId = '';
+    this.purchaseProductId = '';
+    this.recurringCustomerId = '';
+    this.supplierEmail = '';
+    this.supplierPhone = '';
+    this.supplierAddress = '';
+    this.purchaseQuantity = '1';
+    this.purchaseUnitCost = '0';
+    this.recurringIntervalDays = '30';
+    this.recurringNextRunAt = new Date(Date.now() + 86400000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    this.recurringTimezone = 'UTC';
+    this.notificationScheduledAt = '';
+    this.notificationDeduplicationKey = 'manual-' + Date.now();
+    this.suppliersLoading = false;
+    this.purchasesLoading = false;
+    this.recurringLoading = false;
+    this.notificationsLoading = false;
+    this.healthLoading = false;
+    this.expenseMessage = '';
+    this.expenseSubmissionUncertain = false;
+    this.chatSending = false;
+    this.chatMessages = [];
+    this.chatDraft = '';
+    this.chatError = '';
+    this.chatConfigurationMissing = false;
+    this.chatCopyStatus = null;
+    this.reportError = '';
+    this.agingError = '';
+    this.reportLoading = false;
+    this.agingLoading = false;
+    this.invoiceCustomerId = '';
+    this.invoiceProductId = '';
+    this.invoiceQuantity = '1';
+    this.invoiceLines = [{ productId: '', quantity: '1' }];
+    this.invoiceNumber = '';
+    this.invoiceFilterCustomerId = '';
+    this.editingInvoiceId = null;
+    this.invoiceMessage = '';
+    this.invoiceMessageKind = 'success';
+    this.paymentCustomerId = '';
+    this.paymentAmount = '';
+    this.paymentAllocationAmount = '';
+    this.paymentInvoiceId = '';
+    this.paymentMethod = 'cash';
+    this.paymentReference = '';
+    this.paymentIdempotencyKey = '';
+    this.paymentMessage = '';
+    this.paymentMessageKind = 'info';
+    this.importCsvText = '';
+    this.importFileName = '';
+    this.importPreview = null;
+    this.importMessage = '';
+    this.importLoading = false;
+    this.customerName = '';
+    this.customerEmail = '';
+    this.customerPhone = '';
+    this.customerMessage = '';
+    this.customerMessageKind = 'success';
+    this.productMessage = '';
+    this.productMessageKind = 'success';
+    this.productName = '';
+    this.productPrice = '';
+    this.stockTracked = false;
+    this.profitLossPeriod = '30d';
+    this.profitLossStart = '';
+    this.profitLossEnd = '';
+    this.tab = 'overview';
+  }
+
+  async createWorkspace(): Promise<void> {
+    this.loading = true;
+    this.error = '';
+    try {
+      const created = await this.api.createBusiness({ name: this.businessName, currency_code: this.currencyCode });
+      this.businesses = [created];
+      this.business = created;
+      this.selectedBusinessId = created.id;
+      this.clearWorkspaceData();
+      this.businessName = '';
+      await this.loadWorkspaceData();
+    } catch (error) {
+      this.error = this.message(error);
+    } finally {
+      this.loading = false;
+    }
+  }
+
+  async switchBusiness(id: string): Promise<void> {
+    if (this.invoiceDraftSaving || this.paymentLoading || this.paymentRetryPending) {
+      this.error = this.t('أكمل حفظ مسودة الفاتورة أو أعد محاولة الدفعة الحالية قبل تغيير مساحة العمل.', 'Finish saving the invoice draft or retry the pending payment before switching workspaces.');
+      return;
+    }
+    this.statementVisible = false;
+    this.customerStatement = null;
+    this.statementCustomerId = '';
+    this.statementError = '';
+    this.selectedBusinessId = id;
+    this.business = this.businesses.find(item => item.id === id) || null;
+    // A destination visible to the previous workspace role may be restricted here.
+    if (!this.canAccessTab(this.tab)) this.tab = 'overview';
+    this.clearWorkspaceData();
+    this.error = '';
+    await this.loadWorkspaceData();
+  }
+
+  private readonly workspaceLoadGuard = new WorkspaceLoadGuard();
+  private readonly customerPickerLoadGuard = new WorkspaceLoadGuard();
+  private readonly productPickerLoadGuard = new WorkspaceLoadGuard();
+  private readonly invoiceListLoadGuard = new WorkspaceLoadGuard();
+  private readonly paymentListLoadGuard = new WorkspaceLoadGuard();
+  private readonly chatRequestGuard = new WorkspaceLoadGuard();
+  private readonly payrollRefreshGuard = new WorkspaceLoadGuard();
+  private readonly dataIntegrityLoadGuard = new WorkspaceLoadGuard();
+  private readonly operationalHealthLoadGuard = new WorkspaceLoadGuard();
+  private readonly taxSummaryLoadGuard = new WorkspaceLoadGuard();
+  private readonly profitLossLoadGuard = new WorkspaceLoadGuard();
+  private readonly receivablesAgingLoadGuard = new WorkspaceLoadGuard();
+  private readonly invoiceSaveGuard = new WorkspaceLoadGuard();
+  private readonly invoiceEditRequestGuard = new WorkspaceLoadGuard();
+  private readonly invoiceMutationGuard = new WorkspaceLoadGuard();
+  private readonly printRequestGuard = new WorkspaceLoadGuard();
+  private readonly paymentMutationGuard = new WorkspaceLoadGuard();
+
+  async loadWorkspaceData(): Promise<void> {
+    const loadVersion = this.workspaceLoadGuard.begin();
+    this.customerPickerLoadGuard.invalidate();
+    this.productPickerLoadGuard.invalidate();
+    this.invoiceListLoadGuard.invalidate();
+    this.paymentListLoadGuard.invalidate();
+    this.customersLoadingMore = false;
+    this.productsLoadingMore = false;
+    this.invoicesLoadingMore = false;
+    this.paymentsLoadingMore = false;
+    if (!this.business) {
+      this.loading = false;
+      return;
+    }
+    const id = this.business.id;
+    const pendingInvoiceOutcome = this.currentAuthUid ? this.invoiceDraftOutcomeVault.get(this.currentAuthUid, id) : null;
+    if (pendingInvoiceOutcome) {
+      this.pendingInvoiceDraftOutcome = pendingInvoiceOutcome;
+      this.invoiceDraftUncertain = true;
+      this.invoiceNumber = pendingInvoiceOutcome.invoiceNumber;
+      this.invoiceCustomerId = pendingInvoiceOutcome.customerId;
+      this.invoiceDiscountRate = pendingInvoiceOutcome.discountRate;
+      this.invoiceTaxRate = pendingInvoiceOutcome.taxRate;
+      this.editingInvoiceId = pendingInvoiceOutcome.editingInvoiceId;
+      this.invoiceCreateOpen = true;
+    }
+    const savedPaymentRetry = this.currentAuthUid ? this.paymentRetryVault.get(this.currentAuthUid, id) : null;
+    if (savedPaymentRetry) {
+      this.pendingPaymentRetrySnapshot = savedPaymentRetry;
+      this.paymentRetryPending = true;
+      this.paymentIdempotencyKey = savedPaymentRetry.payload.idempotency_key;
+    }
+    this.loading = true;
+    this.error = '';
+    try {
+      const paymentsRequest = this.canAccessTab('payments') ? this.api.payments(id) : Promise.resolve([]);
+      const [dashboard, عميل, منتج, فاتورة, دفعة, مصروفات] = await Promise.all([
+        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), paymentsRequest, this.api.expenses(id)
+      ]);
+      if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
+      this.dashboard = dashboard;
+      this.homeDashboardError = '';
+      this.profitLoss = null;
+      this.setCustomerPage(عميل);
+      if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
+      this.setProductPage(منتج);
+      this.setInvoicePage(فاتورة);
+      this.setPaymentPage(دفعة);
+      this.expenses = مصروفات;
+      if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
+      if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
+    } catch (error) {
+      if (this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) {
+        this.clearWorkspaceData();
+        this.error = this.message(error);
+        // clearWorkspaceData invalidates the request generation, so this failure path
+        // must release the loading state itself instead of relying on the guarded finally.
+        this.loading = false;
+      }
+    } finally {
+      if (this.workspaceLoadGuard.isLatest(loadVersion)) this.loading = false;
+    }
+  }
+
+
+  private setCustomerPage(items: readonly Customer[]): void {
+    const page = firstRecordPage(items, WORKSPACE_RECORD_PAGE_SIZE);
+    this.customerPickerLoadGuard.invalidate();
+    this.customers = page.records;
+    this.customerOffset = page.nextOffset;
+    this.customersHasMore = page.hasMore;
+    this.customersLoadingMore = false;
+  }
+
+  private setProductPage(items: readonly Product[]): void {
+    const page = firstRecordPage(items, WORKSPACE_RECORD_PAGE_SIZE);
+    this.productPickerLoadGuard.invalidate();
+    this.products = page.records;
+    this.productOffset = page.nextOffset;
+    this.productsHasMore = page.hasMore;
+    this.productsLoadingMore = false;
+  }
+
+  private setInvoicePage(items: readonly Invoice[]): void {
+    const page = firstRecordPage(items, WORKSPACE_RECORD_PAGE_SIZE);
+    this.invoiceListLoadGuard.invalidate();
+    this.invoices = page.records;
+    this.invoiceOffset = page.nextOffset;
+    this.invoicesHasMore = page.hasMore;
+    this.invoicesLoadingMore = false;
+    if (!this.paymentInvoiceId) {
+      this.paymentInvoiceId = page.records.find(invoice => invoice.status === 'issued')?.id || '';
+    }
+  }
+
+  private setPaymentPage(items: readonly Payment[]): void {
+    const page = firstRecordPage(items, WORKSPACE_RECORD_PAGE_SIZE);
+    this.paymentListLoadGuard.invalidate();
+    this.payments = page.records;
+    this.paymentOffset = page.nextOffset;
+    this.paymentsHasMore = this.business?.role === 'owner' && page.hasMore;
+    this.paymentsLoadingMore = false;
+  }
+
+  private async loadMoreRecords<T extends { id: string }>(options: {
+    guard: WorkspaceLoadGuard;
+    offset: number;
+    hasMore: boolean;
+    loading: boolean;
+    fetchPage: (businessId: string, offset: number) => Promise<T[]>;
+    getCurrentRecords: () => readonly T[];
+    setRecords: (records: T[]) => void;
+    setOffset: (offset: number) => void;
+    setHasMore: (hasMore: boolean) => void;
+    setLoading: (loading: boolean) => void;
+  }): Promise<void> {
+    const business = this.business;
+    if (!business || !options.hasMore || options.loading || !this.signedIn || !this.currentAuthUid) return;
+    const requestVersion = options.guard.begin();
+    const requestContext = this.captureTenantRequest(business.id);
+    const isCurrent = (): boolean =>
+      this.isCurrentTenantOperation(options.guard, requestVersion, requestContext);
+    options.setLoading(true);
+    try {
+      const page = await options.fetchPage(business.id, options.offset);
+      if (!isCurrent()) return;
+      const merged = mergeRecordPage(
+        options.getCurrentRecords(),
+        page,
+        options.offset,
+        WORKSPACE_RECORD_PAGE_SIZE,
+      );
+      options.setRecords(merged.records);
+      options.setOffset(merged.nextOffset);
+      options.setHasMore(merged.hasMore);
+    } catch (error) {
+      if (isCurrent()) this.error = this.message(error);
+    } finally {
+      if (isCurrent()) options.setLoading(false);
+    }
+  }
+
+  loadMoreInvoiceCustomers(): Promise<void> {
+    return this.loadMoreRecords({
+      guard: this.customerPickerLoadGuard,
+      offset: this.customerOffset,
+      hasMore: this.customersHasMore,
+      loading: this.customersLoadingMore,
+      fetchPage: (id, offset) => this.api.customers(id, offset),
+      getCurrentRecords: () => this.customers,
+      setRecords: records => this.customers = records,
+      setOffset: offset => this.customerOffset = offset,
+      setHasMore: value => this.customersHasMore = value,
+      setLoading: value => this.customersLoadingMore = value,
+    });
+  }
+
+  loadMoreInvoiceProducts(): Promise<void> {
+    return this.loadMoreRecords({
+      guard: this.productPickerLoadGuard,
+      offset: this.productOffset,
+      hasMore: this.productsHasMore,
+      loading: this.productsLoadingMore,
+      fetchPage: (id, offset) => this.api.products(id, offset),
+      getCurrentRecords: () => this.products,
+      setRecords: records => this.products = records,
+      setOffset: offset => this.productOffset = offset,
+      setHasMore: value => this.productsHasMore = value,
+      setLoading: value => this.productsLoadingMore = value,
+    });
+  }
+
+  // Reuse the same tenant-scoped, deduplicating page loader in the main
+  // directories and invoice editor; pagination state is shared intentionally.
+  loadMoreCustomers(): Promise<void> {
+    return this.loadMoreInvoiceCustomers();
+  }
+
+  loadMoreProducts(): Promise<void> {
+    return this.loadMoreInvoiceProducts();
+  }
+
+  loadMoreInvoices(): Promise<void> {
+    return this.loadMoreRecords({
+      guard: this.invoiceListLoadGuard,
+      offset: this.invoiceOffset,
+      hasMore: this.invoicesHasMore,
+      loading: this.invoicesLoadingMore,
+      fetchPage: (id, offset) => this.api.invoices(id, offset),
+      getCurrentRecords: () => this.invoices,
+      setRecords: records => {
+        this.invoices = records;
+        if (!this.paymentInvoiceId) {
+          this.paymentInvoiceId = records.find(invoice => invoice.status === 'issued')?.id || '';
+        }
+      },
+      setOffset: offset => this.invoiceOffset = offset,
+      setHasMore: value => this.invoicesHasMore = value,
+      setLoading: value => this.invoicesLoadingMore = value,
+    });
+  }
+
+  loadMorePayments(): Promise<void> {
+    return this.loadMoreRecords({
+      guard: this.paymentListLoadGuard,
+      offset: this.paymentOffset,
+      hasMore: this.paymentsHasMore,
+      loading: this.paymentsLoadingMore,
+      fetchPage: (id, offset) => this.api.payments(id, offset),
+      getCurrentRecords: () => this.payments,
+      setRecords: records => this.payments = records,
+      setOffset: offset => this.paymentOffset = offset,
+      setHasMore: value => this.paymentsHasMore = value,
+      setLoading: value => this.paymentsLoadingMore = value,
+    });
+  }
+
+  async refreshAfterPayrollPayment(): Promise<void> {
+    if (!this.business || this.business.role !== 'owner') return;
+    const requestContext = this.currentChatRequestContext();
+    if (!requestContext.signedIn || !requestContext.userId ||
+        requestContext.role !== 'owner' || !requestContext.workspaceId) return;
+
+    // Payroll refresh data is sensitive: discard late owner responses after a role,
+    // identity, or workspace transition, even when the business ID stays the same.
+    await runTenantScopedRequest(
+      this.payrollRefreshGuard,
+      requestContext,
+      () => this.currentChatRequestContext(),
+      async () => {
+        const [expenses, dashboard] = await Promise.all([
+          this.api.expenses(requestContext.workspaceId),
+          this.api.dashboard(requestContext.workspaceId),
+        ]);
+        return { expenses, dashboard };
+      },
+      {
+        onSuccess: ({ expenses, dashboard }) => {
+          this.expenses = expenses;
+          this.dashboard = dashboard;
+          if (this.error === this.homeDashboardError) this.error = '';
+          this.homeDashboardError = '';
+          this.profitLoss = null;
+        },
+        onError: error => {
+          // A failed current refresh must not leave pre-payment dashboard metrics visible.
+          this.dashboard = null;
+          this.homeDashboardError = this.message(error);
+          this.error = this.homeDashboardError;
+        },
+        onFinally: () => undefined,
+      },
+    );
+  }
+
+  exportReceivablesAgingCsv(): void {
+    if (!this.agingReport || !this.agingReport.invoices.length) return;
+    const warnings = new Map<string, string[]>();
+    for (const warning of this.agingReport.data_quality_warnings) {
+      const current = warnings.get(warning.invoice_id) || [];
+      current.push(this.agingWarningLabel(warning.type));
+      warnings.set(warning.invoice_id, current);
+    }
+    const rows: string[][] = [[
+      'as_of_date', 'invoice_number', 'customer_id', 'currency_code', 'due_date', 'aging_bucket',
+      'invoice_total', 'allocated_payments', 'outstanding_amount', 'customer_link_missing', 'accounting_warnings'
+    ]];
+    for (const invoice of this.agingReport.invoices) {
+      rows.push([
+        this.agingReport.as_of_date, invoice.invoice_number, invoice.customer_id || '', invoice.currency_code,
+        invoice.due_date || '', invoice.aging_bucket, invoice.invoice_total, invoice.allocated_payments,
+        invoice.outstanding_amount, invoice.customer_link_missing ? 'true' : 'false',
+        (warnings.get(invoice.invoice_id) || []).join('; ')
+      ]);
+    }
+    const csv = '\uFEFF' + rows.map(row => row.map(value => {
+      const raw = String(value);
+      // Prevent spreadsheet formula execution for user-controlled cells such as invoice numbers.
+      const safe = /^[\u0000-\u0020]*[=+\-@]/.test(raw) ? "'" + raw : raw;
+      return '"' + safe.replace(/"/g, '""') + '"';
+    }).join(',')).join('\r\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'receivables-aging-' + this.agingReport.as_of_date + '.csv';
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  agingBucketLabel(bucket: string): string {
+    const ar: Record<string, string> = { not_due: 'غير مستحقة بعد', '1_30_days': '1–30 يومًا', '31_60_days': '31–60 يومًا', '61_90_days': '61–90 يومًا', over_90_days: 'أكثر من 90 يومًا', no_due_date: 'بدون تاريخ استحقاق' };
+    const en: Record<string, string> = { not_due: 'Not yet due', '1_30_days': '1–30 days', '31_60_days': '31–60 days', '61_90_days': '61–90 days', over_90_days: 'Over 90 days', no_due_date: 'No due date' };
+    return (this.language === 'ar' ? ar : en)[bucket] || bucket;
+  }
+
+  agingWarningLabel(type: string): string {
+    const ar: Record<string, string> = { payment_currency_mismatch: 'تخصيص دفعة بعملة مختلفة', allocations_exceed_invoice_total: 'إجمالي تخصيصات الدفعات يتجاوز قيمة الفاتورة' };
+    const en: Record<string, string> = { payment_currency_mismatch: 'Payment allocation uses a different currency', allocations_exceed_invoice_total: 'Payment allocations exceed invoice total' };
+    return (this.language === 'ar' ? ar : en)[type] || type;
+  }
+
+
   toggleMobileMore(): void {
     if (this.mobileMoreOpen) this.mobileMoreSearch = '';
     this.mobileMoreOpen = !this.mobileMoreOpen;
@@ -2209,6 +2878,17 @@ export class AppComponent implements OnInit, OnDestroy {
       card: 'app.paymentMethod.card', wallet: 'app.paymentMethod.wallet', other: 'app.paymentMethod.other',
     };
     return keys[method] ? this.t(keys[method]) : method;
+  }
+
+  currencyName(code: string): string {
+    const names: Record<string, { ar: string; en: string }> = {
+      EGP: { ar: 'الجنيه المصري', en: 'Egyptian Pound' },
+      USD: { ar: 'الدولار الأمريكي', en: 'US Dollar' },
+      EUR: { ar: 'اليورو', en: 'Euro' },
+      GBP: { ar: 'الجنيه الإسترليني', en: 'British Pound' },
+    };
+    const entry = names[code.toUpperCase()];
+    return entry ? (this.language === 'ar' ? entry.ar : entry.en) : code.toUpperCase();
   }
 
   notificationStatusLabel(status: string): string {
@@ -3228,6 +3908,24 @@ export class AppComponent implements OnInit, OnDestroy {
     } finally {
       if (this.business?.id === businessId) this.customerImportLoading = false;
     }
+  }
+
+  importErrorLabel(code: string): string {
+    const ar: Record<string, string> = {
+      required: 'حقل مطلوب', too_long: 'النص أطول من المسموح',
+      invalid_decimal: 'سعر غير صالح (حتى منزلتين عشريتين)',
+      invalid_boolean: 'قيمة متابعة المخزون غير صحيحة',
+      duplicate_in_file: 'قيمة مكررة داخل الملف',
+      already_exists: 'البريد الإلكتروني أو الرمز موجود بالفعل'
+    };
+    const en: Record<string, string> = {
+      required: 'Required field', too_long: 'Text exceeds the allowed length',
+      invalid_decimal: 'Invalid price (up to 2 decimal places)',
+      invalid_boolean: 'Invalid stock tracking value',
+      duplicate_in_file: 'Duplicate email or SKU in this file',
+      already_exists: 'Email or SKU already exists'
+    };
+    return (this.language === 'ar' ? ar : en)[code] || code;
   }
 
   async createProduct(): Promise<void> {

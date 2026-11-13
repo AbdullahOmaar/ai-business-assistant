@@ -31,7 +31,7 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
               <small>{{ t(group.noteKey) }}</small>
             </summary>
             <ul>
-              @for (feature of group.features; track feature.titleEn) {
+              @for (feature of group.features; track feature.titleKey) {
                 <li>
                   <strong>{{ t(feature.titleKey) }}</strong>
                   <span>{{ t(feature.detailKey) }}</span>

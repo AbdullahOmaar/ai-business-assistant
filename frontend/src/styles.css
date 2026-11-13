@@ -19,6 +19,7 @@
   --aba-color-border: #e5eaf1;
   --aba-color-border-subtle: #eef2f7;
   --aba-color-border-strong: #cbd5e1;
+  --aba-color-auth-control-boundary: #64748b;
   --aba-color-focus: #2563eb;
   --aba-color-focus-ring: #2563eb;
   --aba-color-overlay: rgb(15 23 42 / 48%);
@@ -332,6 +333,15 @@ aba-metric-card small {
   color: var(--aba-color-text-primary);
   font-size: var(--aba-font-size-base);
   line-height: var(--aba-line-height-normal);
+}
+
+:root body .shell .auth-card input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
+:root body .shell .auth-card select,
+:root body .shell .auth-card textarea,
+:root body .shell .setup-card input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
+:root body .shell .setup-card select,
+:root body .shell .setup-card textarea {
+  border-color: var(--aba-color-auth-control-boundary);
 }
 
 :root body .shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):focus-visible,
