@@ -5,7 +5,7 @@ async function openPublicMobileAuthShell(page: Page, hasActiveController = false
   await page.addInitScript((controllerActive) => {
     const serviceWorker = new EventTarget() as EventTarget & {
       controller: object | null;
-      register: () => Promise<Record<string, never>>;
+      register: () => Promise<unknown>;
     };
     Object.defineProperty(serviceWorker, 'controller', {
       configurable: true,
