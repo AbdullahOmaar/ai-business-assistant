@@ -242,6 +242,12 @@ export const FEATURE_CATALOG = [
         detailEn: 'Link an order to a supplier and product, then review quantity, unit cost, total, received quantity, and remaining quantity.',
       },
       {
+        titleAr: 'اعتماد أوامر الشراء المسودة',
+        titleEn: 'Approve draft purchase orders',
+        detailAr: 'يمكن للمالك اعتماد المسودة بعد مراجعة المورد والأصناف والكميات والتكلفة. الاعتماد يغير حالة الأمر فقط؛ لا يسجل الاستلام أو حركة المخزون ولا ينشئ فاتورة مورد أو مستحقات أو مدفوعات.',
+        detailEn: 'Owners can approve a draft after reviewing its supplier, items, quantities and unit costs. Approval changes the order status only; it does not record receipt or a stock movement, nor create supplier bills, payables or payments.',
+      },
+      {
         titleAr: 'حالات أوامر الشراء',
         titleEn: 'Purchase-order status labels',
         detailAr: 'تظهر الحالات المعروفة باللغة المختارة، وتظل القيم غير المعروفة ظاهرة للمراجعة.',

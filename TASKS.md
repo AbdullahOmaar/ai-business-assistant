@@ -4102,3 +4102,16 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Review boundaries:** mocked Playwright coverage is not authenticated live OWNER/STAFF/two-tenant acceptance. Physical Android/installed-PWA, actual 200% zoom, full-product screen-reader/forced-colors/keyboard acceptance and remaining T18/T50 criteria remain separate PARTIALLY COMPLETE / NOT RUN gates.
 - **Release scope:** Web only. API and production database are unchanged. Vercel automatic Git deployments are disabled; deploy the exact merged Web SHA manually after merge and post-merge main CI verification.
 - **Next:** after this evidence update, re-run the required workflow on the new exact head; then normal squash merge under active ruleset, verify main merge SHA + main CI, manually deploy only the Web project, verify production alias/SHA/version and safe live behavior, then activate Phase 2 on its dedicated branch.
+
+
+---
+
+## November Phase 2 — owner-only purchase-order approval UI — 2026-11-13
+
+- **Work item:** PR [#396](https://github.com/AbdullahOmaar/ai-business-assistant/pull/396), branch `master/nov-2026-phase-2-business-modules`, base `main@490c43be4da04aab3274ca78d8d5d55ecef0ef0a`.
+- **Owner authorization:** the Owner explicitly authorized completing the existing PR #396, addressing the identified review gaps, and merging it after all required gates pass, then starting fresh. This supersedes the earlier Phase 2 "not yet authorized" disposition recorded in the Master Task Plan. It does **not** authorize any Production deployment, API deployment, or database change; Production release requires a separate explicit Owner order.
+- **Implementation:** OWNER-only approval action for draft purchase orders, confirmation dialog showing supplier, each product/quantity/unit cost, and total, strict response ID/status validation, failure retained in the dialog without blind retry, workspace-switch reset, and bilingual release-guide entry. Uses the existing backend `POST /purchase-orders/{order_id}/approve` contract. Existing server-side OWNER authorization and tenant scoping remain authoritative.
+- **Safety boundary:** approval changes PO status only. It does not receive stock, create stock movements, supplier bills, AP/payables or payments. No backend, database, schema, migration, auth-policy or financial-semantics files changed.
+- **Regression coverage:** synthetic Playwright fixtures only; OWNER success at 390px including per-line unit-cost visibility, 403 failure/no retry, STAFF cannot see approval on a draft PO, STAFF cannot see receiving on an approved PO, and workspace-switch reset. Browser E2E also confirms no receiving request is emitted by approval.
+- **Exact-head validation:** pending for the final updated PR head. Previous checks are not reusable after the latest code and documentation changes. Authenticated API smoke is conditionally SKIPPED for this branch and is not counted as PASS.
+- **Disposition at this checkpoint:** PR #396 is OPEN / UNMERGED. Full maintainer diff review and exact-head required CI must pass before merge. Web Production deployment and post-deploy verification are outside the current authorization and remain NOT AUTHORIZED / NOT RUN.

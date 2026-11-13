@@ -1032,19 +1032,22 @@ test('purchase-order status labels are localized in the list and available to lo
   assert.match(source, /\[status\] \|\| status \|\| this\.t\('حالة غير محددة'/);
 });
 
-test('purchase orders remain creatable by members while receiving and payment writes are owner-only', () => {
+test('purchase orders remain creatable by members while approval, receiving and payment writes are owner-only', () => {
   const purchaseStart = source.indexOf("@if (tab === 'purchases')");
   const purchaseEnd = source.indexOf("@if (tab === 'recurring')", purchaseStart);
   const purchaseView = source.slice(purchaseStart, purchaseEnd);
   assert.match(purchaseView, /<form #purchaseForm="ngForm" class="stack" \(ngSubmit\)="purchaseForm\.valid && createPurchaseOrder\(\)">/);
   assert.match(purchaseView, /<aba-record-table[^>]*\[rows\]="purchaseTableRows"[^>]*\(rowAction\)="onPurchaseRecordAction\(\$event\)"/);
-  assert.match(source, /actions:this\.business\?\.role==='owner'&&this\.canReceivePurchaseOrder\(order\)\?\[\{id:'receive'/);
+  assert.match(source, /actions:this\.business\?\.role==='owner'\s*\?\s*this\.canApprovePurchaseOrder\(order\)\s*\?\s*\[\{id:'approve'/);
+  assert.match(source, /this\.canReceivePurchaseOrder\(order\)\s*\?\s*\[\{id:'receive'/);
   const actionStart = source.indexOf('onPurchaseRecordAction(action:AbaRecordTableActionEvent):void {');
   const actionEnd = source.indexOf('\n  }', actionStart);
   const purchaseAction = source.slice(actionStart, actionEnd);
   assert.ok(actionStart >= 0 && actionEnd > actionStart, 'purchase row action handler must exist');
   assert.match(purchaseAction, /this\.business\?\.role!=='owner'/);
-  assert.match(purchaseAction, /!this\.canReceivePurchaseOrder\(order\)/);
+  assert.match(purchaseAction, /action\.actionId==='approve'&&this\.canApprovePurchaseOrder\(order\)/);
+  assert.match(purchaseAction, /this\.requestPurchaseOrderApproval\(order,action\.anchor\)/);
+  assert.match(purchaseAction, /action\.actionId==='receive'&&this\.canReceivePurchaseOrder\(order\)/);
   assert.match(purchaseAction, /this\.requestPurchaseOrderReceipt\(order,action\.anchor\)/);
 
   const receiveStart = source.indexOf('async confirmPurchaseOrderReceipt(): Promise<void>');
@@ -1589,4 +1592,38 @@ test('AI assistant auto-follow respects the reader position and reduced motion',
   assert.ok(method.includes('!force && !this.isChatLogNearBottom()'));
   assert.ok(method.includes('prefers-reduced-motion'));
   assert.ok(method.includes("behavior: reducedMotion ? 'auto' : 'smooth'"));
+});
+
+
+test('purchase-order approval is owner-only, confirmation-first and tenant-reset safe', () => {
+  const rowsStart = source.indexOf('get purchaseTableRows()');
+  const rowsEnd = source.indexOf('  purchaseOrderProductsSummary(order:PurchaseOrder):string', rowsStart);
+  const rows = source.slice(rowsStart, rowsEnd);
+  assert.ok(rows.includes('this.canApprovePurchaseOrder(order)'));
+  assert.ok(rows.includes("id:'approve'"));
+  assert.ok(rows.includes("this.business?.role==='owner'"));
+
+  const actionStart = source.indexOf('onPurchaseRecordAction(');
+  const actionEnd = source.indexOf('get filteredProducts()', actionStart);
+  const action = source.slice(actionStart, actionEnd);
+  assert.ok(action.includes("if(this.business?.role!=='owner')return;"));
+  assert.ok(action.includes("action.actionId==='approve'"));
+  assert.ok(action.includes('this.requestPurchaseOrderApproval(order,action.anchor)'));
+
+  const resetStart = source.indexOf('private clearWorkspaceData(): void');
+  const resetEnd = source.indexOf('async createWorkspace(): Promise<void>', resetStart);
+  const reset = source.slice(resetStart, resetEnd);
+  assert.ok(reset.includes('this.pendingPurchaseApproval = null;'));
+  assert.ok(reset.includes("this.purchaseApprovalError = '';"));
+
+  const approvalStart = source.indexOf('async confirmPurchaseOrderApproval(): Promise<void>');
+  const approvalEnd = source.indexOf('requestPurchaseOrderReceipt(', approvalStart);
+  const approval = source.slice(approvalStart, approvalEnd);
+  assert.ok(approval.includes('this.api.approvePurchaseOrder(businessId, order.id)'));
+  assert.ok(approval.includes("this.setOperationsSuccess('purchases'"));
+  assert.ok(!approval.includes('receivePurchaseOrder'));
+
+  assert.ok(apiSource.includes("'/purchase-orders/' + encodeURIComponent(orderId) + '/approve'"));
+  assert.ok(source.includes('This approves the draft purchase order only. It does not record receipt or a stock movement.'));
+  assert.ok(source.includes('Approval does not create supplier bills, payables or payments.'));
 });
