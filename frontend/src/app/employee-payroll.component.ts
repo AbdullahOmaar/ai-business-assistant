@@ -376,12 +376,12 @@ export class EmployeePayrollComponent implements OnChanges {
   }
 
   payrollStatusLabel(status: EmployeePayrollRecord['status']): string {
-    const labels: Record<EmployeePayrollRecord['status'], { ar: string; en: string }> = {
-      draft: { ar: 'مسودة', en: 'Draft' },
-      approved: { ar: 'معتمد', en: 'Approved' },
-      paid: { ar: 'تم تسجيل الصرف', en: 'Payout recorded' }
+    const keys: Record<EmployeePayrollRecord['status'], string> = {
+      draft: 'app.payrollStatus.draft',
+      approved: 'app.payrollStatus.approved',
+      paid: 'app.payrollStatus.paid',
     };
-    return labels[status][this.language];
+    return this.t(keys[status]);
   }
 
   async loadEmployeesAndPayroll(): Promise<void> {
