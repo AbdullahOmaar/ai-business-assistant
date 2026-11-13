@@ -249,6 +249,7 @@ test('OWNER approves a draft purchase order from the mobile layout without recor
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText('North Supplies');
   await expect(dialog).toContainText('Catalog Product × 2.000');
+  await expect(dialog).toContainText('Unit cost: 100.00 EGP');
   await expect(dialog).toContainText('200.00 EGP');
   await expect(dialog).toContainText('does not create supplier bills, payables or payments');
 
@@ -278,12 +279,22 @@ test('approval failure stays in the confirmation dialog and does not show succes
   expect(harness.uncaughtErrors).toEqual([]);
 });
 
-test('STAFF cannot see purchase-order approval or receiving actions', async ({ page }) => {
+test('STAFF cannot see purchase-order approval action for a draft order', async ({ page }) => {
+  const harness = await setupWorkspace(page, { role: 'staff', initialOrderStatus: 'draft' });
+  await openPurchases(page);
+  await expect(page.getByRole('button', { name: /^Approve:/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Receive remaining:/ })).toHaveCount(0);
+  expect(harness.apiRequests.some(item => item.method === 'POST' && item.path.endsWith('/approve'))).toBe(false);
+  expect(harness.uncaughtErrors).toEqual([]);
+});
+
+test('STAFF cannot see purchase-order receiving action for an approved order', async ({ page }) => {
   const harness = await setupWorkspace(page, { role: 'staff', initialOrderStatus: 'approved' });
   await openPurchases(page);
   await expect(page.getByRole('button', { name: /^Approve:/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /^Receive remaining:/ })).toHaveCount(0);
   expect(harness.apiRequests.some(item => item.method === 'POST' && item.path.endsWith('/approve'))).toBe(false);
+  expect(harness.apiRequests.some(item => item.method === 'POST' && item.path.includes('/receive'))).toBe(false);
   expect(harness.uncaughtErrors).toEqual([]);
 });
 
