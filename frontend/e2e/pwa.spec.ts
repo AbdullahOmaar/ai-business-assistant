@@ -101,3 +101,26 @@ test('does not show an update notice when the first service worker takes control
   await dispatchControllerChange(page);
   await expect(page.locator('.app-update-notice')).toHaveCount(0);
 });
+
+
+test('keeps the PWA update notice to a single announcement per page lifecycle', async ({ page }) => {
+  await openPublicMobileAuthShell(page, true);
+  await dispatchControllerChange(page);
+  await expect(page.locator('.app-update-notice')).toHaveCount(1);
+  await dispatchControllerChange(page);
+  await dispatchControllerChange(page);
+  await expect(page.locator('.app-update-notice')).toHaveCount(1);
+});
+
+test('public mobile sign-in shell reflows without horizontal overflow at a 200%-equivalent viewport', async ({ page }) => {
+  await openPublicMobileAuthShell(page);
+  await page.setViewportSize({ width: 195, height: 422 });
+  await expect(page.locator('.auth-card')).toBeVisible();
+  const layout = await page.evaluate(() => ({
+    viewport: window.innerWidth,
+    document: document.documentElement.scrollWidth,
+    body: document.body.scrollWidth,
+  }));
+  expect(layout.document).toBeLessThanOrEqual(layout.viewport);
+  expect(layout.body).toBeLessThanOrEqual(layout.viewport);
+});
