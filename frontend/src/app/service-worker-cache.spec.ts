@@ -145,6 +145,8 @@ test('pre-caches public runtime config and all app-shell assets before activatin
   await runInstall(harness);
   assert.ok(harness.calls.shellUrls.includes('/runtime-config.json'));
   assert.ok(harness.calls.shellUrls.includes('/manifest.webmanifest'));
+  assert.ok(harness.calls.shellUrls.includes('/i18n/ar.json'));
+  assert.ok(harness.calls.shellUrls.includes('/i18n/en.json'));
   assert.ok(harness.hasCached(candidateCacheName, '/runtime-config.json'));
   assert.ok(harness.hasCached(candidateCacheName, '/'));
   assert.ok(harness.calls.assetUrls.includes(origin + '/main.js'));
@@ -205,6 +207,21 @@ test('does not activate when the root app shell cannot be cached', async () => {
   await assert.rejects(runInstall(harness), /App shell cache request failed/);
   assert.equal(harness.calls.skipWaitingCount, 0);
   assert.equal(harness.calls.deletedCacheNames.length, 1);
+});
+
+test('serves cached translation JSON when the network is offline', async () => {
+  const harness = createWorkerHarness();
+  await runInstall(harness);
+  const fetchHandler = harness.listeners.get('fetch');
+  assert.ok(fetchHandler);
+  harness.setOffline(true);
+  const response = await responseFromWorker(fetchHandler, {
+    method: 'GET',
+    url: origin + '/i18n/ar.json',
+    mode: 'cors',
+  });
+  assert.equal(response.status, 200);
+  assert.equal(await response.text(), 'cached shell: /i18n/ar.json');
 });
 
 test('refreshes runtime config online, falls back offline, and bypasses API requests', async () => {
