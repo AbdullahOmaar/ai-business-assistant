@@ -1391,7 +1391,8 @@
       "catalogProduct": "Choose a valid catalog product for every product line.",
       "descriptionLength": "A line description cannot exceed 300 characters.",
       "manualDescription": "Every manual line needs a description of 1 to 300 characters.",
-      "manualPrice": "Every manual line needs a non-negative unit price with at most two decimal places."
+      "manualPrice": "Every manual line needs a non-negative unit price with at most two decimal places.",
+      "invalidDraft": "The invoice draft is invalid."
     }
   },
   "customerDirectory": {
@@ -1620,6 +1621,10 @@
         "platform_viewer": "Read platform metrics, workspaces, audit records and system status.",
         "workspace_operator": "Read access plus reasoned workspace activation/deactivation.",
         "user_manager": "Read all Firebase accounts and memberships; cannot grant platform roles."
+      },
+      "workspace": {
+        "activated": "Workspace activated successfully.",
+        "deactivated": "Workspace deactivated successfully."
       }
     },
     "invoicePrint": {
