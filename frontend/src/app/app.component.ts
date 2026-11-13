@@ -104,6 +104,24 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           </form>
           <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? t('لديك حساب بالفعل؟ سجّل الدخول', 'Already have an account? Sign in') : t('مستخدم جديد؟ أنشئ حسابًا', 'New here? Create an account') }}</button>
           @if (error) { <aba-state-message kind="error" [description]="error" /> }
+          @if (!isInstalled) {
+            <section class="mobile-install-card auth-mobile-install" [attr.aria-label]="t('تثبيت التطبيق', 'Install app')">
+              <div class="mobile-install-copy">
+                <span class="mobile-install-icon" aria-hidden="true">⇧</span>
+                <div>
+                  <strong>{{ t('ثبّت مساعد أعمالك', 'Install your business assistant') }}</strong>
+                  <small>{{ t('افتح التطبيق مباشرة من شاشتك الرئيسية.', 'Open the app directly from your home screen.') }}</small>
+                </div>
+              </div>
+              <button class="secondary install-button mobile-install-button" type="button" (click)="installApp()">{{ t('تثبيت', 'Install') }}</button>
+            </section>
+          }
+          @if (installHelp && !isInstalled) {
+            <div class="install-help install-help-inline" role="status">
+              {{ t('لو لم تظهر نافذة التثبيت: افتح قائمة المتصفح ⋮ ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».', 'If no install prompt appears, open the browser menu and choose “Install app” or “Add to Home screen”.') }}
+              <button type="button" class="secondary" (click)="installHelp = false">{{ t('حسنًا', 'Got it') }}</button>
+            </div>
+          }
         </main>
       } @else {
         <aside class="sidebar" role="navigation" [attr.aria-label]="t('التنقل الرئيسي', 'Main navigation')">
