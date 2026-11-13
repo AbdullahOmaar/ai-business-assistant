@@ -90,7 +90,7 @@ test('invoice editor groups details, line items, server totals and notes in the 
   assert.match(editorSource, /class="line-fields product-line"/);
   assert.match(editorSource, /class="line-fields service-line"/);
   assert.match(editorSource, /class="summary-total"/);
-  assert.match(editorSource, /serverSummary\.total \| number:'1\.2-2'/);
+  assert.match(editorSource, /formatNumber\(serverSummary\.total\)/);
   assert.match(editorSource, /No amounts are estimated in the browser/);
   assert.match(editorSource, /maxlength="2000"/);
 });
