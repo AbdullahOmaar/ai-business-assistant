@@ -2435,7 +2435,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async switchBusiness(id: string): Promise<void> {
     if (this.invoiceDraftSaving || this.paymentLoading || this.paymentRetryPending) {
-      this.error = this.t('أكمل حفظ مسودة الفاتورة أو أعد محاولة الدفعة الحالية قبل تغيير مساحة العمل.', 'Finish saving the invoice draft or retry the pending payment before switching workspaces.');
+      this.error = this.t('ui.m_1ca11bx');
       return;
     }
     this.statementVisible = false;
