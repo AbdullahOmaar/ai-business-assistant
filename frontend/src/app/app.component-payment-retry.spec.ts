@@ -1,8 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers';
 
-const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const snapshotSource = readFileSync(new URL('./payment-retry-snapshot.ts', import.meta.url), 'utf8');
 
 function methodBetween(startMarker: string, endMarker: string): string {
   const start = source.indexOf(startMarker);
@@ -19,7 +21,10 @@ test('payment retry uses the same immutable snapshot and idempotency key after u
   assert.match(payment, /this\.paymentRetryVault\.get\(authUid, businessId\)/);
   assert.match(payment, /paymentRequestFromRetrySnapshot\(retrySnapshot\)/);
   assert.match(payment, /error instanceof ApiRequestError && error\.definitiveNoWrite/);
-  assert.match(payment, /original payload and idempotency key were preserved/);
+  assert.match(payment, /createPaymentRetrySnapshot\(businessId/);
+  assert.match(snapshotSource, /idempotency_key/);
+  assert.match(snapshotSource, /deepFreeze\(/);
+  assert.match(snapshotSource, /Object\.freeze\(value\)/);
 });
 
 test('retry state is restored only for the same authenticated user and workspace', () => {
