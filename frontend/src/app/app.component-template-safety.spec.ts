@@ -101,14 +101,14 @@ test('AI suggestions live outside the chat panel in a compact responsive prompt 
 test('audit actions and record types have Arabic display labels', () => {
   assert.match(source, /this\.auditActionLabel\(item\.action\)/);
   assert.match(source, /this\.auditTargetLabel\(item\.target_type\)/);
-  assert.match(auditLabelsSource, /'invoice\.issued': \{ ar: 'إصدار فاتورة'/);
-  assert.match(auditLabelsSource, /'invoice\.voided': \{ ar: 'إلغاء فاتورة'/);
+  assert.match(auditLabelsSource, /"invoice\.issued": "audit\.actions\.m_1dgwo7k"/);
+  assert.match(auditLabelsSource, /"invoice\.voided": "audit\.actions\.m_1b7zju0"/);
   assert.match(source, /value="invoice\.draft_updated"/);
   assert.match(source, /value="stock\.movement_recorded"/);
   assert.match(source, /value="purchase_order\.approved"/);
   assert.match(source, /value="sales_return\.approved"/);
   assert.match(source, /value="recurring_invoice_schedule\.created"/);
-  assert.match(auditLabelsSource, /'supplier\.created': \{ ar: 'إضافة مورد'/);
+  assert.match(auditLabelsSource, /"supplier\.created": "audit\.actions\.m_n1vp0a"/);
   assert.equal((source.match(/<option value="supplier">/g) || []).length, 1);
 });
 
@@ -128,12 +128,12 @@ test('invoice customer filter can load additional customer pages for name search
 });
 
 test('invoice amounts use consistent grouped decimal formatting in the list and server summary', () => {
-  assert.match(source, /invoice\.total \| number:'1\.2-2'/);
-  assert.match(source, /invoice\.outstanding_amount \| number:'1\.2-2'/);
-  assert.match(invoiceEditorSource, /serverSummary\.subtotal \| number:'1\.2-2'/);
-  assert.match(invoiceEditorSource, /serverSummary\??\.discount_total \| number:'1\.2-2'/);
-  assert.match(invoiceEditorSource, /serverSummary\??\.tax_total \| number:'1\.2-2'/);
-  assert.match(invoiceEditorSource, /serverSummary\.total \| number:'1\.2-2'/);
+  assert.match(source, /formatNumber\(invoice\.total\)/);
+  assert.match(source, /formatNumber\(invoice\.outstanding_amount\)/);
+  assert.match(invoiceEditorSource, /formatNumber\(serverSummary\.subtotal\)/);
+  assert.match(invoiceEditorSource, /formatNumber\(serverSummary\??\.discount_total\)/);
+  assert.match(invoiceEditorSource, /formatNumber\(serverSummary\??\.tax_total\)/);
+  assert.match(invoiceEditorSource, /formatNumber\(serverSummary\.total\)/);
 });
 
 test('invoice list uses compact responsive cards with readable financial and status hierarchy', () => {
@@ -170,10 +170,11 @@ test('API requests abort when the backend stalls instead of blocking workspace s
 });
 
 test('report labels translate the actual backend revenue-basis and integrity-warning wording', () => {
-  assert.match(source, /gross issued invoice totals before sales returns/);
-  assert.match(source, /this report identifies records for manual review only/);
-  assert.match(source, /Legacy invoices without customer links are flagged for review, not auto-corrected\./);
-  assert.match(source, /Uses saved tax totals on issued invoices; it does not recalculate historical taxes\./);
+  assert.match(source, /normalized\.includes\('gross issued invoice totals before sales returns'\)/);
+  assert.match(source, /this\.t\('ui\.m_19xyqei'\)/);
+  assert.match(source, /this\.t\('ui\.m_jm2qpm'\)/);
+  assert.match(source, /\"uses saved tax totals on issued invoices; it does not recalculate historical taxes\.\": \"app\.reportLimitation\.4\"/);
+  assert.match(source, /\"legacy invoices without customer links are flagged for review, not auto-corrected\.\": \"app\.reportLimitation\.16\"/);
 });
 
 
@@ -266,7 +267,7 @@ test('mobile More navigation renders grouped destinations from the shared catalo
   assert.match(menu, /@for \(group of filteredMobileMoreGroups; track group\.id\)/);
   assert.match(menu, /@for \(module of group\.modules; track module\.tab\)/);
   assert.match(menu, /module\.icon/);
-  assert.match(menu, /t\(module\.titleAr, module\.titleEn\)/);
+  assert.match(menu, /t\(module\.titleKey\)/);
   assert.match(menu, /tab === module\.tab \? 'page' : null/);
   assert.match(source, /WORKSPACE_MODULE_GROUPS/);
   assert.match(source, /max-height:min\(70dvh,560px\);overflow-y:auto;overscroll-behavior:contain/);
@@ -720,8 +721,8 @@ test('invalid authentication, workspace, customer, invoice, payment and expense 
   assert.match(invoiceEditorSource, /if \(this\.saving \|\| this\.blocked\) return;/);
   assert.match(invoiceEditorSource, /this\.saveDraft\.emit\(payload\)/);
   assert.match(invoiceDraftSource, /if \(error\) throw new RangeError\(error\)/);
-  assert.match(invoiceDraftSource, /Choose a valid customer\./);
-  assert.match(invoiceDraftSource, /Add at least one invoice line\./);
+  assert.match(invoiceDraftSource, /invoiceDraft\.validation\.customer/);
+  assert.match(invoiceDraftSource, /invoiceDraft\.validation\.atLeastOneLine/);
 });
 
 test('product form exposes accessible required, non-negative price and conditional stock validation', () => {
@@ -1003,38 +1004,34 @@ test('assistant source citations use bilingual labels and localized expense cate
 test('expense categories are localized in the list and available to local search', () => {
   assert.match(source, /category:this\.expenseCategoryLabel\(item\.category\)/);
   assert.match(source, /category => this\.expenseCategoryLabel\(category\)/);
-  assert.match(source, /Transport: 'نقل ومواصلات'/);
-  assert.match(source, /Transport: 'Transport'/);
+  assert.match(source, /Transport: 'app\.expenseCategory\.transport'/);
 });
 
 test('payment methods are localized in the list and available to local search', () => {
   assert.match(source, /method:item\.method\?this\.paymentMethodLabel\(item\.method\)/);
   assert.match(source, /method => this\.paymentMethodLabel\(method\)/);
-  assert.match(source, /bank_transfer: 'تحويل بنكي'/);
-  assert.match(source, /bank_transfer: 'Bank transfer'/);
+  assert.match(source, /bank_transfer: 'app\.paymentMethod\.bank_transfer'/);
 });
 
 test('notification status labels are localized in the list and available to local search', () => {
   assert.match(source, /notificationStatusLabel\(item\.status\)/);
   assert.match(source, /notificationStatusLabel\(status\)/);
-  assert.match(source, /failed: 'فشل الإرسال'/);
-  assert.match(source, /failed: 'Failed'/);
-  assert.match(source, /\[status\] \|\| status \|\| this\.t\('حالة غير محددة'/);
+  assert.match(source, /failed: 'app\.notificationStatus\.failed'/);
+  assert.match(source, /status \|\| this\.t\('app\.labels\.unknownStatus'/);
 });
 
 test('operational health status uses a localized label instead of raw API codes', () => {
   assert.match(source, /operationalHealthStatusLabel\(operationalHealth\.status\)/);
-  assert.match(source, /status === 'ok'.*سليم/);
-  assert.match(source, /status === 'degraded'.*يحتاج مراجعة/);
-  assert.match(source, /return status \|\| this\.t\('حالة غير محددة', 'Unknown status'\)/);
+  assert.match(source, /status === 'ok'.*this\.t\('ui\.m_1nehj8y'\)/);
+  assert.match(source, /status === 'degraded'.*this\.t\('ui\.m_124oetm'\)/);
+  assert.match(source, /return status \|\| this\.t\('app\.labels\.unknownStatus'\)/);
 });
 
 test('purchase-order status labels are localized in the list and available to local search', () => {
   assert.match(source, /purchaseOrderStatusLabel\(order\.status\)/);
   assert.match(source, /purchaseOrderStatusLabel\(status\)/);
-  assert.match(source, /partially_received: 'مستلم جزئيًا'/);
-  assert.match(source, /partially_received: 'Partially received'/);
-  assert.match(source, /\[status\] \|\| status \|\| this\.t\('حالة غير محددة'/);
+  assert.match(source, /partially_received: 'app\.purchaseOrderStatus\.partially_received'/);
+  assert.match(source, /status \|\| this\.t\('app\.labels\.unknownStatus'/);
 });
 
 test('purchase orders remain creatable by members while approval, receiving and payment writes are owner-only', () => {
@@ -1117,12 +1114,11 @@ test('session and permission recovery actions remain correct after a language to
   assert.ok(sessionStart >= 0 && deniedStart > sessionStart && retryStart > deniedStart);
   const sessionGetter = source.slice(sessionStart, deniedStart);
   const deniedGetter = source.slice(deniedStart, retryStart);
-  assert.match(sessionGetter, /انتهت صلاحية جلسة الدخول/);
-  assert.match(sessionGetter, /Your sign-in session is no longer valid/);
-  assert.match(deniedGetter, /لا تملك الصلاحية للوصول إلى مساحة العمل/);
-  assert.match(deniedGetter, /You do not have permission to access this workspace/);
-  assert.match(deniedGetter, /حسابك غير مخوّل للوصول إلى إدارة المنصة/);
-  assert.match(deniedGetter, /Your account is not authorized to access platform administration/);
+  assert.match(sessionGetter, /this\.lastErrorKind === 'session-expired'/);
+  assert.match(sessionGetter, /this\.error === this\.lastErrorMessage/);
+  assert.match(deniedGetter, /this\.lastErrorKind === 'access-denied'/);
+  assert.match(deniedGetter, /this\.error === this\.lastErrorMessage/);
+  assert.match(source, /this\.lastErrorMessage = translated/);
   assert.doesNotMatch(sessionGetter + deniedGetter, /this\.t\(/);
 });
 
@@ -1287,9 +1283,9 @@ test('invoice customer and dynamic line fields expose accessible localized valid
   assert.ok(invoiceEditorSource.includes("[name]=\"'price-' + line.id\""));
   assert.match(invoiceEditorSource, /this\.saveDraft\.emit\(payload\)/);
   assert.match(invoiceEditorSource, /role="alert"/);
-  assert.match(invoiceDraftSource, /Choose a valid customer\./);
-  assert.match(invoiceDraftSource, /Add at least one invoice line\./);
-  assert.match(invoiceDraftSource, /Every line needs a positive quantity/);
+  assert.match(invoiceDraftSource, /invoiceDraft\.validation\.customer/);
+  assert.match(invoiceDraftSource, /invoiceDraft\.validation\.atLeastOneLine/);
+  assert.match(invoiceDraftSource, /invoiceDraft\.validation\.quantity/);
 });
 
 test('payment submit remains available to reveal required-field validation', () => {
@@ -1422,10 +1418,10 @@ test('operations lists filter locally by their visible business fields', () => {
   assert.match(source, /get filteredPurchaseOrders\(\): PurchaseOrder\[\]/);
   assert.match(source, /get filteredRecurringSchedules\(\): RecurringInvoiceSchedule\[\]/);
   assert.match(source, /get filteredNotifications\(\): NotificationRecord\[\]/);
-  assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch\)/);
+  assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch, this\.localization\.locale\)/);
   assert.match(source, /filterPurchaseOrders\(\s*this\.purchaseOrders,\s*this\.purchaseSearch/);
   assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules,\s*this\.recurringSearch/);
-  assert.ok(source.includes('filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind), status => this.notificationStatusLabel(status))'));
+  assert.match(source, /filterNotifications\(this\.notifications, this\.notificationSearch, kind => this\.notificationKindLabel\(kind\), status => this\.notificationStatusLabel\(status\), this\.localization\.locale\)/);
   const clearStart = source.indexOf('private clearWorkspaceData(): void');
   const clearEnd = source.indexOf('\n  }', clearStart);
   const clear = source.slice(clearStart, clearEnd);
@@ -1433,10 +1429,13 @@ test('operations lists filter locally by their visible business fields', () => {
     assert.ok(source.includes(`${field} = '';`), `${field} is initialized`);
     assert.ok(clear.includes(`this.${field} = '';`), `${field} resets on workspace change`);
   }
-  assert.match(source, /No suppliers match this search/);
-  assert.match(source, /No purchase orders match this search/);
-  assert.match(source, /No schedules match this search/);
-  assert.match(source, /No notifications match this search/);
+  for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch', 'notificationSearch']) {
+    assert.match(source, new RegExp(field + '\\\\?'));
+  }
+  assert.match(source, /supplierSearch\\.trim\\(\\) \\? t\\(/);
+  assert.match(source, /purchaseSearch\\.trim\\(\\) \\? t\\(/);
+  assert.match(source, /recurringSearch\\.trim\\(\\) \\? t\\(/);
+  assert.match(source, /notificationSearch\\.trim\\(\\) \\? t\\(/);
 });
 
 
@@ -1448,10 +1447,10 @@ test('customer section markup does not render stray closing-tag text', () => {
 test('payment and expense lists expose local search and distinguish no-match from no-record states', () => {
   assert.match(source, /get filteredPayments\(\): Payment\[\]/);
   assert.match(source, /get filteredExpenses\(\): Expense\[\]/);
-  assert.match(source, /filterPayments\(this\.payments, this\.paymentSearch/);
-  assert.ok(source.includes('filterExpenses(this.expenses, this.expenseSearch, category => this.expenseCategoryLabel(category))'));
-  assert.match(source, /No payments match this search/);
-  assert.match(source, /No expenses match this search/);
+  assert.match(source, /filterPayments\(\s*this\.payments,\s*this\.paymentSearch/);
+  assert.match(source, /filterExpenses\(this\.expenses, this\.expenseSearch, category => this\.expenseCategoryLabel\(category\), this\.localization\.locale\)/);
+  assert.match(source, /paymentSearch\.trim\(\) \? t\(/);
+  assert.match(source, /expenseSearch\.trim\(\) \? t\(/);
   assert.match(source, /name="paymentSearch" type="search"/);
   assert.match(source, /name="expenseSearch" type="search"/);
 });
@@ -1459,16 +1458,16 @@ test('payment and expense lists expose local search and distinguish no-match fro
 
 test('notification kind localization covers the current business form value and legacy plural value', () => {
   assert.match(source, /<option value="business">/);
-  assert.match(source, /business: \{ ar: 'مساحات العمل', en: 'Businesses' \}/);
-  assert.match(source, /businesses: \{ ar: 'مساحات العمل', en: 'Businesses' \}/);
+  assert.match(source, /business: 'app\.notificationKind\.business'/);
+  assert.match(source, /businesses: 'app\.notificationKind\.businesses'/);
 });
 
 
 test('customer statement event types use bilingual labels while preserving unknown values', () => {
   assert.match(source, /customerStatementEventLabel\(event\.event_type\)/);
-  assert.match(source, /invoice_issued: \{ ar: 'إصدار فاتورة', en: 'Invoice issued' \}/);
-  assert.match(source, /payment_allocation: \{ ar: 'تخصيص دفعة', en: 'Payment allocation' \}/);
-  assert.match(source, /currency_mismatch_allocation: \{ ar: 'تخصيص بعملة غير مطابقة', en: 'Currency-mismatch allocation' \}/);
+  assert.match(source, /invoice_issued: 'app\.customerStatementEvent\.invoice_issued'/);
+  assert.match(source, /payment_allocation: 'app\.customerStatementEvent\.payment_allocation'/);
+  assert.match(source, /currency_mismatch_allocation: 'app\.customerStatementEvent\.currency_mismatch_allocation'/);
 });
 
 
