@@ -584,7 +584,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t("ui.m_15zjjtn")" /> }
                 <div class="list-tools aba-record-toolbar"><input name="customerSearch" type="search" [attr.aria-label]="t("ui.m_cbuclg")" [placeholder]="t("ui.m_oe2vue")" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t("ui.m_nbsw3y") }}</button> }</div>
-                <aba-customer-directory [ariaLabel]="t("ui.m_5lit5y")" [customers]="filteredCustomers" [locale]="language" [loading]="loading && !customers.length" [loadingDescription]="t("ui.m_14qa8nk")" [emptyTitle]="t("ui.m_v7mhxb")" [emptyDescription]="customerSearch.trim() ? t("ui.m_1lfpojf") : t("ui.m_9nmick")" (rowAction)="onCustomerRecordAction($event)" />
+                <aba-customer-directory [ariaLabel]="t("ui.m_5lit5y")" [customers]="filteredCustomers" [locale]="locale" [loading]="loading && !customers.length" [loadingDescription]="t("ui.m_14qa8nk")" [emptyTitle]="t("ui.m_v7mhxb")" [emptyDescription]="customerSearch.trim() ? t("ui.m_1lfpojf") : t("ui.m_9nmick")" (rowAction)="onCustomerRecordAction($event)" />
                 @if (customersHasMore || customersLoadingMore) {
                   <div class="inline-form record-load-more" aria-live="polite">
                     <span class="muted">{{ customers.length }} {{ t("ui.m_1sao2d6") }}</span>
@@ -1652,6 +1652,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.localization.syncDocumentLanguage();
   }
 
+  get locale(): string { return this.localization.locale; }
+
   t(key: string, params?: Record<string, string | number>): string {
     return this.localization.translate(key, params);
   }
@@ -1711,7 +1713,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredCustomers(): Customer[] {
-    return filterCustomers(this.customers, this.customerSearch);
+    return filterCustomers(this.customers, this.customerSearch, this.localization.locale);
   }
 
   get supplierTableColumns(): readonly AbaRecordTableColumn[] { return [
@@ -1776,15 +1778,15 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredProducts(): Product[] {
-    return filterProducts(this.products, this.productSearch, this.business?.currency_code || '');
+    return filterProducts(this.products, this.productSearch, this.business?.currency_code || '', this.localization.locale);
   }
 
   get filteredInvoices(): Invoice[] {
-    return filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId, status => this.invoiceStatusLabel(status), id => this.customerNameForInvoice(id));
+    return filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId, status => this.invoiceStatusLabel(status), id => this.customerNameForInvoice(id), this.localization.locale);
   }
 
   get filteredSuppliers(): Supplier[] {
-    return filterSuppliers(this.suppliers, this.supplierSearch);
+    return filterSuppliers(this.suppliers, this.supplierSearch, this.localization.locale);
   }
 
   get filteredPurchaseOrders(): PurchaseOrder[] {
@@ -1794,6 +1796,7 @@ export class AppComponent implements OnInit, OnDestroy {
       id => this.supplierNameFor(id),
       id => this.productNameFor(id),
       status => this.purchaseOrderStatusLabel(status),
+      this.localization.locale,
     );
   }
 
@@ -1803,15 +1806,16 @@ export class AppComponent implements OnInit, OnDestroy {
       this.recurringSearch,
       id => this.customerNameForInvoice(id),
       active => this.t(active ? 'app.recurringSchedule.active' : 'app.recurringSchedule.inactive'),
+      this.localization.locale,
     );
   }
 
   get filteredNotifications(): NotificationRecord[] {
-    return filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind), status => this.notificationStatusLabel(status));
+    return filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind), status => this.notificationStatusLabel(status), this.localization.locale);
   }
 
   get filteredExpenses(): Expense[] {
-    return filterExpenses(this.expenses, this.expenseSearch, category => this.expenseCategoryLabel(category));
+    return filterExpenses(this.expenses, this.expenseSearch, category => this.expenseCategoryLabel(category), this.localization.locale);
   }
 
   get filteredPayments(): Payment[] {
@@ -1821,6 +1825,7 @@ export class AppComponent implements OnInit, OnDestroy {
       id => this.customerNameForInvoice(id),
       method => this.paymentMethodLabel(method),
       allocated => this.t(allocated ? 'app.paymentAllocation.allocated' : 'app.paymentAllocation.unallocated'),
+      this.localization.locale,
     );
   }
 
@@ -2860,7 +2865,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   /** Search only the already-authorized mobile destinations; this is navigation UX, not access control. */
   get filteredMobileMoreGroups(): readonly (WorkspaceModuleGroup & { modules: readonly WorkspaceModuleCard[] })[] {
-    const query = this.mobileMoreSearch.trim().normalize('NFKC').toLocaleLowerCase(this.language === 'ar' ? 'ar-EG' : 'en');
+    const query = this.mobileMoreSearch.trim().normalize('NFKC').toLocaleLowerCase(this.localization.locale);
     if (!query) return this.mobileMoreGroups;
     return this.mobileMoreGroups.map(group => {
       const locale = this.language === 'ar' ? 'ar-EG' : 'en';
