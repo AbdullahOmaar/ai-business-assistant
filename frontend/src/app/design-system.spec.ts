@@ -6,6 +6,7 @@ import { expandDictionaryBackedProperties, expandTranslationCalls } from './loca
 const css = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const angular = JSON.parse(readFileSync(new URL('../../angular.json', import.meta.url), 'utf8'));
 const app = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const localization = readFileSync(new URL('./localization.service.ts', import.meta.url), 'utf8');
 const globalStyles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const guide = expandDictionaryBackedProperties(readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8'));
