@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers';
 
-const component = readFileSync(new URL('./product-catalog.component.ts', import.meta.url), 'utf8');
+const component = expandTranslationCalls(readFileSync(new URL('./product-catalog.component.ts', import.meta.url), 'utf8'));
 const sortHelper = readFileSync(new URL('./directory-sort.ts', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./product-catalog.component.css', import.meta.url), 'utf8');
-const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const app = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 
 test('Products uses a dedicated catalogue presentation, not the shared generic record table', () => {
   assert.match(component, /selector: 'aba-product-catalog'/);
