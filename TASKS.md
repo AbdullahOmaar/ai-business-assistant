@@ -4169,3 +4169,17 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - A further Composio tool search found an active GitHub connection with a valid `GITHUB_CREATE_A_WORKFLOW_DISPATCH_EVENT` operation for `.github/workflows/ci.yml`. The earlier statement that no dispatch operation was exposed is superseded.
 - A CircleCI connection is also active, but the repository returns 404 for `.circleci/config.yml` on both main and the active branch, and CircleCI's project pipeline listing for this branch returned an empty list. No CircleCI pipeline was triggered.
 - The provider-authority conflict still remains between active Project Instructions (“CircleCI ONLY”) and the dated Owner decision/current `AGENTS.md`/MWOS (GitHub Actions primary; CircleCI retired/transition-only). Therefore neither GitHub Actions dispatch nor CircleCI trigger was invoked in this checkpoint. Do not interpret tool availability as authorization to select one side of the conflict.
+
+
+## 2026-11-13 — T50 PWA regression coverage extension
+
+- Added two browser regression declarations to `frontend/e2e/pwa.spec.ts`:
+  1. Repeated `controllerchange` events keep the update notice to one announcement per page lifecycle.
+  2. The public mobile sign-in shell is checked for horizontal overflow at a 195×422 viewport (a 200%-equivalent reflow stress viewport). This is **not** a substitute for actual browser zoom acceptance.
+- The PWA E2E file now contains six focused PWA cases: pre-auth install CTA/fallback, accepted install prompt, update notice/explicit refresh, silent first controller acquisition, single-notice behavior, and narrow reflow. The two new cases have been source-reviewed but NOT RUN.
+- Re-ran the isolated Node 22.16.0 service-worker handler harness against the exact helper logic: 2/2 PASS (initial controller acquisition remains silent; subsequent replacement announces once; already-controlled pages announce once). This is a focused isolated harness, not the repository test suite.
+- Current branch: `master/nov-2026-phase-1-ux-foundation` at `5309c23dcc5c067abb586813e07e3655b322c2b6`, 21 commits ahead / 0 behind main. Aggregate diff remains six paths; `pwa.spec.ts` now has 126 added lines. No PR is open.
+- Current exact-head GitHub check-runs = 0 and workflow-runs = 0. Full frontend unit tests, Playwright, Angular build and CI remain NOT RUN on this head.
+- **CI policy remains fail-closed:** active Project Instructions require CircleCI ONLY and ABA-KNOW-03 says not to introduce GitHub Actions as a replacement; CircleCI remains frozen until its owner restriction is lifted. The later Notion MWOS / current `AGENTS.md` decision says GitHub Actions only, so the sources conflict. A GitHub workflow-dispatch capability is technically available, but no provider was triggered because that would violate the active no-substitution/freeze constraints. CircleCI config is absent on main and branch; its branch pipeline listing is empty.
+- Remaining acceptance: physical Android PWA install/cold-start/offline/update/recovery (device OFFLINE); authenticated OWNER/STAFF/cross-tenant API denial (STAFF provisioning depends on T43's missing supported invitation/membership route); actual browser 200% zoom, full workspace keyboard-only, screen-reader and OS forced-colors. The 195×422 regression check does not close these criteria.
+- No PR, merge, deployment, database write, migration, business record mutation or external notification. T50 remains PARTIALLY COMPLETE.
