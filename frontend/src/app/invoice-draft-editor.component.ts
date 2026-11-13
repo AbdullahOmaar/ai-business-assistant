@@ -314,7 +314,8 @@ export class InvoiceDraftEditorComponent implements OnChanges {
       }, this.products, this.customers);
       this.saveDraft.emit(payload);
     } catch (error) {
-      this.error = error instanceof Error ? error.message : this.t('invoiceDraft.validation.invalidDraft');
+      const message = error instanceof Error ? error.message : 'invoiceDraft.validation.invalidDraft';
+      this.error = message.startsWith('invoiceDraft.validation.') ? this.t(message) : message;
     }
   }
 
