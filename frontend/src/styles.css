@@ -153,6 +153,18 @@ button, input, select { font: inherit; }
     flex-direction: column;
   }
 }
+@media (forced-colors: active) {
+  .app-update-notice {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+  }
+  .app-update-notice button {
+    background: ButtonFace;
+    color: ButtonText;
+    border-color: ButtonText;
+  }
+}
 
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: var(--aba-focus-ring-width) solid var(--aba-color-focus-ring);
