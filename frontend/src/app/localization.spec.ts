@@ -31,7 +31,7 @@ function sourceFiles(directory: string): string[] {
 }
 
 const sourceDirectory = resolve(appDirectory, '..');
-const translationNamespaces = Object.keys(arabic).map(namespace => namespace.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\const arabicEntries = flattenTranslations(arabic);')).join('|');
+const translationNamespaces = Object.keys(arabic).join('|');
 const arabicEntries = flattenTranslations(arabic);
 const englishEntries = flattenTranslations(english);
 
@@ -61,7 +61,7 @@ test('translation placeholders match in both locales', () => {
 
 test('every literal translation key referenced by a UI component exists in both dictionaries', () => {
   const references = new Set<string>();
-  const keyPattern = /['"]((?:ui|common|app|audit|release|catalog|invoiceDraft|customerDirectory|productCatalog)\.[A-Za-z0-9_.-]+)['"]/g;
+  const keyPattern = new RegExp("['\"]((?:" + translationNamespaces + ")\\.[A-Za-z0-9_.-]+)['\"]", 'g');
 
   for (const path of sourceFiles(sourceDirectory)) {
     const source = readFileSync(path, 'utf8');
@@ -78,7 +78,7 @@ test('UI source files contain no inline Arabic copy or legacy bilingual componen
   const arabicCopy: string[] = [];
   const localePipes: string[] = [];
 
-  for (const path of sourceFiles(appDirectory)) {
+  for (const path of sourceFiles(sourceDirectory)) {
     const source = readFileSync(path, 'utf8');
     if (/\b(?:keyOrArabic|paramsOrEnglish)\b/.test(source)) legacyHelpers.push(path);
     if (/\bt\(\s*['"][^'"]+['"]\s*,\s*['"][^'"]+['"]\s*\)/.test(source)) inlinePairs.push(path);
