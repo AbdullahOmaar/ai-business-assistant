@@ -460,50 +460,21 @@ export const RELEASE_HISTORY = [
     apiVersion: '1.3.5',
     titleAr: 'تحسين شريط التطبيق على الموبايل',
     titleEn: 'Mobile App Bar refinement',
-    changesAr: [
-      'إعادة ترتيب شريط التطبيق ليعرض عنوان الصفحة والإجراءات الأساسية في صف مضغوط.',
-      'فصل مساحة العمل واختيارها في صف مستقل مع دعم التفاف الأسماء الطويلة.',
-      'الحفاظ على التنقل والإجراءات الحالية مع دعم العربية والإنجليزية وأهداف لمس لا تقل عن 44px. الإصدار 1.4.1.',
-    ],
-    changesEn: [
-      'Reorganizes the mobile App Bar into a compact page-first row with primary actions.',
-      'Moves workspace identity and switching into a separate row with long-name wrapping.',
-      'Preserves existing navigation and account actions with RTL/LTR support and 44px touch targets. This is version 1.4.1.',
-    ],
+    changes: ["release.changes.m_19csuxk", "release.changes.m_iugfip", "release.changes.m_1ig2ax2"],
   },
   {
     version: '1.4.0',
     apiVersion: '1.3.5',
     titleAr: 'تحسين تجربة مساحة العمل والموبايل',
     titleEn: 'Workspace and mobile experience improvements',
-    changesAr: [
-      'تحسين التنقل على الموبايل، واختيار مساحة العمل، وإمكانية الوصول بلوحة المفاتيح.',
-      'توحيد تسميات سجل العمليات والحالات باللغة العربية والإنجليزية، وتحسين عرض الجداول والعناوين على الشاشات الصغيرة.',
-      'تحسين التباين وأحجام مناطق اللمس وحالات التحميل والفراغ؛ تظل واجهة API على 1.3.5.',
-      'تحديث إصدار الواجهة إلى 1.4.0 مع إصدار معرّف جديد لذاكرة PWA عند البناء.',
-    ],
-    changesEn: [
-      'Improves mobile navigation, workspace switching, and keyboard accessibility.',
-      'Localizes activity and status labels in Arabic and English, and improves table and heading layouts on narrow screens.',
-      'Improves contrast, touch-target sizing, loading and empty states; the API remains at 1.3.5.',
-      'Updates the web UI to version 1.4.0 and generates a new versioned PWA cache identifier at build time.',
-    ],
+    changes: ["release.changes.m_16xgs48", "release.changes.m_15ng565", "release.changes.m_1ccyq57", "release.changes.m_1061cyg"],
   },
   {
     version: '1.3.9',
     apiVersion: '1.3.5',
     titleAr: 'إزالة المعاينة التجريبية المستقلة',
     titleEn: 'Standalone preview removal',
-    changesAr: [
-      'إزالة صفحة المعاينة المستقلة ذات البيانات التوضيحية من إصدار الويب.',
-      'الإبقاء على وظائف التطبيق المتصلة دون تغيير؛ لا توجد تغييرات في API أو قاعدة البيانات.',
-      'تحديث إصدار الواجهة إلى 1.3.9 مع الإبقاء على API عند 1.3.5.',
-    ],
-    changesEn: [
-      'Removes the standalone fictional-data preview page from the web release.',
-      'Keeps the connected application workflows unchanged; no API or database behavior changes.',
-      'Updates the web UI to version 1.3.9 while the API remains at 1.3.5.',
-    ],
+    changes: ["release.changes.m_1e2qljj", "release.changes.m_6ygd0p", "release.changes.m_1vq0w0p"],
   },
 
   {
@@ -511,174 +482,74 @@ export const RELEASE_HISTORY = [
     apiVersion: '1.3.5',
     titleAr: 'تحسين معاينة الميزات التجريبية',
     titleEn: 'Feature demo preview improvements',
-    changesAr: [
-      'إضافة إعادة ضبط كاملة لتجربة المعاينة التفاعلية وبياناتها التوضيحية.',
-      'تحسين نافذة طباعة الفاتورة ومعالجة منع النوافذ المنبثقة برسالة واضحة.',
-      'إزالة حساب الضريبة الافتراضي من المعاينة حتى اعتماد سياسة T37؛ تظل واجهة API على 1.3.5.',
-    ],
-    changesEn: [
-      'Updates the web UI to version 1.3.8 with a full reset for the interactive feature preview and its illustrative data.',
-      'Improves invoice print preview handling and reports blocked popups clearly.',
-      'Removes the default tax calculator until T37 is approved; the API remains on 1.3.5.',
-    ],
+    changes: ["release.changes.m_149w058", "release.changes.m_fnvkkm", "release.changes.m_ae14nt"],
   },
   {
     version: '1.3.7',
     apiVersion: '1.3.5',
     titleAr: 'تحسين وضوح النصوص وإمكانية الوصول',
     titleEn: 'Accessibility and text contrast improvements',
-    changesAr: [
-      'تحسين تباين النصوص الثانوية في معلومات الإصدار والبطاقات والحالات الفارغة والتذييل لتسهيل القراءة.',
-      'الحفاظ على ألوان النصوص في القائمة الجانبية الداكنة دون تغيير.',
-      'تحديث إصدار الواجهة إلى 1.3.7 مع إبقاء واجهة API على 1.3.5 دون تغيير.',
-    ],
-    changesEn: [
-      'Improves secondary-text contrast in release metadata, metric cards, empty states, footnotes, and the footer.',
-      'Preserves the existing light-on-dark colors used by the dark sidebar.',
-      'Updates the web UI to version 1.3.7; the unchanged API remains on version 1.3.5.',
-    ],
+    changes: ["release.changes.m_1jkpdkb", "release.changes.m_155pln6", "release.changes.m_13plqvq"],
   },
   {
     version: '1.3.6',
     apiVersion: '1.3.5',
     titleAr: 'موثوقية التشغيل والتنقل بين الأقسام',
     titleEn: 'Startup reliability and workspace navigation',
-    changesAr: [
-      'معالجة فشل تحميل الإعدادات برسالة واضحة وإتاحة إعادة المحاولة، مع رفض القيم الفارغة قبل تهيئة Firebase.',
-      'إضافة شاشة كل الأقسام للوصول المباشر إلى وحدات مساحة العمل مع احترام صلاحيات المالك والموظف.',
-      'تطبيق تحقق مركزي على التنقل إلى الأقسام المحمية وإخفاء سجل العمليات عن الموظف في قائمة الموبايل.',
-      'تحديث إصدار الواجهة إلى 1.3.6 مع إبقاء واجهة API على 1.3.5 دون تغيير.',
-    ],
-    changesEn: [
-      'Shows a recoverable startup error and retry when configuration loading fails; whitespace-only settings are rejected before Firebase initialization.',
-      'Adds an All Modules launcher for direct workspace navigation while respecting OWNER and STAFF access.',
-      'Centralizes protected-tab navigation checks and hides Activity Log from STAFF in the mobile More menu.',
-      'Updates the web UI to version 1.3.6; the unchanged API remains on version 1.3.5.',
-    ],
+    changes: ["release.changes.m_w34n8e", "release.changes.m_1iklnis", "release.changes.m_1kvdy97", "release.changes.m_adj2ly"],
   },
   {
     version: '1.3.5',
     titleAr: 'مزامنة الجلسة وحماية بيانات مساحة العمل',
     titleEn: 'Session synchronization and workspace data protection',
-    changesAr: [
-      'مزامنة تسجيل الدخول والخروج وتبديل الحساب بين علامات التبويب.',
-      'مسح بيانات مساحة العمل القديمة ومنع نتائج الطلبات المتأخرة من الظهور بعد تغيير الحساب أو الصلاحيات.',
-      'توحيد رقم الإصدار بين الواجهة وواجهة API إلى 1.3.5.',
-    ],
-    changesEn: [
-      'Synchronizes sign-in, sign-out, and account changes across browser tabs.',
-      'Clears stale workspace data and rejects delayed responses after account or role changes.',
-      'Aligned frontend and API release metadata at version 1.3.5.',
-    ],
+    changes: ["release.changes.m_1h5suq8", "release.changes.m_1siao2", "release.changes.m_5n568g"],
   },
   {
     version: '1.3.4',
     titleAr: 'توحيد بيانات الإصدار وتحديث التطبيق المثبّت',
     titleEn: 'Release metadata alignment and installed-app updates',
-    changesAr: [
-      'توحيد رقم الإصدار بين الواجهة وواجهة API ودليل الإصدارات.',
-      'تحديث معرّف ذاكرة PWA لضمان اكتشاف غلاف التطبيق الجديد بعد الإصدار.',
-    ],
-    changesEn: [
-      'Aligned frontend, API, and in-app release metadata at version 1.3.4.',
-      'Versioned the PWA shell cache so installed apps can detect the updated app shell.',
-    ],
+    changes: ["release.changes.m_zwuzox", "release.changes.m_1f7syyg"],
   },
   {
     version: '1.3.3',
     titleAr: 'تحسين موثوقية البناء والإصدار',
     titleEn: 'Build and release reliability',
-    changesAr: [
-      'إصلاح اختبار بيانات الإصدار ليعمل مع بناء الواجهة من جذر Vercel أو من الريبو الكامل.',
-      'الحفاظ على التحقق من تطابق إصدار الواجهة وواجهة API في بيئة الاختبارات الكاملة.',
-    ],
-    changesEn: [
-      'Fixed release-metadata tests for both Vercel frontend-root and full-repository builds.',
-      'Preserved frontend/API version-parity checks in full-repository validation.',
-    ],
+    changes: ["release.changes.m_wxlbd5", "release.changes.m_lw6g1a"],
   },
   {
     version: '1.3.2',
     titleAr: 'تقوية الصلاحيات وسلامة العمليات',
     titleEn: 'Authorization and workflow integrity hardening',
-    changesAr: [
-      'تقوية صلاحيات إدارة المنصة وعزل مساحات العمل والتحقق قبل حفظ التغييرات.',
-      'تأمين تصدير CSV وسجل العمليات ومعالجة حالات فشل المعاملات.',
-      'توحيد بيانات إصدار الواجهة وواجهة API وتحسين تحديث ذاكرة PWA.',
-    ],
-    changesEn: [
-      'Hardened Platform Admin permissions, workspace isolation, and pre-write authorization.',
-      'Strengthened CSV export and audit integrity, including transaction-failure handling.',
-      'Aligned frontend/API release metadata and versioned the PWA shell cache.',
-    ],
+    changes: ["release.changes.m_xjbwe2", "release.changes.m_5eftzo", "release.changes.m_poq3r6"],
   },
   {
     version: '1.3.1',
     titleAr: 'تحديث إصدار الصيانة',
     titleEn: 'Maintenance release update',
-    changesAr: [
-      'تحديث رقم إصدار الواجهة وواجهة API إلى 1.3.1 مع الحفاظ على خصائص الإصدار السابق.',
-    ],
-    changesEn: [
-      'Updated the frontend and API release version to 1.3.1 while preserving the previous release features.',
-    ],
+    changes: ["release.changes.m_1ispv5h"],
   },
   {
     version: '1.3.0',
     titleAr: 'السداد والمخزون ودليل التطبيق',
     titleEn: 'Payments, stock, and app guide',
-    changesAr: [
-      'زر سداد من الفاتورة مع تعبئة الرصيد المستحق ودعم السداد الجزئي.',
-      'إدخال الكمية الافتتاحية وعرض رصيد الصنف المخزني؛ الخدمات تظل غير مخزنية.',
-      'صفحة داخل التطبيق تجمع الخصائص وسجل الإصدارات بالعربية والإنجليزية.',
-    ],
-    changesEn: [
-      'Pay directly from an invoice with the outstanding balance prefilled and partial payment supported.',
-      'Enter opening quantities and view stock balances; services remain non-stock items.',
-      'An in-app Arabic/English guide lists current features and version changes.',
-    ],
+    changes: ["release.changes.m_3nzs6h", "release.changes.m_fkovqz", "release.changes.m_1q9dsqo"],
   },
   {
     version: '1.2.1',
     titleAr: 'تحسينات المحاسبة وسلامة العمليات',
     titleEn: 'Accounting and workflow improvements',
-    changesAr: [
-      'تقوية التحقق من المخزون وتوحيد تقريب بنود الفاتورة وإجمالياتها.',
-      'تحسين تسجيل الدفعات ورسائل تحديث البيانات لتقليل خطر إعادة تسجيل دفعة ناجحة.',
-      'تقييد إصدار الفاتورة وإلغائها بصلاحية المالك، مع توضيح معلومات إصدار الواجهة وواجهة API.',
-    ],
-    changesEn: [
-      'Strengthened stock validation and aligned invoice line and total rounding.',
-      'Improved payment feedback and refresh handling to reduce accidental duplicate submissions.',
-      'Restricted invoice issue/void to owners and clarified UI/API release information.',
-    ],
+    changes: ["release.changes.m_1cn8d7n", "release.changes.m_17mk06i", "release.changes.m_1orhf78"],
   },
   {
     version: '1.2.0',
     titleAr: 'أساس إدارة النشاط والفواتير',
     titleEn: 'Business and invoicing foundation',
-    changesAr: [
-      'إدارة العملاء والمنتجات، وإنشاء مسودات الفواتير وإصدارها.',
-      'تسجيل الدفعات والمصروفات وتقارير مالية تفصل المبالغ حسب العملة.',
-      'بدء متابعة المخزون وحركاته واستيراد المنتجات من CSV.',
-    ],
-    changesEn: [
-      'Customer and product management, with invoice drafts and issuing.',
-      'Payment and expense recording, with financial reports separated by currency.',
-      'Initial stock movement tracking and product CSV import.',
-    ],
+    changes: ["release.changes.m_1snb1nd", "release.changes.m_l45aln", "release.changes.m_1a7j5yu"],
   },
   {
     version: '1.0.0',
     titleAr: 'الفواتير على الموبايل',
     titleEn: 'Mobile invoicing',
-    changesAr: [
-      'محرر مسودة فاتورة متعددة البنود مناسب للموبايل.',
-      'معاينة الإجماليات والخصم والضريبة قبل الحفظ.',
-    ],
-    changesEn: [
-      'A mobile-friendly multi-line invoice draft editor.',
-      'Preview totals, discounts, and tax before saving.',
-    ],
+    changes: ["release.changes.m_118l28j", "release.changes.m_vj2szz"],
   },
 ] as const;
