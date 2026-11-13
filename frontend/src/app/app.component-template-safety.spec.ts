@@ -1033,19 +1033,22 @@ test('purchase-order status labels are localized in the list and available to lo
   assert.match(source, /\[status\] \|\| status \|\| this\.t\('حالة غير محددة'/);
 });
 
-test('purchase orders remain creatable by members while receiving and payment writes are owner-only', () => {
+test('purchase orders remain creatable by members while approval, receiving and payment writes are owner-only', () => {
   const purchaseStart = source.indexOf("@if (tab === 'purchases')");
   const purchaseEnd = source.indexOf("@if (tab === 'recurring')", purchaseStart);
   const purchaseView = source.slice(purchaseStart, purchaseEnd);
   assert.match(purchaseView, /<form #purchaseForm="ngForm" class="stack" \(ngSubmit\)="purchaseForm\.valid && createPurchaseOrder\(\)">/);
   assert.match(purchaseView, /<aba-record-table[^>]*\[rows\]="purchaseTableRows"[^>]*\(rowAction\)="onPurchaseRecordAction\(\$event\)"/);
-  assert.match(source, /actions:this\.business\?\.role==='owner'&&this\.canReceivePurchaseOrder\(order\)\?\[\{id:'receive'/);
+  assert.match(source, /actions:this\.business\?\.role==='owner'\s*\?\s*this\.canApprovePurchaseOrder\(order\)\s*\?\s*\[\{id:'approve'/);
+  assert.match(source, /this\.canReceivePurchaseOrder\(order\)\s*\?\s*\[\{id:'receive'/);
   const actionStart = source.indexOf('onPurchaseRecordAction(action:AbaRecordTableActionEvent):void {');
   const actionEnd = source.indexOf('\n  }', actionStart);
   const purchaseAction = source.slice(actionStart, actionEnd);
   assert.ok(actionStart >= 0 && actionEnd > actionStart, 'purchase row action handler must exist');
   assert.match(purchaseAction, /this\.business\?\.role!=='owner'/);
-  assert.match(purchaseAction, /!this\.canReceivePurchaseOrder\(order\)/);
+  assert.match(purchaseAction, /action\.actionId==='approve'&&this\.canApprovePurchaseOrder\(order\)/);
+  assert.match(purchaseAction, /this\.requestPurchaseOrderApproval\(order,action\.anchor\)/);
+  assert.match(purchaseAction, /action\.actionId==='receive'&&this\.canReceivePurchaseOrder\(order\)/);
   assert.match(purchaseAction, /this\.requestPurchaseOrderReceipt\(order,action\.anchor\)/);
 
   const receiveStart = source.indexOf('async confirmPurchaseOrderReceipt(): Promise<void>');

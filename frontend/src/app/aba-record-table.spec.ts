@@ -29,7 +29,9 @@ test('Customers and Products use dedicated presentations while Suppliers and Pur
   assert.match(app,/<aba-product-catalog[^>]*\[products\]="filteredProducts"/);
   assert.doesNotMatch(app,/productTableRows|productTableColumns/);
   for(const key of ['supplierTableRows','purchaseTableRows'])assert.ok(app.includes('[rows]="'+key+'"'));
-  assert.match(app,/business\?\.role==='owner'&&this\.canReceivePurchaseOrder\(order\)/);
+  assert.match(app,/business\?\.role==='owner'\s*\?\s*this\.canApprovePurchaseOrder\(order\)\s*\?\s*\[\{id:'approve'/);
+  assert.match(app,/this\.canReceivePurchaseOrder\(order\)\s*\?\s*\[\{id:'receive'/);
+  assert.match(app,/this\.requestPurchaseOrderApproval\(order,action\.anchor\)/);
   assert.match(app,/this\.requestPurchaseOrderReceipt\(order,action\.anchor\)/);
 });
 
