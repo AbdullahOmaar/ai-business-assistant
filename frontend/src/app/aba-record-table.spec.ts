@@ -4,9 +4,10 @@ import test from 'node:test';
 import { expandTranslationCalls } from './localization-test-helpers.ts';
 const component=readFileSync(new URL('./shared/ui/aba-record-table.component.ts',import.meta.url),'utf8');
 const css=readFileSync(new URL('../design-system.css',import.meta.url),'utf8');
-const app=expandTranslationCalls(readFileSync(new URL('./app.component.ts',import.meta.url),'utf8'));
-const customerDirectory=expandTranslationCalls(readFileSync(new URL('./customer-directory.component.ts',import.meta.url),'utf8'));
-const productCatalog=expandTranslationCalls(readFileSync(new URL('./product-catalog.component.ts',import.meta.url),'utf8'));
+const appRaw=readFileSync(new URL('./app.component.ts',import.meta.url),'utf8');
+const app=expandTranslationCalls(appRaw);
+const customerDirectory=readFileSync(new URL('./customer-directory.component.ts',import.meta.url),'utf8');
+const productCatalog=readFileSync(new URL('./product-catalog.component.ts',import.meta.url),'utf8');
 test('shared record table exposes semantic columns and stable row actions',()=>{
   assert.match(component,/<table>/);assert.match(component,/<caption class="aba-record-table__visually-hidden">/);
   assert.match(component,/<th scope="col" \[attr\.aria-sort\]="sortAria\(column\.key\)"/);assert.match(component,/<th scope="row"/);
@@ -43,8 +44,8 @@ test('record table labels and loading states follow the selected app locale',()=
   assert.match(app, /actionsHeading.*t\('الإجراءات',\s*'Actions'\)/);
   assert.match(customerDirectory, /t\('customerDirectory\.m_/);
   assert.match(productCatalog, /t\('productCatalog\.m_/);
-  assert.match(app, /t\('ui\.m_/);
-  assert.match(app, /purchaseOrder/);
+  assert.match(appRaw, /t\('ui\.m_/);
+  assert.match(appRaw, /purchaseOrder/);
   assert.match(customerDirectory, /customerDirectory\.m_/);
   assert.match(productCatalog, /productCatalog\.m_/);
 });
