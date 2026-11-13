@@ -584,7 +584,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('ui.m_15zjjtn')" /> }
                 <div class="list-tools aba-record-toolbar"><input name="customerSearch" type="search" [attr.aria-label]="t('ui.m_cbuclg')" [placeholder]="t('ui.m_oe2vue')" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }</div>
-                <aba-customer-directory [ariaLabel]="t('ui.m_5lit5y')" [customers]="filteredCustomers" [locale]="locale" [loading]="loading && !customers.length" [loadingDescription]="t('ui.m_14qa8nk')" [emptyTitle]="t('ui.m_v7mhxb')" [emptyDescription]="customerSearch.trim() ? t('ui.m_1lfpojf') : t('ui.m_9nmick')" (rowAction)="onCustomerRecordAction($event)" />
+                <aba-customer-directory [ariaLabel]="t('ui.m_5lit5y')" [customers]="filteredCustomers" [locale]="language" [loading]="loading && !customers.length" [loadingDescription]="t('ui.m_14qa8nk')" [emptyTitle]="t('ui.m_v7mhxb')" [emptyDescription]="customerSearch.trim() ? t('ui.m_1lfpojf') : t('ui.m_9nmick')" (rowAction)="onCustomerRecordAction($event)" />
                 @if (customersHasMore || customersLoadingMore) {
                   <div class="inline-form record-load-more" aria-live="polite">
                     <span class="muted">{{ customers.length }} {{ t('ui.m_1sao2d6') }}</span>
@@ -1654,11 +1654,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   get locale(): string { return this.localization.locale; }
 
-  t(keyOrArabic: string, englishOrParams?: string | Record<string, string | number>, params?: Record<string, string | number>): string {
-    if (typeof englishOrParams === 'string') {
-      return this.language === 'ar' ? keyOrArabic : englishOrParams;
-    }
-    return this.localization.translate(keyOrArabic, englishOrParams ?? params);
+  t(key: string, params?: Record<string, string | number>): string {
+    return this.localization.translate(key, params);
   }
 
   customerNameForInvoice(customerId?: string | null): string {
