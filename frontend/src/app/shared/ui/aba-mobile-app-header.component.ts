@@ -51,7 +51,7 @@ import { LocalizationService } from '../../localization.service';
           <p class="account-email">{{ userEmail }}</p>
           <button type="button" class="account-action" (click)="requestLanguageToggle()">
             <span aria-hidden="true">文</span>
-            <span>{{ language === 'ar' ? 'English' : 'العربية' }}</span>
+            <span>{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</span>
           </button>
           <button type="button" class="account-action sign-out-action" (click)="requestSignOut()">
             <span aria-hidden="true">↪</span>
