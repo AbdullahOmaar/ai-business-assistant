@@ -1387,5 +1387,48 @@
       "manualDescription": "Every manual line needs a description of 1 to 300 characters.",
       "manualPrice": "Every manual line needs a non-negative unit price with at most two decimal places."
     }
+  },
+  "customerDirectory": {
+    "m_tpfmbp": "Sort by",
+    "m_zh6wie": "Name: A–Z",
+    "m_1iina3u": "Name: Z–A",
+    "m_bl0g3s": "Email: A–Z",
+    "m_1jlg5ik": "Email: Z–A",
+    "m_1b1jxnt": "Phone: ascending",
+    "m_1izflgg": "Phone: descending",
+    "m_ubgrc2": "Customer",
+    "m_112c7vo": "Email",
+    "m_19jxea1": "Phone",
+    "m_256ab9": "Actions",
+    "m_2wkjj4": "Not provided",
+    "m_1h7f08p": "Invoices",
+    "m_np2h9e": "Statement",
+    "m_1kxahts": "Call ",
+    "m_uodwjq": "Email ",
+    "m_1ypcn1i": "No contact details",
+    "m_1muaaw0": "View invoices for",
+    "m_mmu2iu": "Statement for"
+  },
+  "productCatalog": {
+    "m_47v71n": "Filter item type",
+    "m_1vmpuau": "All",
+    "m_j15h0g": "Stock tracked",
+    "m_1c1wx97": "Non-stock",
+    "m_im1kwk": "Sort",
+    "m_c0h96b": "Sort products",
+    "m_zh6wie": "Name: A–Z",
+    "m_1iina3u": "Name: Z–A",
+    "m_wwezy0": "Price: low to high",
+    "m_1xbenai": "Price: high to low",
+    "m_2swnvr": "Stock: low to high",
+    "m_1i9lwtp": "Stock: high to low",
+    "m_pamfhv": "Item",
+    "m_1iz2xk3": "Unit price",
+    "m_1w4exkr": "Inventory",
+    "m_1abb5if": "Stock tracked",
+    "m_j49abf": "Qty",
+    "m_82udzb": "No items in this category",
+    "m_m1cwj0": "Try another type or show all items.",
+    "m_9qo8uh": "Show all items"
   }
 }
