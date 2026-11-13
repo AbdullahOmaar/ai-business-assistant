@@ -231,8 +231,8 @@ test('employee table action heading and remaining record loading descriptions re
     "[loadingDescription]=\"t('جارٍ تحميل المدفوعات…', 'Loading payments…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل سجل النشاط…', 'Loading activity log…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل المصروفات…', 'Loading expenses…')\"",
-    "this.t('عميل الدفعة:',\\s*'Payment customer:')",
-    "this.t('عميل الفاتورة:',\\s*'Invoice customer:')",
+    "t('عميل الدفعة:', 'Payment customer:')",
+    "t('عميل الفاتورة:', 'Invoice customer:')",
   ]) assert.ok(app.includes(fragment), 'missing localized record UX: '+fragment);
 });
 
