@@ -86,6 +86,7 @@ function createWorkerHarness(options: {
   };
 
   const fetcher = async (input: string | FakeRequest): Promise<Response> => {
+    if (offline) throw new Error('network unavailable');
     const url = typeof input === 'string' ? new URL(input, origin).href : input.url;
     if (url === origin + '/') {
       return new Response(
@@ -94,7 +95,6 @@ function createWorkerHarness(options: {
       );
     }
     if (url === origin + '/runtime-config.json') {
-      if (offline) throw new Error('network unavailable');
       return new Response(runtimeConfig, { status: 200, headers: { 'content-type': 'application/json' } });
     }
     return new Response('asset', { status: 200 });
@@ -129,10 +129,10 @@ async function runInstall(harness: ReturnType<typeof createWorkerHarness>): Prom
   await installPromise;
 }
 
-async function requestFromWorker(handler: (event: WorkerEvent) => void, request: FakeRequest): Promise<Response> {
+async function responseFromWorker(handler: (event: WorkerEvent) => void, request: FakeRequest): Promise<Response> {
   let responsePromise: Promise<Response> | undefined;
   handler({ request, respondWith: (response) => { responsePromise = Promise.resolve(response); } });
-  assert.ok(responsePromise, 'the runtime-config route must be intercepted');
+  assert.ok(responsePromise, 'the expected request route must be intercepted');
   return responsePromise;
 }
 
@@ -211,7 +211,7 @@ test('refreshes runtime config online, falls back offline, and bypasses API requ
   const request: FakeRequest = { method: 'GET', url: origin + '/runtime-config.json', mode: 'cors' };
   const updatedConfig = '{"apiBaseUrl":"https://api.aiba.test/v2"}';
   harness.setRuntimeConfig(updatedConfig);
-  const onlineResponse = await requestFromWorker(fetchHandler, request);
+  const onlineResponse = await responseFromWorker(fetchHandler, request);
   const onlineBody = await onlineResponse.text();
   assert.equal(onlineBody, updatedConfig);
   harness.setOffline(true);
@@ -220,4 +220,23 @@ test('refreshes runtime config online, falls back offline, and bypasses API requ
   let apiWasIntercepted = false;
   fetchHandler({ request: { method: 'GET', url: origin + '/api/dashboard', mode: 'cors' }, respondWith: () => { apiWasIntercepted = true; } });
   assert.equal(apiWasIntercepted, false, 'business API requests must bypass the app-shell cache');
+});
+
+
+test('offline fallbacks never read another app cache on the same origin', async () => {
+  const unrelatedCacheName = 'another-app-cache-v1';
+  const harness = createWorkerHarness({ existingCacheNames: [unrelatedCacheName] });
+  const fetchHandler = harness.listeners.get('fetch');
+  assert.ok(fetchHandler);
+  harness.setOffline(true);
+
+  const configResponse = await responseFromWorker(fetchHandler, {
+    method: 'GET', url: origin + '/runtime-config.json', mode: 'cors',
+  });
+  assert.equal(configResponse.status, 0, 'an unrelated cached runtime config must not be served');
+
+  const navigationResponse = await responseFromWorker(fetchHandler, {
+    method: 'GET', url: origin + '/', mode: 'navigate',
+  });
+  assert.equal(navigationResponse.status, 0, 'an unrelated cached app shell must not be served');
 });
