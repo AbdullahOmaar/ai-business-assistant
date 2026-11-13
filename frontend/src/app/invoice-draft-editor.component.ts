@@ -135,22 +135,22 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
           <p>{{ t("ui.m_d7k44x") }}</p>
         </div></div>
         @if (serverSummary && serverSummary.subtotal !== null && serverSummary.subtotal !== undefined) {
-          <div class="summary-row"><span>{{ t("ui.m_1qtlbee") }}</span><strong>{{ serverSummary.subtotal | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
+          <div class="summary-row"><span>{{ t("ui.m_1qtlbee") }}</span><strong>{{ formatNumber(serverSummary.subtotal) }} {{ serverSummary.currency_code }}</strong></div>
         }
         <div class="readonly-rates">
           <label class="field rate-field">
             <span>{{ t("ui.m_1ihygh1") }} %</span>
             <input name="invoiceDiscountRate" [value]="discountRate || '0'" readonly aria-readonly="true" />
-            @if (serverSummary?.discount_total !== null && serverSummary?.discount_total !== undefined) { <small>{{ serverSummary?.discount_total | number:'1.2-2' }} {{ serverSummary?.currency_code }}</small> }
+            @if (serverSummary?.discount_total !== null && serverSummary?.discount_total !== undefined) { <small>{{ formatNumber(serverSummary?.discount_total) }} {{ serverSummary?.currency_code }}</small> }
           </label>
           <label class="field rate-field">
             <span>{{ t("ui.m_1qsg5t9") }} %</span>
             <input name="invoiceTaxRate" [value]="taxRate || '0'" readonly aria-readonly="true" />
-            @if (serverSummary?.tax_total !== null && serverSummary?.tax_total !== undefined) { <small>{{ serverSummary?.tax_total | number:'1.2-2' }} {{ serverSummary?.currency_code }}</small> }
+            @if (serverSummary?.tax_total !== null && serverSummary?.tax_total !== undefined) { <small>{{ formatNumber(serverSummary?.tax_total) }} {{ serverSummary?.currency_code }}</small> }
           </label>
         </div>
         @if (serverSummary) {
-          <div class="summary-total"><span>{{ t("ui.m_sqxwdc") }}</span><strong>{{ serverSummary.total | number:'1.2-2' }} {{ serverSummary.currency_code }}</strong></div>
+          <div class="summary-total"><span>{{ t("ui.m_sqxwdc") }}</span><strong>{{ formatNumber(serverSummary.total) }} {{ serverSummary.currency_code }}</strong></div>
           <button type="button" class="subtle-action new-invoice-action" (click)="startNewDraft()" [disabled]="saving">{{ t("ui.m_4c76v") }}</button>
         } @else {
           <p class="summary-pending-note">{{ t("ui.m_fbcm87") }}</p>
@@ -274,6 +274,7 @@ export class InvoiceDraftEditorComponent implements OnChanges {
     return this.localization.translate(key, params);
   }
   localize(message: string): string { return this.localization.translate(message); }
+  formatNumber(value: string | number | null | undefined): string { return this.localization.formatNumber(value, 2, 2); }
   productPrice(productId: string): string { return this.products.find(product => product.id === productId)?.unit_price ?? ''; }
 
   addLine(kind: InvoiceDraftLineKind = 'product'): void {
