@@ -28,7 +28,7 @@ test('expense view is reachable from mobile More and has bilingual labels', () =
 test('workspace load and clear paths include expense records', () => {
   assert.match(ui, /const paymentsRequest = this\.canAccessTab\('payments'\) \? this\.api\.payments\(id\) : Promise\.resolve\(\[\]\)/);
   assert.match(ui, /this\.api\.invoices\(id\), paymentsRequest, this\.api\.expenses\(id\)/);
-  assert.match(ui, /this\.expenses = مصروفات/);
+  assert.match(ui, /this\.expenses = expensePage/);
   assert.match(ui, /this\.expenses = \[\]/);
 });
 
