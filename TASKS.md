@@ -4183,3 +4183,10 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **CI policy remains fail-closed:** active Project Instructions require CircleCI ONLY and ABA-KNOW-03 says not to introduce GitHub Actions as a replacement; CircleCI remains frozen until its owner restriction is lifted. The later Notion MWOS / current `AGENTS.md` decision says GitHub Actions only, so the sources conflict. A GitHub workflow-dispatch capability is technically available, but no provider was triggered because that would violate the active no-substitution/freeze constraints. CircleCI config is absent on main and branch; its branch pipeline listing is empty.
 - Remaining acceptance: physical Android PWA install/cold-start/offline/update/recovery (device OFFLINE); authenticated OWNER/STAFF/cross-tenant API denial (STAFF provisioning depends on T43's missing supported invitation/membership route); actual browser 200% zoom, full workspace keyboard-only, screen-reader and OS forced-colors. The 195×422 regression check does not close these criteria.
 - No PR, merge, deployment, database write, migration, business record mutation or external notification. T50 remains PARTIALLY COMPLETE.
+
+
+### Explicit PWA refresh-action coverage — 2026-11-13
+
+- Extended the existing “new service worker” Playwright case to click the visible **Refresh now / تحديث الآن** action, wait for the main-frame navigation, and confirm the public sign-in screen is restored after reload. This covers the user action rather than only checking that the button is visible.
+- This is source-reviewed only; the Playwright suite remains NOT RUN on the current candidate. The narrow 195×422 viewport remains a responsive reflow stress check, not actual 200% browser zoom.
+- Current source head before this ledger update: `c2f8c99748cce3520b3ac40cdb7f3d8ac44375dd`. No additional application paths changed; only the existing PWA E2E test file was extended. No CI/PR/merge/deployment/DB action.
