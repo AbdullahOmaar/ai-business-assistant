@@ -223,7 +223,7 @@ async function setupWorkspace(page: Page, options: SetupOptions = {}) {
   return { apiRequests, uncaughtErrors, getOrderStatus: () => orderStatus };
 }
 
-async function openPurchases(page: Page): Promise<void> {
+async function openPurchases(page: Page, expectPurchaseOrder = true): Promise<void> {
   const directory = page.locator('details.module-directory-disclosure');
   const isOpen = await directory.evaluate(element => (element as HTMLDetailsElement).open);
   if (!isOpen) await directory.locator('summary').click();
@@ -231,7 +231,11 @@ async function openPurchases(page: Page): Promise<void> {
   await expect(purchasingCard).toHaveCount(1);
   await expect(purchasingCard).toBeVisible();
   await purchasingCard.getByRole('button').click();
-  await expect(page.getByText('PO-2026-001')).toBeVisible({ timeout: 20_000 });
+  if (expectPurchaseOrder) {
+    await expect(page.getByText('PO-2026-001')).toBeVisible({ timeout: 20_000 });
+  } else {
+    await expect(page.getByText('PO-2026-001')).toHaveCount(0);
+  }
 }
 
 test('OWNER approves a draft purchase order from the mobile layout without recording receipt', async ({ page }) => {
@@ -292,8 +296,7 @@ test('switching workspaces clears a pending purchase approval confirmation', asy
   await expect(page.locator('#workspace-current-name')).toHaveText('Beta Retail');
   await expect(page.getByRole('alertdialog')).toHaveCount(0);
   await page.getByRole('button', { name: 'Home', exact: true }).click();
-  await openPurchases(page);
-  await expect(page.getByText('PO-2026-001')).toHaveCount(0);
+  await openPurchases(page, false);
   expect(harness.apiRequests.filter(item => item.method === 'POST' && item.path.endsWith('/approve'))).toHaveLength(0);
   expect(harness.uncaughtErrors).toEqual([]);
 });
