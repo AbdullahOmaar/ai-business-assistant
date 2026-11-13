@@ -270,11 +270,8 @@ export class InvoiceDraftEditorComponent implements OnChanges {
     this.newDraft.emit();
   }
 
-  t(keyOrArabic: string, paramsOrEnglish?: Record<string, string | number> | string): string {
-    if (typeof paramsOrEnglish === 'string') {
-      return this.language === 'ar' ? keyOrArabic : paramsOrEnglish;
-    }
-    return this.localization.translate(keyOrArabic, paramsOrEnglish);
+  t(key: string, params?: Record<string, string | number>): string {
+    return this.localization.translate(key, params);
   }
   localize(message: string): string { return this.localization.translate(message); }
   productPrice(productId: string): string { return this.products.find(product => product.id === productId)?.unit_price ?? ''; }
