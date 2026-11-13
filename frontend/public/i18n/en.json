@@ -1654,5 +1654,12 @@
       "allocated": "Allocated",
       "unallocated": "Unallocated"
     }
+  ,
+    "currencyName": {
+      "egp": "Egyptian Pound",
+      "usd": "US Dollar",
+      "eur": "Euro",
+      "gbp": "British Pound"
+    }
   }
 }
