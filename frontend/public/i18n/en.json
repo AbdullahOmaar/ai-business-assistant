@@ -1637,6 +1637,9 @@
       "draft": "Draft",
       "approved": "Approved",
       "paid": "Payout recorded"
+    },
+    "audit": {
+      "voidInvoiceReason": "Voided by an authorized workspace user"
     }
   }
 }
