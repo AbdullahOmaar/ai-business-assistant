@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { expandTranslationCalls } from './localization-test-helpers';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
 const component=readFileSync(new URL('./shared/ui/aba-record-table.component.ts',import.meta.url),'utf8');
 const css=readFileSync(new URL('../design-system.css',import.meta.url),'utf8');
 const app=expandTranslationCalls(readFileSync(new URL('./app.component.ts',import.meta.url),'utf8'));
