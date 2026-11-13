@@ -273,11 +273,8 @@ export class EmployeePayrollComponent implements OnChanges {
     }
   }
 
-  t(keyOrArabic: string, paramsOrEnglish?: Record<string, string | number> | string): string {
-    if (typeof paramsOrEnglish === 'string') {
-      return this.language === 'ar' ? keyOrArabic : paramsOrEnglish;
-    }
-    return this.localization.translate(keyOrArabic, paramsOrEnglish);
+  t(key: string, params?: Record<string, string | number>): string {
+    return this.localization.translate(key, params);
   }
 
   private focusAfterViewChange(target: 'employee-toggle' | 'prepare' | 'history'): void {
@@ -322,7 +319,7 @@ export class EmployeePayrollComponent implements OnChanges {
 
   formatPayrollPayoutDate(value: string | null | undefined): string {
     if (!value || !Number.isFinite(Date.parse(value))) return '—';
-    return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en-GB', {
+    return new Intl.DateTimeFormat(this.localization.locale, {
       dateStyle: 'medium',
     }).format(new Date(value));
   }
