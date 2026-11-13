@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers';
 
-const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const moduleAccessSource = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
 const catalogueSource = readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8');
 
