@@ -118,6 +118,7 @@ export function filterRecurringSchedules<T extends RecurringScheduleSearchItem>(
   items: readonly T[],
   query: string,
   customerName: (customerId: string) => string,
+  activeStateLabel: (active: boolean) => string = active => active ? 'active' : 'inactive',
 ): T[] {
   const q = normalized(query);
   return items.filter(item => {
@@ -126,9 +127,9 @@ export function filterRecurringSchedules<T extends RecurringScheduleSearchItem>(
       item.customer_id ? customerName(item.customer_id) : '',
       item.interval_days, item.timezone, item.next_run_at,
     ];
-    const stateLabels = item.is_active ? ['active', 'نشطة'] : ['inactive', 'متوقفة'];
+    const stateLabel = activeStateLabel(item.is_active);
     return searchable.some(value => normalized(value).includes(q))
-      || stateLabels.some(value => normalized(value) === q);
+      || normalized(stateLabel) === q;
   });
 }
 
@@ -181,6 +182,7 @@ export function filterPayments<T extends PaymentSearchItem>(
   query: string,
   customerName: (customerId: string) => string,
   methodLabel: (method: string) => string = method => method,
+  allocationLabel: (allocated: boolean) => string = allocated => allocated ? 'allocated' : 'unallocated',
 ): T[] {
   const q = normalized(query);
   return items.filter(item => {
@@ -190,11 +192,9 @@ export function filterPayments<T extends PaymentSearchItem>(
       item.customer_id ? customerName(item.customer_id) : '',
       item.method, item.method ? methodLabel(item.method) : '', item.reference, item.allocations.length,
     ];
-    const allocationLabels = item.allocations.length
-      ? ['allocated', 'مخصصة']
-      : ['unallocated', 'غير مخصصة'];
+    const allocationStatusLabel = allocationLabel(item.allocations.length > 0);
     return searchable.some(value => normalized(value).includes(q))
-      || allocationLabels.some(value => normalized(value) === q);
+      || normalized(allocationStatusLabel) === q;
   });
 }
 
