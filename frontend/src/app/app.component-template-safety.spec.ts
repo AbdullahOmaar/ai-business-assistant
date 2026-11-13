@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
+const globalStyles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 const invoiceEditorSource = readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8');
 const invoiceDraftSource = readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8');
@@ -1649,4 +1650,14 @@ test('public sign-in shell keeps the PWA install action and fallback available b
   assert.ok(auth.includes('(click)="installApp()"'));
   assert.ok(auth.includes('installHelp && !isInstalled'));
   assert.ok(auth.includes('If no install prompt appears'));
+});
+
+test('PWA update notice stays touch-sized and readable in forced-colors mode', () => {
+  assert.match(globalStyles, /\.app-update-notice button \{[\s\S]*?min-height: 44px;/);
+  const forcedColorsStart = globalStyles.lastIndexOf('@media (forced-colors: active)');
+  const forcedColors = globalStyles.slice(forcedColorsStart);
+  assert.ok(forcedColors.includes('.app-update-notice {'));
+  assert.ok(forcedColors.includes('background: Canvas;'));
+  assert.ok(forcedColors.includes('color: CanvasText;'));
+  assert.ok(forcedColors.includes('color: ButtonText;'));
 });
