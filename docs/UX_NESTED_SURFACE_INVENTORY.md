@@ -694,3 +694,13 @@ For `7f347ee0991ec2af15ba6e7211fb20bb412e8ada`:
 - **Shared record tables:** column headers are keyboard-operable sort controls; local sorting toggles ascending/descending, uses numeric-aware locale comparison, and exposes the active direction through `aria-sort`. Existing row actions, permissions, data contracts and API behavior are unchanged.
 - **Mobile record presentation:** the shared component retains labeled record-card behavior at narrow widths; long values wrap and action controls remain touch-sized.
 - **Status:** IMPLEMENTED in source — rendered desktop/mobile and Arabic RTL/English LTR acceptance remains NOT VERIFIED pending browser access and the current exact-head CI.
+
+
+## PR #395 final validation supersession — 2026-11-13
+
+- The earlier 2026-11-12 entries accurately record that assistant interaction tests were deferred at those checkpoints. They are superseded for the final candidate by GitHub Actions run `43316169070` on `bf94464733aee484b5dd03c80a1263d258e2d75f`.
+- Frontend unit tests, Angular production build, Playwright browser smoke, frontend dependency audit, backend regression/PostgreSQL checks, backend container checks and the required `all-checks-passed` aggregate all passed on that exact SHA.
+- The mobile assistant E2E uses the existing synthetic fixture with Firebase/Auth/API calls intercepted. This does not establish authenticated production OWNER/STAFF/two-tenant behavior.
+- Master maintainer diff review completed for the exact candidate. No API/backend/database/schema/authorization/business/financial/inventory/payroll behavior changed.
+- Still NOT RUN / PARTIALLY COMPLETE: physical Android Chrome and installed-PWA install/update/offline; actual 200% zoom; full-product screen-reader, forced-colors and keyboard acceptance; authenticated live OWNER/STAFF/second-tenant journeys; remaining T18/T50 product acceptance. Do not convert these into PASS from CI.
+- PR #395 is eligible for the normal merge gate after the latest exact-head CI reruns for this documentation evidence commit. Web Production deployment remains a separate authorized step after merge and main CI verification.
