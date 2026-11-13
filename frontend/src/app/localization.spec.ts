@@ -1,13 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import test from 'node:test';
 
 const appDirectory = dirname(fileURLToPath(import.meta.url));
-function dirname(path: string): string {
-  return path.slice(0, path.lastIndexOf('/'));
-}
 
 const arabic = JSON.parse(readFileSync(resolve(appDirectory, '../../public/i18n/ar.json'), 'utf8')) as Record<string, unknown>;
 const english = JSON.parse(readFileSync(resolve(appDirectory, '../../public/i18n/en.json'), 'utf8')) as Record<string, unknown>;
@@ -25,11 +22,11 @@ function flattenTranslations(value: Record<string, unknown>, prefix = '', result
   return result;
 }
 
-function componentFiles(directory: string): string[] {
+function sourceFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
     const path = join(directory, entry.name);
-    if (entry.isDirectory()) return componentFiles(path);
-    return entry.isFile() && entry.name.endsWith('.component.ts') ? [path] : [];
+    if (entry.isDirectory()) return sourceFiles(path);
+    return entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.spec.ts') ? [path] : [];
   });
 }
 
@@ -64,7 +61,7 @@ test('every literal translation key referenced by a UI component exists in both 
   const references = new Set<string>();
   const keyPattern = /['"]((?:ui|common|app|audit|release|catalog|invoiceDraft|customerDirectory|productCatalog)\.[A-Za-z0-9_.-]+)['"]/g;
 
-  for (const path of componentFiles(appDirectory)) {
+  for (const path of sourceFiles(appDirectory)) {
     const source = readFileSync(path, 'utf8');
     for (const match of source.matchAll(keyPattern)) references.add(match[1]);
   }
@@ -73,16 +70,22 @@ test('every literal translation key referenced by a UI component exists in both 
   assert.deepEqual(missing, []);
 });
 
-test('UI components do not reintroduce inline bilingual copy helpers', () => {
+test('UI source files contain no inline Arabic copy or legacy bilingual component helpers', () => {
   const legacyHelpers: string[] = [];
   const inlinePairs: string[] = [];
+  const arabicCopy: string[] = [];
+  const localePipes: string[] = [];
 
   for (const path of componentFiles(appDirectory)) {
     const source = readFileSync(path, 'utf8');
     if (/\b(?:keyOrArabic|paramsOrEnglish)\b/.test(source)) legacyHelpers.push(path);
     if (/\bt\(\s*['"][^'"]+['"]\s*,\s*['"][^'"]+['"]\s*\)/.test(source)) inlinePairs.push(path);
+    if (/[\u0600-\u06FF]{2,}/.test(source)) arabicCopy.push(path);
+    if (/\|\s*(?:date|number):/.test(source)) localePipes.push(path);
   }
 
   assert.deepEqual(legacyHelpers, []);
   assert.deepEqual(inlinePairs, []);
+  assert.deepEqual(arabicCopy, []);
+  assert.deepEqual(localePipes, []);
 });
