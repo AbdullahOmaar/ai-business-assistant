@@ -101,7 +101,7 @@ test('discount and tax rates stay side by side and read-only while amounts come 
   assert.match(editorSource, /name="invoiceTaxRate"[^>]*readonly aria-readonly="true"/);
   assert.match(editorSource, /serverSummary\?\.discount_total/);
   assert.match(editorSource, /serverSummary\?\.tax_total/);
-  assert.match(editorSource, /serverSummary\.total \| number:'1\.2-2'/);
+  assert.match(editorSource, /formatNumber\(serverSummary\.total\)/);
   assert.doesNotMatch(editorSource, /\[\(ngModel\)\]="(?:discountRate|taxRate)"/);
 });
 
