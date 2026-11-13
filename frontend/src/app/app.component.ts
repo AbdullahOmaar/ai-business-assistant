@@ -63,7 +63,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
         </main>
       } @else if (startupFailed) {
         <main class="auth-card">
-          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
+          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
           <div class="brand-mark">A</div>
           <h1>{{ t("ui.m_tee7tu") }}</h1>
           <aba-state-message kind="error" [description]="error" />
@@ -71,7 +71,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
         </main>
       } @else if (setupNeeded) {
         <main class="setup-card">
-          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
+          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
           <div class="brand-mark">A</div>
           <p class="eyebrow">{{ t("ui.m_1yxyqru") }}</p>
           <h1>{{ t("ui.m_11t8fki") }}</h1>
@@ -86,7 +86,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
         </main>
       } @else if (!signedIn) {
         <main class="auth-card">
-          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
+          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
           <div class="brand-mark">A</div>
           <p class="eyebrow">{{ t("ui.m_ll4uy7") }}</p>
           <h1 id="auth-form-heading">{{ signingUp ? t("ui.m_1cuf5gq") : t("ui.m_cfel9w") }}</h1>
@@ -127,7 +127,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
         </main>
       } @else {
         <aside class="sidebar" role="navigation" [attr.aria-label]="t("ui.m_9jbcg2")">
-          <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>مساعد<span class="light">الأعمال</span></span></a>
+          <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>{{ t("common.app_title") }}</span></a>
           <p class="nav-label">{{ t("ui.m_criw1m") }}</p>
           <button class="nav-item" [attr.aria-label]="t("ui.m_1sgyd06")" [attr.title]="t("ui.m_1sgyd06")" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t("ui.m_1sgyd06") }}</span></button>
           <button class="nav-item mobile-extra" [attr.aria-label]="t("ui.m_1k2jewg")" [attr.title]="t("ui.m_1k2jewg")" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t("ui.m_1k2jewg") }}</span></button>
@@ -173,7 +173,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <p class="mobile-more-empty" role="status">{{ t("ui.m_ehdjlq") }}</p>
               }
               <div class="mobile-more-actions">
-                <button class="nav-item mobile-menu-action" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? 'English' : 'العربية' }}</span></button>
+                <button class="nav-item mobile-menu-action" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</span></button>
                 <button class="nav-item mobile-menu-action" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t("ui.m_r2b303") }}</span></button>
               </div>
             </nav>
@@ -210,7 +210,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           } @else {
           <header class="topbar">
             <div class="topbar-heading"><p class="eyebrow">{{ t("ui.m_criw1m") }}</p><h1>{{ pageTitle }}</h1></div>
-            <div class="user-area">@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t("ui.m_1ig5s72") }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t("ui.m_r2b303") }}</button></div>
+            <div class="user-area">@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t("ui.m_1ig5s72") }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t("ui.m_r2b303") }}</button></div>
           </header>
           @if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="sessionExpired ? t("ui.m_14surv3") : accessDenied ? t("ui.m_atfuse") : t("ui.m_worzj7")" (action)="sessionExpired ? logout() : accessDenied ? setTab('overview') : retry()" /> }
           @if (loading) { <aba-state-message kind="loading" [description]="t("ui.m_1oo6dkn")" /> }
@@ -225,7 +225,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     <small id="workspace-name-error" class="field-error" aria-live="polite">{{ businessNameModel.errors?.['required'] ? t("ui.m_dqqjgk") : t("ui.m_nclsue") }}</small>
                   }
                 </label>
-                <label>{{ t("ui.m_1n6idjh") }}<select name="currency" [(ngModel)]="currencyCode"><option value="EGP">جنيه مصري</option><option value="USD">دولار أمريكي</option><option value="EUR">يورو</option><option value="GBP">جنيه إسترليني</option><option value="SAR">ريال سعودي</option><option value="AED">درهم إماراتي</option></select></label>
+                <label>{{ t("ui.m_1n6idjh") }}<select name="currency" [(ngModel)]="currencyCode"><option value="EGP">{{ currencyName("EGP") }}</option><option value="USD">{{ currencyName("USD") }}</option><option value="EUR">{{ currencyName("EUR") }}</option><option value="GBP">{{ currencyName("GBP") }}</option><option value="SAR">{{ currencyName("SAR") }}</option><option value="AED">{{ currencyName("AED") }}</option></select></label>
                 <button class="primary" type="submit" [disabled]="loading">{{ t("ui.m_uddskc") }}</button>
               </form>
             </section>
@@ -1404,13 +1404,13 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly uiCommitLabel = APP_BUILD_INFO.commit;
   get buildTimeLabel(): string {
     if (!APP_BUILD_INFO.builtAt) return this.t("ui.m_1ilhynh");
-    return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en-GB', {
+    return new Intl.DateTimeFormat(this.localization.locale, {
       dateStyle: 'medium',
       timeStyle: 'short',
       timeZone: 'Africa/Cairo',
     }).format(new Date(APP_BUILD_INFO.builtAt));
   }
-  apiVersionLabel = 'غير متاح';
+  apiVersionLabel = '';
   apiCommitLabel = 'unknown';
   language: 'ar' | 'en' = 'ar';
   initialized = false;
@@ -1639,6 +1639,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.installHelp = false;
       this.installPrompt = null;
     });
+    this.apiVersionLabel = this.t('common.notAvailable');
     this.language = this.localization.currentLanguage;
     this.syncDocumentLanguage();
   }
@@ -1657,11 +1658,8 @@ export class AppComponent implements OnInit, OnDestroy {
     document.title = this.t("ui.m_1ajyrpz");
   }
 
-  t(keyOrArabic: string, paramsOrEnglish?: Record<string, string | number> | string): string {
-    if (typeof paramsOrEnglish === 'string') {
-      return this.language === 'ar' ? keyOrArabic : paramsOrEnglish;
-    }
-    return this.localization.translate(keyOrArabic, paramsOrEnglish);
+  t(key: string, params?: Record<string, string | number>): string {
+    return this.localization.translate(key, params);
   }
 
   customerNameForInvoice(customerId?: string | null): string {
@@ -2056,7 +2054,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     this.signedIn = true;
-    this.userEmail = user.email || 'مستخدم مسجّل الدخول';
+    this.userEmail = user.email || this.t('common.signedInUser');
     this.loading = true;
     try {
       await this.checkPlatformAdminAccess();
@@ -2174,7 +2172,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.currentAuthEmail = user?.email ?? null;
       if (user) {
         this.signedIn = true;
-        this.userEmail = user.email || 'مستخدم مسجّل الدخول';
+        this.userEmail = user.email || this.t('common.signedInUser');
         await this.checkPlatformAdminAccess();
         await this.loadBusinesses();
       }
@@ -2189,91 +2187,52 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   expenseCategoryLabel(category: string): string {
-    const labelsAr: Record<string, string> = {
-      General: 'عام',
-      Supplies: 'مستلزمات',
-      Rent: 'إيجار',
-      Utilities: 'مرافق وفواتير',
-      Transport: 'نقل ومواصلات',
-      Marketing: 'تسويق',
-      Payroll: 'رواتب',
-      Maintenance: 'صيانة',
-      Other: 'أخرى',
+    const keys: Record<string, string> = {
+      General: 'app.expenseCategory.general', Supplies: 'app.expenseCategory.supplies',
+      Rent: 'app.expenseCategory.rent', Utilities: 'app.expenseCategory.utilities',
+      Transport: 'app.expenseCategory.transport', Marketing: 'app.expenseCategory.marketing',
+      Payroll: 'app.expenseCategory.payroll', Maintenance: 'app.expenseCategory.maintenance',
+      Other: 'app.expenseCategory.other',
     };
-    const labelsEn: Record<string, string> = {
-      General: 'General',
-      Supplies: 'Supplies',
-      Rent: 'Rent',
-      Utilities: 'Utilities',
-      Transport: 'Transport',
-      Marketing: 'Marketing',
-      Payroll: 'Payroll',
-      Maintenance: 'Maintenance',
-      Other: 'Other',
-    };
-    return (this.language === 'ar' ? labelsAr : labelsEn)[category] || category;
+    return keys[category] ? this.t(keys[category]) : category;
   }
 
   paymentMethodLabel(method: string): string {
-    const labelsAr: Record<string, string> = {
-      cash: 'نقدًا',
-      bank_transfer: 'تحويل بنكي',
-      card: 'بطاقة',
-      wallet: 'محفظة إلكترونية',
-      other: 'أخرى',
+    const keys: Record<string, string> = {
+      cash: 'app.paymentMethod.cash', bank_transfer: 'app.paymentMethod.bank_transfer',
+      card: 'app.paymentMethod.card', wallet: 'app.paymentMethod.wallet', other: 'app.paymentMethod.other',
     };
-    const labelsEn: Record<string, string> = {
-      cash: 'Cash',
-      bank_transfer: 'Bank transfer',
-      card: 'Card',
-      wallet: 'E-wallet',
-      other: 'Other',
-    };
-    return (this.language === 'ar' ? labelsAr : labelsEn)[method] || method;
+    return keys[method] ? this.t(keys[method]) : method;
   }
 
   notificationStatusLabel(status: string): string {
-    const labelsAr: Record<string, string> = {
-      pending: 'قيد الانتظار',
-      sent: 'تم الإرسال',
-      failed: 'فشل الإرسال',
-      cancelled: 'ملغي',
+    const keys: Record<string, string> = {
+      pending: 'app.notificationStatus.pending', sent: 'app.notificationStatus.sent',
+      failed: 'app.notificationStatus.failed', cancelled: 'app.notificationStatus.cancelled',
     };
-    const labelsEn: Record<string, string> = {
-      pending: 'Pending',
-      sent: 'Sent',
-      failed: 'Failed',
-      cancelled: 'Cancelled',
-    };
-    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || status || this.t("ui.m_s46752");
+    return keys[status] ? this.t(keys[status]) : status || this.t('app.labels.unknownStatus');
   }
 
   notificationKindLabel(kind: string): string {
-    const labels: Record<string, { ar: string; en: string }> = {
-      business: { ar: 'مساحات العمل', en: 'Businesses' },
-      businesses: { ar: 'مساحات العمل', en: 'Businesses' },
-      invoices: { ar: 'الفواتير', en: 'Invoices' },
-      payments: { ar: 'المدفوعات', en: 'Payments' },
-      expenses: { ar: 'المصروفات', en: 'Expenses' },
-      inventory: { ar: 'المخزون', en: 'Inventory' },
-      reminders: { ar: 'التذكيرات', en: 'Reminders' },
-      reports: { ar: 'التقارير', en: 'Reports' },
-      suppliers: { ar: 'الموردون', en: 'Suppliers' },
-      purchases: { ar: 'المشتريات', en: 'Purchases' },
-      recurring: { ar: 'الفواتير الدورية', en: 'Recurring invoices' },
-      assistant: { ar: 'المساعد الذكي', en: 'AI assistant' },
-      system: { ar: 'النظام', en: 'System' }
+    const keys: Record<string, string> = {
+      business: 'app.notificationKind.business', businesses: 'app.notificationKind.businesses',
+      invoices: 'app.notificationKind.invoices', payments: 'app.notificationKind.payments',
+      expenses: 'app.notificationKind.expenses', inventory: 'app.notificationKind.inventory',
+      reminders: 'app.notificationKind.reminders', reports: 'app.notificationKind.reports',
+      suppliers: 'app.notificationKind.suppliers', purchases: 'app.notificationKind.purchases',
+      recurring: 'app.notificationKind.recurring', assistant: 'app.notificationKind.assistant',
+      system: 'app.notificationKind.system',
     };
-    return labels[kind]?.[this.language] || kind;
+    return keys[kind] ? this.t(keys[kind]) : kind;
   }
 
   customerStatementEventLabel(eventType: string): string {
-    const labels: Record<string, { ar: string; en: string }> = {
-      invoice_issued: { ar: 'إصدار فاتورة', en: 'Invoice issued' },
-      payment_allocation: { ar: 'تخصيص دفعة', en: 'Payment allocation' },
-      currency_mismatch_allocation: { ar: 'تخصيص بعملة غير مطابقة', en: 'Currency-mismatch allocation' },
+    const keys: Record<string, string> = {
+      invoice_issued: 'app.customerStatementEvent.invoice_issued',
+      payment_allocation: 'app.customerStatementEvent.payment_allocation',
+      currency_mismatch_allocation: 'app.customerStatementEvent.currency_mismatch_allocation',
     };
-    return labels[eventType]?.[this.language] || eventType;
+    return keys[eventType] ? this.t(keys[eventType]) : eventType;
   }
 
   auditActionLabel(action: string): string {
@@ -2286,91 +2245,120 @@ export class AppComponent implements OnInit, OnDestroy {
 
   revenueBasisLabel(value: string): string {
     const normalized = value.trim().toLowerCase().replace(/[_-]+/g, ' ');
-    if (normalized.includes('gross issued invoice totals before sales returns')) {
-      return this.t("ui.m_19xyqei");
-    }
-    if (normalized === 'gross issued invoice total' || normalized === 'gross issued invoice totals') {
-      return this.t("ui.m_rms1b9");
-    }
-    if (normalized === 'issued invoices' || normalized === 'issued invoice total') {
-      return this.t("ui.m_9mwoh2");
-    }
+    if (normalized.includes('gross issued invoice totals before sales returns')) return this.t('ui.m_19xyqei');
+    if (normalized === 'gross issued invoice total' || normalized === 'gross issued invoice totals') return this.t('ui.m_rms1b9');
+    if (normalized === 'issued invoices' || normalized === 'issued invoice total') return this.t('ui.m_9mwoh2');
     return value;
   }
 
   integrityWarningLabel(value: string): string {
     const normalized = value.trim().toLowerCase();
-    if (normalized.startsWith('this report identifies records for manual review only.')) {
-      return this.t("ui.m_jm2qpm");
-    }
-    if (normalized === 'manual review only' || normalized === 'report is for manual review only') {
-      return this.t("ui.m_5watgl");
-    }
+    if (normalized.startsWith('this report identifies records for manual review only.')) return this.t('ui.m_jm2qpm');
+    if (normalized === 'manual review only' || normalized === 'report is for manual review only') return this.t('ui.m_5watgl');
     return value;
   }
 
   reportLimitationLabel(value: string): string {
     const normalized = value.trim().toLowerCase();
-    const known: Record<string, { ar: string; en: string }> = {
-      'manual review only': { ar: 'للمراجعة البشرية فقط', en: 'Manual review only' },
-      'report is read-only': { ar: 'التقرير للقراءة فقط', en: 'Report is read-only' },
-      'amounts are separated by currency': { ar: 'تُعرض المبالغ منفصلة حسب العملة', en: 'Amounts are separated by currency' },
-      'uses saved tax totals on issued invoices; it does not recalculate historical taxes.': { ar: 'يعتمد على قيم الضرائب المحفوظة في الفواتير الصادرة ولا يعيد حساب الضرائب التاريخية.', en: 'Uses saved tax totals on issued invoices; it does not recalculate historical taxes.' },
-      'currency totals are kept separate and are not converted.': { ar: 'تُعرض إجماليات العملات منفصلة ولا يتم تحويلها.', en: 'Currency totals are kept separate and are not converted.' },
-      'this is an operational summary, not a jurisdiction-specific tax filing.': { ar: 'هذا ملخص تشغيلي وليس إقرارًا ضريبيًا رسميًا خاصًا بجهة ضريبية.', en: 'This is an operational summary, not a jurisdiction-specific tax filing.' },
-      'revenue is based on issued invoice totals, not cash collected.': { ar: 'يُحسب الإيراد من إجمالي الفواتير الصادرة، وليس من النقد المحصّل.', en: 'Revenue is based on issued invoice totals, not cash collected.' },
-      'invoice totals include stored tax amounts; approved sales returns are not netted from this figure.': { ar: 'تشمل إجماليات الفواتير الضرائب المسجلة، ولا تُخصم المرتجعات المعتمدة من هذا الرقم.', en: 'Invoice totals include stored tax amounts; approved sales returns are not netted from this figure.' },
-      'this result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.': { ar: 'تُخصم المصروفات المسجلة فقط، ولا تُحتسب تكلفة البضاعة لأن تكلفة شراء المنتجات غير مرتبطة بالمبيعات بعد.', en: 'This result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.' },
-      'tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.': { ar: 'لا يعرض التقرير معالجة الالتزام الضريبي وتوزيع الضريبة على المرتجعات كسجل محاسبي متكامل.', en: 'Tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.' },
-      'currency totals are kept separate and are never converted.': { ar: 'تُعرض إجماليات العملات منفصلة ولا يتم تحويلها.', en: 'Currency totals are kept separate and are never converted.' },
-      'only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.': { ar: 'تظهر الفواتير الصادرة ذات الرصيد المتبقي الموجب فقط في فئات الأعمار؛ وتُستبعد المسودات والفواتير الملغاة.', en: 'Only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.' },
-      'fully settled invoices are excluded from open receivables aging.': { ar: 'تُستبعد الفواتير المسددة بالكامل من أعمار المديونيات المفتوحة.', en: 'Fully settled invoices are excluded from open receivables aging.' },
-      'overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.': { ar: 'تُستبعد الفواتير ذات التخصيص الزائد من أرصدة المديونيات وتظهر ضمن تحذيرات جودة البيانات.', en: 'Overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.' },
-      'invoices without due dates are reported separately and are not assumed current.': { ar: 'تُعرض الفواتير بلا تاريخ استحقاق بشكل منفصل ولا تُعتبر مستحقة حاليًا افتراضيًا.', en: 'Invoices without due dates are reported separately and are not assumed current.' },
-      'legacy invoices without customer links are flagged for review, not auto-corrected.': { ar: 'تُعلَّم الفواتير القديمة التي لا ترتبط بعميل للمراجعة ولا يتم تصحيحها تلقائيًا.', en: 'Legacy invoices without customer links are flagged for review, not auto-corrected.' },
-      'currency-mismatched allocations are listed as warnings and never reduce receivables.': { ar: 'تظهر التخصيصات ذات العملات المختلفة كتحذيرات ولا تقلل المديونيات.', en: 'Currency-mismatched allocations are listed as warnings and never reduce receivables.' },
-      'this is an accounts-receivable aging report, not net profit or a full general ledger.': { ar: 'هذا تقرير لأعمار المديونيات وليس تقرير صافي أرباح أو دفتر أستاذ عام متكامل.', en: 'This is an accounts-receivable aging report, not net profit or a full general ledger.' }
-    };
-    return known[normalized]?.[this.language] || value;
+    const keys: Record<string, string> = {
+  "manual review only": "app.reportLimitation.1",
+  "report is read-only": "app.reportLimitation.2",
+  "amounts are separated by currency": "app.reportLimitation.3",
+  "uses saved tax totals on issued invoices; it does not recalculate historical taxes.": "app.reportLimitation.4",
+  "currency totals are kept separate and are not converted.": "app.reportLimitation.5",
+  "this is an operational summary, not a jurisdiction-specific tax filing.": "app.reportLimitation.6",
+  "revenue is based on issued invoice totals, not cash collected.": "app.reportLimitation.7",
+  "invoice totals include stored tax amounts; approved sales returns are not netted from this figure.": "app.reportLimitation.8",
+  "this result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.": "app.reportLimitation.9",
+  "tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.": "app.reportLimitation.10",
+  "currency totals are kept separate and are never converted.": "app.reportLimitation.11",
+  "only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.": "app.reportLimitation.12",
+  "fully settled invoices are excluded from open receivables aging.": "app.reportLimitation.13",
+  "overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.": "app.reportLimitation.14",
+  "invoices without due dates are reported separately and are not assumed current.": "app.reportLimitation.15",
+  "legacy invoices without customer links are flagged for review, not auto-corrected.": "app.reportLimitation.16",
+  "currency-mismatched allocations are listed as warnings and never reduce receivables.": "app.reportLimitation.17",
+  "this is an accounts-receivable aging report, not net profit or a full general ledger.": "app.reportLimitation.18"
+};
+    return keys[normalized] ? this.t(keys[normalized]) : value;
   }
 
   operationalHealthStatusLabel(status: string): string {
-    if (status === 'ok') return this.t("ui.m_1nehj8y");
-    if (status === 'degraded') return this.t("ui.m_124oetm");
-    return status || this.t("ui.m_s46752");
+    if (status === 'ok') return this.t('ui.m_1nehj8y');
+    if (status === 'degraded') return this.t('ui.m_124oetm');
+    return status || this.t('app.labels.unknownStatus');
   }
 
   invoiceStatusLabel(status: string): string {
-    const labelsAr: Record<string, string> = { draft: 'مسودة', issued: 'صادرة', void: 'ملغاة', paid: 'مدفوعة', overdue: 'متأخرة' };
-    const labelsEn: Record<string, string> = { draft: 'Draft', issued: 'Issued', void: 'Voided', paid: 'Paid', overdue: 'Overdue' };
-    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || this.t("ui.m_gebrdp");
+    const keys: Record<string, string> = {
+      draft: 'app.invoiceStatus.draft', issued: 'app.invoiceStatus.issued',
+      void: 'app.invoiceStatus.void', paid: 'app.invoiceStatus.paid', overdue: 'app.invoiceStatus.overdue',
+    };
+    return keys[status] ? this.t(keys[status]) : this.t('app.labels.unknownStatus');
   }
 
   purchaseOrderStatusLabel(status: string): string {
-    const labelsAr: Record<string, string> = {
-      draft: 'مسودة',
-      approved: 'معتمد',
-      partially_received: 'مستلم جزئيًا',
-      received: 'مستلم بالكامل',
-      cancelled: 'ملغي',
+    const keys: Record<string, string> = {
+      draft: 'app.purchaseOrderStatus.draft', approved: 'app.purchaseOrderStatus.approved',
+      partially_received: 'app.purchaseOrderStatus.partially_received',
+      received: 'app.purchaseOrderStatus.received', cancelled: 'app.purchaseOrderStatus.cancelled',
     };
-    const labelsEn: Record<string, string> = {
-      draft: 'Draft',
-      approved: 'Approved',
-      partially_received: 'Partially received',
-      received: 'Received',
-      cancelled: 'Cancelled',
-    };
-    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || status || this.t("ui.m_s46752");
+    return keys[status] ? this.t(keys[status]) : status || this.t('app.labels.unknownStatus');
   }
 
   get pageTitle(): string {
-    const titles: Record<Tab, string> = {
-      overview: 'الرئيسية', customers: 'العملاء',
-      products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', expenses: 'المصروفات', employees: 'الموظفون والمرتبات', suppliers: 'الموردون', purchases: 'المشتريات', recurring: 'الفواتير الدورية', notifications: 'الإشعارات', health: 'الحالة التشغيلية', assistant: 'مساعد الأعمال الذكي', reports: 'نتيجة التشغيل الأولية', taxes: 'التقارير الضريبية', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', 'release-guide': 'دليل التطبيق والإصدارات', 'platform-admin': 'إدارة المنصة'
+    const keys: Record<Tab, string> = {
+  "overview": "app.pageTitle.overview",
+  "customers": "app.pageTitle.customers",
+  "products": "app.pageTitle.products",
+  "invoices": "app.pageTitle.invoices",
+  "payments": "app.pageTitle.payments",
+  "expenses": "app.pageTitle.expenses",
+  "employees": "app.pageTitle.employees",
+  "suppliers": "app.pageTitle.suppliers",
+  "purchases": "app.pageTitle.purchases",
+  "recurring": "app.pageTitle.recurring",
+  "notifications": "app.pageTitle.notifications",
+  "health": "app.pageTitle.health",
+  "assistant": "app.pageTitle.assistant",
+  "reports": "app.pageTitle.reports",
+  "taxes": "app.pageTitle.taxes",
+  "audit": "app.pageTitle.audit",
+  "integrity": "app.pageTitle.integrity",
+  "release-guide": "app.pageTitle.release-guide",
+  "platform-admin": "app.pageTitle.platform-admin"
+};
+    return this.t(keys[this.tab]);
+  }
+
+  agingBucketLabel(bucket: string): string {
+    const keys: Record<string, string> = {
+      not_due: 'app.agingBucket.not_due', '1_30_days': 'app.agingBucket.1_30_days',
+      '31_60_days': 'app.agingBucket.31_60_days', '61_90_days': 'app.agingBucket.61_90_days',
+      over_90_days: 'app.agingBucket.over_90_days', no_due_date: 'app.agingBucket.no_due_date',
     };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', expenses: 'Expenses', employees: 'Employees & payroll', suppliers: 'Suppliers', purchases: 'Purchasing', recurring: 'Recurring invoices', notifications: 'Notifications', health: 'Operational health', assistant: 'AI business assistant', reports: 'Preliminary operating result', taxes: 'Tax summary', audit: 'Activity log', integrity: 'Data integrity review', 'release-guide': 'App guide & versions', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
+    return keys[bucket] ? this.t(keys[bucket]) : bucket;
+  }
+
+  agingWarningLabel(type: string): string {
+    const keys: Record<string, string> = {
+      payment_currency_mismatch: 'app.agingWarning.payment_currency_mismatch',
+      allocations_exceed_invoice_total: 'app.agingWarning.allocations_exceed_invoice_total',
+    };
+    return keys[type] ? this.t(keys[type]) : type;
+  }
+
+  importErrorLabel(code: string): string {
+    const keys: Record<string, string> = {
+      required: 'app.importError.required', too_long: 'app.importError.too_long',
+      invalid_decimal: 'app.importError.invalid_decimal', invalid_boolean: 'app.importError.invalid_boolean',
+      duplicate_in_file: 'app.importError.duplicate_in_file', already_exists: 'app.importError.already_exists',
+    };
+    return keys[code] ? this.t(keys[code]) : code;
+  }
+
+  currencyName(code: string): string {
+    return new Intl.DisplayNames(this.localization.locale, { type: 'currency' }).of(code) || code;
   }
 
   private async checkPlatformAdminAccess(): Promise<void> {
@@ -2399,7 +2387,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.currentAuthUid = user.uid;
       this.currentAuthEmail = user.email ?? null;
       this.signedIn = true;
-      this.userEmail = user.email || 'مستخدم مسجّل الدخول';
+      this.userEmail = user.email || this.t('common.signedInUser');
       await this.checkPlatformAdminAccess();
       await this.loadBusinesses();
     } catch (error) {
@@ -2430,22 +2418,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get sessionExpired(): boolean {
-    // Keep recovery behavior stable when the user changes the UI language
-    // after the original error message was created.
-    return [
-      'انتهت صلاحية جلسة الدخول أو تعذر التحقق منها. سجّل الخروج ثم سجّل الدخول مرة أخرى.',
-      'Your sign-in session is no longer valid or could not be verified. Sign out and sign in again.'
-    ].includes(this.error);
+    return Boolean(this.error) && this.lastErrorKind === 'session-expired';
   }
 
   get accessDenied(): boolean {
-    // The stored error may be in the previous language after a language toggle.
-    return [
-      'لا تملك الصلاحية للوصول إلى مساحة العمل أو تنفيذ هذا الإجراء. اطلب من مالك مساحة العمل مراجعة دورك.',
-      'You do not have permission to access this workspace or perform this action.',
-      'حسابك غير مخوّل للوصول إلى إدارة المنصة. إذا كنت تحتاج هذه الصلاحية، راجع مسؤول المنصة.',
-      'Your account is not authorized to access platform administration. Contact the platform administrator if you need this access.'
-    ].includes(this.error);
+    return Boolean(this.error) && this.lastErrorKind === 'access-denied';
   }
 
   retry(): void {
@@ -3608,7 +3585,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const dateOnly = style === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(value);
     const parsed = new Date(dateOnly ? `${value}T12:00:00` : value);
     if (!Number.isFinite(parsed.getTime())) return '—';
-    const locale = this.language === 'ar' ? 'ar-EG' : 'en-GB';
+    const locale = this.localization.locale;
     const options: Intl.DateTimeFormatOptions = style === 'date'
       ? { dateStyle: 'medium' }
       : style === 'short'
@@ -3619,7 +3596,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   formatCustomerStatementDate(value: string | null | undefined): string {
     if (!value || !Number.isFinite(Date.parse(value))) return '—';
-    return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en-GB', {
+    return new Intl.DateTimeFormat(this.localization.locale, {
       dateStyle: 'short', timeStyle: 'short',
     }).format(new Date(value));
   }
@@ -4778,54 +4755,48 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
+  private lastErrorKind: 'session-expired' | 'access-denied' | null = null;
+
   private message(error: unknown, context: 'auth' | 'api' = 'api'): string {
     const value = error as { code?: string; message?: string };
     const code = typeof value?.code === 'string' ? value.code : '';
     const message = typeof value?.message === 'string' ? value.message : '';
-    const authMessages: Record<string, string> = {
-      'auth/email-already-in-use': 'هذا البريد لديه حساب بالفعل. سجّل الدخول أو استخدم بريدًا آخر.',
-      'auth/invalid-email': 'أدخل بريدًا إلكترونيًا صحيحًا.',
-      'auth/weak-password': 'اختر كلمة مرور أقوى من 6 أحرف على الأقل.',
-      'auth/operation-not-allowed': 'التسجيل بالبريد الإلكتروني وكلمة المرور غير مفعّل في Firebase Authentication. فعّل مزوّد البريد الإلكتروني وكلمة المرور من وحدة تحكم Firebase.',
-      'auth/unauthorized-domain': 'نطاق الموقع غير مصرح به في Firebase Authentication. أضف ai-business-assistant-web.vercel.app إلى النطاقات المصرح بها.',
-      'auth/network-request-failed': 'تعذر الاتصال بخدمة Firebase Authentication. تحقق من الإنترنت وقيود مفتاح Firebase ثم حاول مجددًا.',
-      'auth/too-many-requests': 'حظر Firebase المحاولات المتكررة مؤقتًا. انتظر قليلًا ثم حاول مجددًا.'
+    this.lastErrorKind = null;
+
+    const authKeys: Record<string, string> = {
+      'auth/email-already-in-use': 'app.authError.auth_email_already_in_use',
+      'auth/invalid-email': 'app.authError.auth_invalid_email',
+      'auth/weak-password': 'app.authError.auth_weak_password',
+      'auth/operation-not-allowed': 'app.authError.auth_operation_not_allowed',
+      'auth/unauthorized-domain': 'app.authError.auth_unauthorized_domain',
+      'auth/network-request-failed': 'app.authError.auth_network_request_failed',
+      'auth/too-many-requests': 'app.authError.auth_too_many_requests',
     };
-    if (code && authMessages[code]) {
-      if (this.language === 'ar') return authMessages[code];
-      const englishAuthMessages: Record<string, string> = {
-        'auth/email-already-in-use': 'This email already has an account. Sign in or use another email.',
-        'auth/invalid-email': 'Enter a valid email address.',
-        'auth/weak-password': 'Choose a stronger password with at least 6 characters.',
-        'auth/operation-not-allowed': 'Email/Password sign-in is disabled. Enable it in Firebase Authentication.',
-        'auth/unauthorized-domain': 'This site domain is not authorized. Add the current domain to Firebase Authentication authorized domains.',
-        'auth/network-request-failed': 'Could not reach Firebase Authentication. Check your connection and Firebase settings.',
-        'auth/too-many-requests': 'Firebase temporarily blocked repeated attempts. Wait a little and try again.'
-      };
-      return englishAuthMessages[code] || authMessages[code];
-    }
+    if (code && authKeys[code]) return this.t(authKeys[code]);
+
     const deniedMessage = message.trim();
     if (deniedMessage === 'Authentication required' || deniedMessage === 'Authenticated subject is missing') {
-      return this.t("ui.m_agj0gj");
+      this.lastErrorKind = 'session-expired';
+      return this.t('ui.m_agj0gj');
     }
     if (deniedMessage === 'Platform administrator access is not granted.') {
-      return this.t("ui.m_1404mrg");
+      this.lastErrorKind = 'access-denied';
+      return this.t('ui.m_1404mrg');
     }
     if ([
       'No active membership for this business',
       'Business role is not permitted for this operation',
-      'No access to this business workspace.'
+      'No access to this business workspace.',
     ].includes(deniedMessage) || /^(?:forbidden|permission denied|not authorized|access denied)\b/i.test(deniedMessage)) {
-      return this.t("ui.m_1nbaoyf");
+      this.lastErrorKind = 'access-denied';
+      return this.t('ui.m_1nbaoyf');
     }
-    if (/AI chat is not configured/i.test(message)) return this.t("ui.m_1kpvtc1");
-    if (/timed out/i.test(message)) return this.t("ui.m_1wa8x7o");
-    if (message.startsWith('API_CONNECTION_FAILED:')) return this.t("ui.m_1qj0ayu");
+    if (/AI chat is not configured/i.test(message)) return this.t('ui.m_1kpvtc1');
+    if (/timed out/i.test(message)) return this.t('ui.m_1wa8x7o');
+    if (message.startsWith('API_CONNECTION_FAILED:')) return this.t('ui.m_1qj0ayu');
     if (/failed to fetch|networkerror|load failed/i.test(message)) {
-      if (context === 'auth') return this.t("ui.m_jjvwnu");
-      return this.t("ui.m_g15vmh");
+      return context === 'auth' ? this.t('ui.m_jjvwnu') : this.t('ui.m_g15vmh');
     }
     if (message) return message;
-    return this.t("ui.m_s1b5tm");
-  }
-}
+    return this.t('ui.m_s1b5tm');
+  }}
