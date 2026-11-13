@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { expandTranslationCalls } from './localization-test-helpers';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
 
 const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const snapshotSource = readFileSync(new URL('./payment-retry-snapshot.ts', import.meta.url), 'utf8');
