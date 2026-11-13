@@ -516,17 +516,14 @@ export class PlatformAdminComponent implements OnInit {
     return value ? value.slice(0, 1).toUpperCase() : 'A';
   }
 
-  t(keyOrArabic: string, paramsOrEnglish?: Record<string, string | number> | string): string {
-    if (typeof paramsOrEnglish === 'string') {
-      return this.language === 'ar' ? keyOrArabic : paramsOrEnglish;
-    }
-    return this.localization.translate(keyOrArabic, paramsOrEnglish);
+  t(key: string, params?: Record<string, string | number>): string {
+    return this.localization.translate(key, params);
   }
 
   money(value: string): string {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return value;
-    return new Intl.NumberFormat(this.language === 'ar' ? 'ar-EG' : 'en-US', {
+    return new Intl.NumberFormat(this.localization.locale, {
       minimumFractionDigits: 2, maximumFractionDigits: 2
     }).format(parsed);
   }
@@ -535,7 +532,7 @@ export class PlatformAdminComponent implements OnInit {
     if (!value) return this.t("ui.m_1tnh3kh");
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return this.t("ui.m_1tnh3kh");
-    return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en-GB', {
+    return new Intl.DateTimeFormat(this.localization.locale, {
       dateStyle: 'medium', timeStyle: 'short'
     }).format(date);
   }
@@ -549,14 +546,17 @@ export class PlatformAdminComponent implements OnInit {
   }
 
   statusLabel(status: string): string {
-    const ar: Record<string, string> = { draft: 'مسودة', issued: 'صادرة', void: 'ملغاة' };
-    const en: Record<string, string> = { draft: 'Draft', issued: 'Issued', void: 'Voided' };
-    return (this.language === 'ar' ? ar : en)[status] || status;
+    const keys: Record<string, string> = {
+      draft: 'app.platformAdmin.status.draft',
+      issued: 'app.platformAdmin.status.issued',
+      void: 'app.platformAdmin.status.void',
+    };
+    return keys[status] ? this.t(keys[status]) : status;
   }
 
   roleLabel(role: PlatformMembership['role']): string {
-    if (role === 'owner') return this.t("ui.m_13uvj3r");
-    if (role === 'staff') return this.t("ui.m_1bfbo3p");
+    if (role === 'owner') return this.t('ui.m_13uvj3r');
+    if (role === 'staff') return this.t('ui.m_1bfbo3p');
     return role;
   }
 
@@ -579,13 +579,13 @@ export class PlatformAdminComponent implements OnInit {
   }
 
   dependencyStatusLabel(status: string): string {
-    const labels: Record<string, { ar: string; en: string }> = {
-      healthy: { ar: 'سليم', en: 'Healthy' },
-      unavailable: { ar: 'غير متاح', en: 'Unavailable' },
-      unconfigured: { ar: 'غير مُعد', en: 'Not configured' },
-      configured: { ar: 'مُعد', en: 'Configured' },
+    const keys: Record<string, string> = {
+      healthy: 'app.platformAdmin.dependency.healthy',
+      unavailable: 'app.platformAdmin.dependency.unavailable',
+      unconfigured: 'app.platformAdmin.dependency.unconfigured',
+      configured: 'app.platformAdmin.dependency.configured',
     };
-    return labels[status]?.[this.language === 'ar' ? 'ar' : 'en'] || status;
+    return keys[status] ? this.t(keys[status]) : status;
   }
 
   async refreshOverview(): Promise<void> {
@@ -603,14 +603,14 @@ export class PlatformAdminComponent implements OnInit {
   }
 
   sectionAnnouncementFor(section: AdminSection): string {
-    const labels: Record<AdminSection, { ar: string; en: string }> = {
-      overview: { ar: 'تم فتح قسم نظرة عامة', en: 'Opened Overview section' },
-      businesses: { ar: 'تم فتح قسم مساحات العمل', en: 'Opened Workspaces section' },
-      activity: { ar: 'تم فتح قسم سجل التدقيق', en: 'Opened Audit activity section' },
-      users: { ar: 'تم فتح قسم المستخدمين والصلاحيات', en: 'Opened Users and access section' },
-      permissions: { ar: 'تم فتح قسم الصلاحيات', en: 'Opened Permissions section' },
+    const keys: Record<AdminSection, string> = {
+      overview: 'app.platformAdmin.section.overview',
+      businesses: 'app.platformAdmin.section.businesses',
+      activity: 'app.platformAdmin.section.activity',
+      users: 'app.platformAdmin.section.users',
+      permissions: 'app.platformAdmin.section.permissions',
     };
-    return this.t(labels[section].ar, labels[section].en);
+    return this.t(keys[section]);
   }
 
   setSection(section: AdminSection): void {
@@ -689,35 +689,35 @@ export class PlatformAdminComponent implements OnInit {
   }
 
   platformRoleLabel(role: string): string {
-    const labels: Record<string, { ar: string; en: string }> = {
-      platform_super_admin: { ar: 'مسؤول المنصة الأساسي', en: 'Platform Super Admin' },
-      platform_viewer: { ar: 'مشاهد المنصة', en: 'Platform Viewer' },
-      workspace_operator: { ar: 'مشغّل مساحات العمل', en: 'Workspace Operator' },
-      user_manager: { ar: 'مدير دليل المستخدمين', en: 'User Manager' }
+    const keys: Record<string, string> = {
+      platform_super_admin: 'app.platformAdmin.role.platform_super_admin',
+      platform_viewer: 'app.platformAdmin.role.platform_viewer',
+      workspace_operator: 'app.platformAdmin.role.workspace_operator',
+      user_manager: 'app.platformAdmin.role.user_manager',
     };
-    return labels[role]?.[this.language === 'ar' ? 'ar' : 'en'] || role;
+    return keys[role] ? this.t(keys[role]) : role;
   }
 
   platformPermissionLabel(permission: string): string {
-    const labels: Record<string, { ar: string; en: string }> = {
-      view_overview: { ar: 'قراءة مؤشرات المنصة', en: 'View platform overview' },
-      view_workspaces: { ar: 'عرض مساحات العمل', en: 'View workspaces' },
-      view_audit: { ar: 'قراءة سجل التدقيق', en: 'Read audit history' },
-      view_system_status: { ar: 'عرض حالة النظام', en: 'View system status' },
-      view_users: { ar: 'عرض دليل جميع المستخدمين', en: 'View all users' },
-      manage_workspace_status: { ar: 'تفعيل/تعطيل مساحة بسبب موثق', en: 'Change workspace status with a reason' },
-      manage_platform_roles: { ar: 'منح وإلغاء أدوار المنصة', en: 'Grant and revoke platform roles' }
+    const keys: Record<string, string> = {
+      view_overview: 'app.platformAdmin.permission.view_overview',
+      view_workspaces: 'app.platformAdmin.permission.view_workspaces',
+      view_audit: 'app.platformAdmin.permission.view_audit',
+      view_system_status: 'app.platformAdmin.permission.view_system_status',
+      view_users: 'app.platformAdmin.permission.view_users',
+      manage_workspace_status: 'app.platformAdmin.permission.manage_workspace_status',
+      manage_platform_roles: 'app.platformAdmin.permission.manage_platform_roles',
     };
-    return labels[permission]?.[this.language === 'ar' ? 'ar' : 'en'] || permission;
+    return keys[permission] ? this.t(keys[permission]) : permission;
   }
 
   platformRoleDescription(role: string): string {
-    const descriptions: Record<string, { ar: string; en: string }> = {
-      platform_viewer: { ar: 'قراءة المؤشرات والمساحات وسجل التدقيق وحالة النظام.', en: 'Read platform metrics, workspaces, audit records and system status.' },
-      workspace_operator: { ar: 'صلاحيات القراءة مع تفعيل أو تعطيل مساحة عمل بسبب موثق.', en: 'Read access plus reasoned workspace activation/deactivation.' },
-      user_manager: { ar: 'قراءة جميع حسابات Firebase وعضوياتها؛ لا يمنح أدوار منصة.', en: 'Read all Firebase accounts and memberships; cannot grant platform roles.' }
+    const keys: Record<string, string> = {
+      platform_viewer: 'app.platformAdmin.roleDescription.platform_viewer',
+      workspace_operator: 'app.platformAdmin.roleDescription.workspace_operator',
+      user_manager: 'app.platformAdmin.roleDescription.user_manager',
     };
-    return descriptions[role]?.[this.language === 'ar' ? 'ar' : 'en'] || this.t("ui.m_vmuvn2");
+    return keys[role] ? this.t(keys[role]) : this.t('app.platformAdmin.role.rootOnly');
   }
 
   async savePlatformRole(active = this.roleChangeActive): Promise<void> {
@@ -733,10 +733,7 @@ export class PlatformAdminComponent implements OnInit {
         active,
         reason: this.roleReason.trim()
       });
-      this.roleMessage = this.t(
-        result.changed ? 'تم حفظ التغيير وتسجيله في سجل التدقيق.' : 'الصلاحية بالفعل بالحالة المطلوبة.',
-        result.message
-      );
+      this.roleMessage = this.t(result.changed ? 'app.platformAdmin.role.changed' : 'app.platformAdmin.role.alreadySet');
       this.roleReason = '';
       await Promise.all([this.loadUsers(this.userPageIndex), this.loadRoleAudit()]);
       this.selectedAdminUser = this.users.find(item => item.uid === user.uid) || null;
