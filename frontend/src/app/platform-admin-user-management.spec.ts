@@ -89,7 +89,7 @@ test('Platform Admin business, membership, activity and user tables become label
 
 
 test('Platform Admin announces SPA section changes to assistive technology', () => {
-  assert.match(source, /class="section-announcement" role="status" aria-live="polite" aria-atomic="true"/);
+  assert.match(source, /class="admin-visually-hidden admin-section-announcement" role="status" aria-live="polite" aria-atomic="true"/);
   assert.match(source, /sectionAnnouncementFor\(section: AdminSection\): string/);
   assert.match(source, /this\.sectionAnnouncement = this\.sectionAnnouncementFor\(section\)/);
   assert.match(source, /this\.sectionAnnouncement = this\.sectionAnnouncementFor\('overview'\)/);
