@@ -126,6 +126,31 @@ body {
   font-family: var(--aba-font-family);
 }
 button, input, select { font: inherit; }
+/* Installed-PWA updates stay explicit and keyboard/touch accessible. */
+.app-update-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border: 1px solid var(--aba-color-primary-border, #99f6e4);
+  border-inline-start: 4px solid var(--aba-color-primary, #0f766e);
+  background: var(--aba-color-surface, #fff);
+  color: var(--aba-color-text-primary, #172033);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.app-update-notice button {
+  min-height: 44px;
+  flex: 0 0 auto;
+}
+@media (max-width: 480px) {
+  .app-update-notice {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: var(--aba-focus-ring-width) solid var(--aba-color-focus-ring);
   outline-offset: var(--aba-focus-ring-offset);
