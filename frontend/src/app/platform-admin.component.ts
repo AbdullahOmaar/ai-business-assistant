@@ -845,7 +845,7 @@ export class PlatformAdminComponent implements OnInit {
     this.successMessage = '';
     try {
       const result = await this.api.platformBusinessStatus(current.id, { is_active: this.desiredStatus, reason });
-      this.successMessage = result.message;
+      this.successMessage = this.t(result.business.is_active ? 'app.platformAdmin.workspace.activated' : 'app.platformAdmin.workspace.deactivated');
       details.business = result.business;
       if (this.selectedDetails === details) {
         this.statusReason = '';
