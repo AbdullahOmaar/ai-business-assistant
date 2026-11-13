@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers';
 
-const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
-const component = readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8');
+const app = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const component = expandTranslationCalls(readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8'));
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const guide = readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8');
 const access = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
