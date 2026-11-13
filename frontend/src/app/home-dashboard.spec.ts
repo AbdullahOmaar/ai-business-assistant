@@ -109,8 +109,8 @@ test('Home preserves quick access, the role-filtered module directory and safe l
 });
 
 test('Home page identity and responsive metric hierarchy follow the UX handoff', () => {
-  assert.match(appSource, /overview: 'الرئيسية'/);
-  assert.match(appSource, /overview: 'Overview'/);
+  assert.match(moduleCatalogSource, /titleAr: 'الرئيسية'/);
+  assert.match(moduleCatalogSource, /titleEn: 'Overview'/);
   assert.match(appSource, /\.metric-grid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(appSource, /@media\(max-width:1050px\)\{\.metric-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.ok(appSource.includes('.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}'));
