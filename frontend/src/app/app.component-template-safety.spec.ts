@@ -1654,8 +1654,10 @@ test('public sign-in shell keeps the PWA install action and fallback available b
 
 test('PWA update notice stays touch-sized and readable in forced-colors mode', () => {
   assert.match(globalStyles, /\.app-update-notice button \{[\s\S]*?min-height: 44px;/);
-  const forcedColorsStart = globalStyles.lastIndexOf('@media (forced-colors: active)');
-  const forcedColors = globalStyles.slice(forcedColorsStart);
+  const noticeStylesStart = globalStyles.indexOf('.app-update-notice {');
+  const noticeStyles = globalStyles.slice(noticeStylesStart);
+  const forcedColorsStart = noticeStyles.indexOf('@media (forced-colors: active)');
+  const forcedColors = noticeStyles.slice(forcedColorsStart);
   assert.ok(forcedColors.includes('.app-update-notice {'));
   assert.ok(forcedColors.includes('background: Canvas;'));
   assert.ok(forcedColors.includes('color: CanvasText;'));
