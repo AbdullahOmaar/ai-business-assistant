@@ -67,22 +67,28 @@ self.addEventListener('fetch', (event) => {
           await cache.put('/runtime-config.json', response.clone()).catch(() => undefined);
           return response;
         }
-        return (await caches.match('/runtime-config.json')) || response;
+        const cache = await caches.open(CACHE_NAME);
+        return (await cache.match('/runtime-config.json')) || response;
       } catch {
-        return (await caches.match('/runtime-config.json')) || Response.error();
+        const cache = await caches.open(CACHE_NAME);
+        return (await cache.match('/runtime-config.json')) || Response.error();
       }
     })());
     return;
   }
 
   if (request.mode === 'navigate') {
-    event.respondWith(fetch(request).catch(async () => (await caches.match('/')) || Response.error()));
+    event.respondWith(fetch(request).catch(async () => {
+      const cache = await caches.open(CACHE_NAME);
+      return (await cache.match('/')) || Response.error();
+    }));
     return;
   }
 
   if (/\.(?:js|css|svg|webmanifest)$/.test(url.pathname)) {
-    event.respondWith(
-      caches.match(request).then((cached) => cached || fetch(request))
-    );
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      return (await cache.match(request)) || fetch(request);
+    })());
   }
 });
