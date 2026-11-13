@@ -3,6 +3,7 @@ import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } fro
 import { FormsModule } from '@angular/forms';
 import { ApiService, ApiRequestError, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
+import { createServiceWorkerUpdateHandler } from './service-worker-update';
 import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
@@ -2001,13 +2002,11 @@ export class AppComponent implements OnInit, OnDestroy {
     void this.loadApiVersion();
     void this.initializeApp();
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
-      const hadActiveController = Boolean(navigator.serviceWorker.controller);
-      let updateNoticeShown = false;
-      navigator.serviceWorker.addEventListener('controllerchange', () => {
-        if (!hadActiveController || updateNoticeShown) return;
-        updateNoticeShown = true;
-        this.appUpdateAvailable = true;
-      });
+      const handleControllerChange = createServiceWorkerUpdateHandler(
+        Boolean(navigator.serviceWorker.controller),
+        () => { this.appUpdateAvailable = true; },
+      );
+      navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
       const registerWorker = () => navigator.serviceWorker.register('/sw.js').catch(() => {
         // The app remains usable if service-worker registration is unavailable.
       });

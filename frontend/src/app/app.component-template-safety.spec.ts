@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { createServiceWorkerUpdateHandler } from './service-worker-update';
 
 const globalStyles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
@@ -1634,11 +1635,32 @@ test('installed PWA announces a newly activated service worker and offers an exp
   assert.ok(source.includes('role="status" aria-live="polite"'));
   assert.ok(source.includes('A new app version is ready. Refresh to continue with the latest version.'));
   assert.ok(source.includes('(click)="reloadAppAfterUpdate()"'));
-  assert.match(source, /const hadActiveController = Boolean\(navigator\.serviceWorker\.controller\)/);
-  assert.match(source, /addEventListener\('controllerchange'/);
-  assert.match(source, /if \(!hadActiveController \|\| updateNoticeShown\) return;/);
+  assert.ok(source.includes('createServiceWorkerUpdateHandler('));
+  assert.match(source, /addEventListener\('controllerchange', handleControllerChange\)/);
   assert.match(source, /reloadAppAfterUpdate\(\): void/);
   assert.match(source, /window\.location\.reload\(\)/);
+});
+
+test('the first service-worker control acquisition is silent and the next replacement announces one update', () => {
+  let updateNotices = 0;
+  const onControllerChange = createServiceWorkerUpdateHandler(false, () => { updateNotices += 1; });
+
+  onControllerChange();
+  assert.equal(updateNotices, 0, 'initial installation/control acquisition must not show an update');
+  onControllerChange();
+  assert.equal(updateNotices, 1, 'the next controller replacement must announce the update');
+  onControllerChange();
+  assert.equal(updateNotices, 1, 'one page lifecycle must announce at most one update');
+});
+
+test('an already-controlled page announces its next service-worker replacement', () => {
+  let updateNotices = 0;
+  const onControllerChange = createServiceWorkerUpdateHandler(true, () => { updateNotices += 1; });
+
+  onControllerChange();
+  assert.equal(updateNotices, 1, 'an installed page receiving a replacement worker must announce it');
+  onControllerChange();
+  assert.equal(updateNotices, 1);
 });
 
 test('public sign-in shell keeps the PWA install action and fallback available before authentication', () => {
