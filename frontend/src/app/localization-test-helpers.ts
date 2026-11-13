@@ -44,7 +44,7 @@ export function expandTranslationCalls(source: string): string {
  * Runtime catalogue objects remain key-based and production copy stays in JSON.
  */
 export function expandDictionaryBackedProperties(source: string): string {
-  return source.replace(/\bt\(\s*(['"])([A-Za-z][A-Za-z0-9_.-]*)\1/g, (match, _quote: string, key: string) => {
+  return source.replace(/\b(title|note|detail|description)Key:\s*(['"])([A-Za-z][A-Za-z0-9_.-]*)\2/g,
     (match, field: string, _quote: string, key: string) => {
       const ar = lookup(arabic, key);
       const en = lookup(english, key);
