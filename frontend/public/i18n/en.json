@@ -1081,7 +1081,13 @@
   },
   "common": {
     "app_title": "AI Business Assistant",
-    "app_description": "A practical workspace to manage business operations, customers, products, invoices, and payments."
+    "app_description": "A practical workspace to manage business operations, customers, products, invoices, and payments.",
+    "languages": {
+      "english": "English",
+      "arabic": "Arabic"
+    },
+    "signedInUser": "Signed-in user",
+    "notAvailable": "Not available"
   },
   "release": {
     "changes": {
@@ -1430,5 +1436,191 @@
     "m_82udzb": "No items in this category",
     "m_m1cwj0": "Try another type or show all items.",
     "m_9qo8uh": "Show all items"
+  },
+  "app": {
+    "labels": {
+      "unknownStatus": "Unknown status",
+      "signedInUser": "Signed-in user",
+      "notAvailable": "Not available"
+    },
+    "currency": {
+      "EGP": "Egyptian pound",
+      "USD": "US dollar",
+      "EUR": "Euro",
+      "GBP": "British pound",
+      "SAR": "Saudi riyal",
+      "AED": "UAE dirham"
+    },
+    "expenseCategory": {
+      "general": "General",
+      "supplies": "Supplies",
+      "rent": "Rent",
+      "utilities": "Utilities",
+      "transport": "Transport",
+      "marketing": "Marketing",
+      "payroll": "Payroll",
+      "maintenance": "Maintenance",
+      "other": "Other"
+    },
+    "paymentMethod": {
+      "cash": "Cash",
+      "bank_transfer": "Bank transfer",
+      "card": "Card",
+      "wallet": "E-wallet",
+      "other": "Other"
+    },
+    "notificationStatus": {
+      "pending": "Pending",
+      "sent": "Sent",
+      "failed": "Failed",
+      "cancelled": "Cancelled"
+    },
+    "notificationKind": {
+      "business": "Businesses",
+      "businesses": "Businesses",
+      "invoices": "Invoices",
+      "payments": "Payments",
+      "expenses": "Expenses",
+      "inventory": "Inventory",
+      "reminders": "Reminders",
+      "reports": "Reports",
+      "suppliers": "Suppliers",
+      "purchases": "Purchases",
+      "recurring": "Recurring invoices",
+      "assistant": "AI assistant",
+      "system": "System"
+    },
+    "customerStatementEvent": {
+      "invoice_issued": "Invoice issued",
+      "payment_allocation": "Payment allocation",
+      "currency_mismatch_allocation": "Currency-mismatch allocation"
+    },
+    "invoiceStatus": {
+      "draft": "Draft",
+      "issued": "Issued",
+      "void": "Voided",
+      "paid": "Paid",
+      "overdue": "Overdue"
+    },
+    "purchaseOrderStatus": {
+      "draft": "Draft",
+      "approved": "Approved",
+      "partially_received": "Partially received",
+      "received": "Received",
+      "cancelled": "Cancelled"
+    },
+    "pageTitle": {
+      "overview": "Overview",
+      "customers": "Customers",
+      "products": "Products & inventory",
+      "invoices": "Sales & invoices",
+      "payments": "Payments",
+      "expenses": "Expenses",
+      "employees": "Employees & payroll",
+      "suppliers": "Suppliers",
+      "purchases": "Purchasing",
+      "recurring": "Recurring invoices",
+      "notifications": "Notifications",
+      "health": "Operational health",
+      "assistant": "AI business assistant",
+      "reports": "Preliminary operating result",
+      "taxes": "Tax summary",
+      "audit": "Activity log",
+      "integrity": "Data integrity review",
+      "release-guide": "App guide & versions",
+      "platform-admin": "Platform admin"
+    },
+    "agingBucket": {
+      "not_due": "Not yet due",
+      "1_30_days": "1–30 days",
+      "31_60_days": "31–60 days",
+      "61_90_days": "61–90 days",
+      "over_90_days": "Over 90 days",
+      "no_due_date": "No due date"
+    },
+    "agingWarning": {
+      "payment_currency_mismatch": "Payment allocation uses a different currency",
+      "allocations_exceed_invoice_total": "Payment allocations exceed invoice total"
+    },
+    "importError": {
+      "required": "Required field",
+      "too_long": "Text exceeds the allowed length",
+      "invalid_decimal": "Invalid price (up to 2 decimal places)",
+      "invalid_boolean": "Invalid stock tracking value",
+      "duplicate_in_file": "Duplicate email or SKU in this file",
+      "already_exists": "Email or SKU already exists"
+    },
+    "authError": {
+      "auth_email_already_in_use": "This email already has an account. Sign in or use another email.",
+      "auth_invalid_email": "Enter a valid email address.",
+      "auth_weak_password": "Choose a stronger password with at least 6 characters.",
+      "auth_operation_not_allowed": "Email/Password sign-in is disabled. Enable it in Firebase Authentication.",
+      "auth_unauthorized_domain": "This site domain is not authorized. Add the current domain to Firebase Authentication authorized domains.",
+      "auth_network_request_failed": "Could not reach Firebase Authentication. Check your connection and Firebase settings.",
+      "auth_too_many_requests": "Firebase temporarily blocked repeated attempts. Wait a little and try again."
+    },
+    "reportLimitation": {
+      "1": "Manual review only",
+      "2": "Report is read-only",
+      "3": "Amounts are separated by currency",
+      "4": "Uses saved tax totals on issued invoices; it does not recalculate historical taxes.",
+      "5": "Currency totals are kept separate and are not converted.",
+      "6": "This is an operational summary, not a jurisdiction-specific tax filing.",
+      "7": "Revenue is based on issued invoice totals, not cash collected.",
+      "8": "Invoice totals include stored tax amounts; approved sales returns are not netted from this figure.",
+      "9": "This result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.",
+      "10": "Tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.",
+      "11": "Currency totals are kept separate and are never converted.",
+      "12": "Only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.",
+      "13": "Fully settled invoices are excluded from open receivables aging.",
+      "14": "Overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.",
+      "15": "Invoices without due dates are reported separately and are not assumed current.",
+      "16": "Legacy invoices without customer links are flagged for review, not auto-corrected.",
+      "17": "Currency-mismatched allocations are listed as warnings and never reduce receivables.",
+      "18": "This is an accounts-receivable aging report, not net profit or a full general ledger."
+    },
+    "platformAdmin": {
+      "status": {
+        "draft": "Draft",
+        "issued": "Issued",
+        "void": "Voided"
+      },
+      "dependency": {
+        "healthy": "Healthy",
+        "unavailable": "Unavailable",
+        "unconfigured": "Not configured",
+        "configured": "Configured"
+      },
+      "section": {
+        "overview": "Opened Overview section",
+        "businesses": "Opened Workspaces section",
+        "activity": "Opened Audit activity section",
+        "users": "Opened Users and access section",
+        "permissions": "Opened Permissions section"
+      },
+      "role": {
+        "platform_super_admin": "Platform Super Admin",
+        "platform_viewer": "Platform Viewer",
+        "workspace_operator": "Workspace Operator",
+        "user_manager": "User Manager",
+        "rootOnly": "Bootstrap root access is managed only in server configuration.",
+        "changed": "The role change was saved and recorded in the audit log.",
+        "alreadySet": "The role already has the requested state."
+      },
+      "permission": {
+        "view_overview": "View platform overview",
+        "view_workspaces": "View workspaces",
+        "view_audit": "Read audit history",
+        "view_system_status": "View system status",
+        "view_users": "View all users",
+        "manage_workspace_status": "Change workspace status with a reason",
+        "manage_platform_roles": "Grant and revoke platform roles"
+      },
+      "roleDescription": {
+        "platform_viewer": "Read platform metrics, workspaces, audit records and system status.",
+        "workspace_operator": "Read access plus reasoned workspace activation/deactivation.",
+        "user_manager": "Read all Firebase accounts and memberships; cannot grant platform roles."
+      }
+    }
   }
 }
