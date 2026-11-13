@@ -93,7 +93,13 @@ test('shows a deliberate refresh action when an installed app receives a new ser
   await openPublicMobileAuthShell(page, true);
   await dispatchControllerChange(page);
   await expect(page.getByText(/تم تثبيت تحديث جديد للتطبيق|A new app version is ready/)).toBeVisible();
-  await expect(page.getByRole('button', { name: /تحديث الآن|Refresh now/ })).toBeEnabled();
+  const refreshButton = page.getByRole('button', { name: /تحديث الآن|Refresh now/ });
+  await expect(refreshButton).toBeEnabled();
+
+  const reloaded = page.waitForEvent('framenavigated');
+  await refreshButton.click();
+  await reloaded;
+  await expect(page.getByRole('heading', { name: /مرحبًا بعودتك|Welcome back/ })).toBeVisible();
 });
 
 test('does not show an update notice when the first service worker takes control', async ({ page }) => {
