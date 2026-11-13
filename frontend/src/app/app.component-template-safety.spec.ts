@@ -1595,7 +1595,7 @@ test('AI assistant auto-follow respects the reader position and reduced motion',
 
 test('purchase-order approval is owner-only, confirmation-first and tenant-reset safe', () => {
   const rowsStart = source.indexOf('get purchaseTableRows()');
-  const rowsEnd = source.indexOf('purchaseOrderProductsSummary(', rowsStart);
+  const rowsEnd = source.indexOf('  purchaseOrderProductsSummary(order:PurchaseOrder):string', rowsStart);
   const rows = source.slice(rowsStart, rowsEnd);
   assert.ok(rows.includes('this.canApprovePurchaseOrder(order)'));
   assert.ok(rows.includes("id:'approve'"));
