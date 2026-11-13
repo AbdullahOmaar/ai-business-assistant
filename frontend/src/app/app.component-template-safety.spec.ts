@@ -1639,3 +1639,14 @@ test('installed PWA announces a newly activated service worker and offers an exp
   assert.match(source, /reloadAppAfterUpdate\(\): void/);
   assert.match(source, /window\.location\.reload\(\)/);
 });
+
+test('public sign-in shell keeps the PWA install action and fallback available before authentication', () => {
+  const authStart = source.indexOf('} @else if (!signedIn) {');
+  const authEnd = source.indexOf('} @else {', authStart);
+  const auth = source.slice(authStart, authEnd);
+  assert.ok(auth.includes('auth-mobile-install'));
+  assert.ok(auth.includes('@if (!isInstalled)'));
+  assert.ok(auth.includes('(click)="installApp()"'));
+  assert.ok(auth.includes('installHelp && !isInstalled'));
+  assert.ok(auth.includes('If no install prompt appears'));
+});
