@@ -224,15 +224,15 @@ test('mobile payroll keeps its period filter with history and restores focus aft
 });
 
 test('employee table action heading and remaining record loading descriptions respect Arabic locale', () => {
-  assert.match(component, /\[actionsHeading\]="t\('الإجراءات','Actions'\)"/);
+  assert.match(component, /\[actionsHeading\]="t\('الإجراءات',\s*'Actions'\)"/);
   for (const fragment of [
     "[loadingDescription]=\"t('جارٍ تحميل الإشعارات…', 'Loading notifications…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل الجداول الدورية…', 'Loading recurring schedules…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل المدفوعات…', 'Loading payments…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل سجل النشاط…', 'Loading activity log…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل المصروفات…', 'Loading expenses…')\"",
-    "this.t('عميل الدفعة:','Payment customer:')",
-    "this.t('عميل الفاتورة:','Invoice customer:')",
+    "this.t('عميل الدفعة:',\\s*'Payment customer:')",
+    "this.t('عميل الفاتورة:',\\s*'Invoice customer:')",
   ]) assert.ok(app.includes(fragment), 'missing localized record UX: '+fragment);
 });
 
