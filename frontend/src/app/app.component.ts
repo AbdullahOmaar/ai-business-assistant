@@ -1404,11 +1404,7 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly uiCommitLabel = APP_BUILD_INFO.commit;
   get buildTimeLabel(): string {
     if (!APP_BUILD_INFO.builtAt) return this.t("ui.m_1ilhynh");
-    return new Intl.DateTimeFormat(this.localization.locale, {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-      timeZone: 'Africa/Cairo',
-    }).format(new Date(APP_BUILD_INFO.builtAt));
+    return this.localization.formatDate(APP_BUILD_INFO.builtAt, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Cairo' });
   }
   apiVersionLabel = '';
   apiCommitLabel = 'unknown';
@@ -2905,24 +2901,16 @@ export class AppComponent implements OnInit, OnDestroy {
       : style === 'short'
         ? { dateStyle: 'short', timeStyle: 'short' }
         : { dateStyle: 'medium', timeStyle: 'short' };
-    return new Intl.DateTimeFormat(locale, options).format(parsed);
+    return this.localization.formatDate(parsed, options);
   }
 
   formatNumber(value: string | number | null | undefined, fractionDigits = 2): string {
-    if (value === null || value === undefined || value === '') return '—';
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) return String(value);
-    return new Intl.NumberFormat(this.localization.locale, {
-      minimumFractionDigits: fractionDigits,
-      maximumFractionDigits: fractionDigits,
-    }).format(numeric);
+    return this.localization.formatNumber(value, fractionDigits, fractionDigits);
   }
 
   formatCustomerStatementDate(value: string | null | undefined): string {
     if (!value || !Number.isFinite(Date.parse(value))) return '—';
-    return new Intl.DateTimeFormat(this.localization.locale, {
-      dateStyle: 'short', timeStyle: 'short',
-    }).format(new Date(value));
+    return this.localization.formatDate(value, { dateStyle: 'short', timeStyle: 'short' });
   }
 
   get customerStatementTableColumns(): readonly AbaRecordTableColumn[] { return [
