@@ -1640,6 +1640,14 @@
     },
     "audit": {
       "voidInvoiceReason": "Voided by an authorized workspace user"
+    },
+    "recurringSchedule": {
+      "active": "Active",
+      "inactive": "Inactive"
+    },
+    "paymentAllocation": {
+      "allocated": "Allocated",
+      "unallocated": "Unallocated"
     }
   }
 }
