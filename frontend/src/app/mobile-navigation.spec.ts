@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { expandTranslationCalls } from './localization-test-helpers';
+import { expandDictionaryBackedProperties, expandTranslationCalls } from './localization-test-helpers';
 
 const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const moduleAccessSource = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
-const catalogueSource = readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8');
+const catalogueSource = expandDictionaryBackedProperties(readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8'));
 
 test('mobile bottom navigation keeps four slots and places platform admin in More', () => {
   const mobileSidebarStart = source.indexOf('.sidebar{position:fixed;inset:auto 0 0;width:100%');
