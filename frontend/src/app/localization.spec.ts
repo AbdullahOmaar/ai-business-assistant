@@ -26,10 +26,12 @@ function sourceFiles(directory: string): string[] {
   return readdirSync(directory, { withFileTypes: true }).flatMap(entry => {
     const path = join(directory, entry.name);
     if (entry.isDirectory()) return sourceFiles(path);
-    return entry.isFile() && entry.name.endsWith('.ts') && !entry.name.endsWith('.spec.ts') ? [path] : [];
+    return entry.isFile() && ((entry.name.endsWith('.ts') && !entry.name.endsWith('.spec.ts')) || entry.name.endsWith('.html')) ? [path] : [];
   });
 }
 
+const sourceDirectory = resolve(appDirectory, '..');
+const translationNamespaces = Object.keys(arabic).map(namespace => namespace.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\const arabicEntries = flattenTranslations(arabic);')).join('|');
 const arabicEntries = flattenTranslations(arabic);
 const englishEntries = flattenTranslations(english);
 
@@ -61,7 +63,7 @@ test('every literal translation key referenced by a UI component exists in both 
   const references = new Set<string>();
   const keyPattern = /['"]((?:ui|common|app|audit|release|catalog|invoiceDraft|customerDirectory|productCatalog)\.[A-Za-z0-9_.-]+)['"]/g;
 
-  for (const path of sourceFiles(appDirectory)) {
+  for (const path of sourceFiles(sourceDirectory)) {
     const source = readFileSync(path, 'utf8');
     for (const match of source.matchAll(keyPattern)) references.add(match[1]);
   }
