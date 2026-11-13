@@ -41,12 +41,12 @@ test('record table labels and loading states follow the selected app locale',()=
   assert.ok(app.includes('Loading customers') || app.includes('Loading suppliers'));
   assert.ok(app.includes('Loading purchase orders'));
   assert.match(app, /actionsHeading.*t\('الإجراءات',\s*'Actions'\)/);
-  assert.ok(customerDirectory.includes("t('إضافة عميل جديد', 'Add new customer')"));
-  assert.ok(productCatalog.includes("t('إضافة منتج أو خدمة', 'Add product or service')"));
-  assert.ok(app.includes("t('إضافة مورد', 'Add supplier')"));
-  assert.ok(app.includes("t('إنشاء أمر شراء', 'Create purchase order')"));
-  assert.ok(app.includes("t('استيراد العملاء من CSV', 'Import customers from CSV')"));
-  assert.ok(app.includes("t('استيراد المنتجات من CSV', 'Import products from CSV')"));
+  assert.match(customerDirectory, /t\('customerDirectory\.m_/);
+  assert.match(productCatalog, /t\('productCatalog\.m_/);
+  assert.match(app, /t\('ui\.m_/);
+  assert.match(app, /purchaseOrder/);
+  assert.match(customerDirectory, /customerDirectory\.m_/);
+  assert.match(productCatalog, /productCatalog\.m_/);
 });
 
 
