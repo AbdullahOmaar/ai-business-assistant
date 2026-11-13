@@ -3320,9 +3320,12 @@ export class AppComponent implements OnInit, OnDestroy {
   get pendingPurchaseApprovalDetails(): string[] {
     const order = this.pendingPurchaseApproval;
     if (!order) return [];
+    const lineDetails = order.lines.map(line =>
+      `${this.productNameFor(line.product_id)} × ${line.quantity} · ${this.t('تكلفة الوحدة', 'Unit cost')}: ${line.unit_cost} ${order.currency_code}`
+    );
     return [
       `${this.t('المورد', 'Supplier')}: ${this.supplierNameFor(order.supplier_id)}`,
-      `${this.t('الأصناف والكميات', 'Items and quantities')}: ${this.purchaseOrderProductsSummary(order)}`,
+      ...lineDetails,
       `${this.t('الإجمالي', 'Total')}: ${order.total} ${order.currency_code}`,
     ];
   }
