@@ -160,11 +160,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               @if (filteredMobileMoreGroups.length) {
                 @for (group of filteredMobileMoreGroups; track group.id) {
                 <section class="mobile-more-group" [attr.aria-labelledby]="'mobile-more-' + group.id + '-heading'">
-                  <h3 [id]="'mobile-more-' + group.id + '-heading'">{{ t(group.titleAr, group.titleEn) }}</h3>
+                  <h3 [id]="'mobile-more-' + group.id + '-heading'">{{ t(group.titleKey) }}</h3>
                   @for (module of group.modules; track module.tab) {
                     <button class="nav-item" type="button" [class.active]="tab === module.tab" [attr.aria-current]="tab === module.tab ? 'page' : null" (click)="selectMobileMoreTab(module.tab)">
                       <span class="nav-icon" aria-hidden="true">{{ module.icon }}</span>
-                      <span>{{ t(module.titleAr, module.titleEn) }}</span>
+                      <span>{{ t(module.titleKey) }}</span>
                     </button>
                   }
                 </section>
@@ -305,7 +305,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   @for (module of homeQuickAccessCards; track module.tab) {
                     <button class="home-shortcut-link" type="button" (click)="setTab(module.tab)">
                       <span class="home-shortcut-link__icon" aria-hidden="true">{{ module.icon }}</span>
-                      <span class="home-shortcut-link__label">{{ t(module.titleAr, module.titleEn) }}</span>
+                      <span class="home-shortcut-link__label">{{ t(module.titleKey) }}</span>
                     </button>
                   }
                 </nav>
@@ -332,8 +332,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     @for (module of filteredHomeModuleCards; track module.tab) {
                       <aba-quick-access-card
                         [icon]="module.icon"
-                        [title]="t(module.titleAr, module.titleEn)"
-                        [description]="t(module.descriptionAr, module.descriptionEn)"
+                        [title]="t(module.titleKey)"
+                        [description]="t(module.descriptionKey)"
                         (activated)="setTab(module.tab)" />
                     }
                   </div>
