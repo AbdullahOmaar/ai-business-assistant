@@ -243,7 +243,7 @@ test('OWNER approves a draft purchase order from the mobile layout without recor
   await openPurchases(page);
   await page.setViewportSize({ width: 390, height: 844 });
 
-  await page.getByRole('button', { name: 'Approve', exact: true }).click();
+  await page.getByRole('button', { name: 'Approve: PO-2026-001', exact: true }).click();
   const dialog = page.getByRole('alertdialog');
   await expect(dialog).toBeVisible();
   await expect(dialog).toContainText('North Supplies');
@@ -253,7 +253,7 @@ test('OWNER approves a draft purchase order from the mobile layout without recor
 
   await dialog.getByRole('button', { name: 'Approve order', exact: true }).click();
   await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Approve', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Approve: PO-2026-001', exact: true })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Receive remaining', exact: true })).toBeVisible();
 
   expect(harness.getOrderStatus()).toBe('approved');
@@ -265,7 +265,7 @@ test('OWNER approves a draft purchase order from the mobile layout without recor
 test('approval failure stays in the confirmation dialog and does not show success', async ({ page }) => {
   const harness = await setupWorkspace(page, { approvalStatus: 403 });
   await openPurchases(page);
-  await page.getByRole('button', { name: 'Approve', exact: true }).click();
+  await page.getByRole('button', { name: 'Approve: PO-2026-001', exact: true }).click();
 
   const dialog = page.getByRole('alertdialog');
   await dialog.getByRole('button', { name: 'Approve order', exact: true }).click();
@@ -280,7 +280,7 @@ test('approval failure stays in the confirmation dialog and does not show succes
 test('STAFF cannot see purchase-order approval or receiving actions', async ({ page }) => {
   const harness = await setupWorkspace(page, { role: 'staff' });
   await openPurchases(page);
-  await expect(page.getByRole('button', { name: 'Approve', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^Approve:/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: 'Receive remaining', exact: true })).toHaveCount(0);
   expect(harness.apiRequests.some(item => item.method === 'POST' && item.path.endsWith('/approve'))).toBe(false);
   expect(harness.uncaughtErrors).toEqual([]);
@@ -289,7 +289,7 @@ test('STAFF cannot see purchase-order approval or receiving actions', async ({ p
 test('switching workspaces clears a pending purchase approval confirmation', async ({ page }) => {
   const harness = await setupWorkspace(page, { includeSecondBusiness: true });
   await openPurchases(page);
-  await page.getByRole('button', { name: 'Approve', exact: true }).click();
+  await page.getByRole('button', { name: 'Approve: PO-2026-001', exact: true }).click();
   await expect(page.getByRole('alertdialog')).toBeVisible();
 
   await page.locator('.workspace-bar select').selectOption('business-b', { force: true });
