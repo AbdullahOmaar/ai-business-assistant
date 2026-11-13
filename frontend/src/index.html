@@ -1,6 +1,14 @@
 <!doctype html>
 <html lang="ar" dir="rtl">
 <head>
+  <script>
+    try {
+      if (localStorage.getItem('aba-language') === 'en') {
+        document.documentElement.lang = 'en';
+        document.documentElement.dir = 'ltr';
+      }
+    } catch {}
+  </script>
   <meta charset="utf-8">
   <title>مساعد الأعمال الذكي</title>
   <base href="/">
