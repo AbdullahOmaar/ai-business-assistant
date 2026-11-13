@@ -130,3 +130,35 @@ test('public mobile sign-in shell reflows without horizontal overflow at a 200%-
   expect(layout.document).toBeLessThanOrEqual(layout.viewport);
   expect(layout.body).toBeLessThanOrEqual(layout.viewport);
 });
+
+
+test('keeps the PWA update notice legible when forced-colors is active', async ({ page }) => {
+  await page.emulateMedia({ forcedColors: 'active' });
+  await openPublicMobileAuthShell(page, true);
+  await dispatchControllerChange(page);
+
+  const notice = page.locator('.app-update-notice');
+  await expect(notice).toBeVisible();
+  const colors = await notice.evaluate((element) => {
+    const button = element.querySelector('button');
+    const noticeStyle = getComputedStyle(element);
+    const buttonStyle = button ? getComputedStyle(button) : null;
+    return {
+      forcedColors: matchMedia('(forced-colors: active)').matches,
+      noticeBackground: noticeStyle.backgroundColor,
+      noticeColor: noticeStyle.color,
+      noticeBorder: noticeStyle.borderTopColor,
+      buttonBackground: buttonStyle?.backgroundColor,
+      buttonColor: buttonStyle?.color,
+      buttonBorder: buttonStyle?.borderTopColor,
+    };
+  });
+
+  expect(colors.forcedColors).toBe(true);
+  expect(colors.noticeBackground).not.toBe('rgba(0, 0, 0, 0)');
+  expect(colors.noticeColor).not.toBe('rgba(0, 0, 0, 0)');
+  expect(colors.noticeBorder).not.toBe('rgba(0, 0, 0, 0)');
+  expect(colors.buttonBackground).not.toBe('rgba(0, 0, 0, 0)');
+  expect(colors.buttonColor).not.toBe('rgba(0, 0, 0, 0)');
+  expect(colors.buttonBorder).not.toBe('rgba(0, 0, 0, 0)');
+});
