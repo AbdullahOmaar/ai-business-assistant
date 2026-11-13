@@ -1627,3 +1627,15 @@ test('purchase-order approval is owner-only, confirmation-first and tenant-reset
   assert.ok(source.includes('This approves the draft purchase order only. It does not record receipt or a stock movement.'));
   assert.ok(source.includes('Approval does not create supplier bills, payables or payments.'));
 });
+
+test('installed PWA announces a newly activated service worker and offers an explicit refresh', () => {
+  assert.ok(source.includes('appUpdateAvailable = false;'));
+  assert.ok(source.includes('role="status" aria-live="polite"'));
+  assert.ok(source.includes('A new app version is ready. Refresh to continue with the latest version.'));
+  assert.ok(source.includes('(click)="reloadAppAfterUpdate()"'));
+  assert.match(source, /const hadActiveController = Boolean\(navigator\.serviceWorker\.controller\)/);
+  assert.match(source, /addEventListener\('controllerchange'/);
+  assert.match(source, /if \(!hadActiveController \|\| updateNoticeShown\) return;/);
+  assert.match(source, /reloadAppAfterUpdate\(\): void/);
+  assert.match(source, /window\.location\.reload\(\)/);
+});
