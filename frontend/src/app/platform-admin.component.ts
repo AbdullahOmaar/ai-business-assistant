@@ -26,7 +26,7 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
         </div>
         <div class="identity-actions">
           <div class="identity"><span class="avatar" aria-hidden="true">{{ initials }}</span><span><strong>{{ access?.is_platform_super_admin ? t("ui.m_1tjgh5f") : t("ui.m_7fhsvk") }}</strong><small>{{ userEmail || t("ui.m_9x0vvs") }}</small></span></div>
-          <button class="quiet-button" type="button" (click)="languageToggleRequested.emit()" [attr.aria-label]="t("ui.m_1bzusoy")">{{ language === 'ar' ? 'English' : 'العربية' }}</button>
+          <button class="quiet-button" type="button" (click)="languageToggleRequested.emit()" [attr.aria-label]="t("ui.m_1bzusoy")">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button>
           <button class="quiet-button signout" type="button" (click)="signOutRequested.emit()">{{ t("ui.m_1ivd8ld") }}</button>
         </div>
       </header>
