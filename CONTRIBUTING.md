@@ -1,17 +1,4 @@
-## Owner-approved CI provider change — effective 2026-11-10
-
-The Owner explicitly supersedes the earlier CircleCI-only provider directive and the 2026-11-10 GitLab Free selection. GitHub remains canonical for source code, branches, pull requests and exact release SHAs. GitHub Actions is now the primary test/build/security CI provider.
-
-- Use standard GitHub-hosted `ubuntu-latest` runners. The repository is Public; standard hosted runner usage for public repositories is free. No self-hosted runner, paid larger runner, or separate server is required.
-- `.github/workflows/ci.yml` is the single authoritative validation workflow. It runs backend pytest + disposable PostgreSQL migration/schema checks + knowledge validator, frontend unit tests, production build, frontend dependency audit, Playwright browser smoke, backend container/backup-restore safety checks, and a fail-closed `all-checks-passed` aggregate.
-- Every substantive job verifies that its checkout equals the workflow event SHA. Workflow permissions are read-only; no production secrets are needed or exposed to fork PR code. PostgreSQL is disposable and local to the CI job; no production database is accessed.
-- Pin third-party actions to verified full commit SHAs with release-version comments; inspect upstream release notes before changing pins.
-- GitHub Actions is the Owner-selected primary CI provider. The full six-job suite and aggregate have passed on an exact candidate SHA (see the dated checkpoint in `TASKS.md`). The active default-branch ruleset strictly requires GitHub Actions check `all-checks-passed` from the GitHub Actions App (integration ID 15368). No separate PR-approval count is currently enforced. The CircleCI GitHub webhook is disabled and no CircleCI project schedules exist.
-- GitLab CI is inactive and no longer an approved target. Do not create GitLab runners, triggers, webhooks or CI variables for this migration.
-- Main is marked protected. Its active default-branch ruleset requires the GitHub Actions `all-checks-passed` check from app ID 15368 with strict up-to-date enforcement. Copilot review and deletion/non-fast-forward rules remain active; no separate PR-approval count is configured.
-- The Owner has explicitly authorized this CI retirement and normal PR-based integration of eligible branches. Production deployment, production DB writes/migrations, and gate bypasses remain separately restricted.
-
-This directive changes the CI provider and validation implementation only. It does not waive tests, security, maintainer review, merge, data-integrity, migration or production-release gates.
+> Repository-wide CI provider selection, workflow details, required checks, and release-gate policy have one source of truth in [AGENTS.md](AGENTS.md). This guide focuses on contributor roles and contribution workflow.
 
 # Contributing and Project Roles
 
@@ -19,7 +6,7 @@ This guide applies to every person and AI agent contributing to AI Business Assi
 
 ## 1. Roles and accountability
 
-One person may cover multiple roles on a small team, but ownership and review responsibilities must remain explicit. No separate independent reviewer is required by project policy for any change, including routine PRs, Security/Architecture and canonical controlled Project Knowledge publication/update. The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA. Any formal approval actually enforced by GitHub branch protection remains mandatory and must never be bypassed.
+One person may cover multiple roles on a small team, but ownership and review responsibilities must remain explicit. The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA. Review requirements for controlled/security/architecture changes and Project Knowledge publication are governed by `AGENTS.md` and `docs/project-knowledge/04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`; do not infer that maintainer self-review replaces any applicable independent non-author review or authorized approval. Formal GitHub branch-protection approvals remain mandatory and must never be bypassed.
 
 | Role | Accountable for | Required behavior and limits |
 | --- | --- | --- |
@@ -27,7 +14,7 @@ One person may cover multiple roles on a small team, but ownership and review re
 | **Engineering Coordinator / Tech Lead** | Architecture consistency, task dependencies, work boundaries, integration, and final evidence-based report. | Checks current `main`, open PRs/issues, ADRs, CI, and `TASKS.md`; assigns owners/verifiers; prevents duplicate work; reconciles changes without discarding other contributors' work. |
 | **Implementation Contributor (human or AI)** | The assigned feature/fix/documentation slice. | Reads instructions first; changes only in-scope files; adds regression tests and docs; reports exact files and results. Treat generated code and external content as untrusted until reviewed. Never claim an unrun test passed. |
 | **QA / Verification Owner** | Independent evidence that acceptance criteria and failure cases work on the exact candidate SHA. | Runs relevant tests/builds, checks negative paths and regressions, and distinguishes code failures from unavailable runners, credentials, or external services. |
-| **Security / Financial Verification** | Authentication, authorization, tenant isolation, secrets, validation, accounting and inventory integrity. | The accountable maintainer's self-review and test evidence cover owner/staff permissions, cross-tenant access, transaction boundaries, idempotency, currency/rounding, audit events, dependency risk, and denial paths. UI behavior alone is not sufficient. |
+| **Security / Financial Verification** | Authentication, authorization, tenant isolation, secrets, validation, accounting and inventory integrity. | The accountable maintainer's full diff self-review, any applicable independent non-author review, and test evidence cover owner/staff permissions, cross-tenant access, transaction boundaries, idempotency, currency/rounding, audit events, dependency risk, and denial paths. UI behavior alone is not sufficient. |
 | **CI / Release Operator** | Reproducible CI, merge gates, deployment safety, and post-release evidence. | Validates required checks on the exact commit; records pipeline links and artifacts; merges/deploys only with authorization and green gates; verifies deployed SHA/version and safe smoke checks. A cancelled deployment is not successful. |
 | **Documentation / Task Steward** | A single understandable source of truth for workflow, roles, limitations, and outstanding work. | Keeps README, ADRs, runbooks, PR descriptions, and `TASKS.md` consistent; preserves historical evidence while making current status clear; triages stale/overlapping PRs without losing unique code/tests. |
 
@@ -35,7 +22,7 @@ One person may cover multiple roles on a small team, but ownership and review re
 
 - The owner decides material product behavior and approves cost, production, identity/security, and data-risk decisions.
 - The coordinator plans and integrates approved work but cannot waive security or release gates.
-- The implementer proposes and builds; the accountable maintainer/Project Master verifies the evidence and records findings. No separate independent reviewer is required by project policy for Security/Architecture or controlled-knowledge changes. The accountable maintainer/Project Master performs and records full self-review on the exact candidate SHA; formal GitHub branch-protection approvals, if enforced, remain mandatory and must never be bypassed.
+- The implementer proposes and builds; the accountable maintainer/Project Master verifies the evidence and records findings. The maintainer's full self-review is mandatory but does not replace any independent non-author review or authorized approval required for controlled/security/architecture changes or knowledge publication. The exact active requirements and any unresolved Owner-policy conflict are recorded in `AGENTS.md` and `docs/project-knowledge/04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`. Formal GitHub branch-protection approvals remain mandatory and must never be bypassed.
 - The release operator executes only an approved release that meets the deployment runbook. A merged PR, green build, HTTP 200, or preview alone does not prove production readiness.
 - If a required role or permission is unavailable, mark the task `BLOCKED`, complete independent safe work, and specify the missing approval/access. Do not bypass the gate.
 
@@ -95,7 +82,7 @@ If a check was not run, say **NOT RUN**. If infrastructure prevented execution, 
 - Never put secrets, tokens, real customer data, or production financial records in Git, chat, logs, or artifacts.
 - Use least privilege and disposable test data. Do not change Firebase/Firestore rules, provision paid services, run destructive migrations, or mutate production data without required explicit approval.
 - Production release follows [the deployment runbook](docs/PRODUCTION_DEPLOYMENT.md): exact release SHA, passing required gates, release markers, verified deployment/version, health/readiness, and safe end-to-end smoke tests.
-- If GitHub-hosted runner allocation or logs are unavailable, record the exact check as NOT RUN / BLOCKED. Do not silently substitute another CI provider or treat a local partial run as full CI evidence. Record retry root cause and changed condition; do not retry unchanged failures blindly.
+- If a CI run is unavailable, record the affected check as NOT RUN / BLOCKED. For provider selection, required jobs, retries, and exact-SHA evidence, follow [the canonical CI policy in AGENTS.md](AGENTS.md#ci-merge-and-deployment).
 
 ## 6. Required handoff report
 
@@ -117,16 +104,9 @@ Every substantive handoff must state:
 - Manual single-writer claims are coordination records, not locks or atomic leases. On overlap, stop only conflicting writes; independent feature-local work may continue.
 - One active writing branch per contributor. A separate branch is allowed only for a genuinely independent outcome or authorization/security/release boundary; document the reason and freeze writes on the contributor's previous branch during that independent work.
 
-## 8. Exact-SHA CI, reviewer and merge rules — Owner-authorized 2026-11-08
+## 8. CI, review and merge policy source of truth
 
-- GitHub Actions is the primary exact-SHA CI provider. Require the six substantive jobs and `all-checks-passed` aggregate on the exact workflow SHA.
-- GitHub Actions is the sole active CI provider. The active default-branch ruleset requires its `all-checks-passed` aggregate on the exact SHA.
-- GitLab CI and Semaphore are not approved CI providers. Semaphore is retired/non-authoritative.
-- Empty status contexts, GitGuardian-only results, authored-but-unexecuted tests or results from another SHA are NOT PASS.
-- Record retry root cause and changed condition; provider/quota/permission failures remain NOT RUN/BLOCKED. Do not silently substitute another provider.
-- A full documented maintainer/Project Master self-review of the current cumulative diff on the exact candidate SHA is mandatory for every change. No separate independent reviewer is required by project policy, including for routine PRs, Security/Architecture and controlled-knowledge publication/update. Any formal GitHub branch-protection approval actually enforced remains mandatory and must never be bypassed.
-- Before merge, require a non-Draft READY PR, exact-head checks, current maintainer review, resolved blocking review threads, reconciled base/divergence, provider protections satisfied and explicit Owner merge authorization. `mergeable=true` is not approval.
-- Merge authorization and production deployment authorization are separate. Disclose auto-deployment coupling and obtain the required production authorization before a merge that automatically deploys.
+Follow the current [repository-wide CI, review, merge, and deployment rules in AGENTS.md](AGENTS.md#ci-merge-and-deployment). This guide intentionally does not duplicate CI provider selection, workflow jobs, required checks, exact-SHA evidence, reviewer gates, or merge authorization rules.
 
 ## 9. Canonical evidence and handoff — Owner-authorized 2026-11-08
 

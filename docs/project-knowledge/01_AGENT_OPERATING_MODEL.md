@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-01
 title: Agent Operating Model
-version: 1.0.8
+version: 1.0.12
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T05:55:00Z
+last_verified_at: 2026-11-13T04:19:05Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams
@@ -15,15 +15,15 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/AGENTS.md
-related_github_sha: 827f220da14139605294923cc5550e088c2589e3
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/28c5cde61b912ba0243cd2bd023f765e66d8f5e6/AGENTS.md
+related_github_sha: 28c5cde61b912ba0243cd2bd023f765e66d8f5e6
 supersedes: none
 superseded_by: none
 ---
 
 # Agent Operating Model
 
-> **Approval state:** DRAFT candidate version 1.0.8; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Approval state:** DRAFT candidate version 1.0.12; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
@@ -66,7 +66,7 @@ Team map:
 - Chat 4 — Employees & Payroll.
 - Chat 5 — independent QA, Integration & Security; runs test-based verification on Chat 1–4 work, reports findings and routes defects to the feature owner. This QA function does not create a separate reviewer or approval gate.
 
-Master may prioritize, sequence, coordinate, review, request fixes and recommend acceptance. Master cannot manufacture Product Owner approval or waive owner-reserved, financial, security, migration, CI or release gates. T37 remains Draft / NOT APPROVED for shared financial semantics until the canonical versioned decision is reconciled; payroll privacy approval remains narrowly scoped. GitHub Actions (`.github/workflows/ci.yml`) is the Owner-selected primary test/build/security CI provider; CircleCI remains a transition fallback until required-check enforcement and release gates are verified. GitLab is inactive and Semaphore is retired/non-authoritative. Batch related work and use the economical validation policy in Section 6.1, owned by the canonical MWOS; required exact-SHA checks remain mandatory. The Owner's standing development-stage authorization permits application/workspace account creation, use of project data for assigned development/QA, and invoice create/edit through authenticated app/API workflows, including on the environment technically labelled Production. This does not authorize destructive actions, migrations, financial posting/void/payment/settlement changes, external side effects, paid provisioning, merge or release; these retain separate gates. Merge and deployment are separate decisions.
+Master may prioritize, sequence, coordinate, review, request fixes and recommend acceptance. Master cannot manufacture Product Owner approval or waive owner-reserved, financial, security, migration, CI or release gates. T37 remains Draft / NOT APPROVED for shared financial semantics until the canonical versioned decision is reconciled; payroll privacy approval remains narrowly scoped. GitHub Actions (`.github/workflows/ci.yml`) is the sole active and approved repository CI provider; the active default-branch ruleset requires its exact-SHA `all-checks-passed` aggregate. CircleCI's webhook is disabled and no project schedules exist; CircleCI is not an active or approved fallback. GitLab is inactive and Semaphore is retired/non-authoritative. Batch related work and use the economical validation policy in Section 6.1, owned by the canonical MWOS; required exact-SHA checks remain mandatory. The Owner's standing development-stage authorization permits application/workspace account creation, use of project data for assigned development/QA, and invoice create/edit through authenticated app/API workflows, including on the environment technically labelled Production. This does not authorize destructive actions, migrations, financial posting/void/payment/settlement changes, external side effects, paid provisioning, merge or release; these retain separate gates. Merge and deployment are separate decisions.
 
 ## 2.2 Owner-authorized development-stage data operations
 
@@ -94,7 +94,7 @@ These are separate states:
 - **Acknowledgement:** the actual recipient explicitly confirms receipt.
 - **Claim:** a documented single-writer claim is established for the work boundary.
 - **Execution:** changes or tests are actually performed and evidenced.
-- **Maintainer self-review:** the accountable maintainer/Project Master checks the exact candidate, records findings and owns the review decision. No separate independent reviewer is required by project policy for any change, including routine PRs, Security/Architecture and canonical controlled-knowledge publication/update. The accountable maintainer/Project Master records full self-review on the exact candidate SHA. Formal GitHub branch-protection approvals, if enforced, remain mandatory and must never be bypassed.
+- **Maintainer self-review:** the accountable maintainer/Project Master checks the exact candidate and records findings. Review gates for controlled/security/architecture changes and knowledge publication are defined by `AGENTS.md` and ABA-KNOW-04. The Owner's 2026-11-10 Notion decision waives separate project-level review, while active project instructions require independent non-author review and authorized approval for controlled changes and publication; keep the package DRAFT / CONFLICTED until reconciled. Maintainer self-review does not count as independent review. Formal GitHub branch-protection approvals remain mandatory.
 - **Handoff:** the outgoing owner records a complete evidence-backed transfer.
 
 A Notion comment is a durable handoff, not a push notification, lock, acknowledgement or proof that another chat woke up. Never invent agent URLs, session IDs, dispatch receipts or acknowledgements. If no transactional claim mechanism exists, enforce one primary writer through explicit coordination; comments are not compare-and-swap locks.
@@ -136,7 +136,7 @@ Follow the Owner's economical validation decision recorded in the canonical [MWO
 - Documentation-only changes do not justify application tests/build solely because text changed, unless the repository workflow or a required documentation validator requires them. If a required workflow is configured to run for the PR, satisfy its enforced checks.
 - Record the exact SHA, checks run or validly reused, rerun reason, results, and every NOT RUN item.
 
-The current repository workflow runs on every pull request and includes the six substantive GitHub Actions jobs plus the fail-closed aggregate. Do not alter that workflow's trigger or suppress required checks as part of a documentation-only package update.
+The current repository workflow runs on every pull request and includes the six substantive GitHub Actions jobs plus the fail-closed aggregate. Do not alter that workflow's trigger or suppress required checks as part of a documentation-only package update. If a required GitHub Actions job is unavailable or blocked, record NOT RUN / BLOCKED; do not substitute CircleCI or another provider unless a newer accepted repository decision explicitly changes the policy.
 
 ## 7. Handoff contract
 

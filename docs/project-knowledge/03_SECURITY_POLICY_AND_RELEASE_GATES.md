@@ -1,28 +1,28 @@
 ---
 document_id: ABA-KNOW-03
 title: Security Policy & Release Gates
-version: 1.0.8
+version: 1.0.12
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-11T05:55:00Z
+last_verified_at: 2026-11-13T04:19:05Z
 review_due: 2026-12-11
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant engineering, data handling and release operations
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/AGENTS.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/CONTRIBUTING.md
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/827f220da14139605294923cc5550e088c2589e3/docs/PRODUCTION_DEPLOYMENT.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/28c5cde61b912ba0243cd2bd023f765e66d8f5e6/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/28c5cde61b912ba0243cd2bd023f765e66d8f5e6/CONTRIBUTING.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/28c5cde61b912ba0243cd2bd023f765e66d8f5e6/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
-related_github_sha: 827f220da14139605294923cc5550e088c2589e3
+related_github_sha: 28c5cde61b912ba0243cd2bd023f765e66d8f5e6
 supersedes: none
 superseded_by: none
 ---
 
 # Security Policy & Release Gates
 
-> **Approval state:** DRAFT candidate version 1.0.8; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. These guardrails summarize existing repository and Notion policies. They do not grant permissions or authorize a release.
+> **Approval state:** DRAFT candidate version 1.0.12; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. These guardrails summarize existing repository and Notion policies. They do not grant permissions or authorize a release.
 
 ## 1. Least privilege and authorization
 
@@ -85,7 +85,7 @@ This document does not authorize destructive migrations, direct database changes
 
 - Inspect the exact branch, base/head SHA, changed files and mergeability.
 - Required checks must be green on the exact PR head; checks on another SHA or empty/unavailable checks are NOT PASS.
-- A documented maintainer/Project Master full self-review on the exact candidate SHA is required for all changes. No separate independent reviewer is required by project policy, including for Security/Architecture and canonical controlled-knowledge publication/update. Any formal approval actually enforced by GitHub branch protection must be satisfied on the exact PR head; comments are not approvals where formal approval is required.
+- A documented maintainer/Project Master full self-review on the exact candidate SHA is required for all changes. Controlled/security/architecture changes and knowledge publication must also satisfy the applicable independent non-author review and authorized-approval gate in active project instructions. The Owner's 2026-11-10 Notion decision waives that review; keep the package DRAFT / CONFLICTED until the policy is reconciled. Any formal approval actually enforced by GitHub branch protection must be satisfied on the exact PR head; comments are not approvals where formal approval is required.
 - Resolve material review findings and inspect the final diff for secrets, unrelated changes, authorization gaps and data-integrity risk.
 - Merge only with explicit owner authorization and all repository gates satisfied.
 - Never bypass branch protection, provider-enforced required reviews, CI or security gates. Do not add a project-level independent-reviewer requirement. Formal GitHub approvals actually enforced remain mandatory.
@@ -96,9 +96,9 @@ This document does not authorize destructive migrations, direct database changes
 - **Primary CI provider:** GitHub Actions using GitHub-hosted runners. `.github/workflows/ci.yml` is the single authoritative validation workflow.
 - The exact-SHA workflow requires six substantive jobs: `backend-accounting`, `frontend-unit-tests`, `frontend-production-build`, `frontend-dependency-audit`, `frontend-browser-smoke`, and `backend-container`, plus the fail-closed `all-checks-passed` aggregate.
 - Every substantive job verifies that its checkout equals the workflow event SHA. CI permissions are read-only; backend database/schema checks use only a disposable PostgreSQL service and never production.
-- CircleCI remains configured as a transition fallback until GitHub Actions required-check enforcement and release gates are verified. Do not retire CircleCI early or treat it as the primary provider.
+- CircleCI is not an active or approved fallback: the accepted repository policy names GitHub Actions as the sole active provider, the CircleCI webhook is disabled, no project schedules exist, and `.circleci/config.yml` is absent from current main. If a required GitHub Actions job is unavailable, record NOT RUN / BLOCKED; do not substitute CircleCI or another provider.
 - GitLab CI is inactive and not an approved provider. Semaphore is retired/non-authoritative.
-- Main-branch required-check and PR/approval enforcement remain UNKNOWN until Owner/Admin readback confirms the effective GitHub protection configuration. Main being marked protected or a written policy is not proof that specific checks/approvals are enforced.
+- Active default-branch ruleset `26009350` is verified: strict up-to-date enforcement requires `all-checks-passed` from GitHub Actions App `15368`; deletion and non-fast-forward protections are active. This ruleset does not configure a separate required PR-approval count. The classic branch-protection endpoint returned HTTP 403 to this integration, so any additional classic protection beyond the ruleset is UNKNOWN; never infer or bypass an unobserved gate.
 - Batch related changes and validate the final candidate SHA once. Use targeted checks during implementation only when behavior/configuration changed, diagnosing a concrete defect, or risk requires immediate evidence. Reuse a PASS only when SHA, workflow/configuration, dependencies, environment and context are unchanged.
 - Rerun only after a real candidate/fix change, justified flaky-test diagnosis, provider/runner recovery or concrete diagnostic need. Do not rerun an unchanged failure to seek a green result; record provider/quota/permission failures as NOT RUN / BLOCKED when appropriate. See the canonical [MWOS economical validation decision](https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea).
 - Documentation-only changes do not justify application tests/build solely because text changed unless a required workflow or documentation validator requires them. The current PR workflow is configured to run for every pull request, so its enforced exact-head checks must still be satisfied. Do not weaken triggers or suppress required checks to avoid a run.
