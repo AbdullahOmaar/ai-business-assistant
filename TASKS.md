@@ -4162,3 +4162,10 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Remaining acceptance:** physical Android installed-PWA install/cold-start/offline/update/recovery (device OFFLINE); supported STAFF provisioning and direct cross-tenant denial (membership API has no supported POST/create-membership or invite route; T43 dependency); actual browser 200% zoom; full workspace keyboard-only, screen-reader and OS forced-colors. These remain NOT RUN/BLOCKED. Public main deployment evidence is not candidate evidence.
 - **Delivery / safety:** no PR, merge, production deployment, database write/migration, issued-invoice/payment/allocation/settlement mutation, stock movement or external notification. T50 remains PARTIALLY COMPLETE.
 - **Next action:** resolve the Project Instructions vs current Owner-decision CI provider conflict and provide a supported workflow-dispatch path; then run the consolidated workflow on the exact current candidate SHA. Continue device/accessibility and STAFF/T43-dependent checks when their required resources/path are available. Do not start Phase 2 or claim VERIFIED COMPLETE.
+
+
+### CI capability discovery correction — 2026-11-13
+
+- A further Composio tool search found an active GitHub connection with a valid `GITHUB_CREATE_A_WORKFLOW_DISPATCH_EVENT` operation for `.github/workflows/ci.yml`. The earlier statement that no dispatch operation was exposed is superseded.
+- A CircleCI connection is also active, but the repository returns 404 for `.circleci/config.yml` on both main and the active branch, and CircleCI's project pipeline listing for this branch returned an empty list. No CircleCI pipeline was triggered.
+- The provider-authority conflict still remains between active Project Instructions (“CircleCI ONLY”) and the dated Owner decision/current `AGENTS.md`/MWOS (GitHub Actions primary; CircleCI retired/transition-only). Therefore neither GitHub Actions dispatch nor CircleCI trigger was invoked in this checkpoint. Do not interpret tool availability as authorization to select one side of the conflict.
