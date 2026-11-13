@@ -4259,3 +4259,19 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Remaining acceptance: physical Android installed-PWA lifecycle NOT RUN (authorized device offline); STAFF provisioning and authenticated STAFF/cross-tenant denial BLOCKED by missing supported membership/invitation route (T43 dependency); full workspace keyboard-only, screen-reader, OS forced-colors and actual browser 200% zoom NOT RUN. Browser-emulated PWA notice forced-colors and 195x422 reflow are narrower checks only.
 - Candidate has no Vercel Preview; Production remains on main. No merge, deployment, DB write/migration, financial/inventory/payroll mutation or external side effect.
 - This ledger update advances the branch to a new SHA; the previous exact-head CI result remains valid only for `350ba852...`. Run the authoritative GitHub Actions workflow on the new exact head before using that new SHA as a validated candidate. T50 remains PARTIALLY COMPLETE.
+
+
+## 2026-11-13 — T50 exact-head CI and full Maintainer Diff Review completed
+
+- **Exact candidate:** `master/nov-2026-phase-1-ux-foundation@32987c420077502e01f11a7909ed82d0665149b8`; PR #397 OPEN / DRAFT / UNMERGED; 10 changed paths; 778 additions / 17 deletions.
+- **Authoritative GitHub Actions run:** [43439330648](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43439330648) completed SUCCESS on the exact candidate SHA; aggregate `all-checks-passed` SUCCESS.
+  - `frontend-unit-tests`: 484 passed / 0 failed.
+  - `frontend-browser-smoke`: 34 passed / 0 failed.
+  - `backend-accounting`: 283 passed / 23 warnings; pip-audit no known vulnerabilities.
+  - `frontend-production-build`, `frontend-dependency-audit`, `backend-container`: SUCCESS.
+  - `authenticated-api-smoke`: SKIPPED by branch condition; not PASS.
+- **Full Project Master Maintainer Diff Review:** COMMENT review 5892690095 recorded against exact head `32987c420077502e01f11a7909ed82d0665149b8`; all 10 changed paths reviewed; no blocking correctness/security issue identified; zero open review threads. COMMENT is not formal approval or merge authorization.
+- CI authority: GitHub Actions is sole active AIBA CI provider; CircleCI retired. No CircleCI pipeline was triggered.
+- Non-blocking warnings retained: Angular NG8107 optional-chain warnings; initial bundle 882.22 kB vs 700 kB budget (+182.22 kB; main baseline 878.49 kB); 18 moderate npm advisories; `@firebase/auth@1.13.8` declares Node >=24.12 while CI uses Node 22.23.4. High-severity dependency audit passed. No forced dependency upgrades.
+- Remaining acceptance: physical Android installed-PWA install/cold-start/offline/update/recovery NOT RUN (authorized device offline); STAFF provisioning and authenticated STAFF/cross-tenant denial BLOCKED by missing supported membership/invitation route (T43 dependency); full workspace keyboard-only, screen-reader, OS forced-colors and actual browser 200% zoom NOT RUN. Browser-emulated forced-colors is limited to the PWA update notice; 195×422 is a reflow stress viewport, not actual zoom.
+- Candidate has no Vercel Preview; Production remains on main. No merge, deployment, DB write or migration. T50 remains PARTIALLY COMPLETE; PR #397 stays Draft/unmerged pending remaining acceptance and applicable Owner release decision.
