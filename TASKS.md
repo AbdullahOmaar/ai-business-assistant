@@ -4190,3 +4190,13 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Extended the existing “new service worker” Playwright case to click the visible **Refresh now / تحديث الآن** action, wait for the main-frame navigation, and confirm the public sign-in screen is restored after reload. This covers the user action rather than only checking that the button is visible.
 - This is source-reviewed only; the Playwright suite remains NOT RUN on the current candidate. The narrow 195×422 viewport remains a responsive reflow stress check, not actual 200% browser zoom.
 - Current source head before this ledger update: `c2f8c99748cce3520b3ac40cdb7f3d8ac44375dd`. No additional application paths changed; only the existing PWA E2E test file was extended. No CI/PR/merge/deployment/DB action.
+
+
+### Master diff review and exact candidate reconciliation — 2026-11-13
+
+- Performed a full line-level review of all six changed paths against current main: `TASKS.md`, `frontend/e2e/pwa.spec.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `frontend/src/app/app.component.ts`, `frontend/src/app/service-worker-update.ts`, and `frontend/src/styles.css`. The application diff is bounded to the PWA install/update shell, service-worker update handler, accessible update notice/forced-colors styles, and focused source/E2E regression declarations. No backend/API/schema/auth/tenant/financial/inventory/payroll paths are changed.
+- Reviewed the new refresh-action E2E step: it waits for main-frame navigation after the explicit user click and then checks the public sign-in heading. Source review only; Playwright has not run on this candidate.
+- Current branch head before this ledger append: `a8cdfac0f66569b846b99f50bae336cbd79c11e1`; current main `46a143d5048ec9346c8b04bc83d46918ba6e6d42`; 23 commits ahead / 0 behind. No open PR. Work branch is unprotected; main is protected. Exact-head check-runs/workflow-runs remain empty.
+- Rechecked current main `backend/app/core_features_api.py`: membership endpoints are OWNER-only GET list, PATCH role change and DELETE removal; no POST/create-membership or invitation route is present. Current production deployment docs also state there is no safe user-directory/invitation workflow. T43 remains the proper owner; do not use direct DB or hidden admin paths to provision STAFF.
+- Current T50 status remains PARTIALLY COMPLETE. Full frontend unit, Playwright, Angular build and exact-head CI remain NOT RUN. The isolated Node 22.16.0 handler harness passed 2/2; this is not a full repository test.
+- No PR, merge, deployment, database write, migration, business record mutation or external notification.
