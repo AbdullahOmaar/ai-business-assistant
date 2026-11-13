@@ -3999,3 +3999,106 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Updated only the shared mobile card presentation to place the declared primary cell first. Desktop table column order and data contracts remain unchanged.
 - Added regression coverage for the shared primary-cell ordering rule and the three date-first contracts.
 - No API, database, authorization, financial, inventory, payroll or notification behavior changed. Consolidated exact-head CI is required before review/merge.
+
+
+## 2026-11-12 — AI assistant conversation workspace improvement
+
+- **Branch:** `master/nov-2026-phase-1-ux-foundation`; based on current main `49cbf744ab71a3623822d5645ce1ef1a8e812b51`.
+- **Product outcome:** improve the complete in-app assistant conversation loop without changing its backend contract or read-only authority.
+- Added a local New chat action to reset only in-memory conversation state; no persistence or business data is deleted.
+- Added explicit one-tap copy for assistant replies with localized success/failure feedback; clipboard access is user initiated only.
+- Added latest-turn auto-scroll with reduced-motion support. Preserved fail-closed workspace/auth context, backend source citations, retry draft restoration and bounded history.
+- Updated the bilingual feature guide and T18 nested-surface inventory.
+- **Scope:** `app.component.ts`, `release-guide.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `TASKS.md`. No backend/API/schema/auth/tenant/financial/payroll/inventory/notification behavior or external side effects changed.
+- **Validation:** per Owner direction, automated tests, build, Playwright, dependency/security audit and GitHub Actions are intentionally deferred until the coherent November product batch closes. The new interactions are NOT YET TESTED; no pass is claimed.
+- **Delivery:** implementation is staged on the single Owner-selected November branch. No PR, merge or deployment is created or authorized by this checkpoint.
+- **Next:** continue the Master-owned assistant journey improvements on the same branch, then add/execute consolidated regression and cross-device acceptance once the batch is complete.
+
+
+## 2026-11-12 — AI assistant composer ergonomics follow-up
+
+- **Branch:** `master/nov-2026-phase-1-ux-foundation`; current prior branch head `97aa2b5ac99d9d2330dc0ac3d4c7c551a6f93f42`.
+- Enter submits a question; Shift+Enter adds a newline; IME composition is respected.
+- Send remains disabled for blank drafts and while sending. Added visible character count and keyboard hint, and strengthened mobile touch sizing for the composer.
+- Copy feedback is announced politely. No API, auth, tenant, DB, financial or external-side-effect behavior changed.
+- **Validation:** automated tests/build/browser/CI remain intentionally deferred per Owner direction. NOT YET TESTED.
+- **Delivery:** same November feature branch; no PR, merge or deploy.
+
+
+## 2026-11-12 — AI assistant interaction-state polish
+
+- Suggested prompt buttons are disabled during active requests and gain a clear disabled state; mobile horizontal prompt cards now support scroll snapping and stable tap height.
+- Conversation log announces additions only and exposes its busy state to assistive technology.
+- Scope remains the Master-owned AI assistant presentation only; no API/data/authorization behavior changed.
+- Tests/build/browser/CI remain deferred per Owner direction; NOT YET TESTED.
+
+
+## 2026-11-12 — Assistant conversation continuity follow-up
+
+- Hardened response copying: modern Clipboard API with an explicit user-initiated textarea/browser-command fallback; localized feedback remains the outcome signal.
+- Preserved reading continuity: assistant/user turns auto-follow only when the user was already near the latest message. Browsing older conversation history is not forcibly interrupted by late responses.
+- Retained reduced-motion-aware scrolling and all prior tenant/auth/read-only/source boundaries.
+- Updated the T18 nested-surface inventory and bilingual in-app guide.
+- **Validation intentionally deferred:** no tests, build, browser smoke, audits or CI were run per Owner direction. Clipboard fallback, screen-reader feedback, scrolling and mobile keyboard interaction remain unverified.
+- **Delivery:** same November branch; no PR, merge or deployment. No API, backend, DB or business-record changes.
+
+- Mobile first-run hierarchy: starter prompts now appear before the empty conversation panel; after the first turn the conversation remains primary and prompts move below it. New chat restores the first-run prompt position. This is an untested UX change pending consolidated mobile/browser validation.
+
+- Mobile chat readability: increase response text to 14px, line spacing, source labels and starter prompt text; composer text to 16px. Responsive layout/device verification is deferred with the consolidated test batch.
+
+- Clipboard fallback cleanup is now guarded with `finally`, ensuring its temporary off-screen input is removed even if the browser copy command throws. Still pending runtime/browser validation.
+
+## 2026-11-12 — PR #395 assistant UX exact-head build correction
+
+- **Work package:** continue T18/T50 Master-owned UX acceptance and T15 AI Assistant conversation UX on the existing `master/nov-2026-phase-1-ux-foundation` branch. PR #395: https://github.com/AbdullahOmaar/ai-business-assistant/pull/395
+- **First candidate:** `a51aadcc1da038fe9fd1718d734ef53c291f82aa`. GitHub Actions `43299964502` checked out that exact SHA; `frontend-production-build` failed at Angular compile with `TS2531` for nullable `chatCopyStatus.success` and `TS2345` passing template `$event: Event` to a `KeyboardEvent` handler. This was an app/template compile failure, not a runner/quota failure. No arbitrary retry was used.
+- **Correction:** optional-chain the copy-status success field and use Angular `$any($event)` only at the `(keydown.enter)` binding. Added one source regression for both contracts. No handler behavior, API/auth/tenant, data, business or financial semantics changed.
+- **Affected files:** `frontend/src/app/app.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, and this task ledger.
+- **Unit test disposition:** the same run reported 5/469 frontend unit source tests failed (464 passed): three stale assertions against current assistant markup/ARIA and two newly authored assertions with incorrect regex assumptions (clipboard capability-check shape and character-counter braces). Corrected assertions to verify the actual intended contract, including CSS first-run prompt order, composer help/error IDs, log template reference, explicit user-click clipboard API/fallback, and the 2,000-character counter. No product behavior was changed for these assertion failures.
+- **Browser smoke disposition:** `frontend-browser-smoke` job `131468164203` timed out waiting 120s for Playwright `webServer`; the dev server could not start because the same two Angular compile errors prevented startup. No browser interaction tests were reached on this candidate. The fresh exact-head run after the template fix must prove both build and browser smoke.
+- **Validation:** new exact-head GitHub Actions is required after this commit. Prior run failure remains recorded; no PASS is reused. Backend accounting, backend container and frontend dependency audit passed on the first candidate; frontend browser smoke also failed before Playwright due the Angular dev-server compile timeout; the root cause is recorded in the Browser smoke disposition above.
+- **Release:** Web only, after PR #395 exact-head `all-checks-passed`, full maintainer review, squash merge to protected main and exact SHA verification. Vercel automatic Git deployments are disabled; use the approved manual Web deployment path only. API deployment and production database writes are out of scope.
+
+## 2026-11-12 — PR #395 chat composer unit assertion correction
+
+- **Candidate:** `0be013fa06086d58c6c6a265e3c2aaccb7b9ff5a`; exact-head run `43301999429`.
+- **Frontend unit result:** 468/469 passed. Only test 114 (`chat composer announces empty and whitespace-only drafts without sending a request`) failed because its broad form-wide negative regex matched the intended disabled expression on the Send button, not a disabled textarea.
+- **Correct test contract:** scope disabled-state assertions separately: textarea has only `[disabled]="chatSending"` (empty/whitespace drafts remain editable); Send button has `[disabled]="chatSending || !chatDraft.trim()"`; submit handler and `sendChat()` also guard trimmed-empty input. This preserves the intended product behavior. No app source/runtime change.
+- **Other exact-head evidence:** Angular production build PASS; backend-container PASS; frontend dependency audit PASS; GitGuardian Security Checks PASS. `backend-accounting` and `frontend-browser-smoke` were still in progress at the last status read; `authenticated-api-smoke` SKIPPED by workflow condition. Aggregate cannot pass while unit test 114 fails.
+- **Next:** commit the unit assertion + this evidence, then require a fresh exact-head `all-checks-passed`; do not reuse run `43301999429`.
+
+## 2026-11-12 — PR #395 disabled-binding assertion correction
+
+- **Exact run:** `43302487177` on `7b6aa465b6b9ebb93450ed5eeff3ef808c19ac5d`; unit job `131477181797` reported one failure, test 114. The prior correction still asserted `!textarea.includes('!chatDraft.trim()')`, which was over-broad because the same expression correctly appears in `aria-invalid` and `aria-describedby`.
+- **Final assertion:** only reject the empty-draft expression inside the textarea's `[disabled]` binding. Require textarea disabled only while `chatSending`; require the Send button disabled while `chatSending || !chatDraft.trim()`. This keeps validation/ARIA behavior intact and proves users can continue editing whitespace/empty drafts. Test-only change; no runtime source change.
+- **Other exact-head CI results:** Angular production build PASS; backend-container PASS; backend-accounting PASS; frontend dependency audit PASS; GitGuardian PASS. Browser smoke was still running at last read. Authenticated API smoke SKIPPED by workflow condition. Exact-head checks must rerun after this test-only correction.
+
+
+## 2026-11-12 — Master UX product-development increment
+
+- Continued on the existing Master branch and PR #395; no duplicate branch or PR created.
+- Shared record tables now support local ascending/descending sorting, numeric-aware comparison, and semantic sort-direction feedback. Sorting is presentation-only; it does not change API requests, business state, permissions or persisted data.
+- Shared workspace form controls, inline forms and section action rows received consistent sizing, focus and mobile stacking refinements.
+- Existing Arabic-first design tokens and responsive card treatment are retained.
+- Exact candidate: pending after the final documentation commit. The required GitHub Actions workflow is the only authoritative CI; Semaphore's legacy failure is retired/non-authoritative and is not retried.
+- Local Vercel sandbox build could not be started because the Vercel account returned 402 (Hobby snapshot-storage quota). No production deploy, merge, database write or schema change was made.
+- Remaining product work: continue the screen-by-screen feature workflow improvements and validate rendered behavior after the current full exact-head CI run.
+
+
+## 2026-11-12 — Shared record-table template compile correction
+
+- Exact-head GitHub Actions run `43311579627` checked out `94d9112b0c356e20bbe5245dfb4a9bee4d23e66f` and exposed an Angular template visibility error: the template read private `activeSortKey` directly. The production build failed; browser smoke could not start the dev server for the same compile error.
+- Exposed a narrow public `isSortActive(key)` presentation accessor and bound the sort button's `aria-pressed` state through it. Updated the focused source contract. No sort behavior, API, authorization, business state or persisted data changed.
+- Fresh exact-head GitHub Actions is required after this correction; prior failure remains recorded and is not reused.
+
+
+## 2026-11-13 — PR #395 final exact-head validation and maintainer review
+
+- **PR / branch:** [#395](https://github.com/AbdullahOmaar/ai-business-assistant/pull/395), `master/nov-2026-phase-1-ux-foundation`; base `main@49cbf744ab71a3623822d5645ce1ef1a8e812b51`.
+- **Exact candidate:** `bf94464733aee484b5dd03c80a1263d258e2d75f` (30 commits ahead / 0 behind at review).
+- **GitHub Actions:** run `43316169070` (run #3177) SUCCESS on the exact candidate. Six substantive jobs passed: `backend-accounting`, `frontend-unit-tests`, `frontend-production-build`, `frontend-dependency-audit`, `frontend-browser-smoke`, and `backend-container`. Fail-closed `all-checks-passed` also SUCCESS. `authenticated-api-smoke` was SKIPPED by workflow condition and is not claimed as passed.
+- **Legacy status:** Semaphore reports a failure context on this SHA, but Semaphore is retired/non-authoritative under the current Owner CI decision. The active GitHub ruleset requires `all-checks-passed` from GitHub Actions App integration `15368`; the exact candidate satisfies that required check.
+- **Maintainer review:** Project Master reviewed all nine changed paths on the exact candidate: `TASKS.md`, `docs/UX_NESTED_SURFACE_INVENTORY.md`, `frontend/e2e/mobile-chat.spec.ts`, `frontend/src/app/aba-record-table.spec.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `frontend/src/app/app.component.ts`, `frontend/src/app/release-guide.ts`, `frontend/src/app/shared/ui/aba-record-table.component.ts`, and `frontend/src/design-system.css`. Review found no merge-blocking source, security, tenant, API, database, financial, inventory or payroll regression. Changes remain presentation-only plus tests/docs; no production data, migration, API deployment or external side effect.
+- **Review boundaries:** mocked Playwright coverage is not authenticated live OWNER/STAFF/two-tenant acceptance. Physical Android/installed-PWA, actual 200% zoom, full-product screen-reader/forced-colors/keyboard acceptance and remaining T18/T50 criteria remain separate PARTIALLY COMPLETE / NOT RUN gates.
+- **Release scope:** Web only. API and production database are unchanged. Vercel automatic Git deployments are disabled; deploy the exact merged Web SHA manually after merge and post-merge main CI verification.
+- **Next:** after this evidence update, re-run the required workflow on the new exact head; then normal squash merge under active ruleset, verify main merge SHA + main CI, manually deploy only the Web project, verify production alias/SHA/version and safe live behavior, then activate Phase 2 on its dedicated branch.

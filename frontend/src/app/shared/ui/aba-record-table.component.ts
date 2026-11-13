@@ -20,11 +20,11 @@ export interface AbaRecordTableActionEvent { rowId:string; actionId:string; anch
           <table>
             <caption class="aba-record-table__visually-hidden">{{ariaLabel()}}</caption>
             <thead><tr>
-              @for(column of columns();track column.key){<th scope="col">{{column.label}}</th>}
+              @for(column of columns();track column.key){<th scope="col" [attr.aria-sort]="sortAria(column.key)"><button class="aba-record-table__sort-button" type="button" (click)="toggleSort(column)" [attr.aria-label]="column.label" [attr.aria-pressed]="isSortActive(column.key)"><span>{{column.label}}</span><span class="aba-record-table__sort-indicator" aria-hidden="true">{{sortIndicator(column.key)}}</span></button></th>}
               @if(hasActions){<th scope="col">{{actionsHeading()}}</th>}
             </tr></thead>
             <tbody>
-              @for(row of rows();track row.id){
+              @for(row of sortedRows;track row.id){
                 <tr>
                   @for(column of columns();track column.key){
                     @if(column.primary){
@@ -58,6 +58,7 @@ export interface AbaRecordTableActionEvent { rowId:string; actionId:string; anch
       } @else{<aba-state-message kind="empty" [title]="emptyTitle()" [description]="emptyDescription()" />}
     </section>
   `,
+
 })
 export class AbaRecordTableComponent {
   readonly ariaLabel=input.required<string>();
@@ -69,7 +70,32 @@ export class AbaRecordTableComponent {
   readonly emptyDescription=input('There are no records to display.');
   readonly actionsHeading=input('Actions');
   readonly rowAction=output<AbaRecordTableActionEvent>();
+  private activeSortKey = '';
+  private sortDirection: 'asc' | 'desc' = 'asc';
+  get sortedRows(): readonly AbaRecordTableRow[] {
+    const key=this.activeSortKey;
+    if(!key)return this.rows();
+    const column=this.columns().find(item=>item.key===key);
+    if(!column)return this.rows();
+    const collator=new Intl.Collator(undefined,{numeric:true,sensitivity:'base'});
+    return [...this.rows()].sort((left,right)=>{
+      const a=left.cells[key]??'', b=right.cells[key]??'';
+      let result:number;
+      if(column.kind==='numeric'){
+        const av=Number(a.replace(/,/g,'')), bv=Number(b.replace(/,/g,''));
+        result=Number.isFinite(av)&&Number.isFinite(bv)?av-bv:collator.compare(a,b);
+      }else result=collator.compare(a,b);
+      return this.sortDirection==='asc'?result:-result;
+    });
+  }
   get hasActions():boolean{return this.rows().some(row=>!!row.actions?.length);}
+  toggleSort(column:AbaRecordTableColumn):void{
+    if(this.activeSortKey===column.key)this.sortDirection=this.sortDirection==='asc'?'desc':'asc';
+    else{this.activeSortKey=column.key;this.sortDirection='asc';}
+  }
+  isSortActive(key:string):boolean{return this.activeSortKey===key;}
+  sortAria(key:string):string|null{return this.activeSortKey===key?(this.sortDirection==='asc'?'ascending':'descending'):null;}
+  sortIndicator(key:string):string{return this.activeSortKey!==key?'↕':this.sortDirection==='asc'?'↑':'↓';}
   actionAriaLabel(row:AbaRecordTableRow,action:AbaRecordTableAction):string{
     const primaryColumn=this.columns().find(column=>column.primary);
     const recordLabel=primaryColumn?row.cells[primaryColumn.key]:row.id;

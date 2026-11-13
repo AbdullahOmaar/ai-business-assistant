@@ -405,6 +405,24 @@ export const FEATURE_CATALOG = [
         detailAr: 'اسأل عن السجلات الحديثة، وتظهر المصادر المرتبطة عندما تكون متاحة.',
         detailEn: 'Ask about recent records; linked sources are shown when available.',
       },
+      {
+        titleAr: 'إدارة المحادثة',
+        titleEn: 'Manage the conversation',
+        detailAr: 'ابدأ محادثة جديدة لمسح سياق الجلسة الحالية محليًا، مع الاحتفاظ بإمكانية متابعة السؤال عند تعذر الرد.',
+        detailEn: 'Start a new conversation to clear the current in-memory session, while keeping failed questions available for retry.',
+      },
+      {
+        titleAr: 'نسخ الردود ومتابعتها',
+        titleEn: 'Copy and follow responses',
+        detailAr: 'انسخ رد المساعد بضغطة واحدة مع بديل للمتصفحات التي لا تدعم الحافظة، ويظل موضع قراءتك ثابتًا عند استعراض الرسائل القديمة.',
+        detailEn: 'Copy assistant responses with a fallback for browsers without Clipboard API support; preserve your reading position when reviewing older messages.',
+      },
+      {
+        titleAr: 'كتابة السؤال بسرعة',
+        titleEn: 'Faster question entry',
+        detailAr: 'اضغط Enter للإرسال وShift + Enter لإضافة سطر جديد، مع عدّاد أحرف واضح وحد أقصى 2000 حرف.',
+        detailEn: 'Press Enter to send and Shift + Enter for a new line, with a visible character counter and a 2,000-character limit.',
+      },
     ],
   },
   {
