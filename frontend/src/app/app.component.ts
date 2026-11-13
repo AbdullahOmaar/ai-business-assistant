@@ -2131,7 +2131,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.currentAuthUid = user.uid;
       this.currentAuthEmail = user.email ?? null;
       this.signedIn = true;
-      this.userEmail = user.email || 'مستخدم مسجّل الدخول';
+      this.userEmail = user.email || this.t('common.signedInUser');
       await this.checkPlatformAdminAccess();
       await this.loadBusinesses();
     } catch (error) {
@@ -2162,22 +2162,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get sessionExpired(): boolean {
-    // Keep recovery behavior stable when the user changes the UI language
-    // after the original error message was created.
-    return [
-      'انتهت صلاحية جلسة الدخول أو تعذر التحقق منها. سجّل الخروج ثم سجّل الدخول مرة أخرى.',
-      'Your sign-in session is no longer valid or could not be verified. Sign out and sign in again.'
-    ].includes(this.error);
+    return this.lastErrorKind === 'session-expired';
   }
 
   get accessDenied(): boolean {
-    // The stored error may be in the previous language after a language toggle.
-    return [
-      'لا تملك الصلاحية للوصول إلى مساحة العمل أو تنفيذ هذا الإجراء. اطلب من مالك مساحة العمل مراجعة دورك.',
-      'You do not have permission to access this workspace or perform this action.',
-      'حسابك غير مخوّل للوصول إلى إدارة المنصة. إذا كنت تحتاج هذه الصلاحية، راجع مسؤول المنصة.',
-      'Your account is not authorized to access platform administration. Contact the platform administrator if you need this access.'
-    ].includes(this.error);
+    return this.lastErrorKind === 'access-denied';
   }
 
   retry(): void {
@@ -2505,19 +2494,19 @@ export class AppComponent implements OnInit, OnDestroy {
     this.error = '';
     try {
       const paymentsRequest = this.canAccessTab('payments') ? this.api.payments(id) : Promise.resolve([]);
-      const [dashboard, عميل, منتج, فاتورة, دفعة, مصروفات] = await Promise.all([
+      const [dashboard, customerPage, productPage, invoicePage, paymentPage, expensePage] = await Promise.all([
         this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), paymentsRequest, this.api.expenses(id)
       ]);
       if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
       this.dashboard = dashboard;
       this.homeDashboardError = '';
       this.profitLoss = null;
-      this.setCustomerPage(عميل);
+      this.setCustomerPage(customerPage);
       if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
-      this.setProductPage(منتج);
-      this.setInvoicePage(فاتورة);
-      this.setPaymentPage(دفعة);
-      this.expenses = مصروفات;
+      this.setProductPage(productPage);
+      this.setInvoicePage(invoicePage);
+      this.setPaymentPage(paymentPage);
+      this.expenses = expensePage;
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
       if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
     } catch (error) {
@@ -2759,15 +2748,23 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   agingBucketLabel(bucket: string): string {
-    const ar: Record<string, string> = { not_due: 'غير مستحقة بعد', '1_30_days': '1–30 يومًا', '31_60_days': '31–60 يومًا', '61_90_days': '61–90 يومًا', over_90_days: 'أكثر من 90 يومًا', no_due_date: 'بدون تاريخ استحقاق' };
-    const en: Record<string, string> = { not_due: 'Not yet due', '1_30_days': '1–30 days', '31_60_days': '31–60 days', '61_90_days': '61–90 days', over_90_days: 'Over 90 days', no_due_date: 'No due date' };
-    return (this.language === 'ar' ? ar : en)[bucket] || bucket;
+    const keys: Record<string, string> = {
+      not_due: 'app.agingBucket.not_due',
+      '1_30_days': 'app.agingBucket.1_30_days',
+      '31_60_days': 'app.agingBucket.31_60_days',
+      '61_90_days': 'app.agingBucket.61_90_days',
+      over_90_days: 'app.agingBucket.over_90_days',
+      no_due_date: 'app.agingBucket.no_due_date',
+    };
+    return keys[bucket] ? this.t(keys[bucket]) : bucket;
   }
 
   agingWarningLabel(type: string): string {
-    const ar: Record<string, string> = { payment_currency_mismatch: 'تخصيص دفعة بعملة مختلفة', allocations_exceed_invoice_total: 'إجمالي تخصيصات الدفعات يتجاوز قيمة الفاتورة' };
-    const en: Record<string, string> = { payment_currency_mismatch: 'Payment allocation uses a different currency', allocations_exceed_invoice_total: 'Payment allocations exceed invoice total' };
-    return (this.language === 'ar' ? ar : en)[type] || type;
+    const keys: Record<string, string> = {
+      payment_currency_mismatch: 'app.agingWarning.payment_currency_mismatch',
+      allocations_exceed_invoice_total: 'app.agingWarning.allocations_exceed_invoice_total',
+    };
+    return keys[type] ? this.t(keys[type]) : type;
   }
 
 
@@ -2878,14 +2875,14 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   currencyName(code: string): string {
-    const names: Record<string, { ar: string; en: string }> = {
-      EGP: { ar: 'الجنيه المصري', en: 'Egyptian Pound' },
-      USD: { ar: 'الدولار الأمريكي', en: 'US Dollar' },
-      EUR: { ar: 'اليورو', en: 'Euro' },
-      GBP: { ar: 'الجنيه الإسترليني', en: 'British Pound' },
+    const normalized = code.toUpperCase();
+    const keys: Record<string, string> = {
+      EGP: 'app.currencyName.egp',
+      USD: 'app.currencyName.usd',
+      EUR: 'app.currencyName.eur',
+      GBP: 'app.currencyName.gbp',
     };
-    const entry = names[code.toUpperCase()];
-    return entry ? (this.language === 'ar' ? entry.ar : entry.en) : code.toUpperCase();
+    return keys[normalized] ? this.t(keys[normalized]) : normalized;
   }
 
   notificationStatusLabel(status: string): string {
@@ -3908,21 +3905,15 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   importErrorLabel(code: string): string {
-    const ar: Record<string, string> = {
-      required: 'حقل مطلوب', too_long: 'النص أطول من المسموح',
-      invalid_decimal: 'سعر غير صالح (حتى منزلتين عشريتين)',
-      invalid_boolean: 'قيمة متابعة المخزون غير صحيحة',
-      duplicate_in_file: 'قيمة مكررة داخل الملف',
-      already_exists: 'البريد الإلكتروني أو الرمز موجود بالفعل'
+    const keys: Record<string, string> = {
+      required: 'app.importError.required',
+      too_long: 'app.importError.too_long',
+      invalid_decimal: 'app.importError.invalid_decimal',
+      invalid_boolean: 'app.importError.invalid_boolean',
+      duplicate_in_file: 'app.importError.duplicate_in_file',
+      already_exists: 'app.importError.already_exists',
     };
-    const en: Record<string, string> = {
-      required: 'Required field', too_long: 'Text exceeds the allowed length',
-      invalid_decimal: 'Invalid price (up to 2 decimal places)',
-      invalid_boolean: 'Invalid stock tracking value',
-      duplicate_in_file: 'Duplicate email or SKU in this file',
-      already_exists: 'Email or SKU already exists'
-    };
-    return (this.language === 'ar' ? ar : en)[code] || code;
+    return keys[code] ? this.t(keys[code]) : code;
   }
 
   async createProduct(): Promise<void> {
