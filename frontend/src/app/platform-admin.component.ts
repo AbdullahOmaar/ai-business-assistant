@@ -541,11 +541,11 @@ export class PlatformAdminComponent implements OnInit {
   }
 
   auditActionLabel(action: string): string {
-    return formatAuditActionLabel(action, this.language);
+    return this.t(formatAuditActionLabel(action));
   }
 
   auditTargetLabel(target: string): string {
-    return formatAuditTargetLabel(target, this.language);
+    return this.t(formatAuditTargetLabel(target));
   }
 
   statusLabel(status: string): string {
