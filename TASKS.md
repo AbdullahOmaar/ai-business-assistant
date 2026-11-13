@@ -4227,3 +4227,16 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - This is browser-emulated forced-colors coverage for the PWA notice only. It does not replace OS-level forced-colors acceptance across the full workspace or real assistive-technology testing.
 - The prior exact-head run on `5157cab8168be3951d8f5cc83635881dd8252b23` completed SUCCESS: all six standard jobs + aggregate PASS; 477 frontend unit, 33 browser, 283 backend tests passed; API smoke skipped by branch-dispatch policy. The new forced-colors test is not yet run; CI must be repeated on the final ledger head.
 - Current code head before this ledger append: `bcd74a9ae1a7dc96d64e30900803dc60d34534ec`. No backend/API/schema/financial/tenant changes.
+
+
+---
+
+## 2026-11-13 — T50 PWA failed-update cache isolation
+
+- **Source commit:** `c0bffc7efbfbecf473f7f18dd18eff4b74f3fb03` on the existing November branch; PR #397 remains the single candidate.
+- **Defect fixed:** old and installing Service Workers shared the same `aba-shell-v1.3.9-unknown` Cache Storage name. If the new worker failed while precaching a required JS/CSS asset, its install catch deleted that shared cache and could remove the still-active worker's offline shell.
+- **Implementation:** candidate worker now uses a distinct `aba-shell-v1.3.9-unknown-v2` cache namespace. A failed install deletes only the new candidate cache; the previously active cache remains available. Activation cleanup now removes only obsolete caches beginning with the AIBA-owned `aba-shell-` prefix, preserving unrelated origin caches.
+- **Regression coverage:** `frontend/src/app/service-worker-cache.spec.ts` now models multiple named Cache Storage entries and adds executable cases for (1) preserving the old app shell/runtime config when a candidate asset fails, and (2) deleting only obsolete AIBA caches during activation while preserving unrelated origin caches. Existing complete-shell, failed-root, online/offline runtime-config and API-bypass tests remain.
+- **Changed source paths:** `frontend/public/sw.js`, `frontend/src/app/service-worker-cache.spec.ts`. No API/auth/tenant, DB/schema/migration, financial, inventory, payroll or external side-effect behavior changed.
+- **Validation:** source transformation/static assertions completed; repository tests and CI have not yet been observed on the final ledger head. Exact-head GitHub Actions run is required; prior PR #397 run 43393529545 is stale after this source change.
+- **Delivery/safety:** no merge, deployment, DB write or migration. Keep PR #397 Draft pending exact-head validation and the remaining physical-device/authenticated/accessibility acceptance gates.
