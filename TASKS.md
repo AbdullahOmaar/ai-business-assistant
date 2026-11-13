@@ -4240,3 +4240,22 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Changed source paths:** `frontend/public/sw.js`, `frontend/src/app/service-worker-cache.spec.ts`. No API/auth/tenant, DB/schema/migration, financial, inventory, payroll or external side-effect behavior changed.
 - **Validation:** source transformation/static assertions completed; repository tests and CI have not yet been observed on the final ledger head. Exact-head GitHub Actions run is required; prior PR #397 run 43393529545 is stale after this source change.
 - **Delivery/safety:** no merge, deployment, DB write or migration. Keep PR #397 Draft pending exact-head validation and the remaining physical-device/authenticated/accessibility acceptance gates.
+
+
+## 2026-11-13 — Owner CI authority supersession and T50 exact-head result
+
+- **Owner decision:** GitHub Actions is the sole active and authoritative AIBA CI provider. This supersedes all older CircleCI-only, CircleCI fallback/parallel-gate, and “no GitHub Actions replacement” wording in historical task notes and attached DRAFT knowledge. CircleCI is retired; Semaphore is retired/non-authoritative; GitLab CI is inactive. Do not trigger CircleCI for AIBA acceptance.
+- **Authoritative workflow:** `.github/workflows/ci.yml`; require all six substantive jobs and fail-closed `all-checks-passed` SUCCESS on the exact candidate SHA. Skipped jobs are never PASS. This does not waive maintainer diff review, provider-enforced protections, explicit Owner merge authorization, separate deployment authorization, or product acceptance.
+- **T50 candidate before this ledger update:** branch `master/nov-2026-phase-1-ux-foundation`, SHA `350ba85211faaf798265b7685c2525033ec43ff0`; PR #397 OPEN / DRAFT / UNMERGED; 9 changed paths.
+- **Exact-head GitHub Actions run:** [43425172967](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43425172967) completed SUCCESS after verifying the exact SHA:
+  - `backend-accounting`: 283 passed / 23 warnings; Python pip-audit no known vulnerabilities.
+  - `frontend-unit-tests`: 483 passed / 0 failed.
+  - `frontend-production-build`, `frontend-dependency-audit`, and `backend-container`: SUCCESS.
+  - `frontend-browser-smoke`: 34 passed / 0 failed across Chromium and mobile Chromium, including seven PWA cases.
+  - `all-checks-passed`: SUCCESS.
+  - `authenticated-api-smoke`: SKIPPED by workflow condition; not PASS.
+- Full Maintainer Diff Review COMMENT remains recorded on exact SHA `350ba852...`, review 5890991197; no open review threads. It is not formal approval or merge authorization.
+- Non-failing warnings remain: Angular NG8107 optional-chain warnings; initial bundle 882.22 kB vs 700 kB warning budget (+182.22 kB; main baseline 878.49 kB); 18 moderate npm advisories; Firebase Auth package declares Node >=24.12 while CI runner uses Node 22.23.4. No forced dependency upgrades were applied.
+- Remaining acceptance: physical Android installed-PWA lifecycle NOT RUN (authorized device offline); STAFF provisioning and authenticated STAFF/cross-tenant denial BLOCKED by missing supported membership/invitation route (T43 dependency); full workspace keyboard-only, screen-reader, OS forced-colors and actual browser 200% zoom NOT RUN. Browser-emulated PWA notice forced-colors and 195x422 reflow are narrower checks only.
+- Candidate has no Vercel Preview; Production remains on main. No merge, deployment, DB write/migration, financial/inventory/payroll mutation or external side effect.
+- This ledger update advances the branch to a new SHA; the previous exact-head CI result remains valid only for `350ba852...`. Run the authoritative GitHub Actions workflow on the new exact head before using that new SHA as a validated candidate. T50 remains PARTIALLY COMPLETE.
