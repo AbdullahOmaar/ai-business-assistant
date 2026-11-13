@@ -3,10 +3,8 @@ import type { WorkspaceModuleTab } from './module-access';
 export interface WorkspaceModuleCard {
   tab: WorkspaceModuleTab;
   icon: string;
-  titleAr: string;
-  titleEn: string;
-  descriptionAr: string;
-  descriptionEn: string;
+  titleKey: string;
+  descriptionKey: string;
   mobileGroup?: WorkspaceModuleGroupId;
 }
 
@@ -19,8 +17,7 @@ export type WorkspaceModuleGroupId =
 
 export interface WorkspaceModuleGroup {
   id: WorkspaceModuleGroupId;
-  titleAr: string;
-  titleEn: string;
+  titleKey: string;
 }
 
 export const WORKSPACE_MODULE_GROUPS: readonly WorkspaceModuleGroup[] = [
