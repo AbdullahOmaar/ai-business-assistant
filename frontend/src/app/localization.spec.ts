@@ -65,7 +65,9 @@ test('every literal translation key referenced by a UI component exists in both 
 
   for (const path of sourceFiles(sourceDirectory)) {
     const source = readFileSync(path, 'utf8');
-    for (const match of source.matchAll(keyPattern)) references.add(match[1]);
+    for (const match of source.matchAll(keyPattern)) {
+      if (!match[1].endsWith('.')) references.add(match[1]);
+    }
   }
 
   const missing = [...references].filter(key => !(key in arabicEntries) || !(key in englishEntries));
