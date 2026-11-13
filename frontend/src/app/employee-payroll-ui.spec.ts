@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { expandDictionaryBackedProperties, expandTranslationCalls } from './localization-test-helpers';
+import { expandDictionaryBackedProperties, expandTranslationCalls } from './localization-test-helpers.ts';
 
 const app = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const component = expandTranslationCalls(readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8'));
