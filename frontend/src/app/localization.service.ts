@@ -57,6 +57,30 @@ export class LocalizationService {
     return this.languageValue === 'ar' ? 'rtl' : 'ltr';
   }
 
+  formatNumber(
+    value: string | number | null | undefined,
+    minimumFractionDigits = 0,
+    maximumFractionDigits = 3,
+  ): string {
+    if (value === null || value === undefined || value === '') return '—';
+    const numeric = typeof value === 'number' ? value : Number(value);
+    if (!Number.isFinite(numeric)) return String(value);
+    return new Intl.NumberFormat(this.locale, {
+      minimumFractionDigits,
+      maximumFractionDigits,
+    }).format(numeric);
+  }
+
+  formatDate(
+    value: string | number | Date | null | undefined,
+    options: Intl.DateTimeFormatOptions = { dateStyle: 'medium' },
+  ): string {
+    if (value === null || value === undefined || value === '') return '—';
+    const date = value instanceof Date ? value : new Date(value);
+    if (!Number.isFinite(date.getTime())) return '—';
+    return new Intl.DateTimeFormat(this.locale, options).format(date);
+  }
+
   syncDocumentLanguage(): void {
     if (typeof document === 'undefined') return;
     document.documentElement.lang = this.languageValue;
