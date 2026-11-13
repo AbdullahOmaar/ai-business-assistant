@@ -319,9 +319,7 @@ export class EmployeePayrollComponent implements OnChanges {
 
   formatPayrollPayoutDate(value: string | null | undefined): string {
     if (!value || !Number.isFinite(Date.parse(value))) return '—';
-    return new Intl.DateTimeFormat(this.localization.locale, {
-      dateStyle: 'medium',
-    }).format(new Date(value));
+    return this.localization.formatDate(value, { dateStyle: 'medium' });
   }
 
   get employeeTableColumns(): readonly AbaRecordTableColumn[] { return [
