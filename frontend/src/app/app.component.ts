@@ -1034,6 +1034,25 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           (confirmed)="confirmInvoiceVoid()"
           (cancelled)="cancelInvoiceVoid()" />
       }
+      @if (pendingPurchaseApproval) {
+        <aba-confirm-dialog
+          [title]="t('تأكيد اعتماد أمر الشراء', 'Confirm purchase order approval') + ' · ' + pendingPurchaseApproval.order_number"
+          [message]="t('سيتم اعتماد مسودة أمر الشراء فقط. لن يتم تسجيل استلام أو حركة مخزون.', 'This approves the draft purchase order only. It does not record receipt or a stock movement.')"
+          [warning]="t('راجع المورد والأصناف والكميات والتكلفة قبل الاعتماد. لا ينشئ الاعتماد فاتورة مورد أو مستحقات أو مدفوعات.', 'Review the supplier, items, quantities and unit costs. Approval does not create supplier bills, payables or payments.')"
+          [detailsTitle]="t('مراجعة الأمر قبل الاعتماد', 'Review order before approval')"
+          [details]="pendingPurchaseApprovalDetails"
+          [confirmLabel]="t('اعتماد الأمر', 'Approve order')"
+          [cancelLabel]="t('إبقاءه مسودة', 'Keep as draft')"
+          [busyLabel]="t('جارٍ الاعتماد...', 'Approving...')"
+          [busy]="purchasesLoading"
+          [confirmDisabled]="!!purchaseApprovalError"
+          [error]="purchaseApprovalError"
+          [tone]="'warning'"
+          [returnFocusTo]="confirmationReturnFocus"
+          [focusFallbackId]="'purchases-section-heading'"
+          (confirmed)="confirmPurchaseOrderApproval()"
+          (cancelled)="cancelPurchaseOrderApproval()" />
+      }
       @if (pendingPurchaseReceipt) {
         <aba-confirm-dialog
           [title]="t('تأكيد استلام أمر الشراء', 'Confirm purchase receipt') + ' · ' + pendingPurchaseReceipt.order_number"
@@ -1535,6 +1554,8 @@ export class AppComponent implements OnInit, OnDestroy {
   invoiceVoidError = '';
   pendingPurchaseReceipt: PurchaseOrder | null = null;
   purchaseReceiptError = '';
+  pendingPurchaseApproval: PurchaseOrder | null = null;
+  purchaseApprovalError = '';
   confirmationReturnFocus: HTMLElement | null = null;
   invoiceNumber = '';
   invoiceFilterCustomerId = '';
@@ -1701,7 +1722,13 @@ export class AppComponent implements OnInit, OnDestroy {
       products:this.purchaseOrderProductsSummary(order),received:this.purchaseOrderReceivedSummary(order),
       status:this.purchaseOrderStatusLabel(order.status),total:`${order.total} ${order.currency_code}`,
     },
-    actions:this.business?.role==='owner'&&this.canReceivePurchaseOrder(order)?[{id:'receive',label:this.t('استلام المتبقي','Receive remaining')}]:[],
+    actions:this.business?.role==='owner'
+      ? this.canApprovePurchaseOrder(order)
+        ? [{id:'approve',label:this.t('اعتماد الأمر','Approve'),disabled:this.purchasesLoading}]
+        : this.canReceivePurchaseOrder(order)
+          ? [{id:'receive',label:this.t('استلام المتبقي','Receive remaining'),disabled:this.purchasesLoading}]
+          : []
+      : [],
   })); }
   purchaseOrderProductsSummary(order:PurchaseOrder):string {
     return order.lines.map(line=>`${this.productNameFor(line.product_id)} × ${line.quantity}`).join(' · ')||'—';
@@ -1715,10 +1742,16 @@ export class AppComponent implements OnInit, OnDestroy {
     if(action.actionId==='statement')this.loadCustomerStatement(customer);
   }
   onPurchaseRecordAction(action:AbaRecordTableActionEvent):void {
-    if(action.actionId!=='receive'||this.business?.role!=='owner')return;
+    if(this.business?.role!=='owner')return;
     const order=this.purchaseOrders.find(item=>item.id===action.rowId);
-    if(!order||!this.canReceivePurchaseOrder(order))return;
-    this.requestPurchaseOrderReceipt(order,action.anchor);
+    if(!order)return;
+    if(action.actionId==='approve'&&this.canApprovePurchaseOrder(order)){
+      this.requestPurchaseOrderApproval(order,action.anchor);
+      return;
+    }
+    if(action.actionId==='receive'&&this.canReceivePurchaseOrder(order)){
+      this.requestPurchaseOrderReceipt(order,action.anchor);
+    }
   }
 
   get filteredProducts(): Product[] {
@@ -2445,6 +2478,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoiceVoidError = '';
     this.pendingPurchaseReceipt = null;
     this.purchaseReceiptError = '';
+    this.pendingPurchaseApproval = null;
+    this.purchaseApprovalError = '';
     this.confirmationReturnFocus = null;
     this.chatRequestGuard.invalidate();
     this.payrollRefreshGuard.invalidate();
@@ -3256,14 +3291,73 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
   hasRemainingQuantity(line: { remaining_quantity: string }): boolean { return Number(line.remaining_quantity) > 0; }
+  canApprovePurchaseOrder(order: PurchaseOrder): boolean {
+    return order.status === 'draft' && order.lines.length > 0;
+  }
   canReceivePurchaseOrder(order: PurchaseOrder): boolean {
     return (order.status === 'approved' || order.status === 'partially_received') &&
       order.lines.some(line => this.hasRemainingQuantity(line));
   }
   supplierNameFor(id: string): string { return this.suppliers.find(item=>item.id===id)?.name || id.slice(0,8); }
   productNameFor(id: string): string { return this.products.find(item=>item.id===id)?.name || id.slice(0,8); }
+  requestPurchaseOrderApproval(order: PurchaseOrder, event: MouseEvent | HTMLElement): void {
+    if (!this.business || this.business.role !== 'owner' || !this.canApprovePurchaseOrder(order) || this.purchasesLoading) return;
+    this.pendingInvoiceVoid = null;
+    this.invoiceVoidError = '';
+    this.pendingPurchaseReceipt = null;
+    this.purchaseReceiptError = '';
+    this.pendingPurchaseApproval = order;
+    this.purchaseApprovalError = '';
+    this.confirmationReturnFocus = event instanceof HTMLElement ? event : event.currentTarget as HTMLElement;
+  }
+
+  cancelPurchaseOrderApproval(): void {
+    this.pendingPurchaseApproval = null;
+    this.purchaseApprovalError = '';
+    this.confirmationReturnFocus = null;
+  }
+
+  get pendingPurchaseApprovalDetails(): string[] {
+    const order = this.pendingPurchaseApproval;
+    if (!order) return [];
+    return [
+      `${this.t('المورد', 'Supplier')}: ${this.supplierNameFor(order.supplier_id)}`,
+      `${this.t('الأصناف والكميات', 'Items and quantities')}: ${this.purchaseOrderProductsSummary(order)}`,
+      `${this.t('الإجمالي', 'Total')}: ${order.total} ${order.currency_code}`,
+    ];
+  }
+
+  async confirmPurchaseOrderApproval(): Promise<void> {
+    const order = this.pendingPurchaseApproval;
+    if (!order || !this.business || this.business.role !== 'owner' || !this.canApprovePurchaseOrder(order) || this.purchasesLoading) return;
+    const businessId = this.business.id;
+    this.beginOperationsAction();
+    this.purchasesLoading = true;
+    this.purchaseApprovalError = '';
+    try {
+      const approved = await this.api.approvePurchaseOrder(businessId, order.id);
+      if (this.business?.id !== businessId) return;
+      this.purchaseOrders = this.purchaseOrders.map(item => item.id === order.id ? { ...item, ...approved } : item);
+      this.pendingPurchaseApproval = null;
+      this.confirmationReturnFocus = null;
+      this.setOperationsSuccess('purchases', this.t(
+        'تم اعتماد أمر الشراء. لم يتم تسجيل الاستلام أو حركة المخزون.',
+        'Purchase order approved. No quantities were received and no stock movement was recorded.'
+      ));
+    } catch (error) {
+      if (this.business?.id === businessId) {
+        this.setOperationsFailure('purchases', error);
+        this.purchaseApprovalError = this.operationsError || this.message(error);
+      }
+    } finally {
+      if (this.business?.id === businessId) this.purchasesLoading = false;
+    }
+  }
+
   requestPurchaseOrderReceipt(order: PurchaseOrder, event: MouseEvent | HTMLElement): void {
     if (!this.business || this.business.role !== 'owner' || !this.canReceivePurchaseOrder(order)) return;
+    this.pendingPurchaseApproval = null;
+    this.purchaseApprovalError = '';
     this.pendingInvoiceVoid = null;
     this.invoiceVoidError = '';
     this.pendingPurchaseReceipt = order;

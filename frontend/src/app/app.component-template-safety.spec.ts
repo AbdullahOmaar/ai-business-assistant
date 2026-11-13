@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const invoiceEditorSource = readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8');
 const invoiceDraftSource = readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8');
 const releaseGuideSource = readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8');
@@ -1589,4 +1590,38 @@ test('AI assistant auto-follow respects the reader position and reduced motion',
   assert.ok(method.includes('!force && !this.isChatLogNearBottom()'));
   assert.ok(method.includes('prefers-reduced-motion'));
   assert.ok(method.includes("behavior: reducedMotion ? 'auto' : 'smooth'"));
+});
+
+
+test('purchase-order approval is owner-only, confirmation-first and tenant-reset safe', () => {
+  const rowsStart = source.indexOf('get purchaseTableRows()');
+  const rowsEnd = source.indexOf('purchaseOrderProductsSummary(', rowsStart);
+  const rows = source.slice(rowsStart, rowsEnd);
+  assert.ok(rows.includes('this.canApprovePurchaseOrder(order)'));
+  assert.ok(rows.includes("id:'approve'"));
+  assert.ok(rows.includes("this.business?.role==='owner'"));
+
+  const actionStart = source.indexOf('onPurchaseRecordAction(');
+  const actionEnd = source.indexOf('get filteredProducts()', actionStart);
+  const action = source.slice(actionStart, actionEnd);
+  assert.ok(action.includes("if(this.business?.role!=='owner')return;"));
+  assert.ok(action.includes("action.actionId==='approve'"));
+  assert.ok(action.includes('this.requestPurchaseOrderApproval(order,action.anchor)'));
+
+  const resetStart = source.indexOf('private clearWorkspaceData(): void');
+  const resetEnd = source.indexOf('async createWorkspace(): Promise<void>', resetStart);
+  const reset = source.slice(resetStart, resetEnd);
+  assert.ok(reset.includes('this.pendingPurchaseApproval = null;'));
+  assert.ok(reset.includes("this.purchaseApprovalError = '';"));
+
+  const approvalStart = source.indexOf('async confirmPurchaseOrderApproval(): Promise<void>');
+  const approvalEnd = source.indexOf('requestPurchaseOrderReceipt(', approvalStart);
+  const approval = source.slice(approvalStart, approvalEnd);
+  assert.ok(approval.includes('this.api.approvePurchaseOrder(businessId, order.id)'));
+  assert.ok(approval.includes("this.setOperationsSuccess('purchases'"));
+  assert.ok(!approval.includes('receivePurchaseOrder'));
+
+  assert.ok(apiSource.includes("'/purchase-orders/' + encodeURIComponent(orderId) + '/approve'"));
+  assert.ok(source.includes('This approves the draft purchase order only. It does not record receipt or a stock movement.'));
+  assert.ok(source.includes('Approval does not create supplier bills, payables or payments.'));
 });
