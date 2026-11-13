@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { expandTranslationCalls } from './localization-test-helpers';
+import { expandDictionaryBackedProperties, expandTranslationCalls } from './localization-test-helpers';
 
 const appSource = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
@@ -10,7 +10,7 @@ const metricCardSource = readFileSync(new URL('./shared/ui/aba-metric-card.compo
 const mobileHeaderCssSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
 const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
 const quickAccessCardSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8'));
-const moduleCatalogSource = readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8');
+const moduleCatalogSource = expandDictionaryBackedProperties(readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8'));
 
 const homeStart = appSource.indexOf("@if (tab === 'overview') {");
 const homeEnd = appSource.indexOf("@if (tab === 'notifications')", homeStart);
