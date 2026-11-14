@@ -2926,6 +2926,8 @@ export class AppComponent implements OnInit, OnDestroy {
       USD: 'app.currencyName.usd',
       EUR: 'app.currencyName.eur',
       GBP: 'app.currencyName.gbp',
+      SAR: 'app.currencyName.sar',
+      AED: 'app.currencyName.aed',
     };
     return keys[normalized] ? this.t(keys[normalized]) : normalized;
   }
