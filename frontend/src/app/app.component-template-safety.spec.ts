@@ -1017,21 +1017,21 @@ test('notification status labels are localized in the list and available to loca
   assert.match(source, /notificationStatusLabel\(item\.status\)/);
   assert.match(source, /notificationStatusLabel\(status\)/);
   assert.match(source, /failed: 'app\.notificationStatus\.failed'/);
-  assert.match(source, /status \|\| this\.t\('app\.labels\.unknownStatus'/);
+  assert.match(source, /status \|\| this\.t\('حالة غير محددة', 'Unknown status'/);
 });
 
 test('operational health status uses a localized label instead of raw API codes', () => {
   assert.match(source, /operationalHealthStatusLabel\(operationalHealth\.status\)/);
   assert.match(source, /status === 'ok'.*سليم/);
   assert.match(source, /status === 'degraded'.*يحتاج مراجعة/);
-  assert.match(source, /return status \|\| this\.t\('app\.labels\.unknownStatus'\)/);
+  assert.match(source, /return status \|\| this\.t\('حالة غير محددة', 'Unknown status'\)/);
 });
 
 test('purchase-order status labels are localized in the list and available to local search', () => {
   assert.match(source, /purchaseOrderStatusLabel\(order\.status\)/);
   assert.match(source, /purchaseOrderStatusLabel\(status\)/);
   assert.match(source, /partially_received: 'app\.purchaseOrderStatus\.partially_received'/);
-  assert.match(source, /status \|\| this\.t\('app\.labels\.unknownStatus'/);
+  assert.match(source, /status \|\| this\.t\('حالة غير محددة', 'Unknown status'/);
 });
 
 test('purchase orders remain creatable by members while approval, receiving and payment writes are owner-only', () => {
