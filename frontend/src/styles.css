@@ -614,3 +614,38 @@ aba-metric-card small {
     width: 100%;
   }
 }
+
+/* Dashboard KPIs are direct navigation shortcuts, not passive display-only tiles. */
+aba-metric-card.metric-card-action {
+  cursor: pointer;
+  border-radius: var(--aba-radius-card);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+aba-metric-card.metric-card-action .aba-metric-card {
+  transition:
+    border-color var(--aba-motion-fast) var(--aba-easing-standard),
+    box-shadow var(--aba-motion-fast) var(--aba-easing-standard),
+    transform var(--aba-motion-fast) var(--aba-easing-standard);
+}
+aba-metric-card.metric-card-action:hover .aba-metric-card {
+  border-color: var(--aba-color-primary-border);
+  box-shadow: var(--aba-shadow-card-hover);
+  transform: translateY(-2px);
+}
+aba-metric-card.metric-card-action:focus-visible {
+  outline: var(--aba-focus-ring-width) solid var(--aba-color-focus-ring);
+  outline-offset: var(--aba-focus-ring-offset);
+}
+aba-metric-card.metric-card-action:active .aba-metric-card {
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  aba-metric-card.metric-card-action .aba-metric-card {
+    transition: none;
+  }
+  aba-metric-card.metric-card-action:hover .aba-metric-card,
+  aba-metric-card.metric-card-action:active .aba-metric-card {
+    transform: none;
+  }
+}
