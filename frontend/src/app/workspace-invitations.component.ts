@@ -1,7 +1,8 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, LocalizationService } from './api.service';
+import { ApiService } from './api.service';
+import { LocalizationService } from './localization.service';
 import type { BusinessInvitation, BusinessInvitationCreated } from './api.service';
 
 @Component({
