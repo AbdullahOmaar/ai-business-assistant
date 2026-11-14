@@ -62,38 +62,41 @@ export function validateInvoiceDraft(
   customers: readonly InvoiceDraftCustomer[],
 ): string | null {
   if (!input.invoice_number.trim() || input.invoice_number.trim().length > 64) {
-    return 'Enter an invoice number of 1 to 64 characters.';
+    return "invoiceDraft.validation.invoiceNumber";
   }
   if (!input.customer_id || !customers.some(customer => customer.id === input.customer_id)) {
-    return 'Choose a valid customer.';
+    return "invoiceDraft.validation.customer";
   }
   if (!/^[A-Za-z]{3}$/.test(input.currency_code.trim())) {
-    return 'Enter a valid three-letter currency code.';
+    return "invoiceDraft.validation.currency";
   }
-  if ((input.notes?.length ?? 0) > 2000) return 'Invoice notes cannot exceed 2,000 characters.';
-  if (!input.lines.length) return 'Add at least one invoice line.';
-  if (input.lines.length > 500) return 'An invoice cannot contain more than 500 lines.';
+  if ((input.notes?.length ?? 0) > 2000) return "invoiceDraft.validation.notesLength";
+  if (!input.lines.length) return "invoiceDraft.validation.atLeastOneLine";
+  if (input.lines.length > 500) return "invoiceDraft.validation.lineLimit";
 
   for (const line of input.lines) {
     const quantity = line.quantity.trim();
     if (!DECIMAL_QUANTITY.test(quantity) || !Number.isFinite(Number(quantity)) || Number(quantity) <= 0 ||
         exceedsInvoiceDecimalPrecision(quantity, 11)) {
-      return 'Every line needs a positive quantity with at most three decimal places.';
+      return "invoiceDraft.validation.quantity";
     }
     if (line.kind === 'product') {
       if (!line.product_id || !products.some(product => product.id === line.product_id)) {
-        return 'Choose a valid catalog product for every product line.';
+        return "invoiceDraft.validation.catalogProduct";
       }
-      if (line.description.trim().length > 300) return 'A line description cannot exceed 300 characters.';
+      if (line.description.trim().length > 300) return "invoiceDraft.validation.descriptionLength";
       continue;
     }
-    if (!line.description.trim() || line.description.trim().length > 300) {
-      return 'Every manual line needs a description of 1 to 300 characters.';
+    if (!line.description.trim()) {
+      return "invoiceDraft.validation.manualDescription";
+    }
+    if (line.description.trim().length > 300) {
+      return "invoiceDraft.validation.descriptionLength";
     }
     const price = line.unit_price.trim();
     if (!DECIMAL_PRICE.test(price) || !Number.isFinite(Number(price)) || Number(price) < 0 ||
         exceedsInvoiceDecimalPrecision(price, 12)) {
-      return 'Every manual line needs a non-negative unit price with at most two decimal places.';
+      return "invoiceDraft.validation.manualPrice";
     }
   }
   return null;
@@ -124,24 +127,6 @@ export function toInvoiceDraftPayload(
           ...(line.description.trim() ? { description: line.description.trim() } : {}),
         }),
   };
-}
-
-export function localizeInvoiceDraftValidationMessage(message: string, language: 'ar' | 'en'): string {
-  if (language !== 'ar') return message;
-  const arabic: Record<string, string> = {
-    'Enter an invoice number of 1 to 64 characters.': 'أدخل رقم فاتورة من حرف إلى 64 حرفًا.',
-    'Choose a valid customer.': 'اختَر عميلًا صحيحًا.',
-    'Enter a valid three-letter currency code.': 'أدخل رمز عملة صحيحًا من ثلاثة أحرف.',
-    'Add at least one invoice line.': 'أضف بندًا واحدًا على الأقل للفاتورة.',
-    'Invoice notes cannot exceed 2,000 characters.': 'لا يمكن أن تتجاوز ملاحظات الفاتورة 2000 حرف.',
-    'An invoice cannot contain more than 500 lines.': 'لا يمكن أن تحتوي الفاتورة على أكثر من 500 بند.',
-    'Every line needs a positive quantity with at most three decimal places.': 'يجب أن تكون كمية كل بند أكبر من صفر وبحد أقصى 3 خانات عشرية.',
-    'Choose a valid catalog product for every product line.': 'اختَر منتجًا صحيحًا من قائمة المنتجات لكل بند.',
-    'A line description cannot exceed 300 characters.': 'لا يمكن أن يتجاوز وصف البند 300 حرف.',
-    'Every manual line needs a description of 1 to 300 characters.': 'يجب أن يحتوي كل بند يدوي على وصف من حرف إلى 300 حرف.',
-    'Every manual line needs a non-negative unit price with at most two decimal places.': 'يجب أن يكون سعر الوحدة للبند اليدوي صفرًا أو أكثر وبحد أقصى خانتين عشريتين.',
-  };
-  return arabic[message] ?? message;
 }
 
 export function removeInvoiceDraftLine<T>(lines: readonly T[], index: number): T[] {

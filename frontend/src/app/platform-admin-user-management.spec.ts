@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
 
-const source = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
+const source = expandTranslationCalls(readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8'));
 const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 
 test('platform admin has a dedicated global user directory, separate from workspace memberships', () => {
@@ -92,14 +93,13 @@ test('Platform Admin announces SPA section changes to assistive technology', () 
   assert.match(source, /sectionAnnouncementFor\(section: AdminSection\): string/);
   assert.match(source, /this\.sectionAnnouncement = this\.sectionAnnouncementFor\(section\)/);
   assert.match(source, /this\.sectionAnnouncement = this\.sectionAnnouncementFor\('overview'\)/);
-  for (const label of [
-    'Opened Overview section',
-    'Opened Workspaces section',
-    'Opened Audit activity section',
-    'Opened Users and access section',
-    'Opened Permissions section',
-  ]) assert.ok(source.includes(label), 'missing accessible section announcement: '+label);
-  assert.match(source, /\.admin-visually-hidden\{/);
+  for (const key of [
+    "overview: 'app.platformAdmin.section.overview'",
+    "businesses: 'app.platformAdmin.section.businesses'",
+    "activity: 'app.platformAdmin.section.activity'",
+    "users: 'app.platformAdmin.section.users'",
+    "permissions: 'app.platformAdmin.section.permissions'",
+  ]) assert.ok(source.includes(key), 'missing localized section announcement key: '+key);
 });
 
 

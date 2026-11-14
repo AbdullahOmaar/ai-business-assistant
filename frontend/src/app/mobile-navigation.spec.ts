@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandDictionaryBackedProperties, expandTranslationCalls } from './localization-test-helpers.ts';
 
-const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const moduleAccessSource = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
-const catalogueSource = readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8');
+const catalogueSource = expandDictionaryBackedProperties(readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8'));
 
 test('mobile bottom navigation keeps four slots and places platform admin in More', () => {
   const mobileSidebarStart = source.indexOf('.sidebar{position:fixed;inset:auto 0 0;width:100%');
@@ -55,7 +56,7 @@ test('mobile More navigation provides localized search over authorized destinati
   assert.match(menu, /@for \(group of filteredMobileMoreGroups; track group\.id\)/);
   assert.match(menu, /mobile-more-empty" role="status"/);
   assert.match(source, /get filteredMobileMoreGroups\(\)/);
-  assert.match(source, /module\.descriptionAr/);
+  assert.match(source, /module\.descriptionKey/);
   assert.match(source, /mobileMoreSearch = ''/);
 });
 
@@ -71,5 +72,5 @@ test('Home module directory exposes bilingual search and a localized empty state
   assert.match(source, /get filteredHomeModuleCards/);
   assert.match(home, /@for \(module of filteredHomeModuleCards; track module\.tab\)/);
   assert.match(home, /module-directory-empty" role="status"/);
-  assert.match(source, /filterWorkspaceModules\(this\.homeModuleCards, this\.homeModuleSearch/);
+  assert.match(source, /filterWorkspaceModules\(\s*this\.homeModuleCards,\s*this\.homeModuleSearch/);
 });

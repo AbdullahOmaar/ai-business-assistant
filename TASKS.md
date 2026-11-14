@@ -4115,3 +4115,199 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Regression coverage:** synthetic Playwright fixtures only; OWNER success at 390px including per-line unit-cost visibility, 403 failure/no retry, STAFF cannot see approval on a draft PO, STAFF cannot see receiving on an approved PO, and workspace-switch reset. Browser E2E also confirms no receiving request is emitted by approval.
 - **Exact-head validation:** pending for the final updated PR head. Previous checks are not reusable after the latest code and documentation changes. Authenticated API smoke is conditionally SKIPPED for this branch and is not counted as PASS.
 - **Disposition at this checkpoint:** PR #396 is OPEN / UNMERGED. Full maintainer diff review and exact-head required CI must pass before merge. Web Production deployment and post-deploy verification are outside the current authorization and remain NOT AUTHORIZED / NOT RUN.
+
+---
+
+## 2026-11-13 — T50 Phase 1 Final Acceptance & Remediation activation
+
+- **Owner work order:** T50 Phase 1 final acceptance and bounded remediation activated by the Owner; Project Master is the active executor. The canonical November branch was absent from GitHub, so the same designated branch was recreated from current main rather than opening a parallel work branch.
+- **Base / branch:** `main@46a143d5048ec9346c8b04bc83d46918ba6e6d42`; `master/nov-2026-phase-1-ux-foundation`. Current implementation checkpoint before this ledger append: `0b320047e6567d81c969e2b0123ebef7088d3c31`. Branch is based on main with no divergence; no PR exists for this batch.
+- **PWA remediation:** added a bilingual, polite live update notice after an already-controlled service worker changes, with explicit user-triggered refresh (no automatic reload); added a responsive 44px refresh action; exposed the install entry and fallback help in the public mobile sign-in shell so users are not required to authenticate before installing. Added source-level regression declarations in `frontend/src/app/app.component-template-safety.spec.ts`.
+- **Changed paths:** `frontend/src/app/app.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `frontend/src/styles.css`. No API, database, schema, auth policy, tenant authorization, financial, inventory, payroll or notification lifecycle behavior changed.
+- **Read-only public acceptance on deployed main SHA `46a143d5048ec9346c8b04bc83d46918ba6e6d42`:** Web sign-in shell rendered without console/runtime errors; Arabic `lang=ar` / `dir=rtl`; 390×844 layout and 200% reflow-equivalent viewport had no horizontal overflow; public-shell keyboard tab order and visible focus passed. English toggle was not activated because it persists a local preference; source indicates English `lang=en` / `dir=ltr`. API `/health`, `/readyz`, `/version` returned HTTP 200, 200, 200; version `1.3.5`, commit prefix `46a143d5048e`. Web and API Vercel deployments were READY on exact main SHA. These are main-runtime/public-shell results only, not candidate or authenticated-workspace acceptance.
+- **Still NOT RUN / BLOCKED:** physical Android Chrome installed-PWA install/cold-start/offline/update/recovery; full authenticated workspace keyboard-only, screen-reader and forced-colors acceptance; authenticated OWNER/STAFF and direct cross-tenant API denial on the candidate. Desktop Commander device is OFFLINE. Current membership API exposes OWNER-only GET/PATCH/DELETE membership routes but no supported POST/create-membership or invitation route; STAFF provisioning must remain with its T43 owner and must not be bypassed through direct DB or hidden admin paths.
+- **Design boundary:** the current design system remains light-only. A dark/system theme is a known requirement gap, but dark token values are not approved; do not invent or ship a dark palette under this acceptance-only order.
+- **Validation / CI:** routine unit tests, build and browser suites are deferred until the end of the authorized task per Owner direction; none has been run on this branch. The active project instruction requires CircleCI ONLY, while current `AGENTS.md` and Notion MWOS say GitHub Actions only; this is a policy conflict. CircleCI is unavailable in connected tools, so no CI provider was triggered and no exact-head PASS is claimed. Existing GitHub Actions success on main is not reusable evidence for this branch.
+- **Delivery / safety:** no PR, merge, production deployment, DB write, migration, external notification or financial/business mutation was performed. T50 remains PARTIALLY COMPLETE. Keep working on independent safe acceptance; do not claim physical/device, screen-reader, authenticated-role or exact-head CI acceptance without evidence.
+
+## 2026-11-13 — T50 PWA E2E coverage and CI authority reconciliation
+
+- **Latest source checkpoint before this ledger append:** `293aa2c3e210b9297b0e45d03f537c47fdcbd9af`; branch `master/nov-2026-phase-1-ux-foundation`, based on `main@46a143d5048ec9346c8b04bc83d46918ba6e6d42`.
+- Added `frontend/e2e/pwa.spec.ts` for the public mobile auth shell: pre-auth install CTA and fallback, accepted install-prompt behavior, service-worker update notice with explicit refresh, first-controller/no-update guard, and no horizontal overflow at 390×844. The test uses a synthetic EventTarget service-worker harness and dummy Firebase runtime configuration; it does not authenticate or mutate business data.
+- **CI authority reconciliation:** the Owner decision effective 2026-11-12 recorded in Notion MWOS and current `AGENTS.md` specify GitHub Actions as the sole active CI provider; CircleCI is retired. Current main has no `.circleci/config.yml`; the latest CircleCI main pipeline returned was Nov 11 and had no workflow execution. This supersedes the older CircleCI-only baseline. Use the existing `.github/workflows/ci.yml` exact-SHA workflow at task close.
+- **Main baseline evidence:** GitHub Actions run [43369850256](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43369850256) passed on exact main SHA `46a143d5048ec9346c8b04bc83d46918ba6e6d42`: backend-accounting, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke, backend-container, and `all-checks-passed`. `authenticated-api-smoke` was SKIPPED, not PASS. This evidence is not reusable for the candidate branch.
+- **Candidate validation:** no tests, build or CI have been run on this branch, per the Owner's instruction to defer routine checks until the end of T50. At task close, dispatch `ci.yml` on this exact branch head and verify every required job plus aggregate on the same SHA.
+- **Disposition:** no PR, merge, production deployment, database write, migration or external side effect. T50 remains PARTIALLY COMPLETE.
+
+## 2026-11-13 — T50 candidate validation result (exact SHA)
+
+- **Validated candidate:** `0169a0a19774fbd134ba0073d5e9fe1335be1a75`, run [43377375461](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43377375461). GitHub Actions completed SUCCESS on that exact SHA; aggregate `all-checks-passed` SUCCESS.
+- **Frontend:** unit suite 475 passed / 0 failed / 0 skipped; production build SUCCESS; Chromium browser smoke 31 passed, including all four new `e2e/pwa.spec.ts` journeys; dependency audit job SUCCESS.
+- **Backend:** regression suite 283 passed / 23 warnings; backend container build/import and migration/schema-drift checks SUCCESS.
+- **Skipped:** `authenticated-api-smoke` was SKIPPED by workflow policy because it is restricted to a separate invoice-payment PR branch. Do not report it as PASS.
+- **Warnings (not CI failures):** Angular build emitted existing NG8107 optional-chain warnings and initial bundle budget warning: 882.16 kB against 700 kB (+182.16 kB). Main baseline build already had the same warnings and 878.49 kB (+178.49 kB), so candidate delta is +3.67 kB. Frontend npm audit reported 18 MODERATE advisories (including Hono 4.13.14 and minimatch 10.2.6); no high/critical advisory caused the configured high-severity gate to fail. Do not force-upgrade Angular CLI to resolve minimatch without a separate compatibility batch.
+- **Runtime:** Vercel Web/API deployments on main SHA `46a143d5048ec9346c8b04bc83d46918ba6e6d42` READY; public health/readiness/version 200; Vercel runtime-error aggregation for both projects over the latest 30 minutes returned no errors. These are main-only signals, not candidate deployment evidence.
+- **Remaining acceptance:** physical Android installed-PWA lifecycle and offline/recovery; authenticated OWNER/STAFF/cross-tenant API denial; full workspace keyboard/screen-reader/forced-colors; actual browser 200% zoom; approved dark/system tokens. Device is OFFLINE and no supported STAFF create/invite endpoint exists. No bypass or production data operation permitted.
+- **Delivery:** no PR, merge or deployment. T50 remains PARTIALLY COMPLETE; candidate CI is green, but acceptance gates above remain open.
+
+
+## 2026-11-13 — T50 master continuation / exact-head reconciliation
+
+- **Authority refresh:** canonical T50 task still assigns Project Master / Master Chat as sole active executor. The Owner order activates Phase 1 Final Acceptance & bounded remediation. MWOS and current GitHub `AGENTS.md` designate GitHub Actions as primary and CircleCI as retired/transition-only; however the active Project Instructions supplied to this project still say “CircleCI ONLY”. This is a live authority conflict. No provider was triggered or substituted in this checkpoint.
+- **Exact source state:** `main@46a143d5048ec9346c8b04bc83d46918ba6e6d42`; active branch `master/nov-2026-phase-1-ux-foundation` at `b8db136adb2868168158645e422d5c8ec43d6cb9`, 18 commits ahead / 0 behind. No open PR. Branch is not protected; main is protected. Current aggregate diff is six paths: `TASKS.md`, `frontend/e2e/pwa.spec.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `frontend/src/app/app.component.ts`, `frontend/src/app/service-worker-update.ts`, `frontend/src/styles.css`.
+- **PWA source review:** reviewed the six-path diff and current service-worker integration. The handler suppresses the first controller acquisition only for an initially uncontrolled page, announces the next controller replacement once, and announces immediately for an already-controlled page. Refresh is explicit; no automatic reload. The mobile install entry and manual fallback are exposed before authentication. No API, auth, tenant, financial, inventory, payroll, notification-delivery or schema behavior changed.
+- **Focused evidence:** Node 22.16.0 isolated handler harness: 2/2 PASS (initial acquisition silent; replacement announces once; already-controlled page announces once). Prior static integration sweep: 9/9 PASS. These are focused/source checks only, not the repository frontend suite, Playwright suite or Angular build.
+- **Exact candidate CI:** no check-runs or workflow runs are present for `b8db136adb2868168158645e422d5c8ec43d6cb9`. The authoritative workflow `.github/workflows/ci.yml` supports `workflow_dispatch`, but the connected GitHub toolset exposes GET/read and rerun operations, not a new workflow-dispatch operation. The Browser Use alternative is currently unavailable after its earlier `insufficient_credits` result. Do not create a premature PR merely to cause a pull-request workflow. Exact-head unit/browser/build/CI remains NOT RUN.
+- **Authenticated OWNER:** the bounded synthetic OWNER test already recorded above remains PASS: one synthetic account, one EGP workspace, six read-only screens in empty states, no business records, normal sign-out. The follow-on keyboard/focus/zoom browser session failed before sign-in with `ERR_SOCKS_CONNECTION_FAILED`; no account use or data change occurred.
+- **Remaining acceptance:** physical Android installed-PWA install/cold-start/offline/update/recovery (device OFFLINE); supported STAFF provisioning and direct cross-tenant denial (membership API has no supported POST/create-membership or invite route; T43 dependency); actual browser 200% zoom; full workspace keyboard-only, screen-reader and OS forced-colors. These remain NOT RUN/BLOCKED. Public main deployment evidence is not candidate evidence.
+- **Delivery / safety:** no PR, merge, production deployment, database write/migration, issued-invoice/payment/allocation/settlement mutation, stock movement or external notification. T50 remains PARTIALLY COMPLETE.
+- **Next action:** resolve the Project Instructions vs current Owner-decision CI provider conflict and provide a supported workflow-dispatch path; then run the consolidated workflow on the exact current candidate SHA. Continue device/accessibility and STAFF/T43-dependent checks when their required resources/path are available. Do not start Phase 2 or claim VERIFIED COMPLETE.
+
+
+### CI capability discovery correction — 2026-11-13
+
+- A further Composio tool search found an active GitHub connection with a valid `GITHUB_CREATE_A_WORKFLOW_DISPATCH_EVENT` operation for `.github/workflows/ci.yml`. The earlier statement that no dispatch operation was exposed is superseded.
+- A CircleCI connection is also active, but the repository returns 404 for `.circleci/config.yml` on both main and the active branch, and CircleCI's project pipeline listing for this branch returned an empty list. No CircleCI pipeline was triggered.
+- The provider-authority conflict still remains between active Project Instructions (“CircleCI ONLY”) and the dated Owner decision/current `AGENTS.md`/MWOS (GitHub Actions primary; CircleCI retired/transition-only). Therefore neither GitHub Actions dispatch nor CircleCI trigger was invoked in this checkpoint. Do not interpret tool availability as authorization to select one side of the conflict.
+
+
+## 2026-11-13 — T50 PWA regression coverage extension
+
+- Added two browser regression declarations to `frontend/e2e/pwa.spec.ts`:
+  1. Repeated `controllerchange` events keep the update notice to one announcement per page lifecycle.
+  2. The public mobile sign-in shell is checked for horizontal overflow at a 195×422 viewport (a 200%-equivalent reflow stress viewport). This is **not** a substitute for actual browser zoom acceptance.
+- The PWA E2E file now contains six focused PWA cases: pre-auth install CTA/fallback, accepted install prompt, update notice/explicit refresh, silent first controller acquisition, single-notice behavior, and narrow reflow. The two new cases have been source-reviewed but NOT RUN.
+- Re-ran the isolated Node 22.16.0 service-worker handler harness against the exact helper logic: 2/2 PASS (initial controller acquisition remains silent; subsequent replacement announces once; already-controlled pages announce once). This is a focused isolated harness, not the repository test suite.
+- Current branch: `master/nov-2026-phase-1-ux-foundation` at `5309c23dcc5c067abb586813e07e3655b322c2b6`, 21 commits ahead / 0 behind main. Aggregate diff remains six paths; `pwa.spec.ts` now has 126 added lines. No PR is open.
+- Current exact-head GitHub check-runs = 0 and workflow-runs = 0. Full frontend unit tests, Playwright, Angular build and CI remain NOT RUN on this head.
+- **CI policy remains fail-closed:** active Project Instructions require CircleCI ONLY and ABA-KNOW-03 says not to introduce GitHub Actions as a replacement; CircleCI remains frozen until its owner restriction is lifted. The later Notion MWOS / current `AGENTS.md` decision says GitHub Actions only, so the sources conflict. A GitHub workflow-dispatch capability is technically available, but no provider was triggered because that would violate the active no-substitution/freeze constraints. CircleCI config is absent on main and branch; its branch pipeline listing is empty.
+- Remaining acceptance: physical Android PWA install/cold-start/offline/update/recovery (device OFFLINE); authenticated OWNER/STAFF/cross-tenant API denial (STAFF provisioning depends on T43's missing supported invitation/membership route); actual browser 200% zoom, full workspace keyboard-only, screen-reader and OS forced-colors. The 195×422 regression check does not close these criteria.
+- No PR, merge, deployment, database write, migration, business record mutation or external notification. T50 remains PARTIALLY COMPLETE.
+
+
+### Explicit PWA refresh-action coverage — 2026-11-13
+
+- Extended the existing “new service worker” Playwright case to click the visible **Refresh now / تحديث الآن** action, wait for the main-frame navigation, and confirm the public sign-in screen is restored after reload. This covers the user action rather than only checking that the button is visible.
+- This is source-reviewed only; the Playwright suite remains NOT RUN on the current candidate. The narrow 195×422 viewport remains a responsive reflow stress check, not actual 200% browser zoom.
+- Current source head before this ledger update: `c2f8c99748cce3520b3ac40cdb7f3d8ac44375dd`. No additional application paths changed; only the existing PWA E2E test file was extended. No CI/PR/merge/deployment/DB action.
+
+
+### Master diff review and exact candidate reconciliation — 2026-11-13
+
+- Performed a full line-level review of all six changed paths against current main: `TASKS.md`, `frontend/e2e/pwa.spec.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `frontend/src/app/app.component.ts`, `frontend/src/app/service-worker-update.ts`, and `frontend/src/styles.css`. The application diff is bounded to the PWA install/update shell, service-worker update handler, accessible update notice/forced-colors styles, and focused source/E2E regression declarations. No backend/API/schema/auth/tenant/financial/inventory/payroll paths are changed.
+- Reviewed the new refresh-action E2E step: it waits for main-frame navigation after the explicit user click and then checks the public sign-in heading. Source review only; Playwright has not run on this candidate.
+- Current branch head before this ledger append: `a8cdfac0f66569b846b99f50bae336cbd79c11e1`; current main `46a143d5048ec9346c8b04bc83d46918ba6e6d42`; 23 commits ahead / 0 behind. No open PR. Work branch is unprotected; main is protected. Exact-head check-runs/workflow-runs remain empty.
+- Rechecked current main `backend/app/core_features_api.py`: membership endpoints are OWNER-only GET list, PATCH role change and DELETE removal; no POST/create-membership or invitation route is present. Current production deployment docs also state there is no safe user-directory/invitation workflow. T43 remains the proper owner; do not use direct DB or hidden admin paths to provision STAFF.
+- Current T50 status remains PARTIALLY COMPLETE. Full frontend unit, Playwright, Angular build and exact-head CI remain NOT RUN. The isolated Node 22.16.0 handler harness passed 2/2; this is not a full repository test.
+- No PR, merge, deployment, database write, migration, business record mutation or external notification.
+
+
+## 2026-11-13 — Exact-head CI acceptance result (supersedes prior NOT RUN checkpoint)
+
+- **CI authority resolution:** the approved Owner decision recorded in MWOS (2026-11-10), reinforced by current main `AGENTS.md` (2026-11-12), makes GitHub Actions the sole active CI provider and retires CircleCI. This supersedes the older CircleCI-only provider note in this ledger and the DRAFT ABA-KNOW-03 text. No CircleCI pipeline was triggered.
+- **Exact candidate:** `master/nov-2026-phase-1-ux-foundation@27e2c57b3cc89ec64a7f98aacb1288f04b7ff23b`.
+- **Workflow:** `ci.yml`, workflow run [43389824781](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43389824781), event `workflow_dispatch`, completed 2026-11-13 08:04:16 UTC. The workflow verified the exact source SHA. All six standard jobs and the aggregate `all-checks-passed` are SUCCESS:
+  - `backend-accounting`: PASS; 283 pytest tests passed, 23 warnings; `pip-audit`: no known vulnerabilities.
+  - `frontend-unit-tests`: PASS; 477/477, zero failed/skipped.
+  - `frontend-production-build`: PASS; initial bundle 882.22 kB, exceeding 700 kB warning budget by 182.22 kB.
+  - `frontend-dependency-audit`: PASS; npm audit reports 18 moderate advisories, no high/critical gate failure. Lockfile review shows the identified Hono/minimatch packages are development-only dependencies; no forced breaking upgrade was applied.
+  - `frontend-browser-smoke`: PASS; 33/33 Playwright cases, including all six PWA tests and the explicit update-refresh action.
+  - `backend-container`: PASS; image build and FastAPI import checks passed.
+  - `all-checks-passed`: PASS; all six standard jobs were success.
+  - `authenticated-api-smoke`: SKIPPED by branch-dispatch policy (`REQUIRE_API_SMOKE=false)); do not describe it as PASS.
+- **Non-blocking warnings retained:** Angular NG8107 optional-chain warnings (13 in the build output); npm EBADENGINE for `@firebase/auth@1.13.8` requiring Node >=24.12 while CI uses Node 22.23.4; 18 moderate npm advisories in development dependency chains; initial bundle budget exceeded. Main baseline at the same build configuration was 878.49 kB; this candidate is 882.22 kB (+3.73 kB). No warning was silently waived or force-fixed in this PWA scope.
+- This CI evidence is exact for `27e2c57...`. This documentation append advances the branch; rerun the approved workflow on the new ledger head before calling that new head the exact candidate.
+- Remaining acceptance remains: physical Android installed-PWA install/cold-start/offline/update/recovery (device offline); actual browser 200% zoom; full workspace keyboard-only, screen reader and OS forced-colors; authenticated OWNER/STAFF/two-tenant API smoke (STAFF provisioning blocked by no supported POST/invitation route; T43 dependency). Candidate not deployed. No PR/merge/production release.
+- T50 remains PARTIALLY COMPLETE.
+
+
+### Browser-emulated forced-colors regression — 2026-11-13
+
+- Added a seventh PWA browser case using Playwright `page.emulateMedia({ forcedColors: 'active' })`. It verifies the update notice and refresh button remain visible and receive non-transparent system foreground/background/border colors in forced-colors mode.
+- This is browser-emulated forced-colors coverage for the PWA notice only. It does not replace OS-level forced-colors acceptance across the full workspace or real assistive-technology testing.
+- The prior exact-head run on `5157cab8168be3951d8f5cc83635881dd8252b23` completed SUCCESS: all six standard jobs + aggregate PASS; 477 frontend unit, 33 browser, 283 backend tests passed; API smoke skipped by branch-dispatch policy. The new forced-colors test is not yet run; CI must be repeated on the final ledger head.
+- Current code head before this ledger append: `bcd74a9ae1a7dc96d64e30900803dc60d34534ec`. No backend/API/schema/financial/tenant changes.
+
+
+---
+
+## 2026-11-13 — T50 PWA failed-update cache isolation
+
+- **Source commit:** `c0bffc7efbfbecf473f7f18dd18eff4b74f3fb03` on the existing November branch; PR #397 remains the single candidate.
+- **Defect fixed:** old and installing Service Workers shared the same `aba-shell-v1.3.9-unknown` Cache Storage name. If the new worker failed while precaching a required JS/CSS asset, its install catch deleted that shared cache and could remove the still-active worker's offline shell.
+- **Implementation:** candidate worker now uses a distinct `aba-shell-v1.3.9-unknown-v2` cache namespace. A failed install deletes only the new candidate cache; the previously active cache remains available. Activation cleanup now removes only obsolete caches beginning with the AIBA-owned `aba-shell-` prefix, preserving unrelated origin caches.
+- **Regression coverage:** `frontend/src/app/service-worker-cache.spec.ts` now models multiple named Cache Storage entries and adds executable cases for (1) preserving the old app shell/runtime config when a candidate asset fails, and (2) deleting only obsolete AIBA caches during activation while preserving unrelated origin caches. Existing complete-shell, failed-root, online/offline runtime-config and API-bypass tests remain.
+- **Changed source paths:** `frontend/public/sw.js`, `frontend/src/app/service-worker-cache.spec.ts`. No API/auth/tenant, DB/schema/migration, financial, inventory, payroll or external side-effect behavior changed.
+- **Validation:** source transformation/static assertions completed; repository tests and CI have not yet been observed on the final ledger head. Exact-head GitHub Actions run is required; prior PR #397 run 43393529545 is stale after this source change.
+- **Delivery/safety:** no merge, deployment, DB write or migration. Keep PR #397 Draft pending exact-head validation and the remaining physical-device/authenticated/accessibility acceptance gates.
+
+
+## 2026-11-13 — Owner CI authority supersession and T50 exact-head result
+
+- **Owner decision:** GitHub Actions is the sole active and authoritative AIBA CI provider. This supersedes all older CircleCI-only, CircleCI fallback/parallel-gate, and “no GitHub Actions replacement” wording in historical task notes and attached DRAFT knowledge. CircleCI is retired; Semaphore is retired/non-authoritative; GitLab CI is inactive. Do not trigger CircleCI for AIBA acceptance.
+- **Authoritative workflow:** `.github/workflows/ci.yml`; require all six substantive jobs and fail-closed `all-checks-passed` SUCCESS on the exact candidate SHA. Skipped jobs are never PASS. This does not waive maintainer diff review, provider-enforced protections, explicit Owner merge authorization, separate deployment authorization, or product acceptance.
+- **T50 candidate before this ledger update:** branch `master/nov-2026-phase-1-ux-foundation`, SHA `350ba85211faaf798265b7685c2525033ec43ff0`; PR #397 OPEN / DRAFT / UNMERGED; 9 changed paths.
+- **Exact-head GitHub Actions run:** [43425172967](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43425172967) completed SUCCESS after verifying the exact SHA:
+  - `backend-accounting`: 283 passed / 23 warnings; Python pip-audit no known vulnerabilities.
+  - `frontend-unit-tests`: 483 passed / 0 failed.
+  - `frontend-production-build`, `frontend-dependency-audit`, and `backend-container`: SUCCESS.
+  - `frontend-browser-smoke`: 34 passed / 0 failed across Chromium and mobile Chromium, including seven PWA cases.
+  - `all-checks-passed`: SUCCESS.
+  - `authenticated-api-smoke`: SKIPPED by workflow condition; not PASS.
+- Full Maintainer Diff Review COMMENT remains recorded on exact SHA `350ba852...`, review 5890991197; no open review threads. It is not formal approval or merge authorization.
+- Non-failing warnings remain: Angular NG8107 optional-chain warnings; initial bundle 882.22 kB vs 700 kB warning budget (+182.22 kB; main baseline 878.49 kB); 18 moderate npm advisories; Firebase Auth package declares Node >=24.12 while CI runner uses Node 22.23.4. No forced dependency upgrades were applied.
+- Remaining acceptance: physical Android installed-PWA lifecycle NOT RUN (authorized device offline); STAFF provisioning and authenticated STAFF/cross-tenant denial BLOCKED by missing supported membership/invitation route (T43 dependency); full workspace keyboard-only, screen-reader, OS forced-colors and actual browser 200% zoom NOT RUN. Browser-emulated PWA notice forced-colors and 195x422 reflow are narrower checks only.
+- Candidate has no Vercel Preview; Production remains on main. No merge, deployment, DB write/migration, financial/inventory/payroll mutation or external side effect.
+- This ledger update advances the branch to a new SHA; the previous exact-head CI result remains valid only for `350ba852...`. Run the authoritative GitHub Actions workflow on the new exact head before using that new SHA as a validated candidate. T50 remains PARTIALLY COMPLETE.
+
+
+## 2026-11-13 — T50 exact-head CI and full Maintainer Diff Review completed
+
+- **Exact candidate:** `master/nov-2026-phase-1-ux-foundation@32987c420077502e01f11a7909ed82d0665149b8`; PR #397 OPEN / DRAFT / UNMERGED; 10 changed paths; 778 additions / 17 deletions.
+- **Authoritative GitHub Actions run:** [43439330648](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43439330648) completed SUCCESS on the exact candidate SHA; aggregate `all-checks-passed` SUCCESS.
+  - `frontend-unit-tests`: 484 passed / 0 failed.
+  - `frontend-browser-smoke`: 34 passed / 0 failed.
+  - `backend-accounting`: 283 passed / 23 warnings; pip-audit no known vulnerabilities.
+  - `frontend-production-build`, `frontend-dependency-audit`, `backend-container`: SUCCESS.
+  - `authenticated-api-smoke`: SKIPPED by branch condition; not PASS.
+- **Full Project Master Maintainer Diff Review:** COMMENT review 5892690095 recorded against exact head `32987c420077502e01f11a7909ed82d0665149b8`; all 10 changed paths reviewed; no blocking correctness/security issue identified; zero open review threads. COMMENT is not formal approval or merge authorization.
+- CI authority: GitHub Actions is sole active AIBA CI provider; CircleCI retired. No CircleCI pipeline was triggered.
+- Non-blocking warnings retained: Angular NG8107 optional-chain warnings; initial bundle 882.22 kB vs 700 kB budget (+182.22 kB; main baseline 878.49 kB); 18 moderate npm advisories; `@firebase/auth@1.13.8` declares Node >=24.12 while CI uses Node 22.23.4. High-severity dependency audit passed. No forced dependency upgrades.
+- Remaining acceptance: physical Android installed-PWA install/cold-start/offline/update/recovery NOT RUN (authorized device offline); STAFF provisioning and authenticated STAFF/cross-tenant denial BLOCKED by missing supported membership/invitation route (T43 dependency); full workspace keyboard-only, screen-reader, OS forced-colors and actual browser 200% zoom NOT RUN. Browser-emulated forced-colors is limited to the PWA update notice; 195×422 is a reflow stress viewport, not actual zoom.
+- Candidate has no Vercel Preview; Production remains on main. No merge, deployment, DB write or migration. T50 remains PARTIALLY COMPLETE; PR #397 stays Draft/unmerged pending remaining acceptance and applicable Owner release decision.
+
+
+---
+
+## 2026-11-14 — T50 Phase 1 localization/PWA batch: exact-head CI and remediation
+
+- **Validated candidate before this ledger append:** `master/nov-2026-phase-1-ux-foundation@3fcf8aa035110562f3000b32f554f0e5b2551eed`; PR #397 OPEN / DRAFT / UNMERGED; 56 changed paths.
+- **Failure remediation:** prior exact-head run [43516549328](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43516549328) identified three brittle source-contract assertions that expected the old inline `app.labels.unknownStatus` call after the localization helper had expanded it to bilingual dictionary text, plus two E2E tests that selected the language toggle by locale-dependent visible copy. Updated the assertions to match the dictionary-backed source and changed the two browser journeys to use the stable `.language-toggle` control.
+- **Exact-head GitHub Actions run:** [43534620949](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43534620949) completed SUCCESS on exact SHA `3fcf8aa035110562f3000b32f554f0e5b2551eed`; aggregate `all-checks-passed` SUCCESS:
+  - `frontend-unit-tests`: 490 passed / 0 failed.
+  - `frontend-browser-smoke`: 34 passed / 0 failed.
+  - `backend-accounting`: 283 passed / 23 warnings.
+  - `frontend-production-build`, `frontend-dependency-audit`, `backend-container`: SUCCESS.
+  - `authenticated-api-smoke`: SKIPPED by workflow condition; not PASS.
+- **Localization integrity:** Arabic and English JSON dictionaries each contain 1,574 non-empty keys; key sets match exactly. The localization unit suite validates placeholder parity and statically referenced UI keys.
+- **Current build/security warnings (non-failing):** Angular NG8107 optional-chain warnings; initial browser bundle 754.24 kB against the 700 kB warning budget (+54.24 kB); `@firebase/auth@1.13.8` declares Node >=24.12.0 while GitHub Actions currently uses Node 22.23.4; npm audit reports 18 moderate advisories, while `npm audit --audit-level=high` passes. No forced dependency upgrade, budget relaxation, or CI runtime change was made in this batch.
+- **CI authority:** GitHub Actions is the sole active AIBA CI provider. A legacy `ci/semaphoreci/push: Pipeline` failure status remains visible in combined status but Semaphore is retired/non-authoritative per the current Owner decision; it is not used as a gate and was not retried. CircleCI was not triggered.
+- **T43 blocker recheck:** current main's membership API exposes owner-authorized membership listing and existing role/removal operations, but no supported POST/create-membership or invitation route was found. The T43 canonical page remains PARTIALLY COMPLETE / merge BLOCKED. No direct database or hidden-admin workaround was used.
+- **Remaining product acceptance:** physical Android Chrome installed-PWA install/cold-start/offline/update/recovery NOT RUN (authorized device offline); full workspace keyboard-only, screen-reader, OS forced-colors and actual browser 200% zoom NOT RUN; authenticated STAFF provisioning and direct cross-tenant denial BLOCKED by T43's missing supported identity workflow. Dark/system theme remains a documented gap and no palette is approved.
+- **Production/runtime:** Vercel Web and API production aliases are both READY on `main@46a143d5048ec9346c8b04bc83d46918ba6e6d42`; PR #397 candidate has no verified Preview deployment and is not deployed. No merge, production deployment, DB write/migration, business-record mutation, or external side effect was performed.
+- **Disposition:** T50 remains PARTIALLY COMPLETE, not VERIFIED COMPLETE. Keep PR #397 Draft/unmerged pending the current full Maintainer Diff Review and the remaining device/accessibility/identity acceptance. This ledger append advances the branch to a new SHA; run GitHub Actions again on the new exact head before treating that new SHA as validated.
+
+## 2026-11-14 — Dashboard interaction and workflow shortcuts (product implementation)
+- **Scope:** Existing dashboard UX and entry points only; reuse existing invoices and expenses workflows, existing role visibility, and existing design tokens. No API, database, financial semantics, stock, payroll, or authorization policy changes.
+- **Delivered:** Dashboard KPI cards now navigate to their corresponding existing module destinations (invoiced sales → invoices, collected payments → payments, expenses → expenses, outstanding balances → invoices) and expose keyboard activation. Added dashboard quick actions: Create invoice opens the existing draft editor; Expenses opens the existing expense-entry workflow. Added responsive two-column desktop / single-column mobile presentation with focus-visible and reduced-motion states.
+- **Files:** `frontend/src/app/app.component.ts`, `frontend/src/styles.css`.
+- **Commits:** `aee454e5f6b3e73841e7e53ecb6face9d0d1ca56`, `502c8a2c5c8a90825244a52df69e6cc79620e548`, `886a3d75a0afe2f914a51d27be5c86153d2438a3`, `941ec49f5be5a6e75c6cfc89aeb80e5a29f4e050`.
+- **Validation:** Application tests/build/CI NOT RUN in this product implementation batch per Owner test-economy direction and current user request to prioritize product progress. No visual/device claim is made.
+- **Disposition:** Implementation is committed to the existing November branch. PR #397 remains OPEN / DRAFT / UNMERGED. Production deployment and business-data changes were not performed.
+
+
+## 2026-11-14 — Dashboard quick-create workflow improvement
+- Added role-aware dashboard shortcuts for existing Customer and Product creation forms. Selecting either shortcut opens the correct module and expands its existing create form immediately; users can still collapse it normally.
+- Reuses existing authenticated API workflows, current OWNER/STAFF tab visibility and existing validation. No new route, API, schema, financial, stock or authorization semantics were introduced.
+- Source: `frontend/src/app/app.component.ts`; commit `e0c7ba6d40094f2c077179a25fb39aba78a99e74`.
+- Validation: automated tests/build/CI intentionally NOT RUN in this product batch per Owner test-economy policy and current user direction. No merge, deployment or business-data mutation.

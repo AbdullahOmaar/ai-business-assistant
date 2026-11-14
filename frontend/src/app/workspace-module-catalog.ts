@@ -3,10 +3,8 @@ import type { WorkspaceModuleTab } from './module-access';
 export interface WorkspaceModuleCard {
   tab: WorkspaceModuleTab;
   icon: string;
-  titleAr: string;
-  titleEn: string;
-  descriptionAr: string;
-  descriptionEn: string;
+  titleKey: string;
+  descriptionKey: string;
   mobileGroup?: WorkspaceModuleGroupId;
 }
 
@@ -19,16 +17,15 @@ export type WorkspaceModuleGroupId =
 
 export interface WorkspaceModuleGroup {
   id: WorkspaceModuleGroupId;
-  titleAr: string;
-  titleEn: string;
+  titleKey: string;
 }
 
 export const WORKSPACE_MODULE_GROUPS: readonly WorkspaceModuleGroup[] = [
-  { id: 'products-purchasing', titleAr: 'المنتجات والمشتريات', titleEn: 'Products & purchasing' },
-  { id: 'finance-reports', titleAr: 'المالية والتقارير', titleEn: 'Finance & reports' },
-  { id: 'team-admin', titleAr: 'الفريق والإدارة', titleEn: 'Team & administration' },
-  { id: 'monitoring-operations', titleAr: 'المتابعة والتشغيل', titleEn: 'Monitoring & operations' },
-  { id: 'assistant-tools', titleAr: 'المساعد والأدوات', titleEn: 'Assistant & tools' },
+  { id: 'products-purchasing', titleKey: "catalog.m_1341u8e" },
+  { id: 'finance-reports', titleKey: "catalog.m_2h49lq" },
+  { id: 'team-admin', titleKey: "catalog.m_8ogsj9" },
+  { id: 'monitoring-operations', titleKey: "catalog.m_lkukj5" },
+  { id: 'assistant-tools', titleKey: "catalog.m_18paotq" },
 ];
 
 /**
@@ -37,25 +34,26 @@ export const WORKSPACE_MODULE_GROUPS: readonly WorkspaceModuleGroup[] = [
  * this catalogue is never an authorization or security boundary.
  */
 export const WORKSPACE_MODULE_CATALOG: readonly WorkspaceModuleCard[] = [
-  { tab: 'overview', icon: '⌂', titleAr: 'الرئيسية', titleEn: 'Overview', descriptionAr: 'ملخص النشاط ومؤشرات العمل', descriptionEn: 'Business summary and activity' },
-  { tab: 'customers', icon: '♧', titleAr: 'العملاء', titleEn: 'Customers', descriptionAr: 'سجلات العملاء وبيانات التواصل', descriptionEn: 'Customer records and contact details' },
-  { tab: 'products', mobileGroup: 'products-purchasing', icon: '◇', titleAr: 'المنتجات والمخزون', titleEn: 'Products & inventory', descriptionAr: 'كتالوج المنتجات ومعلومات المخزون', descriptionEn: 'Product catalogue and stock information' },
-  { tab: 'invoices', icon: '▤', titleAr: 'الفواتير', titleEn: 'Invoices', descriptionAr: 'إنشاء ومراجعة فواتير المبيعات', descriptionEn: 'Create and review sales invoices' },
-  { tab: 'payments', mobileGroup: 'finance-reports', icon: '↗', titleAr: 'المدفوعات والتحصيل', titleEn: 'Payments & collections', descriptionAr: 'تسجيل ومراجعة التحصيلات', descriptionEn: 'Record and review collections' },
-  { tab: 'expenses', mobileGroup: 'finance-reports', icon: '−', titleAr: 'المصروفات', titleEn: 'Expenses', descriptionAr: 'تسجيل ومراجعة المصروفات', descriptionEn: 'Record and review expenses' },
-  { tab: 'employees', mobileGroup: 'team-admin', icon: '♙', titleAr: 'الموظفون والمرتبات', titleEn: 'Employees & payroll', descriptionAr: 'ملفات الموظفين وسجلات المرتبات', descriptionEn: 'Employee records and payroll' },
-  { tab: 'assistant', mobileGroup: 'assistant-tools', icon: '✦', titleAr: 'المساعد الذكي', titleEn: 'AI assistant', descriptionAr: 'اسأل عن بيانات نشاطك', descriptionEn: 'Ask about your business data' },
-  { tab: 'reports', mobileGroup: 'finance-reports', icon: '∑', titleAr: 'نتيجة التشغيل الأولية', titleEn: 'Preliminary operating result', descriptionAr: 'نتيجة مبدئية للإيرادات والمصروفات مع توضيح حدود التقرير', descriptionEn: 'Preliminary result from issued invoices and expenses, with limitations disclosed' },
-  { tab: 'taxes', mobileGroup: 'finance-reports', icon: '%', titleAr: 'ملخص الضرائب', titleEn: 'Tax summary', descriptionAr: 'ملخص ضريبي للقراءة فقط', descriptionEn: 'Read-only tax summary' },
-  { tab: 'audit', mobileGroup: 'monitoring-operations', icon: '◷', titleAr: 'سجل العمليات', titleEn: 'Activity log', descriptionAr: 'مراجعة أحداث النشاط', descriptionEn: 'Review business activity events' },
-  { tab: 'integrity', mobileGroup: 'monitoring-operations', icon: '⚑', titleAr: 'سلامة البيانات', titleEn: 'Data integrity', descriptionAr: 'مراجعة مؤشرات سلامة البيانات', descriptionEn: 'Review data integrity indicators' },
-  { tab: 'release-guide', mobileGroup: 'assistant-tools', icon: 'ⓘ', titleAr: 'دليل التطبيق والإصدارات', titleEn: 'App guide & versions', descriptionAr: 'الخصائص المتاحة وسجل الإصدارات', descriptionEn: 'Available features and release history' },
-  { tab: 'platform-admin', mobileGroup: 'team-admin', icon: '◇', titleAr: 'إدارة المنصة', titleEn: 'Platform admin', descriptionAr: 'أدوات الإدارة المصرح بها', descriptionEn: 'Authorized platform tools' },
-  { tab: 'suppliers', mobileGroup: 'products-purchasing', icon: '▣', titleAr: 'الموردون', titleEn: 'Suppliers', descriptionAr: 'ملفات الموردين', descriptionEn: 'Supplier records' },
-  { tab: 'purchases', mobileGroup: 'products-purchasing', icon: '⇩', titleAr: 'المشتريات', titleEn: 'Purchasing', descriptionAr: 'أوامر الشراء والاستلام', descriptionEn: 'Purchase orders and receiving' },
-  { tab: 'recurring', mobileGroup: 'finance-reports', icon: '↻', titleAr: 'الفواتير الدورية', titleEn: 'Recurring invoices', descriptionAr: 'جداول الفوترة الدورية', descriptionEn: 'Recurring billing schedules' },
-  { tab: 'notifications', mobileGroup: 'monitoring-operations', icon: '♢', titleAr: 'الإشعارات', titleEn: 'Notifications', descriptionAr: 'قائمة الإشعارات وحالاتها', descriptionEn: 'Notification queue and statuses' },
-  { tab: 'health', mobileGroup: 'monitoring-operations', icon: '♥', titleAr: 'الحالة التشغيلية', titleEn: 'Operational health', descriptionAr: 'مؤشرات الحالة التشغيلية', descriptionEn: 'Operational health indicators' },
+  { tab: 'overview', icon: '⌂', titleKey: "catalog.m_19e7wuq", descriptionKey: "catalog.m_1yqmwns" },
+  { tab: 'customers', icon: '♧', titleKey: "catalog.m_tvy79l", descriptionKey: "catalog.m_1aovv4u" },
+  { tab: 'products', mobileGroup: 'products-purchasing', icon: '◇', titleKey: "catalog.m_xpe4pk", descriptionKey: "catalog.m_1r6s0dd" },
+  { tab: 'invoices', icon: '▤', titleKey: "catalog.m_1h7f08p", descriptionKey: "catalog.m_1qb7a9x" },
+  { tab: 'payments', mobileGroup: 'finance-reports', icon: '↗', titleKey: "catalog.m_y1gowi", descriptionKey: "catalog.m_1uighj4" },
+  { tab: 'expenses', mobileGroup: 'finance-reports', icon: '−', titleKey: "catalog.m_l71hva", descriptionKey: "catalog.m_1wkl48e" },
+  { tab: 'employees', mobileGroup: 'team-admin', icon: '♙', titleKey: "catalog.m_4h0vw6", descriptionKey: "catalog.m_y7tfpx" },
+  { tab: 'team', mobileGroup: 'team-admin', icon: '♧', titleKey: 'catalog.team.title', descriptionKey: 'catalog.team.description' },
+  { tab: 'assistant', mobileGroup: 'assistant-tools', icon: '✦', titleKey: "catalog.m_dzn3ev", descriptionKey: "catalog.m_3pvkiv" },
+  { tab: 'reports', mobileGroup: 'finance-reports', icon: '∑', titleKey: "catalog.m_1k2jewg", descriptionKey: "catalog.m_3v76d2" },
+  { tab: 'taxes', mobileGroup: 'finance-reports', icon: '%', titleKey: "catalog.m_nxo405", descriptionKey: "catalog.m_18eozy2" },
+  { tab: 'audit', mobileGroup: 'monitoring-operations', icon: '◷', titleKey: "catalog.m_hd46sj", descriptionKey: "catalog.m_xa1dp8" },
+  { tab: 'integrity', mobileGroup: 'monitoring-operations', icon: '⚑', titleKey: "catalog.m_shdbnl", descriptionKey: "catalog.m_1731gqj" },
+  { tab: 'release-guide', mobileGroup: 'assistant-tools', icon: 'ⓘ', titleKey: "catalog.m_a3qirn", descriptionKey: "catalog.m_vfwvgm" },
+  { tab: 'platform-admin', mobileGroup: 'team-admin', icon: '◇', titleKey: "catalog.m_1gkme2m", descriptionKey: "catalog.m_qchn6g" },
+  { tab: 'suppliers', mobileGroup: 'products-purchasing', icon: '▣', titleKey: "catalog.m_1yzd6rs", descriptionKey: "catalog.m_vhqn8a" },
+  { tab: 'purchases', mobileGroup: 'products-purchasing', icon: '⇩', titleKey: "catalog.m_s8z24b", descriptionKey: "catalog.m_10k7813" },
+  { tab: 'recurring', mobileGroup: 'finance-reports', icon: '↻', titleKey: "catalog.m_11lck86", descriptionKey: "catalog.m_1tqh38n" },
+  { tab: 'notifications', mobileGroup: 'monitoring-operations', icon: '♢', titleKey: "catalog.m_vlrg7", descriptionKey: "catalog.m_14nrzc4" },
+  { tab: 'health', mobileGroup: 'monitoring-operations', icon: '♥', titleKey: "catalog.m_18z2l5z", descriptionKey: "catalog.m_j8aadc" },
 ];
 
 /** Canonical high-value Home shortcuts; navigation still exposes every authorized destination. */
@@ -83,11 +81,12 @@ export function filterWorkspaceModules(
   modules: readonly WorkspaceModuleCard[],
   query: string,
   locale: string,
+  translate: (key: string) => string,
 ): readonly WorkspaceModuleCard[] {
   const normalizedQuery = query.trim().normalize('NFKC').toLocaleLowerCase(locale);
   if (!normalizedQuery) return modules;
   return modules.filter(module =>
-    `${module.titleAr} ${module.titleEn} ${module.descriptionAr} ${module.descriptionEn}`
+    `${translate(module.titleKey)} ${translate(module.descriptionKey)}`
       .normalize('NFKC')
       .toLocaleLowerCase(locale)
       .includes(normalizedQuery),

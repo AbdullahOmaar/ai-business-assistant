@@ -929,7 +929,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   await assertRouteSweep(1280, 'en');
 
   // Restore Arabic for the remaining mobile interaction checks.
-  await page.getByRole('button', { name: 'العربية', exact: true }).click();
+  await page.locator('.language-toggle').click();
   await page.setViewportSize({ width: 360, height: 800 });
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await page.locator('.sidebar').getByRole('button', { name: 'الرئيسية', exact: true }).click();

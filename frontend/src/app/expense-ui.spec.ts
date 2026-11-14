@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
 
-const ui = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const ui = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const moduleAccess = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
 
@@ -27,7 +28,7 @@ test('expense view is reachable from mobile More and has bilingual labels', () =
 test('workspace load and clear paths include expense records', () => {
   assert.match(ui, /const paymentsRequest = this\.canAccessTab\('payments'\) \? this\.api\.payments\(id\) : Promise\.resolve\(\[\]\)/);
   assert.match(ui, /this\.api\.invoices\(id\), paymentsRequest, this\.api\.expenses\(id\)/);
-  assert.match(ui, /this\.expenses = مصروفات/);
+  assert.match(ui, /this\.expenses = expensePage/);
   assert.match(ui, /this\.expenses = \[\]/);
 });
 

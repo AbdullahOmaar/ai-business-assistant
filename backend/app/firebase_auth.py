@@ -87,7 +87,12 @@ def firebase_principal_resolver(request: Request) -> AuthenticatedPrincipal:
     if not isinstance(uid, str) or not uid.strip():
         raise HTTPException(status_code=401, detail="Firebase ID token has no valid user subject.")
 
-    return AuthenticatedPrincipal(subject=f"firebase:{project_id}:{uid}")
+    email = claims.get("email")
+    return AuthenticatedPrincipal(
+        subject=f"firebase:{project_id}:{uid}",
+        email=email.strip().casefold() if isinstance(email, str) and email.strip() else None,
+        email_verified=claims.get("email_verified") is True,
+    )
 
 
 def configure_firebase_auth(app) -> bool:

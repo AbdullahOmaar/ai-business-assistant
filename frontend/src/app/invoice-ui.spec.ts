@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
 
-const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
-const editorSource = readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8');
+const appSource = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const editorSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8'));
 
 test('editor back navigation mirrors correctly for RTL and LTR', () => {
   assert.match(editorSource, /language === 'ar' \? '→' : '←'/);
@@ -89,7 +90,7 @@ test('invoice editor groups details, line items, server totals and notes in the 
   assert.match(editorSource, /class="line-fields product-line"/);
   assert.match(editorSource, /class="line-fields service-line"/);
   assert.match(editorSource, /class="summary-total"/);
-  assert.match(editorSource, /serverSummary\.total \| number:'1\.2-2'/);
+  assert.match(editorSource, /formatNumber\(serverSummary\.total\)/);
   assert.match(editorSource, /No amounts are estimated in the browser/);
   assert.match(editorSource, /maxlength="2000"/);
 });
@@ -100,7 +101,7 @@ test('discount and tax rates stay side by side and read-only while amounts come 
   assert.match(editorSource, /name="invoiceTaxRate"[^>]*readonly aria-readonly="true"/);
   assert.match(editorSource, /serverSummary\?\.discount_total/);
   assert.match(editorSource, /serverSummary\?\.tax_total/);
-  assert.match(editorSource, /serverSummary\.total \| number:'1\.2-2'/);
+  assert.match(editorSource, /formatNumber\(serverSummary\.total\)/);
   assert.doesNotMatch(editorSource, /\[\(ngModel\)\]="(?:discountRate|taxRate)"/);
 });
 

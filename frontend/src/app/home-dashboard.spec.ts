@@ -1,15 +1,16 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandDictionaryBackedProperties, expandTranslationCalls } from './localization-test-helpers.ts';
 
-const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const appSource = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const backendSource = readFileSync(new URL('../../../backend/app/core_features_api.py', import.meta.url), 'utf8');
 const metricCardSource = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
 const mobileHeaderCssSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
-const mobileHeaderSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8');
-const quickAccessCardSource = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
-const moduleCatalogSource = readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8');
+const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
+const quickAccessCardSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8'));
+const moduleCatalogSource = expandDictionaryBackedProperties(readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8'));
 
 const homeStart = appSource.indexOf("@if (tab === 'overview') {");
 const homeEnd = appSource.indexOf("@if (tab === 'notifications')", homeStart);
@@ -20,11 +21,12 @@ test('Home keeps the canonical four source-backed metrics and currency-separated
   for (const field of ['invoiced_sales', 'collected_payments', 'expenses', 'outstanding_balances']) {
     assert.ok(home.includes('dashboard.' + field), 'expected source-backed metric ' + field);
   }
-  assert.equal(home.split('<aba-metric-card role="group"').length - 1, 4);
-  for (const id of ['metric-invoiced-sales-label', 'metric-collected-payments-label', 'metric-expenses-label', 'metric-outstanding-balances-label']) {
-    assert.ok(home.includes('role="group" aria-labelledby="' + id + '"'));
-    assert.ok(home.includes('id="' + id + '" metricLabel'));
-  }
+  assert.equal(home.split('<aba-metric-card class="metric-card-action" role="button" tabindex="0"').length - 1, 4,
+    'the four KPI cards remain keyboard-operable navigation controls');
+  assert.equal(home.split('(keydown.enter)="setTab(').length - 1, 4,
+    'each KPI card supports Enter activation');
+  assert.equal(home.split('(keydown.space)="$event.preventDefault(); setTab(').length - 1, 4,
+    'each KPI card supports Space activation');
 
   assert.match(home, /item\.currency_code/);
   assert.equal(home.split('<bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi>').length - 1, 4,
@@ -42,14 +44,17 @@ test('Home keeps the canonical four source-backed metrics and currency-separated
 
 test('Home KPI cards render visible localized labels separately from projected values', () => {
   const labels = [
-    ['metric-invoiced-sales-label', 'المبيعات بالفواتير', 'Invoiced sales'],
-    ['metric-collected-payments-label', 'التحصيلات', 'Collected payments'],
-    ['metric-expenses-label', 'المصروفات', 'Expenses'],
-    ['metric-outstanding-balances-label', 'المبالغ المستحقة', 'Outstanding balances'],
+    ['المبيعات بالفواتير', 'Invoiced sales'],
+    ['التحصيلات', 'Collected payments'],
+    ['المصروفات', 'Expenses'],
+    ['المبالغ المستحقة', 'Outstanding balances'],
   ];
-  for (const [id, arabic, english] of labels) {
-    assert.ok(home.includes('<span id="' + id + '" metricLabel>{{ t(\'' + arabic + '\', \'' + english + '\') }}</span>'),
-      id + ' must contain a visible localized metric label');
+  for (const [arabic, english] of labels) {
+    const localizedCall = "t('" + arabic + "', '" + english + "')";
+    assert.ok(home.includes('<span metricLabel>{{ ' + localizedCall + ' }}</span>'),
+      english + ' must remain a visible localized metric label');
+    assert.ok(home.includes('[attr.aria-label]="' + localizedCall + '"'),
+      english + ' must also provide the matching accessible name');
   }
   assert.ok(metricCardSource.includes('ng-content select="[metricLabel]"'));
   assert.ok(metricCardSource.includes('<ng-content />'),
@@ -108,8 +113,8 @@ test('Home preserves quick access, the role-filtered module directory and safe l
 });
 
 test('Home page identity and responsive metric hierarchy follow the UX handoff', () => {
-  assert.match(appSource, /overview: 'الرئيسية'/);
-  assert.match(appSource, /overview: 'Overview'/);
+  assert.match(moduleCatalogSource, /titleAr: 'الرئيسية'/);
+  assert.match(moduleCatalogSource, /titleEn: 'Overview'/);
   assert.match(appSource, /\.metric-grid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(appSource, /@media\(max-width:1050px\)\{\.metric-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.ok(appSource.includes('.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}'));

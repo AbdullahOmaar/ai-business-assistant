@@ -19,6 +19,7 @@
   --aba-color-border: #e5eaf1;
   --aba-color-border-subtle: #eef2f7;
   --aba-color-border-strong: #cbd5e1;
+  --aba-color-auth-control-boundary: #64748b;
   --aba-color-focus: #2563eb;
   --aba-color-focus-ring: #2563eb;
   --aba-color-overlay: rgb(15 23 42 / 48%);
@@ -126,6 +127,46 @@ body {
   font-family: var(--aba-font-family);
 }
 button, input, select { font: inherit; }
+/* Installed-PWA updates stay explicit and keyboard/touch accessible. */
+.app-update-notice {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 16px;
+  border: 1px solid var(--aba-color-primary-border, #99f6e4);
+  border-inline-start: 4px solid var(--aba-color-primary, #0f766e);
+  background: var(--aba-color-surface, #fff);
+  color: var(--aba-color-text-primary, #172033);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.app-update-notice button {
+  min-height: 44px;
+  flex: 0 0 auto;
+}
+@media (max-width: 480px) {
+  .app-update-notice {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
+@media (forced-colors: active) {
+  .app-update-notice {
+    background: Canvas;
+    color: CanvasText;
+    border-color: CanvasText;
+  }
+  .app-update-notice button {
+    background: ButtonFace;
+    color: ButtonText;
+    border-color: ButtonText;
+  }
+}
+
 button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
   outline: var(--aba-focus-ring-width) solid var(--aba-color-focus-ring);
   outline-offset: var(--aba-focus-ring-offset);
@@ -292,6 +333,15 @@ aba-metric-card small {
   color: var(--aba-color-text-primary);
   font-size: var(--aba-font-size-base);
   line-height: var(--aba-line-height-normal);
+}
+
+:root body .shell .auth-card input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
+:root body .shell .auth-card select,
+:root body .shell .auth-card textarea,
+:root body .shell .setup-card input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
+:root body .shell .setup-card select,
+:root body .shell .setup-card textarea {
+  border-color: var(--aba-color-auth-control-boundary);
 }
 
 :root body .shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]):focus-visible,
@@ -563,4 +613,130 @@ aba-metric-card small {
     animation: none !important;
     width: 100%;
   }
+}
+
+/* Dashboard KPIs are direct navigation shortcuts, not passive display-only tiles. */
+aba-metric-card.metric-card-action {
+  cursor: pointer;
+  border-radius: var(--aba-radius-card);
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+aba-metric-card.metric-card-action .aba-metric-card {
+  transition:
+    border-color var(--aba-motion-fast) var(--aba-easing-standard),
+    box-shadow var(--aba-motion-fast) var(--aba-easing-standard),
+    transform var(--aba-motion-fast) var(--aba-easing-standard);
+}
+aba-metric-card.metric-card-action:hover .aba-metric-card {
+  border-color: var(--aba-color-primary-border);
+  box-shadow: var(--aba-shadow-card-hover);
+  transform: translateY(-2px);
+}
+aba-metric-card.metric-card-action:focus-visible {
+  outline: var(--aba-focus-ring-width) solid var(--aba-color-focus-ring);
+  outline-offset: var(--aba-focus-ring-offset);
+}
+aba-metric-card.metric-card-action:active .aba-metric-card {
+  transform: translateY(0);
+}
+@media (prefers-reduced-motion: reduce) {
+  aba-metric-card.metric-card-action .aba-metric-card {
+    transition: none;
+  }
+  aba-metric-card.metric-card-action:hover .aba-metric-card,
+  aba-metric-card.metric-card-action:active .aba-metric-card {
+    transform: none;
+  }
+}
+
+/* Dashboard quick actions — shortcuts into existing, approved workflows. */
+.dashboard-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0;
+}
+.dashboard-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  min-height: 76px;
+  padding: 14px 16px;
+  border: 1px solid var(--aba-color-border, #e5eaf1);
+  border-radius: var(--aba-radius-card, 14px);
+  background: var(--aba-color-surface, #fff);
+  color: var(--aba-color-text-primary, #172033);
+  text-align: start;
+  cursor: pointer;
+  transition: border-color var(--aba-motion-fast, 140ms) var(--aba-easing-standard, ease),
+    box-shadow var(--aba-motion-fast, 140ms) var(--aba-easing-standard, ease),
+    transform var(--aba-motion-fast, 140ms) var(--aba-easing-standard, ease);
+  -webkit-tap-highlight-color: transparent;
+}
+.dashboard-action:hover {
+  border-color: var(--aba-color-primary-border, #99f6e4);
+  box-shadow: var(--aba-shadow-card-hover, 0 8px 22px rgb(15 23 42 / 8%));
+  transform: translateY(-1px);
+}
+.dashboard-action:focus-visible {
+  outline: var(--aba-focus-ring-width, 3px) solid var(--aba-color-focus-ring, #2563eb);
+  outline-offset: var(--aba-focus-ring-offset, 3px);
+}
+.dashboard-action--primary {
+  border-color: var(--aba-color-primary-border, #99f6e4);
+  background: var(--aba-color-primary-soft, #ecfdf5);
+}
+.dashboard-action__icon {
+  display: grid;
+  flex: 0 0 38px;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--aba-color-surface-subtle, #f8fafc);
+  color: var(--aba-color-primary, #0f766e);
+  font-size: 24px;
+  line-height: 1;
+}
+.dashboard-action--primary .dashboard-action__icon {
+  background: var(--aba-color-surface, #fff);
+}
+.dashboard-action__copy {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 3px;
+}
+.dashboard-action__copy strong {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.dashboard-action__copy small {
+  overflow-wrap: anywhere;
+  color: var(--aba-color-text-muted, #475569);
+  font-size: 12px;
+  line-height: 1.4;
+}
+.dashboard-action__arrow {
+  flex: 0 0 auto;
+  color: var(--aba-color-text-muted, #475569);
+  font-size: 18px;
+}
+@media (max-width: 640px) {
+  .dashboard-actions {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 9px;
+    margin: 12px 0;
+  }
+  .dashboard-action {
+    min-height: 68px;
+    padding: 12px 14px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dashboard-action { transition: none; }
+  .dashboard-action:hover { transform: none; }
 }

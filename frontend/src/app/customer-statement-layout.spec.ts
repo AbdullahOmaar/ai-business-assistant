@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
 
-const componentSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const componentSource = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 
 test('customer statement preserves separate currency balances and uses the shared responsive record table', () => {
   assert.match(componentSource, /class="panel statement-panel"/);

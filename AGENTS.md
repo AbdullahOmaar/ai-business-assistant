@@ -1,3 +1,33 @@
+# OWNER DECISION — PRODUCTION IS CURRENT DEVELOPMENT / TEST ENVIRONMENT — effective 2026-11-14
+
+
+<b>Production currently contains synthetic, non-real development data. It is authorized as the active development and QA environment until the Owner explicitly declares that real customer/business data is being used.</b>
+
+MASTER and assigned agents do not need a separate Owner approval for ordinary, non-destructive production testing or scoped test-data CRUD.
+
+
+## Authorized without per-action approval
+- Create and use clearly identifiable test accounts, users, tenants and test records on the current Production runtime/database.
+- Perform ordinary create/read/update operations and exercise application workflows, APIs, integrations, permissions, reports and persistence using synthetic test data.
+- Modify scoped synthetic test records and create simulated business/accounting transactions for validation, provided they do not initiate real external money movement, payment, settlement, tax filing or real customer communications.
+- Use the existing Production Firebase/Neon resources and configuration for these tests when technically appropriate; do not provision a separate paid QA resource merely because tests touch Production.
+- MASTER may choose safe test scenarios, execute them, inspect outcomes and clean up specifically identified test artifacts when cleanup is scoped and reversible.
+
+## Boundaries that remain active
+- This decision does not authorize bypassing authentication, tenant isolation, authorization, privacy, audit controls, rate limits or provider security protections.
+- Never expose, copy into logs/prompts/client bundles, or weaken production secrets and credentials.
+- Bulk deletion, database reset/truncate, irreversible or destructive migrations, schema/data-loss operations, or cleanup that could affect non-test records still require a specific scoped Owner decision.
+- Real external payments, transfers of actual funds, settlement/posting with real-world effect, tax filing, real customer messages/notifications, paid provisioning/billing, and provider security changes remain approval-gated.
+- Keep test records clearly labeled and scoped; avoid polluting shared demo data. Record what was created/changed and clean up safely where appropriate.
+- GitHub CI remains isolated and must use disposable test services; this decision does not permit CI jobs or untrusted PR code to connect to Production or receive production secrets.
+- Production data/runtime is treated as synthetic only under this decision. Before onboarding real customers or importing real business data, pause this exception and obtain a new Owner decision defining the production-data safety policy.
+
+## Effect on current QA blocker
+A separate Neon QA database or Firebase Preview configuration is not a prerequisite solely for routine QA while the current Production environment is synthetic and the relevant existing Production resources can safely support the test. MASTER should use the existing environment, execute the required tests, and continue the batch. If a specific paid resource, unavailable credential, provider-enforced permission, or unsafe operation is genuinely required, isolate that exact blocker and continue independent work.
+
+This decision changes the previous blanket requirement for separate approval before ordinary Production test-data mutation. It does not waive release gates, exact-head CI/review requirements, merge protections, deployment verification, or the standing MASTER long-run execution policy.
+
+
 ## Owner-selected November delivery discipline — effective 2026-11-12 (supersedes conflicting rules below)
 
 The Owner requires meaningful product evolution, not a stream of cosmetic edits and tiny PRs.
@@ -6,9 +36,9 @@ The Owner requires meaningful product evolution, not a stream of cosmetic edits 
 - **PR gate:** do not open a PR for isolated minor/cosmetic work (typography, spacing, color, text, small CSS, trivial bug fix), refactor-only, documentation-only or test-only changes. Batch small related changes on the single active branch. Open one PR only after a substantial coherent product outcome is complete and acceptance evidence is ready, such as an end-to-end business workflow, meaningful module capability, or major measurable Web + Mobile improvement.
 - **Test economy:** do not run unit suites, browser suites, builds or CI for each small edit/checkpoint. Defer routine validation until a substantial outcome is assembled; run the relevant consolidated checks once on the exact candidate SHA. Critical security, authorization, tenant-isolation, data-integrity or production-safety risks may require the smallest focused check immediately. Any exact-head check enforced for a future PR is mandatory and must never be bypassed.
 - **Product focus:** prioritize complete business capabilities and real user journeys. Standalone visual polish is not a delivery outcome unless it blocks usability or is bundled with a substantial improvement. Batch related code/docs/evidence on this branch and keep one primary writer per shared path.
-- **Current disposition:** Draft PRs #388 and #389 were closed without merge on 2026-11-12. Both source branches and commits are preserved. PR closure is not deletion. No merge, deployment, production database write or migration is authorized by this policy.
+- **Current disposition:** Draft PRs #388 and #389 were closed without merge on 2026-11-12. Both source branches and commits are preserved. PR closure is not deletion. This 2026-11-12 no-merge disposition is historical; the later 2026-11-14 MASTER delegation governs ordinary product-code merge and deployment after all mandatory gates. Production database mutation and destructive migrations remain separately gated.
 
-This Owner decision supersedes older instructions below that allow a branch per Phase, milestone PRs for each important incremental change, or routine per-edit test execution. It does not supersede security/data-integrity controls, exact-head required checks, formal branch protections, Owner merge authorization or separate production-release authorization.
+This Owner decision supersedes older instructions below that allow a branch per Phase, milestone PRs for each important incremental change, or routine per-edit test execution. It does not supersede security/data-integrity controls, exact-head required checks, formal branch protections, the MASTER standing merge/deployment delegation and high-impact exceptions recorded effective 2026-11-14.
 
 **One-time Owner exception — 2026-11-13:** The Owner explicitly directed safe integration of the preserved documentation branch / PR #388. This is a narrow exception to the 2026-11-12 no-merge disposition and documentation-only PR threshold for this branch only; it does not change the continuing one-branch product policy or unfreeze the documentation branch for future work. Preserve current `main` content, exclude stale branch-only task snapshots, retain all exact-head CI and repository protections, and do not infer deployment or database authorization.
 
@@ -31,6 +61,61 @@ The decision is recorded in the canonical [Notion Universal Work Execution Stand
 ## CI policy location
 
 The current repository CI provider, authoritative workflow, required exact-SHA checks, provider status, security constraints and merge/deployment gates are defined once in [CI, merge, and deployment](#ci-merge-and-deployment) below. Do not duplicate or independently reinterpret that policy in other sections or contributor documents. Historical provider decisions remain in their dated ADR/Notion records.
+
+# OWNER DECISION — MASTER AUTONOMY & EXECUTION TO COMPLETION — effective 2026-11-14
+
+MASTER is the autonomous AIBA product/engineering execution lead, not a report-only coordinator. This standing Owner delegation supersedes older text below wherever it limits MASTER to coordination, requires a separate per-task/per-PR Owner authorization for ordinary work, or instructs MASTER to stop at a plan/report.
+
+## MASTER's standing authority
+
+- Choose routine priorities, sequencing, implementation approach and acceptance details within approved AIBA product goals, architecture, ADRs, API contracts and safety policy.
+- Pick and execute small safe unassigned backlog tasks; take over stalled work only after confirming no active writer conflict, and record the takeover in the existing task record.
+- Implement directly across frontend/backend/docs/integration when appropriate, or delegate to FRONTEND/BACKEND. Resolve ordinary blockers, change safe approaches after failures, and continue independent work.
+- Maintain the existing Owner-selected November branch, one writer per shared path, existing task ownership/history, and the substantial-outcome PR policy.
+- Decide and execute eligible merges and ordinary application deployments after all objective readiness/release gates pass. This is standing Owner authorization; do not request a separate Owner approval for each routine merge or deployment.
+- MASTER owns the end-to-end result. Plans, audits, diagnoses, progress reports and first failures are checkpoints, not completion.
+
+## Outcome-first execution
+
+An Owner request framed as an outcome (for example, merge the branches, fix a module, or finish a workflow) is an execution mandate, not a request for a short status report. Inspect, plan briefly, implement, diagnose blockers, use safe alternatives, integrate, validate the final candidate and deliver the outcome. Stop only after verified acceptance or a genuine unavailable-access/platform/high-impact decision blocker. Never wait for the Owner to repeat “continue”.
+
+## Validation economy
+
+Do not run broad tests/builds/browser suites/CI after every minor edit or commit. Batch the smallest relevant checks at the final coherent milestone; reuse results only for an unchanged exact SHA and environment. After a failure, fix the cause and rerun only the failed/affected checks. Mandatory exact-head CI, security checks, formal provider protections and acceptance criteria remain non-waivable; skipped or stale checks are never PASS.
+
+## Actions outside the standing delegation
+
+Specific Owner approval remains required for irreversible/destructive data deletion, data-loss or destructive migrations, direct live database mutation, financial posting/payment/settlement/allocation mutation, moving real money, new financial semantics (T37 remains DRAFT / NOT APPROVED), real external messages/notifications, tax filing, provider security changes, paid provisioning/billing, or any action requiring credentials/formal approval not available to MASTER. Authentication, server-side authorization, tenant isolation, privacy, auditability and data integrity are never waived.
+
+---
+
+# OWNER DECISION — SINGLE-BATCH LONG-RUN EXECUTION & BLOCKER FALLTHROUGH — 2026-11-14
+
+Default mode is to complete the WHOLE user-requested outcome in one continuous execution batch, not one small step followed by a report. “Build all screens” means every in-scope screen/route/state and its integration, not a sample. MASTER remains accountable until the full parent outcome is closed.
+
+## Required execution behavior
+- Translate the request + canonical acceptance criteria into a complete deliverable queue: screens/routes, workflows, states, responsive/RTL variants, dependencies, defects, integrations and closeout. Inspect the repo/backlog to discover omissions; do not silently reduce scope.
+- Group the work into milestones/subtasks for control, but keep one parent outcome and one accountable owner. Record progress in the existing canonical Notion task / TASKS.md; do not create a parallel tracker.
+- Work through every Ready item sequentially or in safe parallel. Implement to acceptance, integrate, inspect actual behavior, repair defects, mark Done with evidence, then immediately start the next Ready item. Do not wait for “continue” between items.
+- Progress reports are checkpoints only. Do not end with a plan, audit, first error, partial screen set or status-only response while safe actionable work remains.
+- During implementation use focused feedback only when useful. Defer broad suites/build/CI to the coherent final milestone; after a failure fix the cause and rerun only affected checks.
+
+## Blocker fallthrough protocol
+A failed command, first approach, missing preferred tool, network/quota issue, or one blocked subtask does not stop the batch.
+1. Diagnose from actual logs/source/provider evidence and classify code defect vs environment/access/quota/dependency.
+2. Try materially different safe alternatives: repo pattern, equivalent available tool/provider, narrower operation, dependency split or reversible fallback. Never repeat the same failed approach unchanged.
+3. Make up to three distinct evidence-led approaches when feasible; stop sooner when more attempts are unsafe, impossible or redundant.
+4. If unresolved, mark only that item BLOCKED with exact cause, approaches/results, required input/resource and unblock condition.
+5. Immediately continue every independent Ready item. Revisit blocked items after the rest because later work may remove the blocker.
+6. Stop the whole batch only if the blocker invalidates the shared foundation for all remaining work, creates material safety/security/data-integrity risk, or requires a missing high-impact Owner decision. Explain why no safe independent work remains.
+
+## Batch closeout
+Reconcile every item in the original request/plan as Done, Blocked, Not Applicable (with evidence), or Cancelled (with reason). Never leave silent Pending/In Progress items. Complete all Ready work even when some items are Blocked. Do not call the parent outcome complete while required items remain blocked/unverified. Report completed work, blocked items + alternatives tried, files/branch/SHA, relevant final checks + NOT RUN, and exact next external input. Never ask “continue?” when work remains actionable.
+
+## Execution-window boundary
+Maximize continuous work within the available authorized run. These instructions cannot override platform turn/tool/token/time limits, paused chats or unavailable agent runtimes. When a run must end, write a durable queue checkpoint with the exact next item. On resume, read it and continue without repeating discovery or asking the user to restate the task.
+
+---
 
 # Autonomous Engineering Rules
 
@@ -108,7 +193,7 @@ Stop and ask for human input only when necessary for a material product decision
 - **Create a new branch only for a genuinely new, substantial feature or a clearly independent change boundary**—for example, independently releasable work, a different security/permission/release boundary, or a change that would create material conflicts if combined. A new chat, agent, tiny fix, test, refactor, or documentation edit is not by itself a reason to create a branch.
 - If a contributor's branch already has an open PR, continue on that branch while its scope remains coherent. Do not create duplicate branches/PRs or stack feature branches unless a real dependency requires it and the coordinator records why.
 - Keep PRs focused on one coherent outcome; do not bundle unrelated features merely to avoid a branch. If the scope materially changes, finish/merge or safely close the current work before starting a separate branch.
-- Merge only after required checks pass on the exact PR head, any formal approval explicitly required by GitHub branch protection is satisfied, the accountable maintainer/Project Master has completed and documented the full diff self-review, applicable independent-review requirements in the canonical review policy below are satisfied, and the owner has authorized merge. Never bypass provider-enforced protections. After merge, verify the merge commit and main CI before beginning the next branch.
+- Merge only after required checks pass on the exact PR head, any formal approval explicitly required by GitHub branch protection is satisfied, the accountable maintainer/Project Master has completed and documented the full diff self-review, applicable independent-review requirements in the canonical review policy below are satisfied, and MASTER has confirmed readiness under the standing 2026-11-14 delegation. No separate per-PR Owner approval is required; provider-enforced approvals and checks remain mandatory. Never bypass provider-enforced protections. After merge, verify the merge commit and main CI before beginning the next branch.
 - Branch discipline does not authorize direct pushes to protected main, unsafe merges, deleting branches with unique work, or bypassing release/security approvals.
 - Do not deploy after every commit, fix, or small task. Validate locally/CI and use previews when useful; deploy to production only for a meaningful, approved release—normally a new important feature, a deliberate feature bundle, or a critical production fix.
 - Batch related changes and tests, merge the approved release candidate, then trigger at most one production deployment per affected Vercel project for that release. Do not trigger the unaffected project. Do not retry deployment attempts repeatedly when quota, configuration, or build gates block them; diagnose first and wait for the platform limit to reset if needed.
@@ -138,8 +223,8 @@ Stop and ask for human input only when necessary for a material product decision
 - GitLab CI is inactive and is not an approved CI or release provider. Do not trigger GitLab pipelines or provision GitLab runners/webhooks/variables.
 - Verify every required pipeline on the exact candidate SHA; record the provider, pipeline URL and substantive job outcomes. A successful workflow on a different branch/SHA is not evidence for the current candidate.
 - The active default-branch ruleset readback confirms strict/up-to-date `all-checks-passed` from GitHub Actions App `15368`, plus deletion and non-fast-forward protections. It does not configure a separate required PR-approval count. The classic branch-protection endpoint returned HTTP 403 to this integration, so any additional review requirement (including Copilot review) is UNKNOWN; never infer or bypass an unobserved gate.
-- Merge only when authorized and repository policies/checks allow it; comments and mergeability are not approvals.
-- Deploy only when requested/authorized and release gates are satisfied.
+- MASTER may decide and perform a merge only when the PR is non-Draft/READY, all required exact-head checks pass, the full diff review is current, blocking threads are resolved, base/divergence is reconciled, and repository-enforced protections are satisfied. Comments and mergeability are not approvals.
+- MASTER may decide and perform ordinary application deployment for an approved product release after the release preflight, deployment-coupling review, rollback plan, required checks and safe smoke criteria pass. No separate per-release Owner approval is required under the 2026-11-14 delegation.
 - After deployment, verify the deployed commit/version and health/smoke checks. A green build or HTTP response alone does not prove the whole user journey works.
 - If rate limits, quotas, or platform restrictions block a step, report the observed evidence and investigate a safe alternative. Never imply that a skipped deployment or failed workflow succeeded.
 
@@ -239,8 +324,8 @@ Use the **Release Preflight → Candidate Ready → Owner Decision → Merge →
 - Keep one current release evidence packet on the existing task/PR: base SHA, exact head SHA, changed paths, merge-base/divergence, relevant tests, GitHub Actions exact-SHA workflow and substantive jobs on that exact head , current review state, security/data-impact review, deployment impact, and NOT RUN items.
 - Reuse valid evidence while the exact head and relevant configuration remain unchanged. A new commit, changed base, changed workflow/configuration, or changed release target invalidates only the affected evidence; do not restart unrelated checks or re-read unchanged sources without a reason.
 - Parallelize independent read-only inspections (PR/review/check state, deployment configuration, diff inventory); serialize dependent writes and wait for each write result before the next.
-- Before requesting approval, present one concise **READY / BLOCKED** decision packet. Ask only for the specific missing owner authorization. If merge automatically triggers production deployment, disclose that coupling before merge and obtain the required release authorization up front; never surprise the owner after merge.
-- After approval, merge once through the normal repository path, verify the merge commit and main checks, then monitor only the affected deployment(s). Distinguish skipped/ignored builds from build failures. Verify production alias, deployed SHA/version, health/readiness and relevant safe smoke tests.
+- Before merge, MASTER prepares one concise **READY / BLOCKED** decision packet for its own release decision. Do not request per-PR/per-deployment Owner approval under the standing delegation. If a specific high-impact action, missing credential or platform-enforced approval remains, ask only for that exact blocker. Disclose automatic deployment coupling in the packet.
+- Once READY, MASTER merges once through the normal repository path, verifies the merge commit and main checks, then monitors only affected deployment(s). Distinguish skipped/ignored builds from failures. Verify production alias, deployed SHA/version, health/readiness and relevant safe smoke tests.
 - Do not equate merge, Vercel READY, HTTP 200, preview success, or green CI alone with production verification. Keep incomplete criteria open.
 - This fast path removes duplicate investigation and late surprises; it does **not** waive owner authorization, provider-enforced protections, required exact-head checks/reviews, CI provider transition policy, security/data-integrity controls, or separate production authorization.
 
@@ -264,8 +349,8 @@ This section clarifies the operational detail for every human, specialist chat a
 
 ### Review and merge gate clarification
 - A documented full maintainer diff self-review is mandatory for every PR and controlled Project Knowledge update. The canonical MWOS Owner decision effective 2026-11-10 says no separate project-level reviewer is required, including for Security/Architecture and controlled Project Knowledge publication/update. Current project-level instructions separately require independent non-author review and authorized approval for controlled/security/architecture changes and knowledge publication. These sources conflict: mark affected controlled knowledge CONFLICTED / DRAFT, obtain independent non-author review and authorized approval before publication, and do not treat maintainer self-review as satisfying that gate. Routine PR review follows the Owner decision only where no stricter active project instruction applies. Formal GitHub branch-protection approvals remain mandatory and must never be bypassed.
-- Merge only from a non-Draft READY PR after exact-head checks, maintainer review, resolved blocking threads, current base/divergence and applicable provider protections are satisfied, plus explicit Owner merge authorization. `mergeable=true` is not approval.
-- Merge authorization and production deployment authorization remain separate. Disclose auto-deployment coupling before merge; get the required deployment authorization before any merge that automatically deploys.
+- Merge only from a non-Draft READY PR after exact-head checks, current full maintainer review, resolved blocking threads, current base/divergence and applicable provider protections are satisfied, plus MASTER's readiness decision under the standing 2026-11-14 delegation. `mergeable=true` is not approval.
+- The standing delegation covers ordinary application merge and associated deployment when the release preflight explicitly accounts for auto-deployment coupling, rollback, health and smoke verification. It does not waive mandatory provider checks or the specific high-impact exceptions listed in the Owner delegation.
 
 ### Canonical records
 - Notion owns task ownership, assignment, dependency, decisions and handoffs. GitHub owns code, branches, PRs, formal reviews and exact-SHA CI. Vercel/Neon own deployment/runtime and database schema evidence.

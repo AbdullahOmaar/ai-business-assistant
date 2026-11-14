@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { LocalizationService } from './localization.service';
 import {
   ApiService, PlatformAdminAccess, PlatformAdminOverview, PlatformAuditEvent, PlatformAdminUser,
   PlatformAdminUsersPage, PlatformBusiness, PlatformBusinessDetails, PlatformMembership,
@@ -19,29 +20,29 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
     <section class="admin-shell" [class.english]="language === 'en'" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
       <header class="admin-header">
         <div class="heading">
-          <p class="eyebrow">{{ t('إدارة المنصة', 'PLATFORM CONTROL PLANE') }}</p>
-          <h1>{{ t('مركز الإدارة', 'Admin center') }}</h1>
-          <p>{{ t('إشراف على مساحات العمل والنشاط التشغيلي دون تعديل السجلات المالية.', 'Monitor workspaces and operations without directly mutating financial records.') }}</p>
+          <p class="eyebrow">{{ t('ui.m_155faki') }}</p>
+          <h1>{{ t('ui.m_56p24') }}</h1>
+          <p>{{ t('ui.m_3ejvw0') }}</p>
         </div>
         <div class="identity-actions">
-          <div class="identity"><span class="avatar" aria-hidden="true">{{ initials }}</span><span><strong>{{ access?.is_platform_super_admin ? t('مسؤول المنصة الأساسي', 'Platform Super Admin') : t('مسؤول منصة مفوّض', 'Delegated Platform Admin') }}</strong><small>{{ userEmail || t('جلسة إدارية موثقة', 'Verified admin session') }}</small></span></div>
-          <button class="quiet-button" type="button" (click)="languageToggleRequested.emit()" [attr.aria-label]="t('تغيير اللغة', 'Change language')">{{ language === 'ar' ? 'English' : 'العربية' }}</button>
-          <button class="quiet-button signout" type="button" (click)="signOutRequested.emit()">{{ t('خروج', 'Sign out') }}</button>
+          <div class="identity"><span class="avatar" aria-hidden="true">{{ initials }}</span><span><strong>{{ access?.is_platform_super_admin ? t('ui.m_1tjgh5f') : t('ui.m_7fhsvk') }}</strong><small>{{ userEmail || t('ui.m_9x0vvs') }}</small></span></div>
+          <button class="quiet-button" type="button" (click)="languageToggleRequested.emit()" [attr.aria-label]="t('ui.m_1bzusoy')">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button>
+          <button class="quiet-button signout" type="button" (click)="signOutRequested.emit()">{{ t('ui.m_1ivd8ld') }}</button>
         </div>
       </header>
 
       @if (access; as currentAccess) {
-        <section class="identity-access-summary" [attr.aria-label]="t('هويتك وصلاحياتك الحالية', 'Your current identity and permissions')">
+        <section class="identity-access-summary" [attr.aria-label]="t('ui.m_jpiw37')">
           <div class="identity-access-top">
-            <div class="identity-access-heading"><strong>{{ t('حسابك الإداري الحالي', 'Your current admin identity') }}</strong><small class="user-uid">{{ currentAccess.subject }}</small></div>
+            <div class="identity-access-heading"><strong>{{ t('ui.m_ovbttk') }}</strong><small class="user-uid">{{ currentAccess.subject }}</small></div>
             <div class="identity-role-pills">@for (role of currentAccess.roles; track role) { <span class="role-pill" [class.accent]="role === 'platform_super_admin'">{{ platformRoleLabel(role) }}</span> }</div>
           </div>
-          <div class="identity-permissions"><strong>{{ t('مسموح لك بـ', 'Your effective permissions') }}</strong><div class="identity-permission-tags">@for (permission of currentAccess.permissions; track permission) { <span class="permission-token">{{ platformPermissionLabel(permission) }}</span> }</div></div>
+          <div class="identity-permissions"><strong>{{ t('ui.m_dkxeji') }}</strong><div class="identity-permission-tags">@for (permission of currentAccess.permissions; track permission) { <span class="permission-token">{{ platformPermissionLabel(permission) }}</span> }</div></div>
         </section>
       }
 
       @if (pageError) {
-        <div class="notice error" role="alert"><span>{{ pageError }}</span><button type="button" class="text-action" (click)="refreshAll()">{{ t('إعادة المحاولة', 'Retry') }}</button></div>
+        <div class="notice error" role="alert"><span>{{ pageError }}</span><button type="button" class="text-action" (click)="refreshAll()">{{ t('ui.m_worzj7') }}</button></div>
       }
       @if (successMessage) {
         <div class="notice success" role="status" aria-live="polite">{{ successMessage }}</div>
@@ -49,122 +50,122 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
 
       <p class="admin-visually-hidden admin-section-announcement" role="status" aria-live="polite" aria-atomic="true">{{ sectionAnnouncement }}</p>
 
-      <nav class="section-nav" [attr.aria-label]="t('أقسام إدارة المنصة', 'Platform administration sections')">
-        <button type="button" [class.active]="section === 'overview'" [attr.aria-current]="section === 'overview' ? 'page' : null" (click)="setSection('overview')"><span aria-hidden="true">◫</span>{{ t('نظرة عامة', 'Overview') }}</button>
-        <button type="button" [class.active]="section === 'businesses'" [attr.aria-current]="section === 'businesses' ? 'page' : null" (click)="setSection('businesses')"><span aria-hidden="true">▦</span>{{ t('مساحات العمل', 'Workspaces') }}<span class="nav-count">{{ overview?.businesses?.total ?? '—' }}</span></button>
-        <button type="button" [class.active]="section === 'activity'" [attr.aria-current]="section === 'activity' ? 'page' : null" (click)="setSection('activity')"><span aria-hidden="true">◷</span>{{ t('سجل التدقيق', 'Audit activity') }}</button>
-        @if (canViewUsers) { <button type="button" [class.active]="section === 'users'" [attr.aria-current]="section === 'users' ? 'page' : null" (click)="setSection('users')"><span aria-hidden="true">♙</span>{{ t('المستخدمون والصلاحيات', 'Users & access') }}<span class="nav-count">{{ users.length || '—' }}</span></button> }
-        <button type="button" [class.active]="section === 'permissions'" [attr.aria-current]="section === 'permissions' ? 'page' : null" (click)="setSection('permissions')"><span aria-hidden="true">◇</span>{{ t('الصلاحيات', 'Permissions') }}</button>
+      <nav class="section-nav" [attr.aria-label]="t('ui.m_ugxotp')">
+        <button type="button" [class.active]="section === 'overview'" [attr.aria-current]="section === 'overview' ? 'page' : null" (click)="setSection('overview')"><span aria-hidden="true">◫</span>{{ t('ui.m_kazjgg') }}</button>
+        <button type="button" [class.active]="section === 'businesses'" [attr.aria-current]="section === 'businesses' ? 'page' : null" (click)="setSection('businesses')"><span aria-hidden="true">▦</span>{{ t('ui.m_1p3i223') }}<span class="nav-count">{{ overview?.businesses?.total ?? '—' }}</span></button>
+        <button type="button" [class.active]="section === 'activity'" [attr.aria-current]="section === 'activity' ? 'page' : null" (click)="setSection('activity')"><span aria-hidden="true">◷</span>{{ t('ui.m_t34ukc') }}</button>
+        @if (canViewUsers) { <button type="button" [class.active]="section === 'users'" [attr.aria-current]="section === 'users' ? 'page' : null" (click)="setSection('users')"><span aria-hidden="true">♙</span>{{ t('ui.m_qv5wq3') }}<span class="nav-count">{{ users.length || '—' }}</span></button> }
+        <button type="button" [class.active]="section === 'permissions'" [attr.aria-current]="section === 'permissions' ? 'page' : null" (click)="setSection('permissions')"><span aria-hidden="true">◇</span>{{ t('ui.m_1ivb1p6') }}</button>
       </nav>
 
       @if (section === 'overview') {
         <section class="section-content" aria-labelledby="overview-title">
           <div class="section-heading">
-            <div><p class="eyebrow">{{ t('صورة لحظية', 'LIVE SNAPSHOT') }}</p><h2 id="overview-title">{{ t('مؤشرات المنصة', 'Platform metrics') }}</h2><p>{{ t('أرقام مستخرجة من قاعدة البيانات، وليست بيانات عرض تجريبية.', 'Values queried from the database, not demo data.') }}</p></div>
-            <button class="outline-button" type="button" [disabled]="overviewLoading" (click)="refreshOverview()">{{ overviewLoading ? t('جارٍ التحديث…', 'Refreshing…') : t('تحديث البيانات', 'Refresh data') }}</button>
+            <div><p class="eyebrow">{{ t('ui.m_12uuupk') }}</p><h2 id="overview-title">{{ t('ui.m_1wgrtvq') }}</h2><p>{{ t('ui.m_148yegh') }}</p></div>
+            <button class="outline-button" type="button" [disabled]="overviewLoading" (click)="refreshOverview()">{{ overviewLoading ? t('ui.m_9itqx5') : t('ui.m_82ies4') }}</button>
           </div>
-          @if (overviewLoading && !overview) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ جلب المؤشرات من الخادم…', 'Loading live metrics from the server…') }}</div> }
-          @if (overviewError && !overviewLoading) { <div class="notice error" role="alert">{{ overviewError }} <button class="text-action" type="button" (click)="refreshOverview()">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
+          @if (overviewLoading && !overview) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('ui.m_xvsoti') }}</div> }
+          @if (overviewError && !overviewLoading) { <div class="notice error" role="alert">{{ overviewError }} <button class="text-action" type="button" (click)="refreshOverview()">{{ t('ui.m_worzj7') }}</button></div> }
           <article class="panel system-status-panel" aria-labelledby="system-status-title">
             <div class="panel-heading">
-              <div><p class="eyebrow">{{ t('صحة التشغيل', 'RUNTIME HEALTH') }}</p><h3 id="system-status-title">{{ t('حالة النظام والإصدار', 'System status & release') }}</h3><p>{{ t('فحص آمن للجاهزية دون عرض أسرار أو بيانات عملاء.', 'Safe readiness checks without exposing secrets or customer data.') }}</p></div>
-              <button type="button" class="outline-button" [disabled]="systemStatusLoading" (click)="refreshSystemStatus()">{{ systemStatusLoading ? t('جارٍ الفحص…', 'Checking…') : t('فحص الآن', 'Check now') }}</button>
+              <div><p class="eyebrow">{{ t('ui.m_jzstn9') }}</p><h3 id="system-status-title">{{ t('ui.m_1dccarp') }}</h3><p>{{ t('ui.m_1rpjlyg') }}</p></div>
+              <button type="button" class="outline-button" [disabled]="systemStatusLoading" (click)="refreshSystemStatus()">{{ systemStatusLoading ? t('ui.m_1v22gnm') : t('ui.m_s4cze9') }}</button>
             </div>
-            @if (systemStatusLoading && !systemStatus) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ فحص الاعتمادات…', 'Checking dependencies…') }}</div> }
-            @if (systemStatusError) { <div class="notice error" role="alert">{{ systemStatusError }} <button type="button" class="text-action" (click)="refreshSystemStatus()">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
+            @if (systemStatusLoading && !systemStatus) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('ui.m_m1a8l7') }}</div> }
+            @if (systemStatusError) { <div class="notice error" role="alert">{{ systemStatusError }} <button type="button" class="text-action" (click)="refreshSystemStatus()">{{ t('ui.m_worzj7') }}</button></div> }
             @if (systemStatus; as runtime) {
               <div class="runtime-summary">
-                <span class="status-pill" [class.status-active]="runtime.status === 'healthy'" [class.status-inactive]="runtime.status !== 'healthy'">{{ runtime.status === 'healthy' ? t('سليم', 'Healthy') : t('يحتاج مراجعة', 'Degraded') }}</span>
-                <span>{{ t('آخر فحص', 'Last checked') }}: {{ formatDate(runtime.checked_at) }}</span>
+                <span class="status-pill" [class.status-active]="runtime.status === 'healthy'" [class.status-inactive]="runtime.status !== 'healthy'">{{ runtime.status === 'healthy' ? t('ui.m_1nehj8y') : t('ui.m_124oetm') }}</span>
+                <span>{{ t('ui.m_j0rvp2') }}: {{ formatDate(runtime.checked_at) }}</span>
               </div>
               <div class="runtime-grid">
-                <div><small>{{ t('إصدار API', 'API version') }}</small><strong>{{ runtime.release.version }}</strong></div>
-                <div><small>{{ t('معرّف الإصدار', 'Commit') }}</small><strong class="runtime-commit">{{ runtime.release.commit }}</strong></div>
-                <div><small>{{ t('البيئة', 'Environment') }}</small><strong>{{ runtime.release.environment }}</strong></div>
-                <div><small>{{ t('قاعدة البيانات', 'Database') }}</small><strong [class.runtime-good]="runtime.dependencies.database === 'healthy'" [class.runtime-bad]="runtime.dependencies.database !== 'healthy'">{{ dependencyStatusLabel(runtime.dependencies.database) }}</strong></div>
-                <div><small>{{ t('التحقق من الهوية', 'Identity verifier') }}</small><strong [class.runtime-good]="runtime.dependencies.identity_verifier === 'configured'" [class.runtime-bad]="runtime.dependencies.identity_verifier !== 'configured'">{{ dependencyStatusLabel(runtime.dependencies.identity_verifier) }}</strong></div>
+                <div><small>{{ t('ui.m_rstf48') }}</small><strong>{{ runtime.release.version }}</strong></div>
+                <div><small>{{ t('ui.m_kfa737') }}</small><strong class="runtime-commit">{{ runtime.release.commit }}</strong></div>
+                <div><small>{{ t('ui.m_18jbefg') }}</small><strong>{{ runtime.release.environment }}</strong></div>
+                <div><small>{{ t('ui.m_19gqnqb') }}</small><strong [class.runtime-good]="runtime.dependencies.database === 'healthy'" [class.runtime-bad]="runtime.dependencies.database !== 'healthy'">{{ dependencyStatusLabel(runtime.dependencies.database) }}</strong></div>
+                <div><small>{{ t('ui.m_4w9yov') }}</small><strong [class.runtime-good]="runtime.dependencies.identity_verifier === 'configured'" [class.runtime-bad]="runtime.dependencies.identity_verifier !== 'configured'">{{ dependencyStatusLabel(runtime.dependencies.identity_verifier) }}</strong></div>
               </div>
-              <p class="runtime-note">{{ t('حالة التحقق تعني أن الإعداد موجود، ولا تثبت صحة رمز مستخدم بعينه.', 'Verifier status means configuration exists; it does not validate an individual user token.') }}</p>
+              <p class="runtime-note">{{ t('ui.m_b2hg4d') }}</p>
             }
           </article>
           @if (overview; as data) {
             <div class="metric-grid">
-              <article class="metric-card"><div class="metric-icon teal" aria-hidden="true">▦</div><span>{{ t('مساحات العمل', 'Workspaces') }}</span><strong>{{ data.businesses.total }}</strong><small>{{ data.businesses.active }} {{ t('نشطة', 'active') }} · {{ data.businesses.inactive }} {{ t('معطّلة', 'inactive') }}</small></article>
-              <article class="metric-card"><div class="metric-icon blue" aria-hidden="true">♙</div><span>{{ t('هويات مرتبطة بعضوية', 'Member identities') }}</span><strong>{{ data.users.distinct_subjects }}</strong><small>{{ data.users.memberships }} {{ t('عضوية مساحة عمل', 'workspace memberships') }}</small></article>
-              <article class="metric-card"><div class="metric-icon violet" aria-hidden="true">▤</div><span>{{ t('الفواتير', 'Invoices') }}</span><strong>{{ data.invoices.count }}</strong><small>{{ t('مسودات وصادرة وملغاة ضمن كل العملات', 'Draft, issued, and void across currencies') }}</small></article>
-              <article class="metric-card"><div class="metric-icon amber" aria-hidden="true">↗</div><span>{{ t('سجلات المدفوعات', 'Payment records') }}</span><strong>{{ data.payments.count }}</strong><small>{{ data.audit_events.count }} {{ t('حدث تدقيق', 'audit events') }}</small></article>
+              <article class="metric-card"><div class="metric-icon teal" aria-hidden="true">▦</div><span>{{ t('ui.m_1p3i223') }}</span><strong>{{ data.businesses.total }}</strong><small>{{ data.businesses.active }} {{ t('ui.m_1c1qlur') }} · {{ data.businesses.inactive }} {{ t('ui.m_hycebt') }}</small></article>
+              <article class="metric-card"><div class="metric-icon blue" aria-hidden="true">♙</div><span>{{ t('ui.m_1y8yhc5') }}</span><strong>{{ data.users.distinct_subjects }}</strong><small>{{ data.users.memberships }} {{ t('ui.m_xh7u06') }}</small></article>
+              <article class="metric-card"><div class="metric-icon violet" aria-hidden="true">▤</div><span>{{ t('ui.m_1h7f08p') }}</span><strong>{{ data.invoices.count }}</strong><small>{{ t('ui.m_bbxnum') }}</small></article>
+              <article class="metric-card"><div class="metric-icon amber" aria-hidden="true">↗</div><span>{{ t('ui.m_jas5j') }}</span><strong>{{ data.payments.count }}</strong><small>{{ data.audit_events.count }} {{ t('ui.m_m1qy2r') }}</small></article>
             </div>
             <div class="content-grid">
               <article class="panel">
-                <div class="panel-heading"><div><h3>{{ t('مدفوعات حسب العملة', 'Payments by currency') }}</h3><p>{{ t('قراءة فقط · لا يتم جمع العملات المختلفة', 'Read-only · currencies are never combined') }}</p></div><span class="read-only">{{ t('قراءة فقط', 'READ ONLY') }}</span></div>
+                <div class="panel-heading"><div><h3>{{ t('ui.m_j4ycx3') }}</h3><p>{{ t('ui.m_hekau') }}</p></div><span class="read-only">{{ t('ui.m_1bvwx8l') }}</span></div>
                 @if (data.payments.by_currency.length) {
                   <div class="currency-list">
                     @for (row of data.payments.by_currency; track row.currency_code) {
-                      <div class="currency-row"><div><strong>{{ row.currency_code }}</strong><small>{{ row.count }} {{ t('سجل', 'records') }}</small></div><strong class="amount">{{ money(row.total) }} <span>{{ row.currency_code }}</span></strong></div>
+                      <div class="currency-row"><div><strong>{{ row.currency_code }}</strong><small>{{ row.count }} {{ t('ui.m_189ya4o') }}</small></div><strong class="amount">{{ money(row.total) }} <span>{{ row.currency_code }}</span></strong></div>
                     }
                   </div>
-                } @else { <p class="empty-state">{{ t('لا توجد سجلات مدفوعات في قاعدة البيانات.', 'No payment records found.') }}</p> }
+                } @else { <p class="empty-state">{{ t('ui.m_1uba10p') }}</p> }
               </article>
               <article class="panel">
-                <div class="panel-heading"><div><h3>{{ t('حالات الفواتير', 'Invoice status') }}</h3><p>{{ t('عدد وإجمالي كل حالة مع فصل العملة', 'Counts and totals grouped by currency and status') }}</p></div></div>
+                <div class="panel-heading"><div><h3>{{ t('ui.m_muhair') }}</h3><p>{{ t('ui.m_1q2w084') }}</p></div></div>
                 @if (data.invoices.by_currency_and_status.length) {
-                  <div class="table-wrap compact-table" role="region" tabindex="0" [attr.aria-label]="t('ملخص الفواتير حسب العملة والحالة', 'Invoice summary by currency and status')"><table><thead><tr><th>{{ t('العملة', 'Currency') }}</th><th>{{ t('الحالة', 'Status') }}</th><th>{{ t('عدد', 'Count') }}</th><th>{{ t('الإجمالي', 'Total') }}</th></tr></thead><tbody>
+                  <div class="table-wrap compact-table" role="region" tabindex="0" [attr.aria-label]="t('ui.m_g7rvs3')"><table><thead><tr><th>{{ t('ui.m_1jd5ck6') }}</th><th>{{ t('ui.m_jnmvwl') }}</th><th>{{ t('ui.m_xmzt5p') }}</th><th>{{ t('ui.m_l97slj') }}</th></tr></thead><tbody>
                     @for (row of data.invoices.by_currency_and_status; track row.currency_code + row.status) {
-                      <tr><td [attr.data-label]="t('العملة', 'Currency')"><strong>{{ row.currency_code }}</strong></td><td [attr.data-label]="t('الحالة', 'Status')"><span class="status-pill">{{ statusLabel(row.status) }}</span></td><td [attr.data-label]="t('عدد', 'Count')">{{ row.count }}</td><td class="amount" [attr.data-label]="t('الإجمالي', 'Total')">{{ money(row.total) }}</td></tr>
+                      <tr><td [attr.data-label]="t('ui.m_1jd5ck6')"><strong>{{ row.currency_code }}</strong></td><td [attr.data-label]="t('ui.m_jnmvwl')"><span class="status-pill">{{ statusLabel(row.status) }}</span></td><td [attr.data-label]="t('ui.m_xmzt5p')">{{ row.count }}</td><td class="amount" [attr.data-label]="t('ui.m_l97slj')">{{ money(row.total) }}</td></tr>
                     }
                   </tbody></table></div>
-                } @else { <p class="empty-state">{{ t('لا توجد فواتير مسجلة.', 'No invoice records found.') }}</p> }
+                } @else { <p class="empty-state">{{ t('ui.m_1veyhcz') }}</p> }
               </article>
             </div>
-            <div class="data-note"><span aria-hidden="true">ⓘ</span><div><strong>{{ t('حدود البيانات', 'Data boundaries') }}</strong><p>{{ t('عدد المستخدمين يقتصر على الهويات التي لها عضوية مساحة عمل؛ لا تتاح قائمة حسابات Firebase كاملة. العمليات المالية هنا للعرض فقط.', 'User counts cover identities with workspace memberships; a complete Firebase user directory is not available. Financial operations are read-only here.') }}</p><small>{{ t('آخر تحديث', 'Last updated') }}: {{ formatDate(data.generated_at) }}</small></div></div>
+            <div class="data-note"><span aria-hidden="true">ⓘ</span><div><strong>{{ t('ui.m_1c296wr') }}</strong><p>{{ t('ui.m_ht8e62') }}</p><small>{{ t('ui.m_on0mak') }}: {{ formatDate(data.generated_at) }}</small></div></div>
           }
         </section>
       }
 
       @if (section === 'businesses') {
         <section class="section-content" aria-labelledby="businesses-title">
-          <div class="section-heading"><div><p class="eyebrow">{{ t('دليل موحد', 'CENTRAL DIRECTORY') }}</p><h2 id="businesses-title">{{ t('مساحات العمل', 'Workspaces') }}</h2><p>{{ t('بحث وتصنيف وتفاصيل العضويات وإدارة حالة الوصول مع تسجيل السبب.', 'Search, filter, inspect memberships, and change access status with an audit reason.') }}</p></div><button class="outline-button" type="button" [disabled]="businessesLoading" (click)="loadBusinesses(businessOffset)">{{ t('تحديث القائمة', 'Refresh list') }}</button></div>
+          <div class="section-heading"><div><p class="eyebrow">{{ t('ui.m_x1ssgf') }}</p><h2 id="businesses-title">{{ t('ui.m_1p3i223') }}</h2><p>{{ t('ui.m_sfjizi') }}</p></div><button class="outline-button" type="button" [disabled]="businessesLoading" (click)="loadBusinesses(businessOffset)">{{ t('ui.m_1xv1qef') }}</button></div>
           <form class="filters" (ngSubmit)="loadBusinesses(0)">
-            <label class="search-field"><span>{{ t('بحث', 'Search') }}</span><input name="businessSearch" [(ngModel)]="businessQuery" maxlength="160" [placeholder]="t('اسم الشركة أو البريد أو الهاتف', 'Company, email, or phone')" /></label>
-            <label><span>{{ t('حالة الوصول', 'Access status') }}</span><select name="businessStatus" [(ngModel)]="businessStatus"><option value="all">{{ t('كل الحالات', 'All statuses') }}</option><option value="active">{{ t('نشطة', 'Active') }}</option><option value="inactive">{{ t('معطّلة', 'Inactive') }}</option></select></label>
-            <label><span>{{ t('ترتيب حسب', 'Sort by') }}</span><select name="businessSortBy" [(ngModel)]="businessSortBy"><option value="created_at">{{ t('تاريخ الإنشاء', 'Creation date') }}</option><option value="name">{{ t('اسم مساحة العمل', 'Workspace name') }}</option><option value="members">{{ t('عدد الأعضاء', 'Member count') }}</option></select></label>
-            <label><span>{{ t('اتجاه الترتيب', 'Sort direction') }}</span><select name="businessSortOrder" [(ngModel)]="businessSortOrder"><option value="desc">{{ t('تنازلي', 'Descending') }}</option><option value="asc">{{ t('تصاعدي', 'Ascending') }}</option></select></label>
-            <button class="primary-button" type="submit" [disabled]="businessesLoading">{{ t('تطبيق', 'Apply') }}</button>
+            <label class="search-field"><span>{{ t('ui.m_11ucx5t') }}</span><input name="businessSearch" [(ngModel)]="businessQuery" maxlength="160" [placeholder]="t('ui.m_1m8fzmr')" /></label>
+            <label><span>{{ t('ui.m_1f79eee') }}</span><select name="businessStatus" [(ngModel)]="businessStatus"><option value="all">{{ t('ui.m_1cyu9lp') }}</option><option value="active">{{ t('ui.m_1vhpjk3') }}</option><option value="inactive">{{ t('ui.m_1qniai1') }}</option></select></label>
+            <label><span>{{ t('ui.m_tpfmbp') }}</span><select name="businessSortBy" [(ngModel)]="businessSortBy"><option value="created_at">{{ t('ui.m_cpho72') }}</option><option value="name">{{ t('ui.m_1htn242') }}</option><option value="members">{{ t('ui.m_1aktafq') }}</option></select></label>
+            <label><span>{{ t('ui.m_1b0eoyh') }}</span><select name="businessSortOrder" [(ngModel)]="businessSortOrder"><option value="desc">{{ t('ui.m_1gc9ofo') }}</option><option value="asc">{{ t('ui.m_1gvraov') }}</option></select></label>
+            <button class="primary-button" type="submit" [disabled]="businessesLoading">{{ t('ui.m_agqz0i') }}</button>
           </form>
-          @if (businessesLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ تحميل مساحات العمل…', 'Loading workspaces…') }}</div> }
-          @if (businessesError) { <div class="notice error" role="alert">{{ businessesError }} <button class="text-action" type="button" (click)="loadBusinesses(businessOffset)">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
-          @if (!businessesLoading && !businessesError && !businesses.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">▦</span><h3>{{ businessQuery.trim() || businessStatus !== 'all' ? t('لا توجد مساحات عمل مطابقة', 'No matching workspaces') : businessOffset > 0 ? t('لا توجد مساحات عمل في هذه الصفحة', 'No workspaces on this page') : t('لا توجد مساحات عمل مسجلة بعد', 'No workspaces are registered yet') }}</h3><p>{{ businessQuery.trim() || businessStatus !== 'all' ? t('جرّب تغيير البحث أو حالة الوصول.', 'Try changing the search term or access status.') : businessOffset > 0 ? t('ارجع إلى الصفحة الأولى لعرض مساحات العمل المتاحة.', 'Return to the first page to browse available workspaces.') : t('ستظهر مساحات العمل هنا بعد تسجيلها.', 'Workspaces will appear here once registered.') }}</p></div> }
+          @if (businessesLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('ui.m_6s36po') }}</div> }
+          @if (businessesError) { <div class="notice error" role="alert">{{ businessesError }} <button class="text-action" type="button" (click)="loadBusinesses(businessOffset)">{{ t('ui.m_worzj7') }}</button></div> }
+          @if (!businessesLoading && !businessesError && !businesses.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">▦</span><h3>{{ businessQuery.trim() || businessStatus !== 'all' ? t('ui.m_11xxs14') : businessOffset > 0 ? t('ui.m_9jlflr') : t('ui.m_anqh3m') }}</h3><p>{{ businessQuery.trim() || businessStatus !== 'all' ? t('ui.m_3to1hb') : businessOffset > 0 ? t('ui.m_1s5fo') : t('ui.m_z3jx15') }}</p></div> }
           @if (businesses.length) {
-            <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('قائمة مساحات العمل، جدول', 'Workspace directory table')"><table><thead><tr><th>{{ t('مساحة العمل', 'Workspace') }}</th><th>{{ t('الحالة', 'Status') }}</th><th>{{ t('العملة', 'Currency') }}</th><th>{{ t('الأعضاء', 'Members') }}</th><th>{{ t('تاريخ الإنشاء', 'Created') }}</th><th>{{ t('إجراء', 'Action') }}</th></tr></thead><tbody>
+            <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('ui.m_1adics7')"><table><thead><tr><th>{{ t('ui.m_criw1m') }}</th><th>{{ t('ui.m_jnmvwl') }}</th><th>{{ t('ui.m_1jd5ck6') }}</th><th>{{ t('ui.m_1po8c03') }}</th><th>{{ t('ui.m_1pb5uxl') }}</th><th>{{ t('ui.m_1tj6aj7') }}</th></tr></thead><tbody>
               @for (item of businesses; track item.id) {
-                <tr><td [attr.data-label]="t('مساحة العمل', 'Workspace')"><button type="button" class="business-link" (click)="openBusiness(item)"><strong>{{ item.name }}</strong><small>{{ item.contact_email || item.phone || item.id }}</small></button></td><td [attr.data-label]="t('الحالة', 'Status')"><span class="status-pill" [class.status-active]="item.is_active" [class.status-inactive]="!item.is_active"><span class="status-dot"></span>{{ item.is_active ? t('نشطة', 'Active') : t('معطّلة', 'Inactive') }}</span></td><td [attr.data-label]="t('العملة', 'Currency')">{{ item.currency_code }}</td><td [attr.data-label]="t('الأعضاء', 'Members')">{{ item.member_count }}</td><td [attr.data-label]="t('تاريخ الإنشاء', 'Created')">{{ formatDate(item.created_at) }}</td><td [attr.data-label]="t('إجراء', 'Action')"><button type="button" class="outline-button small-button" (click)="openBusiness(item)">{{ t('التفاصيل', 'Details') }}</button></td></tr>
+                <tr><td [attr.data-label]="t('ui.m_criw1m')"><button type="button" class="business-link" (click)="openBusiness(item)"><strong>{{ item.name }}</strong><small>{{ item.contact_email || item.phone || item.id }}</small></button></td><td [attr.data-label]="t('ui.m_jnmvwl')"><span class="status-pill" [class.status-active]="item.is_active" [class.status-inactive]="!item.is_active"><span class="status-dot"></span>{{ item.is_active ? t('ui.m_1vhpjk3') : t('ui.m_1qniai1') }}</span></td><td [attr.data-label]="t('ui.m_1jd5ck6')">{{ item.currency_code }}</td><td [attr.data-label]="t('ui.m_1po8c03')">{{ item.member_count }}</td><td [attr.data-label]="t('ui.m_1pb5uxl')">{{ formatDate(item.created_at) }}</td><td [attr.data-label]="t('ui.m_1tj6aj7')"><button type="button" class="outline-button small-button" (click)="openBusiness(item)">{{ t('ui.m_1pjqkqz') }}</button></td></tr>
               }
             </tbody></table></div>
-            <div class="pagination"><span>{{ t('عرض', 'Showing') }} {{ businesses.length ? businessOffset + 1 : 0 }}–{{ businessOffset + businesses.length }} {{ t('من', 'of') }} {{ businessTotal }}</span><div><button type="button" class="outline-button" [disabled]="businessOffset === 0 || businessesLoading" (click)="loadBusinesses(previousPageOffset(businessOffset))">{{ t('السابق', 'Previous') }}</button><button type="button" class="outline-button" [disabled]="businessOffset + pageSize >= businessTotal || businessesLoading" (click)="loadBusinesses(businessOffset + pageSize)">{{ t('التالي', 'Next') }}</button></div></div>
+            <div class="pagination"><span>{{ t('ui.m_dxe4hc') }} {{ businesses.length ? businessOffset + 1 : 0 }}–{{ businessOffset + businesses.length }} {{ t('ui.m_14bv2kn') }} {{ businessTotal }}</span><div><button type="button" class="outline-button" [disabled]="businessOffset === 0 || businessesLoading" (click)="loadBusinesses(previousPageOffset(businessOffset))">{{ t('ui.m_14wy3hz') }}</button><button type="button" class="outline-button" [disabled]="businessOffset + pageSize >= businessTotal || businessesLoading" (click)="loadBusinesses(businessOffset + pageSize)">{{ t('ui.m_thb9eg') }}</button></div></div>
           }
-          @if (detailsLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ تحميل التفاصيل…', 'Loading details…') }}</div> }
+          @if (detailsLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('ui.m_19lf0pe') }}</div> }
           @if (detailsError) { <div class="notice error" role="alert">{{ detailsError }}</div> }
           @if (selectedDetails; as detail) {
             <article class="panel detail-panel">
-              <div class="panel-heading"><div><p class="eyebrow">{{ t('ملف مساحة العمل', 'WORKSPACE PROFILE') }}</p><h3>{{ detail.business.name }}</h3><p>{{ detail.business.id }}</p></div><button type="button" class="quiet-button" (click)="closeDetails()" [attr.aria-label]="t('إغلاق التفاصيل', 'Close details')">✕</button></div>
-              <div class="detail-grid"><div><small>{{ t('الحالة', 'Status') }}</small><strong>{{ detail.business.is_active ? t('نشطة', 'Active') : t('معطّلة', 'Inactive') }}</strong></div><div><small>{{ t('العملة', 'Currency') }}</small><strong>{{ detail.business.currency_code }}</strong></div><div><small>{{ t('المنطقة الزمنية', 'Timezone') }}</small><strong>{{ detail.business.timezone }}</strong></div><div><small>{{ t('اللغة', 'Locale') }}</small><strong>{{ detail.business.locale }}</strong></div><div><small>{{ t('تاريخ الإنشاء', 'Created at') }}</small><strong>{{ formatDate(detail.business.created_at) }}</strong></div><div><small>{{ t('البريد', 'Contact email') }}</small><strong>{{ detail.business.contact_email || '—' }}</strong></div></div>
+              <div class="panel-heading"><div><p class="eyebrow">{{ t('ui.m_jvy8eb') }}</p><h3>{{ detail.business.name }}</h3><p>{{ detail.business.id }}</p></div><button type="button" class="quiet-button" (click)="closeDetails()" [attr.aria-label]="t('ui.m_a27klb')">✕</button></div>
+              <div class="detail-grid"><div><small>{{ t('ui.m_jnmvwl') }}</small><strong>{{ detail.business.is_active ? t('ui.m_1vhpjk3') : t('ui.m_1qniai1') }}</strong></div><div><small>{{ t('ui.m_1jd5ck6') }}</small><strong>{{ detail.business.currency_code }}</strong></div><div><small>{{ t('ui.m_z76sxh') }}</small><strong>{{ detail.business.timezone }}</strong></div><div><small>{{ t('ui.m_1tll4bb') }}</small><strong>{{ detail.business.locale }}</strong></div><div><small>{{ t('ui.m_1gs5fxq') }}</small><strong>{{ formatDate(detail.business.created_at) }}</strong></div><div><small>{{ t('ui.m_1gx4tuu') }}</small><strong>{{ detail.business.contact_email || '—' }}</strong></div></div>
               <div class="divider"></div>
-              <div class="panel-heading"><div><h3>{{ t('عضويات مساحة العمل', 'Workspace memberships') }}</h3><p>{{ t('لا تظهر كلمات مرور أو رموز جلسات. أسماء الملفات غير متاحة في نموذج البيانات الحالي.', 'No passwords or session tokens are exposed. Profile names are not available in the current data model.') }}</p></div><span class="read-only">{{ detail.memberships.length }} {{ t('عضوية', 'memberships') }}</span></div>
+              <div class="panel-heading"><div><h3>{{ t('ui.m_u221id') }}</h3><p>{{ t('ui.m_87wf3m') }}</p></div><span class="read-only">{{ detail.memberships.length }} {{ t('ui.m_1rmkf0y') }}</span></div>
               @if (detail.memberships.length) {
-                <div class="table-wrap compact-table" role="region" tabindex="0" [attr.aria-label]="t('أعضاء مساحة العمل', 'Workspace memberships')"><table><thead><tr><th>{{ t('هوية المستخدم', 'User subject') }}</th><th>{{ t('الدور', 'Role') }}</th><th>{{ t('تاريخ الانضمام', 'Joined') }}</th></tr></thead><tbody>
-                  @for (member of detail.memberships; track member.id) { <tr><td class="subject" [attr.data-label]="t('هوية المستخدم', 'User subject')">{{ member.user_subject }}</td><td [attr.data-label]="t('الدور', 'Role')"><span class="role-pill">{{ roleLabel(member.role) }}</span></td><td [attr.data-label]="t('تاريخ الانضمام', 'Joined')">{{ formatDate(member.created_at) }}</td></tr> }
+                <div class="table-wrap compact-table" role="region" tabindex="0" [attr.aria-label]="t('ui.m_1jgl90d')"><table><thead><tr><th>{{ t('ui.m_11tlzkd') }}</th><th>{{ t('ui.m_d13ak8') }}</th><th>{{ t('ui.m_aoacnl') }}</th></tr></thead><tbody>
+                  @for (member of detail.memberships; track member.id) { <tr><td class="subject" [attr.data-label]="t('ui.m_11tlzkd')">{{ member.user_subject }}</td><td [attr.data-label]="t('ui.m_d13ak8')"><span class="role-pill">{{ roleLabel(member.role) }}</span></td><td [attr.data-label]="t('ui.m_aoacnl')">{{ formatDate(member.created_at) }}</td></tr> }
                 </tbody></table></div>
-              } @else { <p class="empty-state">{{ t('لا توجد عضويات.', 'No memberships found.') }}</p> }
-              <div class="caution"><strong>{{ t('إدارة الوصول إلى مساحة العمل', 'Workspace access control') }}</strong><p>{{ t('تعطيل مساحة العمل يمنع الوصول إلى بياناتها عبر تحقق العضوية. لا يؤدي ذلك إلى حذف الشركة أو سجلاتها.', 'Deactivating a workspace blocks membership-based access to its data. It does not delete the company or its records.') }}</p></div>
+              } @else { <p class="empty-state">{{ t('ui.m_15cikyt') }}</p> }
+              <div class="caution"><strong>{{ t('ui.m_35cyug') }}</strong><p>{{ t('ui.m_g1s438') }}</p></div>
               @if (canManageWorkspaceStatus) {
                 <form class="status-form" (ngSubmit)="updateBusinessStatus()">
-                  <label><span>{{ t('الحالة المطلوبة', 'Desired status') }}</span><select name="desiredStatus" [(ngModel)]="desiredStatus"><option [ngValue]="true">{{ t('تفعيل الوصول', 'Activate access') }}</option><option [ngValue]="false">{{ t('تعطيل الوصول', 'Deactivate access') }}</option></select></label>
-                  <label class="reason-field"><span>{{ t('سبب إداري مطلوب', 'Required administrative reason') }}</span><textarea name="statusReason" [(ngModel)]="statusReason" maxlength="500" minlength="3" required rows="2" [placeholder]="t('اكتب سببًا واضحًا لتوثيقه في سجل التدقيق', 'Enter a meaningful reason; it will be recorded in the audit log')"></textarea></label>
-                  <button type="submit" class="primary-button" [disabled]="statusSaving || desiredStatus === detail.business.is_active">{{ statusSaving ? t('جارٍ حفظ التغيير…', 'Saving…') : (desiredStatus ? t('تأكيد تفعيل الوصول', 'Confirm activation') : t('تأكيد تعطيل الوصول', 'Confirm deactivation')) }}</button>
+                  <label><span>{{ t('ui.m_1cj2kup') }}</span><select name="desiredStatus" [(ngModel)]="desiredStatus"><option [ngValue]="true">{{ t('ui.m_1ju5tzi') }}</option><option [ngValue]="false">{{ t('ui.m_1dleja9') }}</option></select></label>
+                  <label class="reason-field"><span>{{ t('ui.m_goumq7') }}</span><textarea name="statusReason" [(ngModel)]="statusReason" maxlength="500" minlength="3" required rows="2" [placeholder]="t('ui.m_lg7oo9')"></textarea></label>
+                  <button type="submit" class="primary-button" [disabled]="statusSaving || desiredStatus === detail.business.is_active">{{ statusSaving ? t('ui.m_ihp010') : (desiredStatus ? t('ui.m_1xvwxr2') : t('ui.m_1ph4efb')) }}</button>
                   @if (statusError) { <p class="field-error" role="alert">{{ statusError }}</p> }
                 </form>
               } @else {
-                <div class="notice" role="note">{{ t('صلاحية قراءة فقط: يمكنك مراجعة حالة مساحة العمل وعضوياتها، لكن تغيير حالتها يحتاج دور مشغّل مساحات العمل.', 'Read-only access: you can inspect workspace status and memberships, but changing status requires the Workspace Operator role.') }}</div>
+                <div class="notice" role="note">{{ t('ui.m_1snq8pd') }}</div>
               }
             </article>
           }
@@ -173,18 +174,18 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
 
       @if (section === 'activity') {
         <section class="section-content" aria-labelledby="activity-title">
-          <div class="section-heading"><div><p class="eyebrow">{{ t('سجل غير قابل للتعديل من الشاشة', 'READ-ONLY RECORD') }}</p><h2 id="activity-title">{{ t('سجل التدقيق والأمان', 'Audit & security activity') }}</h2><p>{{ t('أحداث إدارية من جميع مساحات العمل، للعرض والمراجعة فقط.', 'Administrative events across workspaces, for review only.') }}</p></div><div class="heading-actions"><button type="button" class="outline-button" [disabled]="auditLoading" (click)="loadAudit(auditOffset)">{{ t('تحديث', 'Refresh') }}</button><button type="button" class="primary-button" [disabled]="auditExporting" (click)="exportAudit()">{{ auditExporting ? t('جارٍ التصدير…', 'Exporting…') : t('تصدير CSV', 'Export CSV') }}</button></div></div>
+          <div class="section-heading"><div><p class="eyebrow">{{ t('ui.m_81mof2') }}</p><h2 id="activity-title">{{ t('ui.m_1fkz3i8') }}</h2><p>{{ t('ui.m_1ngougt') }}</p></div><div class="heading-actions"><button type="button" class="outline-button" [disabled]="auditLoading" (click)="loadAudit(auditOffset)">{{ t('ui.m_5kbtnp') }}</button><button type="button" class="primary-button" [disabled]="auditExporting" (click)="exportAudit()">{{ auditExporting ? t('ui.m_14clr52') : t('ui.m_nbsw3y') }}</button></div></div>
           @if (auditExportError) { <div class="notice error" role="alert">{{ auditExportError }}</div> }
           @if (auditExportMessage) { <div class="notice success" role="status" aria-live="polite">{{ auditExportMessage }}</div> }
-          <form class="filters audit-filters" (ngSubmit)="loadAudit(0)"><label class="search-field"><span>{{ t('نوع العملية', 'Action') }}</span><input name="auditAction" maxlength="80" [(ngModel)]="auditAction" [placeholder]="t('مثال: platform.business.deactivated', 'e.g. platform.business.deactivated')"></label><label><span>{{ t('هوية المنفّذ', 'Actor identity') }}</span><input name="auditActor" maxlength="128" [(ngModel)]="auditActor" [placeholder]="t('هوية Firebase الموثقة', 'Verified Firebase subject')"></label><label><span>{{ t('معرّف مساحة العمل', 'Workspace ID') }}</span><input name="auditBusinessId" maxlength="36" [(ngModel)]="auditBusinessId" placeholder="UUID"></label><label><span>{{ t('من تاريخ ووقت', 'Created after') }}</span><input type="datetime-local" name="auditFrom" [(ngModel)]="auditFrom"></label><label><span>{{ t('إلى تاريخ ووقت', 'Created before') }}</span><input type="datetime-local" name="auditTo" [(ngModel)]="auditTo"></label><button type="submit" class="primary-button" [disabled]="auditLoading">{{ t('تصفية', 'Filter') }}</button></form>
-          @if (auditLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ تحميل سجل التدقيق…', 'Loading audit events…') }}</div> }
-          @if (auditError) { <div class="notice error" role="alert">{{ auditError }} <button type="button" class="text-action" (click)="loadAudit(auditOffset)">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
-          @if (!auditLoading && !auditError && !auditEvents.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">◷</span><h3>{{ t('لا توجد أحداث مطابقة', 'No matching events') }}</h3><p>{{ t('سيظهر هنا نشاط الإدارة المسجل.', 'Recorded admin activity will appear here.') }}</p></div> }
+          <form class="filters audit-filters" (ngSubmit)="loadAudit(0)"><label class="search-field"><span>{{ t('ui.m_16u0xte') }}</span><input name="auditAction" maxlength="80" [(ngModel)]="auditAction" [placeholder]="t('ui.m_twpwlc')"></label><label><span>{{ t('ui.m_11omtlm') }}</span><input name="auditActor" maxlength="128" [(ngModel)]="auditActor" [placeholder]="t('ui.m_1fly0iz')"></label><label><span>{{ t('ui.m_14i0qtu') }}</span><input name="auditBusinessId" maxlength="36" [(ngModel)]="auditBusinessId" placeholder="UUID"></label><label><span>{{ t('ui.m_1yem9by') }}</span><input type="datetime-local" name="auditFrom" [(ngModel)]="auditFrom"></label><label><span>{{ t('ui.m_1ue0nva') }}</span><input type="datetime-local" name="auditTo" [(ngModel)]="auditTo"></label><button type="submit" class="primary-button" [disabled]="auditLoading">{{ t('ui.m_11q6v6c') }}</button></form>
+          @if (auditLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('ui.m_vtd5n1') }}</div> }
+          @if (auditError) { <div class="notice error" role="alert">{{ auditError }} <button type="button" class="text-action" (click)="loadAudit(auditOffset)">{{ t('ui.m_worzj7') }}</button></div> }
+          @if (!auditLoading && !auditError && !auditEvents.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">◷</span><h3>{{ t('ui.m_7kra7p') }}</h3><p>{{ t('ui.m_vn6jmq') }}</p></div> }
           @if (auditEvents.length) {
-            <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('سجل نشاط المنصة', 'Platform activity log table')"><table><thead><tr><th>{{ t('التاريخ', 'Timestamp') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('الشركة', 'Workspace') }}</th><th>{{ t('المنفذ', 'Actor') }}</th><th>{{ t('الكيان', 'Target') }}</th><th>{{ t('الملخص', 'Summary') }}</th></tr></thead><tbody>
-              @for (event of auditEvents; track event.id) { <tr><td class="date-cell" [attr.data-label]="t('التاريخ', 'Timestamp')">{{ formatDate(event.created_at) }}</td><td [attr.data-label]="t('العملية', 'Action')"><span class="status-pill">{{ auditActionLabel(event.action) }}</span></td><td [attr.data-label]="t('الشركة', 'Workspace')"><strong>{{ event.business_name }}</strong><small class="muted">{{ event.business_id }}</small></td><td class="subject" [attr.data-label]="t('المنفذ', 'Actor')">{{ event.actor_subject || '—' }}</td><td [attr.data-label]="t('الكيان', 'Target')">{{ auditTargetLabel(event.target_type) }}<small class="muted">{{ event.target_id || '—' }}</small></td><td class="summary-cell" [attr.data-label]="t('الملخص', 'Summary')">{{ event.change_summary || '—' }}</td></tr> }
+            <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('ui.m_x4vism')"><table><thead><tr><th>{{ t('ui.m_vucw08') }}</th><th>{{ t('ui.m_bnvfl5') }}</th><th>{{ t('ui.m_17isxeg') }}</th><th>{{ t('ui.m_s2x2wd') }}</th><th>{{ t('ui.m_lm1d6n') }}</th><th>{{ t('ui.m_1tfe97u') }}</th></tr></thead><tbody>
+              @for (event of auditEvents; track event.id) { <tr><td class="date-cell" [attr.data-label]="t('ui.m_vucw08')">{{ formatDate(event.created_at) }}</td><td [attr.data-label]="t('ui.m_bnvfl5')"><span class="status-pill">{{ auditActionLabel(event.action) }}</span></td><td [attr.data-label]="t('ui.m_17isxeg')"><strong>{{ event.business_name }}</strong><small class="muted">{{ event.business_id }}</small></td><td class="subject" [attr.data-label]="t('ui.m_s2x2wd')">{{ event.actor_subject || '—' }}</td><td [attr.data-label]="t('ui.m_lm1d6n')">{{ auditTargetLabel(event.target_type) }}<small class="muted">{{ event.target_id || '—' }}</small></td><td class="summary-cell" [attr.data-label]="t('ui.m_1tfe97u')">{{ event.change_summary || '—' }}</td></tr> }
             </tbody></table></div>
-            <div class="pagination"><span>{{ t('عرض', 'Showing') }} {{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} {{ t('من', 'of') }} {{ auditTotal }}</span><div><button type="button" class="outline-button" [disabled]="auditOffset === 0 || auditLoading" (click)="loadAudit(previousPageOffset(auditOffset))">{{ t('السابق', 'Previous') }}</button><button type="button" class="outline-button" [disabled]="auditOffset + pageSize >= auditTotal || auditLoading" (click)="loadAudit(auditOffset + pageSize)">{{ t('التالي', 'Next') }}</button></div></div>
+            <div class="pagination"><span>{{ t('ui.m_dxe4hc') }} {{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} {{ t('ui.m_14bv2kn') }} {{ auditTotal }}</span><div><button type="button" class="outline-button" [disabled]="auditOffset === 0 || auditLoading" (click)="loadAudit(previousPageOffset(auditOffset))">{{ t('ui.m_14wy3hz') }}</button><button type="button" class="outline-button" [disabled]="auditOffset + pageSize >= auditTotal || auditLoading" (click)="loadAudit(auditOffset + pageSize)">{{ t('ui.m_thb9eg') }}</button></div></div>
           }
         </section>
       }
@@ -193,83 +194,83 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
       @if (section === 'users' && canViewUsers) {
         <section class="section-content" aria-labelledby="users-title">
           <div class="section-heading">
-            <div><p class="eyebrow">{{ t('هوية موحدة', 'AUTHORITATIVE IDENTITY DIRECTORY') }}</p><h2 id="users-title">{{ t('المستخدمون والصلاحيات', 'Users & access') }}</h2><p>{{ t('كل حسابات Firebase، حتى المستخدمين الذين لا ينتمون لأي مساحة عمل، مع عرض عضوياتهم وصلاحيات المنصة بشكل منفصل.', 'All Firebase accounts, including users without a workspace, with workspace memberships and platform permissions shown separately.') }}</p></div>
-            <button class="outline-button" type="button" [disabled]="usersLoading" (click)="loadUsers(0, true)">{{ t('تحديث المستخدمين', 'Refresh users') }}</button>
+            <div><p class="eyebrow">{{ t('ui.m_159ttlt') }}</p><h2 id="users-title">{{ t('ui.m_qv5wq3') }}</h2><p>{{ t('ui.m_v3vm8j') }}</p></div>
+            <button class="outline-button" type="button" [disabled]="usersLoading" (click)="loadUsers(0, true)">{{ t('ui.m_3h5ms6') }}</button>
           </div>
-          <div class="data-note"><span aria-hidden="true">ⓘ</span><div><strong>{{ t('مصدر الهوية والصلاحيات', 'Identity and permissions source') }}</strong><p>{{ t('دليل الحسابات مصدره Firebase Auth. صلاحيات المنصة تُقرأ من الخادم؛ أدوار مالك/موظف تخص مساحة العمل فقط ولا تمنح صلاحية منصة تلقائيًا.', 'Firebase Auth is the identity source. Platform roles are resolved on the server; workspace owner/staff roles never grant platform access automatically.') }}</p><small>{{ t('لا يتم عرض كلمات مرور أو رموز دخول. البحث بالبريد أو UID تطابق دقيق، والتصفح يعرض كل الحسابات على صفحات.', 'Passwords and auth tokens are never displayed. Email/UID search is exact; blank search cursor-paginates all accounts.') }}</small></div></div>
+          <div class="data-note"><span aria-hidden="true">ⓘ</span><div><strong>{{ t('ui.m_8u8pdx') }}</strong><p>{{ t('ui.m_7m4mfn') }}</p><small>{{ t('ui.m_1lnx01m') }}</small></div></div>
           <form class="filters" (ngSubmit)="searchUsers()">
-            <label class="search-field"><span>{{ t('البريد الإلكتروني أو UID', 'Email address or UID') }}</span><input name="userQuery" maxlength="254" [(ngModel)]="userQuery" [placeholder]="t('اكتب بريدًا كاملًا أو UID', 'Enter exact email or UID')"></label>
-            <button type="submit" class="primary-button" [disabled]="usersLoading">{{ t('بحث', 'Search') }}</button>
-            @if (userQuery) { <button type="button" class="outline-button" [disabled]="usersLoading" (click)="userQuery=''; searchUsers()">{{ t('عرض الكل', 'Show all') }}</button> }
+            <label class="search-field"><span>{{ t('ui.m_1aeosv4') }}</span><input name="userQuery" maxlength="254" [(ngModel)]="userQuery" [placeholder]="t('ui.m_13pefsd')"></label>
+            <button type="submit" class="primary-button" [disabled]="usersLoading">{{ t('ui.m_11ucx5t') }}</button>
+            @if (userQuery) { <button type="button" class="outline-button" [disabled]="usersLoading" (click)="userQuery=''; searchUsers()">{{ t('ui.m_yxfbrp') }}</button> }
           </form>
-          @if (usersLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ تحميل الحسابات من Firebase…', 'Loading accounts from Firebase…') }}</div> }
-          @if (usersError) { <div class="notice error" role="alert">{{ usersError }} <button type="button" class="text-action" (click)="loadUsers(userPageIndex)">{{ t('إعادة المحاولة', 'Retry') }}</button></div> }
-          @if (!usersLoading && !usersError && !users.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">♙</span><h3>{{ userQuery.trim() ? t('لا توجد حسابات مطابقة', 'No matching accounts') : t('لا توجد حسابات مسجلة بعد', 'No user accounts are registered yet') }}</h3><p>{{ userQuery.trim() ? t('جرّب بريدًا كاملًا أو UID صحيحًا، أو امسح البحث لعرض القائمة.', 'Try an exact email or UID, or clear search to browse the directory.') : t('ستظهر حسابات Firebase المسجلة هنا عند توفرها.', 'Registered Firebase accounts will appear here when available.') }}</p></div> }
+          @if (usersLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('ui.m_1jn0uis') }}</div> }
+          @if (usersError) { <div class="notice error" role="alert">{{ usersError }} <button type="button" class="text-action" (click)="loadUsers(userPageIndex)">{{ t('ui.m_worzj7') }}</button></div> }
+          @if (!usersLoading && !usersError && !users.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">♙</span><h3>{{ userQuery.trim() ? t('ui.m_120nvvf') : t('ui.m_hfxoa') }}</h3><p>{{ userQuery.trim() ? t('ui.m_fgk9ur') : t('ui.m_knureo') }}</p></div> }
           @if (!usersLoading && users.length) {
-            <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('دليل المستخدمين', 'User directory table')">
+            <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('ui.m_cgc8yt')">
               <table class="user-directory-table">
-                <thead><tr><th>{{ t('المستخدم', 'User') }}</th><th>{{ t('حالة الحساب', 'Account status') }}</th><th>{{ t('صلاحيات المنصة', 'Platform roles') }}</th><th>{{ t('مساحات العمل', 'Workspace memberships') }}</th><th>{{ t('الإجراء', 'Action') }}</th></tr></thead>
+                <thead><tr><th>{{ t('ui.m_kerw1t') }}</th><th>{{ t('ui.m_9or57p') }}</th><th>{{ t('ui.m_1b60x1n') }}</th><th>{{ t('ui.m_1o7vynn') }}</th><th>{{ t('ui.m_l9dhr0') }}</th></tr></thead>
                 <tbody>
                   @for (user of users; track user.uid) {
                     <tr [class.selected-row]="selectedAdminUser?.uid === user.uid">
-                      <td class="user-cell" [attr.data-label]="t('المستخدم', 'User')"><strong>{{ user.display_name || t('بدون اسم عرض', 'No display name') }}</strong><small>{{ user.email || t('لا يوجد بريد مسجل', 'No email on record') }}</small><small class="user-uid">{{ user.uid }}</small>@if (user.email) { <small>{{ user.email_verified ? t('البريد موثق', 'Email verified') : t('البريد غير موثق', 'Email not verified') }}</small> }</td>
-                      <td [attr.data-label]="t('حالة الحساب', 'Account status')"><span class="status-pill" [class.runtime-good]="!user.disabled" [class.runtime-bad]="user.disabled">{{ user.disabled ? t('معطّل', 'Disabled') : t('نشط', 'Active') }}</span>@if (user.is_platform_super_admin) { <small class="user-root-label">{{ t('مسؤول الجذر', 'Bootstrap super admin') }}</small> }</td>
-                      <td [attr.data-label]="t('صلاحيات المنصة', 'Platform roles')"><div class="user-role-list">@if (user.is_platform_super_admin) { <span class="role-pill accent">{{ t('مسؤول المنصة الأساسي', 'Platform Super Admin') }}</span> } @else if (user.roles.length) { @for (role of user.roles; track role) { <span class="role-pill" [title]="platformRoleDescription(role)">{{ platformRoleLabel(role) }}</span> } } @else { <span class="muted">{{ t('لا توجد صلاحية منصة', 'No platform role') }}</span> }</div></td>
-                      <td [attr.data-label]="t('مساحات العمل', 'Workspace memberships')"><div class="membership-list">@if (user.memberships.length) { @for (membership of user.memberships; track membership.business_id) { <span class="membership-chip"><strong>{{ membership.business_name }}</strong><small>{{ membership.role === 'owner' ? t('مالك مساحة', 'Workspace owner') : t('موظف', 'Staff') }}</small></span> } } @else { <span class="muted">{{ t('لا ينتمي لمساحة عمل', 'No workspace membership') }}</span> }</div></td>
-                      <td [attr.data-label]="t('الإجراء', 'Action')"><button class="outline-button small-button" type="button" [class.active]="selectedAdminUser?.uid === user.uid" (click)="selectAdminUser(user)">{{ selectedAdminUser?.uid === user.uid ? t('محدد', 'Selected') : t('التفاصيل', 'Details') }}</button></td>
+                      <td class="user-cell" [attr.data-label]="t('ui.m_kerw1t')"><strong>{{ user.display_name || t('ui.m_1pr5t8z') }}</strong><small>{{ user.email || t('ui.m_ym1kns') }}</small><small class="user-uid">{{ user.uid }}</small>@if (user.email) { <small>{{ user.email_verified ? t('ui.m_2c2fzm') : t('ui.m_xzmlsm') }}</small> }</td>
+                      <td [attr.data-label]="t('ui.m_9or57p')"><span class="status-pill" [class.runtime-good]="!user.disabled" [class.runtime-bad]="user.disabled">{{ user.disabled ? t('ui.m_10igywj') : t('ui.m_sjpv56') }}</span>@if (user.is_platform_super_admin) { <small class="user-root-label">{{ t('ui.m_11p1ltb') }}</small> }</td>
+                      <td [attr.data-label]="t('ui.m_1b60x1n')"><div class="user-role-list">@if (user.is_platform_super_admin) { <span class="role-pill accent">{{ t('ui.m_1tjgh5f') }}</span> } @else if (user.roles.length) { @for (role of user.roles; track role) { <span class="role-pill" [title]="platformRoleDescription(role)">{{ platformRoleLabel(role) }}</span> } } @else { <span class="muted">{{ t('ui.m_ngvec0') }}</span> }</div></td>
+                      <td [attr.data-label]="t('ui.m_1o7vynn')"><div class="membership-list">@if (user.memberships.length) { @for (membership of user.memberships; track membership.business_id) { <span class="membership-chip"><strong>{{ membership.business_name }}</strong><small>{{ membership.role === 'owner' ? t('ui.m_76vc2d') : t('ui.m_1bfbo3p') }}</small></span> } } @else { <span class="muted">{{ t('ui.m_6tvyvw') }}</span> }</div></td>
+                      <td [attr.data-label]="t('ui.m_l9dhr0')"><button class="outline-button small-button" type="button" [class.active]="selectedAdminUser?.uid === user.uid" (click)="selectAdminUser(user)">{{ selectedAdminUser?.uid === user.uid ? t('ui.m_1ms145q') : t('ui.m_1pjqkqz') }}</button></td>
                     </tr>
                   }
                 </tbody>
               </table>
             </div>
-            <div class="pagination"><span>{{ t('صفحة', 'Page') }} {{ userPageIndex + 1 }} · {{ users.length }} {{ t('حساب في الصفحة', 'accounts on this page') }}@if (userSearchMode === 'exact_email_or_uid') { · {{ t('بحث دقيق', 'Exact lookup') }} }</span><div><button type="button" class="outline-button" [disabled]="userPageIndex === 0 || usersLoading" (click)="previousUsersPage()">{{ t('السابق', 'Previous') }}</button><button type="button" class="outline-button" [disabled]="!userNextPageToken || usersLoading" (click)="nextUsersPage()">{{ t('التالي', 'Next') }}</button></div></div>
+            <div class="pagination"><span>{{ t('ui.m_10p2ncg') }} {{ userPageIndex + 1 }} · {{ users.length }} {{ t('ui.m_18ynhr6') }}@if (userSearchMode === 'exact_email_or_uid') { · {{ t('ui.m_58dr7r') }} }</span><div><button type="button" class="outline-button" [disabled]="userPageIndex === 0 || usersLoading" (click)="previousUsersPage()">{{ t('ui.m_14wy3hz') }}</button><button type="button" class="outline-button" [disabled]="!userNextPageToken || usersLoading" (click)="nextUsersPage()">{{ t('ui.m_thb9eg') }}</button></div></div>
           }
           @if (selectedAdminUser) {
             <article class="panel user-access-panel" aria-labelledby="selected-user-title">
-              <div class="section-heading"><div><p class="eyebrow">{{ t('هوية المستخدم', 'USER IDENTITY') }}</p><h3 id="selected-user-title">{{ selectedAdminUser.display_name || selectedAdminUser.email || selectedAdminUser.uid }}</h3><p class="user-uid">{{ selectedAdminUser.subject }}</p></div><button class="quiet-button" type="button" (click)="selectedAdminUser = null">{{ t('إغلاق التفاصيل', 'Close details') }}</button></div>
-              <div class="user-facts-grid"><div><small>{{ t('تاريخ إنشاء الحساب', 'Account created') }}</small><strong>{{ formatDate(selectedAdminUser.created_at) }}</strong></div><div><small>{{ t('آخر تسجيل دخول', 'Last sign-in') }}</small><strong>{{ formatDate(selectedAdminUser.last_sign_in_at) }}</strong></div><div><small>{{ t('حالة الحساب', 'Account state') }}</small><strong>{{ selectedAdminUser.disabled ? t('معطّل', 'Disabled') : t('نشط', 'Active') }}</strong></div><div><small>{{ t('نوع الصلاحية', 'Access type') }}</small><strong>{{ selectedAdminUser.is_platform_super_admin ? t('مسؤول جذر بإعداد الخادم', 'Server-configured root admin') : selectedAdminUser.roles.length ? t('دور منصة مفوّض', 'Delegated platform role') : t('مستخدم عادي', 'Regular user') }}</strong></div></div>
+              <div class="section-heading"><div><p class="eyebrow">{{ t('ui.m_1tjws1t') }}</p><h3 id="selected-user-title">{{ selectedAdminUser.display_name || selectedAdminUser.email || selectedAdminUser.uid }}</h3><p class="user-uid">{{ selectedAdminUser.subject }}</p></div><button class="quiet-button" type="button" (click)="selectedAdminUser = null">{{ t('ui.m_a27klb') }}</button></div>
+              <div class="user-facts-grid"><div><small>{{ t('ui.m_33znlv') }}</small><strong>{{ formatDate(selectedAdminUser.created_at) }}</strong></div><div><small>{{ t('ui.m_zkxisf') }}</small><strong>{{ formatDate(selectedAdminUser.last_sign_in_at) }}</strong></div><div><small>{{ t('ui.m_1bonz6s') }}</small><strong>{{ selectedAdminUser.disabled ? t('ui.m_10igywj') : t('ui.m_sjpv56') }}</strong></div><div><small>{{ t('ui.m_18iqnlj') }}</small><strong>{{ selectedAdminUser.is_platform_super_admin ? t('ui.m_lyooko') : selectedAdminUser.roles.length ? t('ui.m_m6vu13') : t('ui.m_e4ry89') }}</strong></div></div>
               @if (selectedAdminUser.is_platform_super_admin) {
-                <div class="notice warn" role="note">{{ t('هذه الهوية ضمن قائمة مسؤول الجذر التي تُدار خارج التطبيق. لا يمكن منح هذه الصلاحية أو تعديلها أو إلغاؤها من الواجهة.', 'This identity is in the out-of-band bootstrap super-admin allowlist. Root access cannot be granted, changed, or revoked from this UI.') }}</div>
+                <div class="notice warn" role="note">{{ t('ui.m_1kn2qmi') }}</div>
               } @else if (selectedAdminUser.subject === access?.subject) {
-                <div class="notice warn" role="note">{{ t('لا يمكن للمسؤول تعديل صلاحيات حسابه بنفسه. استخدم مسؤول جذر آخر لإجراء التغيير.', 'An administrator cannot change their own access. Ask another bootstrap super admin to make the change.') }}</div>
+                <div class="notice warn" role="note">{{ t('ui.m_1c8x336') }}</div>
               } @else if (canManagePlatformRoles) {
                 <div class="role-editor">
-                  <div><h4>{{ t('إسناد صلاحية منصة', 'Assign a platform role') }}</h4><p>{{ t('اختار الدور المحدد والصريح، واكتب سببًا لا يقل عن 3 أحرف. لا يوجد دور يسمح بترقية الذات إلى مسؤول الجذر.', 'Choose an explicit role and enter a reason of at least 3 characters. No role can grant bootstrap root access.') }}</p></div>
+                  <div><h4>{{ t('ui.m_18c51ox') }}</h4><p>{{ t('ui.m_1082ttk') }}</p></div>
                   <form class="user-role-form" (ngSubmit)="savePlatformRole()">
-                    <label><span>{{ t('الدور المراد منحه', 'Role to grant') }}</span><select name="selectedPlatformRole" [(ngModel)]="selectedPlatformRole"><option value="platform_viewer">{{ t('مشاهد المنصة — قراءة فقط', 'Platform Viewer — read-only') }}</option><option value="workspace_operator">{{ t('مشغّل مساحات العمل — عرض وتفعيل/تعطيل', 'Workspace Operator — view and change workspace status') }}</option><option value="user_manager">{{ t('مدير دليل المستخدمين — عرض الحسابات والعضويات', 'User Manager — view accounts and memberships') }}</option></select></label>
-                    <label class="role-reason"><span>{{ t('سبب التغيير (إلزامي)', 'Reason (required)') }}</span><textarea name="roleReason" [(ngModel)]="roleReason" maxlength="500" rows="2" required [placeholder]="t('اكتب سببًا إداريًا واضحًا', 'Enter a clear administrative reason')"></textarea></label>
-                    <div class="role-submit-actions"><button type="submit" class="primary-button" [disabled]="roleSaving || !hasMeaningfulPlatformAdminReason(roleReason)" (click)="roleChangeActive = true">{{ roleSaving ? t('جارٍ الحفظ…', 'Saving…') : t('منح الصلاحية', 'Grant role') }}</button><button type="submit" class="quiet-button signout" [disabled]="roleSaving || !hasMeaningfulPlatformAdminReason(roleReason) || !selectedAdminUser.roles.includes(selectedPlatformRole)" (click)="roleChangeActive = false">{{ t('إلغاء الصلاحية المحددة', 'Revoke selected role') }}</button></div>
+                    <label><span>{{ t('ui.m_i1mc5d') }}</span><select name="selectedPlatformRole" [(ngModel)]="selectedPlatformRole"><option value="platform_viewer">{{ t('ui.m_1d5lfg1') }}</option><option value="workspace_operator">{{ t('ui.m_b6p418') }}</option><option value="user_manager">{{ t('ui.m_w5p3jt') }}</option></select></label>
+                    <label class="role-reason"><span>{{ t('ui.m_1q9d63w') }}</span><textarea name="roleReason" [(ngModel)]="roleReason" maxlength="500" rows="2" required [placeholder]="t('ui.m_rirq1m')"></textarea></label>
+                    <div class="role-submit-actions"><button type="submit" class="primary-button" [disabled]="roleSaving || !hasMeaningfulPlatformAdminReason(roleReason)" (click)="roleChangeActive = true">{{ roleSaving ? t('ui.m_jol8r9') : t('ui.m_95h1o2') }}</button><button type="submit" class="quiet-button signout" [disabled]="roleSaving || !hasMeaningfulPlatformAdminReason(roleReason) || !selectedAdminUser.roles.includes(selectedPlatformRole)" (click)="roleChangeActive = false">{{ t('ui.m_1t6whqg') }}</button></div>
                   </form>
                   @if (selectedAdminUser.roles.length) {
-                    <div class="current-role-grants"><strong>{{ t('الصلاحيات المفوّضة الحالية', 'Current delegated roles') }}</strong>
+                    <div class="current-role-grants"><strong>{{ t('ui.m_1uv4ogk') }}</strong>
                       @for (role of selectedAdminUser.roles; track role) {
-                        <div class="grant-row"><div><span class="role-pill">{{ platformRoleLabel(role) }}</span><small>{{ platformRoleDescription(role) }}</small></div><button class="quiet-button" type="button" [disabled]="roleSaving" (click)="selectRoleForRevocation(role)">{{ t('اختيار للإلغاء', 'Select to revoke') }}</button></div>
+                        <div class="grant-row"><div><span class="role-pill">{{ platformRoleLabel(role) }}</span><small>{{ platformRoleDescription(role) }}</small></div><button class="quiet-button" type="button" [disabled]="roleSaving" (click)="selectRoleForRevocation(role)">{{ t('ui.m_f1ev92') }}</button></div>
                       }
                     </div>
                   }
                 </div>
               } @else {
-                <div class="notice" role="note">{{ t('دورك يسمح بقراءة دليل الحسابات فقط. إسناد أدوار المنصة محصور في مسؤول الجذر.', 'Your role allows directory read access only. Platform role grants are restricted to the bootstrap super admin.') }}</div>
+                <div class="notice" role="note">{{ t('ui.m_nwwmtz') }}</div>
               }
               @if (roleError) { <div class="notice error" role="alert">{{ roleError }}</div> }
               @if (roleMessage) { <div class="notice success" role="status" aria-live="polite">{{ roleMessage }}</div> }
-              <div class="membership-details"><h4>{{ t('عضويات مساحات العمل', 'Workspace memberships') }}</h4>
+              <div class="membership-details"><h4>{{ t('ui.m_idhyfl') }}</h4>
                 @if (selectedAdminUser.memberships.length) {
                   @for (membership of selectedAdminUser.memberships; track membership.business_id) {
-                    <div class="membership-detail-row"><div><strong>{{ membership.business_name }}</strong><small>{{ membership.business_id }}</small></div><span class="role-pill">{{ membership.role === 'owner' ? t('مالك المساحة', 'Workspace Owner') : t('موظف', 'Staff') }}</span></div>
+                    <div class="membership-detail-row"><div><strong>{{ membership.business_name }}</strong><small>{{ membership.business_id }}</small></div><span class="role-pill">{{ membership.role === 'owner' ? t('ui.m_t1bf6g') : t('ui.m_1bfbo3p') }}</span></div>
                   }
-                } @else { <p class="muted">{{ t('هذا الحساب لا يملك عضوية في أي مساحة عمل حتى الآن.', 'This account has no workspace memberships.') }}</p> }
+                } @else { <p class="muted">{{ t('ui.m_1iis0oe') }}</p> }
               </div>
             </article>
           }
           <article class="panel access-audit-panel">
-            <div class="section-heading"><div><p class="eyebrow">{{ t('سجل غير قابل للتعديل من الشاشة', 'APPEND-ONLY ACCESS HISTORY') }}</p><h3>{{ t('آخر تغييرات الصلاحيات', 'Recent permission changes') }}</h3><p>{{ t('كل منح وإلغاء محفوظ باسم المنفّذ والهدف والسبب والتوقيت.', 'Every grant and revocation is persisted with actor, target, reason, and timestamp.') }}</p></div><button type="button" class="outline-button" [disabled]="roleAuditLoading" (click)="loadRoleAudit()">{{ t('تحديث السجل', 'Refresh audit') }}</button></div>
-            @if (roleAuditLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('جارٍ تحميل السجل…', 'Loading audit history…') }}</div> }
+            <div class="section-heading"><div><p class="eyebrow">{{ t('ui.m_1y9xwyl') }}</p><h3>{{ t('ui.m_1q8bq94') }}</h3><p>{{ t('ui.m_yq23lk') }}</p></div><button type="button" class="outline-button" [disabled]="roleAuditLoading" (click)="loadRoleAudit()">{{ t('ui.m_1vmd166') }}</button></div>
+            @if (roleAuditLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('ui.m_1twbn0h') }}</div> }
             @if (roleAuditError) { <div class="notice error" role="alert">{{ roleAuditError }}</div> }
-            @if (!roleAuditLoading && !roleAuditError && !roleAuditEvents.length) { <p class="muted">{{ t('لا توجد تغييرات صلاحيات مسجلة حتى الآن.', 'No platform role changes recorded yet.') }}</p> }
+            @if (!roleAuditLoading && !roleAuditError && !roleAuditEvents.length) { <p class="muted">{{ t('ui.m_v6uvym') }}</p> }
             @if (roleAuditEvents.length) {
-              <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('سجل تغييرات صلاحيات المنصة', 'Platform role history table')"><table><thead><tr><th>{{ t('التوقيت', 'Timestamp') }}</th><th>{{ t('العملية', 'Action') }}</th><th>{{ t('المستخدم المستهدف', 'Target user') }}</th><th>{{ t('الدور', 'Role') }}</th><th>{{ t('السبب', 'Reason') }}</th><th>{{ t('المنفّذ', 'Actor') }}</th></tr></thead><tbody>
-                @for (event of roleAuditEvents; track event.id) { <tr><td class="date-cell" [attr.data-label]="t('التوقيت', 'Timestamp')">{{ formatDate(event.created_at) }}</td><td [attr.data-label]="t('العملية', 'Action')">{{ auditActionLabel(event.action) }}</td><td class="subject" [attr.data-label]="t('المستخدم المستهدف', 'Target user')">{{ event.target_subject }}</td><td [attr.data-label]="t('الدور', 'Role')">{{ platformRoleLabel(event.role) }}</td><td class="summary-cell" [attr.data-label]="t('السبب', 'Reason')">{{ event.reason }}</td><td class="subject" [attr.data-label]="t('المنفّذ', 'Actor')">{{ event.actor_subject }}</td></tr> }
+              <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('ui.m_1khy7v3')"><table><thead><tr><th>{{ t('ui.m_20f9m2') }}</th><th>{{ t('ui.m_bnvfl5') }}</th><th>{{ t('ui.m_t3ndvm') }}</th><th>{{ t('ui.m_d13ak8') }}</th><th>{{ t('ui.m_1e6a91l') }}</th><th>{{ t('ui.m_jn683o') }}</th></tr></thead><tbody>
+                @for (event of roleAuditEvents; track event.id) { <tr><td class="date-cell" [attr.data-label]="t('ui.m_20f9m2')">{{ formatDate(event.created_at) }}</td><td [attr.data-label]="t('ui.m_bnvfl5')">{{ auditActionLabel(event.action) }}</td><td class="subject" [attr.data-label]="t('ui.m_t3ndvm')">{{ event.target_subject }}</td><td [attr.data-label]="t('ui.m_d13ak8')">{{ platformRoleLabel(event.role) }}</td><td class="summary-cell" [attr.data-label]="t('ui.m_1e6a91l')">{{ event.reason }}</td><td class="subject" [attr.data-label]="t('ui.m_jn683o')">{{ event.actor_subject }}</td></tr> }
               </tbody></table></div>
             }
           </article>
@@ -278,17 +279,17 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
 
       @if (section === 'permissions') {
         <section class="section-content" aria-labelledby="permissions-title">
-          <div class="section-heading"><div><p class="eyebrow">{{ t('مبدأ أقل صلاحية', 'LEAST PRIVILEGE') }}</p><h2 id="permissions-title">{{ t('نموذج الصلاحيات الفعلي', 'Effective permission model') }}</h2><p>{{ t('عرض توثيقي للصلاحيات المنفذة، وليس محرر أدوار شكليًا.', 'Documentation of enforced permissions, not a cosmetic role editor.') }}</p></div></div>
+          <div class="section-heading"><div><p class="eyebrow">{{ t('ui.m_x2bdot') }}</p><h2 id="permissions-title">{{ t('ui.m_197qdex') }}</h2><p>{{ t('ui.m_1sso1of') }}</p></div></div>
           <div class="permission-grid">
-            <article class="permission-card platform"><span class="permission-icon" aria-hidden="true">◇</span><div><span class="role-pill accent">{{ t('مدير المنصة', 'Platform Super Admin') }}</span><h3>{{ t('صلاحية منصّة مستقلة', 'Separate platform privilege') }}</h3><p>{{ t('القائمة المسموح بها على الخادم: PLATFORM_SUPER_ADMIN_UIDS. يجب أن تطابق القيمة هوية Firebase الموثقة كاملة بالشكل firebase:{project_id}:{uid}. عدم ضبطها يعني الرفض الافتراضي.', 'Server allowlist: PLATFORM_SUPER_ADMIN_UIDS. Entries must exactly match verified Firebase subjects in the form firebase:{project_id}:{uid}. An unset list denies access by default.') }}</p><ul><li>{{ t('مؤشرات المنصة وملفات الشركات', 'Platform metrics and workspace directory') }}</li><li>{{ t('تفعيل/تعطيل مساحة مع سبب وسجل تدقيق', 'Activate/deactivate a workspace with reason and audit trail') }}</li><li>{{ t('قراءة سجل التدقيق فقط', 'Read-only audit log') }}</li><li>{{ t('لا تعديل مباشر للمدفوعات أو الأرصدة ولا ترقية ذاتية', 'No direct payment/balance mutation or self-promotion') }}</li></ul></div></article>
-            <article class="permission-card"><span class="permission-icon" aria-hidden="true">♙</span><div><span class="role-pill">{{ t('مالك مساحة العمل', 'Workspace Owner') }}</span><h3>{{ t('إدارة شركته فقط', 'Manage own workspace') }}</h3><p>{{ t('يعمل وفق عضويته الحالية في قاعدة البيانات. لا تمنحه عضويته صلاحية منصة تلقائيًا، وتظل العمليات المالية الحساسة خاضعة لقواعد الـ API القائمة.', 'Operates under the existing database membership. Ownership never implies platform access; sensitive financial actions remain governed by current API rules.') }}</p></div></article>
-            <article class="permission-card"><span class="permission-icon" aria-hidden="true">♧</span><div><span class="role-pill">{{ t('موظف', 'Staff') }}</span><h3>{{ t('صلاحيات محدودة', 'Limited permissions') }}</h3><p>{{ t('لا يستطيع الدخول إلى واجهات منصة الإدارة أو تغيير الأدوار المحجوزة أو تنفيذ الوظائف التي يرفضها الخادم.', 'Cannot access platform administration or execute server-protected owner/platform operations.') }}</p></div></article>
-            <article class="permission-card"><span class="permission-icon" aria-hidden="true">⛨</span><div><span class="role-pill muted-role">{{ t('غير مصرح', 'Unauthorized') }}</span><h3>{{ t('الرفض هو الوضع الافتراضي', 'Deny by default') }}</h3><p>{{ t('أي هوية غير موجودة في قائمة السماح تحصل على 403، والطلبات غير المصادق عليها تتوقف عند تحقق الهوية قبل الوصول إلى البيانات.', 'Any identity missing from the explicit allowlist receives 403. Unauthenticated requests are rejected before administrative data is queried.') }}</p></div></article>
+            <article class="permission-card platform"><span class="permission-icon" aria-hidden="true">◇</span><div><span class="role-pill accent">{{ t('ui.m_h4f111') }}</span><h3>{{ t('ui.m_1k9kh6j') }}</h3><p>{{ t('ui.m_1rqjb5a') }}</p><ul><li>{{ t('ui.m_qshbwa') }}</li><li>{{ t('ui.m_771dsy') }}</li><li>{{ t('ui.m_1xk4a0w') }}</li><li>{{ t('ui.m_fa93gt') }}</li></ul></div></article>
+            <article class="permission-card"><span class="permission-icon" aria-hidden="true">♙</span><div><span class="role-pill">{{ t('ui.m_i1ciyu') }}</span><h3>{{ t('ui.m_1rs5cv7') }}</h3><p>{{ t('ui.m_93zc98') }}</p></div></article>
+            <article class="permission-card"><span class="permission-icon" aria-hidden="true">♧</span><div><span class="role-pill">{{ t('ui.m_1bfbo3p') }}</span><h3>{{ t('ui.m_1n3bwoy') }}</h3><p>{{ t('ui.m_6ohgsl') }}</p></div></article>
+            <article class="permission-card"><span class="permission-icon" aria-hidden="true">⛨</span><div><span class="role-pill muted-role">{{ t('ui.m_bthecq') }}</span><h3>{{ t('ui.m_1qg2kkw') }}</h3><p>{{ t('ui.m_fiy96p') }}</p></div></article>
           </div>
-          <div class="notice warn" role="note"><strong>{{ t('قيود التنفيذ الحالية', 'Current implementation limits') }}</strong><p>{{ t('دليل المستخدمين الشامل يعتمد على Firebase Auth ويشمل الحسابات التي لا تملك مساحة عمل. مسؤول الجذر فقط يستطيع منح أو إلغاء أدوار المنصة المفوضة مع سبب وسجل تدقيق. أدوار مالك/موظف داخل كل مساحة تظل منفصلة، وإدارة قائمة الجذر نفسها تبقى بإعداد خادمي خارج الواجهة.', 'The full user directory is sourced from Firebase Auth and includes accounts without workspaces. Only the bootstrap super admin can grant/revoke delegated platform roles with a reason and audit record. Workspace owner/staff roles remain separate, and the root allowlist stays out-of-band in server configuration.') }}</p></div>
+          <div class="notice warn" role="note"><strong>{{ t('ui.m_1dmv9bf') }}</strong><p>{{ t('ui.m_6vghot') }}</p></div>
         </section>
       }
-      <footer class="admin-footer"><span><span class="live-dot"></span>{{ t('متصل بالخادم عبر جلسة مصادقة موثقة', 'Connected through a verified authenticated session') }}</span><span>{{ t('لا توجد بيانات تجريبية', 'No demo data') }}</span></footer>
+      <footer class="admin-footer"><span><span class="live-dot"></span>{{ t('ui.m_i95nob') }}</span><span>{{ t('ui.m_2tz1y1') }}</span></footer>
     </section>
   `,
   styles: [`
@@ -479,7 +480,7 @@ export class PlatformAdminComponent implements OnInit {
 
   readonly hasMeaningfulPlatformAdminReason = hasMeaningfulPlatformAdminReason;
 
-  constructor(private readonly api: ApiService) {}
+  constructor(private readonly api: ApiService, private readonly localization: LocalizationService) {}
 
   ngOnInit(): void {
     void this.refreshAccess();
@@ -515,44 +516,43 @@ export class PlatformAdminComponent implements OnInit {
     return value ? value.slice(0, 1).toUpperCase() : 'A';
   }
 
-  t(ar: string, en: string): string {
-    return this.language === 'ar' ? ar : en;
+  t(key: string, params?: Record<string, string | number>): string {
+    return this.localization.translate(key, params);
   }
 
   money(value: string): string {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return value;
-    return new Intl.NumberFormat(this.language === 'ar' ? 'ar-EG' : 'en-US', {
-      minimumFractionDigits: 2, maximumFractionDigits: 2
-    }).format(parsed);
+    return this.localization.formatNumber(parsed, 2, 2);
   }
 
   formatDate(value: string | null | undefined): string {
-    if (!value) return this.t('غير متاح', 'Not available');
+    if (!value) return this.t('ui.m_1tnh3kh');
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return this.t('غير متاح', 'Not available');
-    return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en-GB', {
-      dateStyle: 'medium', timeStyle: 'short'
-    }).format(date);
+    if (Number.isNaN(date.getTime())) return this.t('ui.m_1tnh3kh');
+    return this.localization.formatDate(date, { dateStyle: 'medium', timeStyle: 'short' });
   }
 
   auditActionLabel(action: string): string {
-    return formatAuditActionLabel(action, this.language);
+    return this.t(formatAuditActionLabel(action));
   }
 
   auditTargetLabel(target: string): string {
-    return formatAuditTargetLabel(target, this.language);
+    return this.t(formatAuditTargetLabel(target));
   }
 
   statusLabel(status: string): string {
-    const ar: Record<string, string> = { draft: 'مسودة', issued: 'صادرة', void: 'ملغاة' };
-    const en: Record<string, string> = { draft: 'Draft', issued: 'Issued', void: 'Voided' };
-    return (this.language === 'ar' ? ar : en)[status] || status;
+    const keys: Record<string, string> = {
+      draft: 'app.platformAdmin.status.draft',
+      issued: 'app.platformAdmin.status.issued',
+      void: 'app.platformAdmin.status.void',
+    };
+    return keys[status] ? this.t(keys[status]) : status;
   }
 
   roleLabel(role: PlatformMembership['role']): string {
-    if (role === 'owner') return this.t('مالك', 'Owner');
-    if (role === 'staff') return this.t('موظف', 'Staff');
+    if (role === 'owner') return this.t('ui.m_13uvj3r');
+    if (role === 'staff') return this.t('ui.m_1bfbo3p');
     return role;
   }
 
@@ -575,13 +575,13 @@ export class PlatformAdminComponent implements OnInit {
   }
 
   dependencyStatusLabel(status: string): string {
-    const labels: Record<string, { ar: string; en: string }> = {
-      healthy: { ar: 'سليم', en: 'Healthy' },
-      unavailable: { ar: 'غير متاح', en: 'Unavailable' },
-      unconfigured: { ar: 'غير مُعد', en: 'Not configured' },
-      configured: { ar: 'مُعد', en: 'Configured' },
+    const keys: Record<string, string> = {
+      healthy: 'app.platformAdmin.dependency.healthy',
+      unavailable: 'app.platformAdmin.dependency.unavailable',
+      unconfigured: 'app.platformAdmin.dependency.unconfigured',
+      configured: 'app.platformAdmin.dependency.configured',
     };
-    return labels[status]?.[this.language === 'ar' ? 'ar' : 'en'] || status;
+    return keys[status] ? this.t(keys[status]) : status;
   }
 
   async refreshOverview(): Promise<void> {
@@ -599,14 +599,14 @@ export class PlatformAdminComponent implements OnInit {
   }
 
   sectionAnnouncementFor(section: AdminSection): string {
-    const labels: Record<AdminSection, { ar: string; en: string }> = {
-      overview: { ar: 'تم فتح قسم نظرة عامة', en: 'Opened Overview section' },
-      businesses: { ar: 'تم فتح قسم مساحات العمل', en: 'Opened Workspaces section' },
-      activity: { ar: 'تم فتح قسم سجل التدقيق', en: 'Opened Audit activity section' },
-      users: { ar: 'تم فتح قسم المستخدمين والصلاحيات', en: 'Opened Users and access section' },
-      permissions: { ar: 'تم فتح قسم الصلاحيات', en: 'Opened Permissions section' },
+    const keys: Record<AdminSection, string> = {
+      overview: 'app.platformAdmin.section.overview',
+      businesses: 'app.platformAdmin.section.businesses',
+      activity: 'app.platformAdmin.section.activity',
+      users: 'app.platformAdmin.section.users',
+      permissions: 'app.platformAdmin.section.permissions',
     };
-    return this.t(labels[section].ar, labels[section].en);
+    return this.t(keys[section]);
   }
 
   setSection(section: AdminSection): void {
@@ -685,35 +685,35 @@ export class PlatformAdminComponent implements OnInit {
   }
 
   platformRoleLabel(role: string): string {
-    const labels: Record<string, { ar: string; en: string }> = {
-      platform_super_admin: { ar: 'مسؤول المنصة الأساسي', en: 'Platform Super Admin' },
-      platform_viewer: { ar: 'مشاهد المنصة', en: 'Platform Viewer' },
-      workspace_operator: { ar: 'مشغّل مساحات العمل', en: 'Workspace Operator' },
-      user_manager: { ar: 'مدير دليل المستخدمين', en: 'User Manager' }
+    const keys: Record<string, string> = {
+      platform_super_admin: 'app.platformAdmin.role.platform_super_admin',
+      platform_viewer: 'app.platformAdmin.role.platform_viewer',
+      workspace_operator: 'app.platformAdmin.role.workspace_operator',
+      user_manager: 'app.platformAdmin.role.user_manager',
     };
-    return labels[role]?.[this.language === 'ar' ? 'ar' : 'en'] || role;
+    return keys[role] ? this.t(keys[role]) : role;
   }
 
   platformPermissionLabel(permission: string): string {
-    const labels: Record<string, { ar: string; en: string }> = {
-      view_overview: { ar: 'قراءة مؤشرات المنصة', en: 'View platform overview' },
-      view_workspaces: { ar: 'عرض مساحات العمل', en: 'View workspaces' },
-      view_audit: { ar: 'قراءة سجل التدقيق', en: 'Read audit history' },
-      view_system_status: { ar: 'عرض حالة النظام', en: 'View system status' },
-      view_users: { ar: 'عرض دليل جميع المستخدمين', en: 'View all users' },
-      manage_workspace_status: { ar: 'تفعيل/تعطيل مساحة بسبب موثق', en: 'Change workspace status with a reason' },
-      manage_platform_roles: { ar: 'منح وإلغاء أدوار المنصة', en: 'Grant and revoke platform roles' }
+    const keys: Record<string, string> = {
+      view_overview: 'app.platformAdmin.permission.view_overview',
+      view_workspaces: 'app.platformAdmin.permission.view_workspaces',
+      view_audit: 'app.platformAdmin.permission.view_audit',
+      view_system_status: 'app.platformAdmin.permission.view_system_status',
+      view_users: 'app.platformAdmin.permission.view_users',
+      manage_workspace_status: 'app.platformAdmin.permission.manage_workspace_status',
+      manage_platform_roles: 'app.platformAdmin.permission.manage_platform_roles',
     };
-    return labels[permission]?.[this.language === 'ar' ? 'ar' : 'en'] || permission;
+    return keys[permission] ? this.t(keys[permission]) : permission;
   }
 
   platformRoleDescription(role: string): string {
-    const descriptions: Record<string, { ar: string; en: string }> = {
-      platform_viewer: { ar: 'قراءة المؤشرات والمساحات وسجل التدقيق وحالة النظام.', en: 'Read platform metrics, workspaces, audit records and system status.' },
-      workspace_operator: { ar: 'صلاحيات القراءة مع تفعيل أو تعطيل مساحة عمل بسبب موثق.', en: 'Read access plus reasoned workspace activation/deactivation.' },
-      user_manager: { ar: 'قراءة جميع حسابات Firebase وعضوياتها؛ لا يمنح أدوار منصة.', en: 'Read all Firebase accounts and memberships; cannot grant platform roles.' }
+    const keys: Record<string, string> = {
+      platform_viewer: 'app.platformAdmin.roleDescription.platform_viewer',
+      workspace_operator: 'app.platformAdmin.roleDescription.workspace_operator',
+      user_manager: 'app.platformAdmin.roleDescription.user_manager',
     };
-    return descriptions[role]?.[this.language === 'ar' ? 'ar' : 'en'] || this.t('صلاحية الجذر تُدار من إعداد الخادم فقط.', 'Bootstrap root access is managed only in server configuration.');
+    return keys[role] ? this.t(keys[role]) : this.t('app.platformAdmin.role.rootOnly');
   }
 
   async savePlatformRole(active = this.roleChangeActive): Promise<void> {
@@ -729,10 +729,7 @@ export class PlatformAdminComponent implements OnInit {
         active,
         reason: this.roleReason.trim()
       });
-      this.roleMessage = this.t(
-        result.changed ? 'تم حفظ التغيير وتسجيله في سجل التدقيق.' : 'الصلاحية بالفعل بالحالة المطلوبة.',
-        result.message
-      );
+      this.roleMessage = this.t(result.changed ? 'app.platformAdmin.role.changed' : 'app.platformAdmin.role.alreadySet');
       this.roleReason = '';
       await Promise.all([this.loadUsers(this.userPageIndex), this.loadRoleAudit()]);
       this.selectedAdminUser = this.users.find(item => item.uid === user.uid) || null;
@@ -747,7 +744,7 @@ export class PlatformAdminComponent implements OnInit {
     if (role !== 'platform_viewer' && role !== 'workspace_operator' && role !== 'user_manager') return;
     this.selectedPlatformRole = role;
     this.roleChangeActive = false;
-    this.roleMessage = this.t('تم اختيار الدور للإلغاء. اكتب السبب ثم اضغط «إلغاء الصلاحية المحددة».', 'Role selected for revocation. Enter a reason, then select “Revoke selected role”.');
+    this.roleMessage = this.t('ui.m_bbmarv');
     this.roleError = '';
   }
 
@@ -831,16 +828,16 @@ export class PlatformAdminComponent implements OnInit {
     const reason = this.statusReason.trim();
     if (!details || !current || this.statusSaving) return;
     if (!hasMeaningfulPlatformAdminReason(reason)) {
-      this.statusError = this.t('اكتب سببًا واضحًا لا يقل عن 3 أحرف.', 'Enter a meaningful reason of at least 3 characters.');
+      this.statusError = this.t('ui.m_rxwtky');
       return;
     }
     if (this.desiredStatus === current.is_active) {
-      this.statusError = this.t('اختر حالة مختلفة عن الحالة الحالية.', 'Choose a status different from the current state.');
+      this.statusError = this.t('ui.m_mtsipq');
       return;
     }
     const question = this.desiredStatus
-      ? this.t('تأكيد تفعيل الوصول لمساحة العمل؟ سيتم تسجيل العملية.', 'Activate access for this workspace? The action will be audited.')
-      : this.t('تأكيد تعطيل الوصول لمساحة العمل؟ سيتم منع أعضاء الشركة من الوصول دون حذف البيانات.', 'Deactivate access for this workspace? Its members will lose access; no data will be deleted.');
+      ? this.t('ui.m_in72vk')
+      : this.t('ui.m_1vlka61');
     if (!window.confirm(question)) return;
 
     this.statusSaving = true;
@@ -848,7 +845,7 @@ export class PlatformAdminComponent implements OnInit {
     this.successMessage = '';
     try {
       const result = await this.api.platformBusinessStatus(current.id, { is_active: this.desiredStatus, reason });
-      this.successMessage = result.message;
+      this.successMessage = this.t(result.business.is_active ? 'app.platformAdmin.workspace.activated' : 'app.platformAdmin.workspace.deactivated');
       details.business = result.business;
       if (this.selectedDetails === details) {
         this.statusReason = '';
@@ -885,8 +882,8 @@ export class PlatformAdminComponent implements OnInit {
       link.remove();
       window.setTimeout(() => URL.revokeObjectURL(url), 1000);
       this.auditExportMessage = result.truncated
-        ? this.t(`تم تنزيل أول ${result.rowCount} سجل فقط؛ توجد سجلات إضافية مطابقة.`, `Downloaded the first ${result.rowCount} matching rows; more records are available.`)
-        : this.t(`تم تنزيل ${result.rowCount} سجل.`, `Downloaded ${result.rowCount} rows.`);
+        ? this.t('ui.m_o3n4vf', { rowCount: result.rowCount })
+        : this.t('ui.m_1g8bs7h', { rowCount: result.rowCount });
     } catch (error) {
       this.auditExportError = this.errorText(error);
     } finally {
@@ -931,8 +928,8 @@ export class PlatformAdminComponent implements OnInit {
   private errorText(error: unknown): string {
     const message = error instanceof Error ? error.message : '';
     if (/401|403|administrator access/i.test(message)) {
-      return this.t('انتهت صلاحية الوصول الإداري أو لم تعد الصلاحية متاحة. سجّل الدخول مجددًا أو تواصل مع مسؤول المنصة.', 'Administrative access is expired or not granted. Sign in again or contact the platform administrator.');
+      return this.t('ui.m_1nyfduf');
     }
-    return message || this.t('حدث خطأ غير متوقع أثناء الاتصال بالخادم.', 'An unexpected server error occurred.');
+    return message || this.t('ui.m_nqwudl');
   }
 }

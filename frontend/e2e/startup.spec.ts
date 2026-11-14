@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
 
+// These tests validate the startup config fetch/retry state machine with deterministic
+// route mocks. A real Service Worker can intercept runtime-config.json before page.route,
+// making the retry response and request count nondeterministic. SW caching is covered by
+// the dedicated Service Worker regression tests instead.
+test.use({ serviceWorkers: 'block' });
+
 test.beforeEach(async ({ page }) => {
   // Exercise the safe setup screen without Firebase credentials or live API access.
   // This keeps the smoke suite deterministic and guarantees no production data is touched.
