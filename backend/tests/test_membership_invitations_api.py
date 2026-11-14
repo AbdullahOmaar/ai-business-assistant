@@ -194,6 +194,50 @@ def test_invitation_cannot_be_accepted_after_inviter_loses_owner_role(invitation
     assert accepted.status_code == 410
 
 
+
+def test_owner_from_another_workspace_cannot_list_or_revoke_invitation(invitation_client):
+    client, current, _ = invitation_client
+    business_a = create_workspace(client)
+    created = create_invitation(client, business_a)
+
+    current["principal"] = AuthenticatedPrincipal("workspace-owner-b")
+    business_b = create_workspace(client)
+    assert business_b != business_a
+
+    listing = client.get(f"/api/v1/businesses/{business_a}/invitations")
+    revoking = client.delete(
+        f"/api/v1/businesses/{business_a}/invitations/{created['id']}"
+    )
+    assert listing.status_code == 403
+    assert revoking.status_code == 403
+
+    current["principal"] = AuthenticatedPrincipal("workspace-owner")
+    owner_listing = client.get(f"/api/v1/businesses/{business_a}/invitations")
+    assert owner_listing.status_code == 200
+    assert owner_listing.json()[0]["status"] == "pending"
+
+
+def test_duplicate_pending_invitation_is_rejected(invitation_client):
+    client, _, _ = invitation_client
+    business_id = create_workspace(client)
+    create_invitation(client, business_id, "staff@example.com")
+    duplicate = client.post(
+        f"/api/v1/businesses/{business_id}/invitations",
+        json={"email": " STAFF@EXAMPLE.COM "},
+    )
+    assert duplicate.status_code == 409
+
+
+def test_invalid_invitation_email_is_rejected(invitation_client):
+    client, _, _ = invitation_client
+    business_id = create_workspace(client)
+    response = client.post(
+        f"/api/v1/businesses/{business_id}/invitations",
+        json={"email": "not-an-email"},
+    )
+    assert response.status_code == 422
+
+
 def test_invitation_limits_prevent_unbounded_owner_creation(invitation_client):
     client, _, _ = invitation_client
     business_id = create_workspace(client)
