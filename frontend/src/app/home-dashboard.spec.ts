@@ -27,35 +27,34 @@ test('Home keeps the canonical four source-backed metrics and currency-separated
     'each KPI card supports Enter activation');
   assert.equal(home.split('(keydown.space)="$event.preventDefault(); setTab(').length - 1, 4,
     'each KPI card supports Space activation');
-  assert.equal(home.split('[attr.aria-label]="t(').length - 1, 4,
-    'each KPI card exposes a localized accessible name');
 
-  assert.match(home, /item\.currency_code/);
+  assert.match(home, /item\\.currency_code/);
   assert.equal(home.split('<bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi>').length - 1, 4,
     'each currency amount must retain its LTR number/code order inside an isolated bidi run');
   assert.equal(home.split('<bdi dir="ltr">{{ item.count }}</bdi>').length - 1, 3,
     'only the three source-backed metric counts are rendered and isolated');
 
-  assert.match(home, /item\.count/);
+  assert.match(home, /item\\.count/);
   const outstandingStart = home.indexOf("dashboard.outstanding_balances");
   const outstandingEnd = home.indexOf("</aba-metric-card>", outstandingStart);
   const outstandingCard = home.slice(outstandingStart, outstandingEnd);
-  assert.doe  const labels = [
+  assert.doesNotMatch(outstandingCard, /item\\.count/,
+    'the API does not return an outstanding-balance count');
+});
+
+test('Home KPI cards render visible localized labels separately from projected values', () => {
+  const labels = [
     ['المبيعات بالفواتير', 'Invoiced sales'],
     ['التحصيلات', 'Collected payments'],
     ['المصروفات', 'Expenses'],
     ['المبالغ المستحقة', 'Outstanding balances'],
   ];
   for (const [arabic, english] of labels) {
-    const localizedCall = "t(\\'" + arabic + "\\', \\'" + english + "\\')";
+    const localizedCall = "t('" + arabic + "', '" + english + "')";
     assert.ok(home.includes('<span metricLabel>{{ ' + localizedCall + ' }}</span>'),
       english + ' must remain a visible localized metric label');
     assert.ok(home.includes('[attr.aria-label]="' + localizedCall + '"'),
       english + ' must also provide the matching accessible name');
-  }
-h] of labels) {
-    assert.ok(home.includes('<span id="' + id + '" metricLabel>{{ t(\'' + arabic + '\', \'' + english + '\') }}</span>'),
-      id + ' must contain a visible localized metric label');
   }
   assert.ok(metricCardSource.includes('ng-content select="[metricLabel]"'));
   assert.ok(metricCardSource.includes('<ng-content />'),
