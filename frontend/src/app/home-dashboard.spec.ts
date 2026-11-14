@@ -21,11 +21,14 @@ test('Home keeps the canonical four source-backed metrics and currency-separated
   for (const field of ['invoiced_sales', 'collected_payments', 'expenses', 'outstanding_balances']) {
     assert.ok(home.includes('dashboard.' + field), 'expected source-backed metric ' + field);
   }
-  assert.equal(home.split('<aba-metric-card role="group"').length - 1, 4);
-  for (const id of ['metric-invoiced-sales-label', 'metric-collected-payments-label', 'metric-expenses-label', 'metric-outstanding-balances-label']) {
-    assert.ok(home.includes('role="group" aria-labelledby="' + id + '"'));
-    assert.ok(home.includes('id="' + id + '" metricLabel'));
-  }
+  assert.equal(home.split('<aba-metric-card class="metric-card-action" role="button" tabindex="0"').length - 1, 4,
+    'the four KPI cards remain keyboard-operable navigation controls');
+  assert.equal(home.split('(keydown.enter)="setTab(').length - 1, 4,
+    'each KPI card supports Enter activation');
+  assert.equal(home.split('(keydown.space)="$event.preventDefault(); setTab(').length - 1, 4,
+    'each KPI card supports Space activation');
+  assert.equal(home.split('[attr.aria-label]="t(').length - 1, 4,
+    'each KPI card exposes a localized accessible name');
 
   assert.match(home, /item\.currency_code/);
   assert.equal(home.split('<bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi>').length - 1, 4,
@@ -37,18 +40,20 @@ test('Home keeps the canonical four source-backed metrics and currency-separated
   const outstandingStart = home.indexOf("dashboard.outstanding_balances");
   const outstandingEnd = home.indexOf("</aba-metric-card>", outstandingStart);
   const outstandingCard = home.slice(outstandingStart, outstandingEnd);
-  assert.doesNotMatch(outstandingCard, /item\.count/,
-    'the API does not return an outstanding-balance count');
-});
-
-test('Home KPI cards render visible localized labels separately from projected values', () => {
-  const labels = [
-    ['metric-invoiced-sales-label', 'المبيعات بالفواتير', 'Invoiced sales'],
-    ['metric-collected-payments-label', 'التحصيلات', 'Collected payments'],
-    ['metric-expenses-label', 'المصروفات', 'Expenses'],
-    ['metric-outstanding-balances-label', 'المبالغ المستحقة', 'Outstanding balances'],
+  assert.doe  const labels = [
+    ['المبيعات بالفواتير', 'Invoiced sales'],
+    ['التحصيلات', 'Collected payments'],
+    ['المصروفات', 'Expenses'],
+    ['المبالغ المستحقة', 'Outstanding balances'],
   ];
-  for (const [id, arabic, english] of labels) {
+  for (const [arabic, english] of labels) {
+    const localizedCall = "t(\\'" + arabic + "\\', \\'" + english + "\\')";
+    assert.ok(home.includes('<span metricLabel>{{ ' + localizedCall + ' }}</span>'),
+      english + ' must remain a visible localized metric label');
+    assert.ok(home.includes('[attr.aria-label]="' + localizedCall + '"'),
+      english + ' must also provide the matching accessible name');
+  }
+h] of labels) {
     assert.ok(home.includes('<span id="' + id + '" metricLabel>{{ t(\'' + arabic + '\', \'' + english + '\') }}</span>'),
       id + ' must contain a visible localized metric label');
   }
