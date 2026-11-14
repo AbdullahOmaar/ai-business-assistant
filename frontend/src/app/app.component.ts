@@ -16,7 +16,7 @@ import { ReleaseGuideComponent } from './release-guide.component';
 import { CustomerDirectoryComponent } from './customer-directory.component';
 import { ProductCatalogComponent } from './product-catalog.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
-import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
+import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor, type WorkspaceTab } from './core/navigation/workspace-route';
 import { filterWorkspaceModules, selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
 import { AbaConfirmDialogComponent } from './shared/ui/aba-confirm-dialog.component';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
@@ -34,7 +34,7 @@ import { InvoiceDraftOutcomeVault } from './invoice-draft';
 import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot, PaymentRetryVault } from './payment-retry-snapshot';
 import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health' | 'team';
+type Tab = WorkspaceTab;
 type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recurring';
 
 const WORKSPACE_RECORD_PAGE_SIZE = 100;
@@ -2101,6 +2101,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.currentAuthUid = nextUid;
     this.currentAuthEmail = nextEmail;
+    this.initialRouteApplied = false;
     const transitionVersion = ++this.authTransitionVersion;
     this.businessListRequestVersion++;
     this.businesses = [];
@@ -2258,11 +2259,15 @@ export class AppComponent implements OnInit, OnDestroy {
       const workspaceAccessChanged = this.business?.id !== chosen.id || this.business?.role !== chosen.role;
       this.selectedBusinessId = chosen.id;
       this.business = chosen;
-      this.applyInitialWorkspaceRoute();
-      // A membership or platform-role refresh can invalidate the currently selected tab.
-      // Reuse the same navigation guard as interactive tab changes before reloading data.
+      // Clear stale tenant data before applying a pending deep link. On first auth
+      // resolution, keep the requested URL intact so it can be authorized below.
+      if (workspaceAccessChanged) {
+        this.clearWorkspaceData();
+        if (this.initialRouteApplied) this.syncWorkspaceUrl('overview', true);
+      }
+      // Reuse the same access policy for direct URLs and interactive navigation.
       if (!this.canAccessTab(this.tab)) this.setTab('overview');
-      if (workspaceAccessChanged) this.clearWorkspaceData();
+      this.applyInitialWorkspaceRoute();
       await this.loadWorkspaceData();
     } catch (error) {
       if (requestVersion !== this.businessListRequestVersion ||
@@ -2270,6 +2275,8 @@ export class AppComponent implements OnInit, OnDestroy {
       this.business = null;
       this.selectedBusinessId = '';
       this.clearWorkspaceData();
+      if (this.initialRouteApplied) this.syncWorkspaceUrl('overview', true);
+      else this.initialRouteApplied = false;
       this.error = this.message(error);
     } finally {
       if (requestVersion === this.businessListRequestVersion) this.loading = false;
@@ -2471,6 +2478,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.business = created;
       this.selectedBusinessId = created.id;
       this.clearWorkspaceData();
+      this.syncWorkspaceUrl('overview', true);
       this.businessName = '';
       await this.loadWorkspaceData();
     } catch (error) {
@@ -2494,6 +2502,7 @@ export class AppComponent implements OnInit, OnDestroy {
     // A destination visible to the previous workspace role may be restricted here.
     if (!this.canAccessTab(this.tab)) this.tab = 'overview';
     this.clearWorkspaceData();
+    this.syncWorkspaceUrl('overview', true);
     this.error = '';
     await this.loadWorkspaceData();
   }
@@ -2570,6 +2579,7 @@ export class AppComponent implements OnInit, OnDestroy {
     } catch (error) {
       if (this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) {
         this.clearWorkspaceData();
+        this.syncWorkspaceUrl('overview', true);
         this.error = this.message(error);
         // clearWorkspaceData invalidates the request generation, so this failure path
         // must release the loading state itself instead of relying on the guarded finally.
