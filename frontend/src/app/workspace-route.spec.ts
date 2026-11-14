@@ -7,7 +7,7 @@ import {
   workspacePathFor,
   workspaceTabFromPathname,
   workspaceUrlFor,
-} from './workspace-route.ts';
+} from './core/navigation/workspace-route.ts';
 
 test('all existing workspace destinations have unique canonical URLs', () => {
   assert.equal(new Set(WORKSPACE_TABS).size, WORKSPACE_TABS.length);
