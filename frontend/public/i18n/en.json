@@ -1659,7 +1659,9 @@
       "egp": "Egyptian Pound",
       "usd": "US Dollar",
       "eur": "Euro",
-      "gbp": "British Pound"
+      "gbp": "British Pound",
+      "sar": "Saudi Riyal",
+      "aed": "UAE Dirham"
     }
   }
 }
