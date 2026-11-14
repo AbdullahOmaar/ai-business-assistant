@@ -1,3 +1,33 @@
+# OWNER DECISION — PRODUCTION IS CURRENT DEVELOPMENT / TEST ENVIRONMENT — effective 2026-11-14
+
+
+<b>Production currently contains synthetic, non-real development data. It is authorized as the active development and QA environment until the Owner explicitly declares that real customer/business data is being used.</b>
+
+MASTER and assigned agents do not need a separate Owner approval for ordinary, non-destructive production testing or scoped test-data CRUD.
+
+
+## Authorized without per-action approval
+- Create and use clearly identifiable test accounts, users, tenants and test records on the current Production runtime/database.
+- Perform ordinary create/read/update operations and exercise application workflows, APIs, integrations, permissions, reports and persistence using synthetic test data.
+- Modify scoped synthetic test records and create simulated business/accounting transactions for validation, provided they do not initiate real external money movement, payment, settlement, tax filing or real customer communications.
+- Use the existing Production Firebase/Neon resources and configuration for these tests when technically appropriate; do not provision a separate paid QA resource merely because tests touch Production.
+- MASTER may choose safe test scenarios, execute them, inspect outcomes and clean up specifically identified test artifacts when cleanup is scoped and reversible.
+
+## Boundaries that remain active
+- This decision does not authorize bypassing authentication, tenant isolation, authorization, privacy, audit controls, rate limits or provider security protections.
+- Never expose, copy into logs/prompts/client bundles, or weaken production secrets and credentials.
+- Bulk deletion, database reset/truncate, irreversible or destructive migrations, schema/data-loss operations, or cleanup that could affect non-test records still require a specific scoped Owner decision.
+- Real external payments, transfers of actual funds, settlement/posting with real-world effect, tax filing, real customer messages/notifications, paid provisioning/billing, and provider security changes remain approval-gated.
+- Keep test records clearly labeled and scoped; avoid polluting shared demo data. Record what was created/changed and clean up safely where appropriate.
+- GitHub CI remains isolated and must use disposable test services; this decision does not permit CI jobs or untrusted PR code to connect to Production or receive production secrets.
+- Production data/runtime is treated as synthetic only under this decision. Before onboarding real customers or importing real business data, pause this exception and obtain a new Owner decision defining the production-data safety policy.
+
+## Effect on current QA blocker
+A separate Neon QA database or Firebase Preview configuration is not a prerequisite solely for routine QA while the current Production environment is synthetic and the relevant existing Production resources can safely support the test. MASTER should use the existing environment, execute the required tests, and continue the batch. If a specific paid resource, unavailable credential, provider-enforced permission, or unsafe operation is genuinely required, isolate that exact blocker and continue independent work.
+
+This decision changes the previous blanket requirement for separate approval before ordinary Production test-data mutation. It does not waive release gates, exact-head CI/review requirements, merge protections, deployment verification, or the standing MASTER long-run execution policy.
+
+
 ## Owner-selected November delivery discipline — effective 2026-11-12 (supersedes conflicting rules below)
 
 The Owner requires meaningful product evolution, not a stream of cosmetic edits and tiny PRs.
