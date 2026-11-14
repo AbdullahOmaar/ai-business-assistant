@@ -56,7 +56,7 @@ test('workspace currency selector localizes all six supported currency options',
     { code: 'SAR', key: 'app.currencyName.sar', ar: 'الريال السعودي', en: 'Saudi Riyal' },
     { code: 'AED', key: 'app.currencyName.aed', ar: 'الدرهم الإماراتي', en: 'UAE Dirham' },
   ];
-  const selector = appComponentSource.match(/<select name="currency"[\\s\\S]*?<\\/select>/)?.[0] ?? '';
+  const selector = appComponentSource.match(/<select name="currency"[\s\S]*?<\/select>/)?.[0] ?? '';
   const optionCodes = [...selector.matchAll(/<option value="([A-Z]{3})">/g)].map(match => match[1]);
   assert.deepEqual(optionCodes, currencies.map(currency => currency.code));
 
