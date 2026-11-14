@@ -1478,6 +1478,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private businessListRequestVersion = 0;
   private authTransitionVersion = 0;
   private pendingAuthSnapshot: AuthUserSnapshot | null | undefined;
+  private applyingBrowserRoute = false;
+  private initialRouteApplied = false;
   tab: Tab = 'overview';
   auditEvents: AuditEvent[] = [];
   auditTotal = 0;
@@ -2135,6 +2137,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private resetSignedOutState(): void {
     this.businessListRequestVersion++;
+    this.initialRouteApplied = false;
     this.signedIn = false;
     this.userEmail = '';
     this.platformAdminAvailable = false;
@@ -2168,7 +2171,7 @@ export class AppComponent implements OnInit, OnDestroy {
       if (requestUid !== this.currentAuthUid) return;
       // A missing backend endpoint, unconfigured allowlist, or a 403 keeps admin navigation hidden.
       this.platformAdminAvailable = false;
-      if (this.tab === 'platform-admin') this.tab = 'overview';
+      if (this.tab === 'platform-admin') this.setTab('overview');
     }
   }
 
@@ -2243,6 +2246,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.business = null;
         this.selectedBusinessId = '';
         this.clearWorkspaceData();
+        this.applyInitialWorkspaceRoute();
         // Keep the global control plane accessible to admins without workspace memberships.
         // If the platform capability was revoked, do not retain its previously selected tab.
         if (this.platformAdminAvailable) this.setTab('platform-admin');
@@ -2253,6 +2257,7 @@ export class AppComponent implements OnInit, OnDestroy {
       const workspaceAccessChanged = this.business?.id !== chosen.id || this.business?.role !== chosen.role;
       this.selectedBusinessId = chosen.id;
       this.business = chosen;
+      this.applyInitialWorkspaceRoute();
       // A membership or platform-role refresh can invalidate the currently selected tab.
       // Reuse the same navigation guard as interactive tab changes before reloading data.
       if (!this.canAccessTab(this.tab)) this.setTab('overview');
@@ -2823,6 +2828,43 @@ export class AppComponent implements OnInit, OnDestroy {
   toggleMobileMore(): void {
     if (this.mobileMoreOpen) this.mobileMoreSearch = '';
     this.mobileMoreOpen = !this.mobileMoreOpen;
+  }
+
+  @HostListener('window:popstate')
+  onBrowserHistoryChange(): void {
+    if (!this.signedIn || !this.initialized) return;
+    this.applyBrowserWorkspaceRoute();
+  }
+
+  private applyInitialWorkspaceRoute(): void {
+    if (this.initialRouteApplied) return;
+    this.initialRouteApplied = true;
+    this.applyBrowserWorkspaceRoute();
+  }
+
+  private applyBrowserWorkspaceRoute(): void {
+    const resolution = resolveWorkspacePath(
+      window.location.pathname,
+      tab => tab === 'overview' || (this.canAccessTab(tab) && (tab === 'platform-admin' || Boolean(this.business))),
+    );
+    this.applyingBrowserRoute = true;
+    try {
+      this.setTab(resolution.tab);
+    } finally {
+      this.applyingBrowserRoute = false;
+    }
+    const nextUrl = workspaceUrlFor(resolution.tab, window.location.search, window.location.hash);
+    if (resolution.status !== 'matched' || window.location.pathname !== resolution.path) {
+      window.history.replaceState(window.history.state, '', nextUrl);
+    }
+  }
+
+  private syncWorkspaceUrl(tab: Tab, replace = false): void {
+    if (this.applyingBrowserRoute) return;
+    const nextUrl = workspaceUrlFor(tab, window.location.search, window.location.hash);
+    if (window.location.pathname === workspacePathFor(tab)) return;
+    if (replace) window.history.replaceState(window.history.state, '', nextUrl);
+    else window.history.pushState(window.history.state, '', nextUrl);
   }
 
   @HostListener('document:keydown.escape')
@@ -3617,6 +3659,7 @@ export class AppComponent implements OnInit, OnDestroy {
   setTab(tab: Tab): void {
     if (!this.canAccessTab(tab)) {
       this.tab = 'overview';
+      this.syncWorkspaceUrl('overview', true);
       this.mobileMoreOpen = false;
       return;
     }
@@ -3626,6 +3669,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.operationsWarning = '';
     }
     this.tab = tab;
+    this.syncWorkspaceUrl(tab);
     this.error = tab === 'overview' && this.homeDashboardError ? this.homeDashboardError : '';
     this.mobileMoreOpen = false;
     if (tab === 'reports') void this.loadProfitLoss();

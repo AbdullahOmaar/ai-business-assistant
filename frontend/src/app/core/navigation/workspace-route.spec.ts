@@ -35,7 +35,7 @@ test('matching is exact and encoded path separators cannot escape a destination'
 });
 
 test('direct navigation applies the supplied access predicate', () => {
-  const restricted = new Set(['payments', 'employees', 'taxes', 'audit', 'integrity', 'health', 'platform-admin']);
+  const restricted = new Set(['payments', 'employees', 'taxes', 'audit', 'integrity', 'health', 'team', 'platform-admin']);
   const canAccess = (tab: (typeof WORKSPACE_TABS)[number]) => !restricted.has(tab);
 
   assert.deepEqual(resolveWorkspacePath('/workspace/customers', canAccess), {
