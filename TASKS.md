@@ -4304,3 +4304,10 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Commits:** `aee454e5f6b3e73841e7e53ecb6face9d0d1ca56`, `502c8a2c5c8a90825244a52df69e6cc79620e548`, `886a3d75a0afe2f914a51d27be5c86153d2438a3`, `941ec49f5be5a6e75c6cfc89aeb80e5a29f4e050`.
 - **Validation:** Application tests/build/CI NOT RUN in this product implementation batch per Owner test-economy direction and current user request to prioritize product progress. No visual/device claim is made.
 - **Disposition:** Implementation is committed to the existing November branch. PR #397 remains OPEN / DRAFT / UNMERGED. Production deployment and business-data changes were not performed.
+
+
+## 2026-11-14 — Dashboard quick-create workflow improvement
+- Added role-aware dashboard shortcuts for existing Customer and Product creation forms. Selecting either shortcut opens the correct module and expands its existing create form immediately; users can still collapse it normally.
+- Reuses existing authenticated API workflows, current OWNER/STAFF tab visibility and existing validation. No new route, API, schema, financial, stock or authorization semantics were introduced.
+- Source: `frontend/src/app/app.component.ts`; commit `e0c7ba6d40094f2c077179a25fb39aba78a99e74`.
+- Validation: automated tests/build/CI intentionally NOT RUN in this product batch per Owner test-economy policy and current user direction. No merge, deployment or business-data mutation.
