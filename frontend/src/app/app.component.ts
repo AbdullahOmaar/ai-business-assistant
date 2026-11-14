@@ -278,6 +278,29 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <aba-metric-card class="metric-card-action" role="button" tabindex="0" [attr.aria-label]="t('ui.m_v5uwri')" (click)="setTab('invoices')" (keydown.enter)="setTab('invoices')" (keydown.space)="$event.preventDefault(); setTab('invoices')"><span metricLabel>{{ t('ui.m_v5uwri') }}</span>
                     @for (item of dashboard.outstanding_balances; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small class="metric-basis">{{ t('ui.m_1wagqaw') }}</small> } @if (!dashboard.outstanding_balances.length) { <strong>—</strong><small>{{ t('ui.m_1k06qyq') }}</small> }</aba-metric-card>
                 </section>
+                <section class="dashboard-actions" [attr.aria-label]="t('ui.m_1423muo')">
+                  @if (canAccessTab('invoices')) {
+                    <button class="dashboard-action dashboard-action--primary" type="button"
+                      (click)="setTab('invoices'); startNewInvoiceDraft()">
+                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
+                      <span class="dashboard-action__copy">
+                        <strong>{{ t('ui.m_12vszs4') }}</strong>
+                        <small>{{ t('ui.m_61q6l7') }}</small>
+                      </span>
+                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
+                    </button>
+                  }
+                  @if (canAccessTab('expenses')) {
+                    <button class="dashboard-action" type="button" (click)="setTab('expenses')">
+                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
+                      <span class="dashboard-action__copy">
+                        <strong>{{ t('ui.m_p4p38y') }}</strong>
+                        <small>{{ t('ui.m_ehnfke') }}</small>
+                      </span>
+                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
+                    </button>
+                  }
+                </section>
                 <section class="notice dashboard-trust-note" role="note"><strong>{{ t('ui.m_lgrza4') }}</strong><span>{{ t('ui.m_1yfmgqi') }}</span></section>
               } @else if (loading) {
                 <section class="dashboard-period dashboard-period--skeleton" aria-hidden="true">
