@@ -16,6 +16,7 @@ import { ReleaseGuideComponent } from './release-guide.component';
 import { CustomerDirectoryComponent } from './customer-directory.component';
 import { ProductCatalogComponent } from './product-catalog.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
+import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
 import { filterWorkspaceModules, selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
 import { AbaConfirmDialogComponent } from './shared/ui/aba-confirm-dialog.component';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
