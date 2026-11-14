@@ -1,8 +1,10 @@
 import { CommonModule } from '@angular/common';
+import { LocalizationService } from './localization.service';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, ApiRequestError, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
+import { createServiceWorkerUpdateHandler } from './service-worker-update';
 import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
@@ -24,13 +26,14 @@ import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecord
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 import { AbaMobileAppHeaderComponent } from './shared/ui/aba-mobile-app-header.component';
 import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
+import { WorkspaceInvitationsComponent } from './workspace-invitations.component';
 import { findInvoiceDraftRecoveryMatch, invoiceDraftLinesFromExisting } from './invoice-draft';
 import type { InvoiceDraftLine, InvoiceDraftPayload, InvoiceDraftServerSummary, InvoiceDraftOutcomeSnapshot } from './invoice-draft';
 import { InvoiceDraftOutcomeVault } from './invoice-draft';
 import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot, PaymentRetryVault } from './payment-retry-snapshot';
 import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health' | 'team';
 type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recurring';
 
 const WORKSPACE_RECORD_PAGE_SIZE = 100;
@@ -38,139 +41,164 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerDirectoryComponent, ProductCatalogComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerDirectoryComponent, ProductCatalogComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
-        <a class="skip-link" href="#main-content">{{ t('تخطي إلى المحتوى الرئيسي', 'Skip to main content') }}</a>
+        <a class="skip-link" href="#main-content">{{ t('ui.m_1561v1f') }}</a>
       }
-      @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('جارٍ التحميل…', 'Loading…') }}</span></div> }
+      @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('ui.m_1rza5t5') }}</span></div> }
+      @if (appUpdateAvailable) {
+        <aside class="app-update-notice" role="status" aria-live="polite">
+          <span>{{ t('ui.m_4cplhg') }}</span>
+          <button class="secondary" type="button" (click)="reloadAppAfterUpdate()">{{ t('ui.m_16hli7m') }}</button>
+        </aside>
+      }
       @if (!initialized) {
         <main class="auth-card" role="status" aria-live="polite">
           <div class="brand-mark">A</div>
-          <span class="version-pill splash-version" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
-          <small class="splash-build-time">{{ t('تاريخ ووقت بناء النسخة:', 'Build date & time:') }} {{ buildTimeLabel }}</small>
-          <h1>{{ t('جارٍ تشغيل التطبيق', 'Starting the app') }}</h1>
-          <p class="muted">{{ t('نتحقق من الإعدادات وجلسة الدخول قبل عرض مساحة العمل.', 'Checking configuration and your sign-in session before opening the workspace.') }}</p>
+          <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
+          <small class="splash-build-time">{{ t('ui.m_1y28k2h') }} {{ buildTimeLabel }}</small>
+          <h1>{{ t('ui.m_1dygc0g') }}</h1>
+          <p class="muted">{{ t('ui.m_1uzdlys') }}</p>
         </main>
       } @else if (startupFailed) {
         <main class="auth-card">
-          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
+          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
           <div class="brand-mark">A</div>
-          <h1>{{ t('تعذر تحميل إعدادات التطبيق', 'Unable to load app configuration') }}</h1>
+          <h1>{{ t('ui.m_tee7tu') }}</h1>
           <aba-state-message kind="error" [description]="error" />
-          <button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t('جارٍ التحقق…', 'Checking…') : t('إعادة المحاولة', 'Retry startup') }}</button>
+          <button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t('ui.m_1dc4cbo') : t('ui.m_lr6ezy') }}</button>
         </main>
       } @else if (setupNeeded) {
         <main class="setup-card">
-          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
+          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
           <div class="brand-mark">A</div>
-          <p class="eyebrow">{{ t('مساعد الأعمال الذكي · يلزم الإعداد', 'AI BUSINESS ASSISTANT · SETUP REQUIRED') }}</p>
-          <h1>{{ t('اربط مساحة عملك الآمنة', 'Connect your secure workspace') }}</h1>
-          <p>{{ t('الواجهة جاهزة، لكن يجب إعداد بيانات تطبيق Firebase العامة ورابط واجهة API قبل تسجيل الدخول.', 'The UI is ready, but public Firebase web-app settings and the API URL must be configured before sign-in.') }}</p>
+          <p class="eyebrow">{{ t('ui.m_1yxyqru') }}</p>
+          <h1>{{ t('ui.m_11t8fki') }}</h1>
+          <p>{{ t('ui.m_1pg99q7') }}</p>
           <div class="setup-steps">
-            <p><strong>1.</strong> {{ t('افتح الملف', 'Open') }} <code>frontend/public/runtime-config.json</code> {{ t('داخل المستودع.', 'in the repository.') }}</p>
-            <p><strong>2.</strong> {{ t('اضبط', 'Set') }} <code>apiBaseUrl</code> {{ t('على عنوان واجهة API المنشورة.', 'to the deployed API URL.') }}</p>
-            <p><strong>3.</strong> {{ t('أدخل إعدادات تطبيق Firebase العامة:', 'Enter the public Firebase web-app settings:') }} <code>apiKey</code>, <code>authDomain</code>, <code>projectId</code>, {{ t('و', 'and') }} <code>appId</code>.</p>
-            <p><strong>4.</strong> {{ t('اضبط معرّف مشروع Firebase المطابق وبيانات حساب الخدمة كأسرار في الخادم. لا تضع الأسرار داخل هذا الملف.', 'Configure the matching Firebase project ID and service-account credentials as server secrets. Never put secrets in this file.') }}</p>
+            <p><strong>1.</strong> {{ t('ui.m_1ltjr2f') }} <code>frontend/public/runtime-config.json</code> {{ t('ui.m_11mqt0a') }}</p>
+            <p><strong>2.</strong> {{ t('ui.m_1lj5n4d') }} <code>apiBaseUrl</code> {{ t('ui.m_1aj80o5') }}</p>
+            <p><strong>3.</strong> {{ t('ui.m_15vm5ge') }} <code>apiKey</code>, <code>authDomain</code>, <code>projectId</code>, {{ t('ui.m_57gsye') }} <code>appId</code>.</p>
+            <p><strong>4.</strong> {{ t('ui.m_1rirx3l') }}</p>
           </div>
-          <p class="footnote">{{ t('لن نعرض بيانات تجريبية. سيظل التطبيق مغلقًا حتى اكتمال هذه الإعدادات.', 'No fake data is shown. The app remains closed until configuration is complete.') }}</p>
+          <p class="footnote">{{ t('ui.m_1uk988r') }}</p>
         </main>
       } @else if (!signedIn) {
         <main class="auth-card">
-          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button></div>
+          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
           <div class="brand-mark">A</div>
-          <p class="eyebrow">{{ t('كل أعمالك في مكان واحد', 'YOUR BUSINESS, IN ONE PLACE') }}</p>
-          <h1 id="auth-form-heading">{{ signingUp ? t('إنشاء حسابك', 'Create your account') : t('مرحبًا بعودتك', 'Welcome back') }}</h1>
-          <p class="muted">{{ t('سجّل الدخول بأمان للوصول إلى مساحات العمل المصرح لك بها فقط.', 'Sign in securely to access only the workspaces you belong to.') }}</p>
+          <p class="eyebrow">{{ t('ui.m_ll4uy7') }}</p>
+          <h1 id="auth-form-heading">{{ signingUp ? t('ui.m_1cuf5gq') : t('ui.m_cfel9w') }}</h1>
+          <p class="muted">{{ t('ui.m_1euk0tm') }}</p>
           <form #authForm="ngForm" aria-labelledby="auth-form-heading" (ngSubmit)="authForm.valid && submitAuth()" class="stack">
-            <label>{{ t('البريد الإلكتروني', 'Email address') }}<input #emailModel="ngModel" name="email" type="email" autocomplete="email" required [(ngModel)]="email" [attr.aria-invalid]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'auth-email-error' : null">
+            <label>{{ t('ui.m_1jc8kzg') }}<input #emailModel="ngModel" name="email" type="email" autocomplete="email" required [(ngModel)]="email" [attr.aria-invalid]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'auth-email-error' : null">
               @if (emailModel.invalid && (emailModel.touched || authForm.submitted)) {
-                <small id="auth-email-error" class="field-error" aria-live="polite">{{ emailModel.errors?.['required'] ? t('البريد الإلكتروني مطلوب.', 'Email is required.') : t('أدخل بريدًا إلكترونيًا صحيحًا.', 'Enter a valid email address.') }}</small>
+                <small id="auth-email-error" class="field-error" aria-live="polite">{{ emailModel.errors?.['required'] ? t('ui.m_gxa0df') : t('ui.m_1afx9c8') }}</small>
               }
             </label>
-            <label>{{ t('كلمة المرور', 'Password') }}<input #passwordModel="ngModel" name="password" type="password" [attr.autocomplete]="signingUp ? 'new-password' : 'current-password'" minlength="6" required [(ngModel)]="password" [attr.aria-invalid]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'auth-password-error' : null">
+            <label>{{ t('ui.m_eklfkj') }}<input #passwordModel="ngModel" name="password" type="password" [attr.autocomplete]="signingUp ? 'new-password' : 'current-password'" minlength="6" required [(ngModel)]="password" [attr.aria-invalid]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'auth-password-error' : null">
               @if (passwordModel.invalid && (passwordModel.touched || authForm.submitted)) {
-                <small id="auth-password-error" class="field-error" aria-live="polite">{{ passwordModel.errors?.['required'] ? t('كلمة المرور مطلوبة.', 'Password is required.') : t('كلمة المرور يجب ألا تقل عن 6 أحرف.', 'Password must be at least 6 characters.') }}</small>
+                <small id="auth-password-error" class="field-error" aria-live="polite">{{ passwordModel.errors?.['required'] ? t('ui.m_pfxpuv') : t('ui.m_1vnk3nk') }}</small>
               }
             </label>
-            <button class="primary" type="submit" [disabled]="loading">{{ loading ? t('جارٍ التنفيذ…', 'Working…') : (signingUp ? t('إنشاء الحساب', 'Create account') : t('تسجيل الدخول', 'Sign in')) }}</button>
+            <button class="primary" type="submit" [disabled]="loading">{{ loading ? t('ui.m_jxz3f3') : (signingUp ? t('ui.m_1hggna5') : t('ui.m_h8edye')) }}</button>
           </form>
-          <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? t('لديك حساب بالفعل؟ سجّل الدخول', 'Already have an account? Sign in') : t('مستخدم جديد؟ أنشئ حسابًا', 'New here? Create an account') }}</button>
+          <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? t('ui.m_1uh3cl9') : t('ui.m_1fdki9f') }}</button>
           @if (error) { <aba-state-message kind="error" [description]="error" /> }
+          @if (!isInstalled) {
+            <section class="mobile-install-card auth-mobile-install" [attr.aria-label]="t('ui.m_1ig5s72')">
+              <div class="mobile-install-copy">
+                <span class="mobile-install-icon" aria-hidden="true">⇧</span>
+                <div>
+                  <strong>{{ t('ui.m_1i6f7xh') }}</strong>
+                  <small>{{ t('ui.m_1ggnkh3') }}</small>
+                </div>
+              </div>
+              <button class="secondary install-button mobile-install-button" type="button" (click)="installApp()">{{ t('ui.m_76lwbh') }}</button>
+            </section>
+          }
+          @if (installHelp && !isInstalled) {
+            <div class="install-help install-help-inline" role="status">
+              {{ t('ui.m_14cdic2') }}
+              <button type="button" class="secondary" (click)="installHelp = false">{{ t('ui.m_1av23fu') }}</button>
+            </div>
+          }
         </main>
       } @else {
-        <aside class="sidebar" role="navigation" [attr.aria-label]="t('التنقل الرئيسي', 'Main navigation')">
-          <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>مساعد<span class="light">الأعمال</span></span></a>
-          <p class="nav-label">{{ t('مساحة العمل', 'Workspace') }}</p>
-          <button class="nav-item" [attr.aria-label]="t('الرئيسية', 'Home')" [attr.title]="t('الرئيسية', 'Home')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('الرئيسية', 'Home') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('نتيجة التشغيل الأولية', 'Preliminary operating result')" [attr.title]="t('نتيجة التشغيل الأولية', 'Preliminary operating result')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('نتيجة التشغيل الأولية', 'Preliminary operating result') }}</span></button>
-          @if (canAccessTab('taxes')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('الضرائب', 'Tax summary')" [attr.title]="t('الضرائب', 'Tax summary')" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('الضرائب', 'Tax summary') }}</span></button> }
-          <button class="nav-item" [attr.aria-label]="t('الفواتير', 'Invoices')" [attr.title]="t('الفواتير', 'Invoices')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('الفواتير', 'Invoices') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('المنتجات والمخزون', 'Products & inventory')" [attr.title]="t('المنتجات والمخزون', 'Products & inventory')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('المنتجات والمخزون', 'Products & inventory') }}</span></button>
-          <button class="nav-item" [attr.aria-label]="t('العملاء', 'Customers')" [attr.title]="t('العملاء', 'Customers')" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('العملاء', 'Customers') }}</span></button>
-          @if (canAccessTab('employees')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('الموظفون', 'Employees')" [attr.title]="t('الموظفون', 'Employees')" [class.active]="tab === 'employees'" [attr.aria-current]="tab === 'employees' ? 'page' : null" (click)="setTab('employees')"><span class="nav-icon" aria-hidden="true">♙</span><span>{{ t('الموظفون', 'Employees') }}</span></button> }
-          @if (canAccessTab('platform-admin')) { <button class="nav-item platform-admin-nav" [attr.aria-label]="t('إدارة المنصة', 'Platform admin')" [attr.title]="t('إدارة المنصة', 'Platform admin')" [class.active]="tab === 'platform-admin'" [attr.aria-current]="tab === 'platform-admin' ? 'page' : null" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('إدارة المنصة', 'Platform admin') }}</span></button> }
-@if (canAccessTab('audit')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('سجل العمليات', 'Activity log')" [attr.title]="t('سجل العمليات', 'Activity log')" [class.active]="tab === 'audit'" [attr.aria-current]="tab === 'audit' ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('سجل العمليات', 'Activity log') }}</span></button> }
-                    @if (canAccessTab('payments')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('المدفوعات', 'Payments')" [attr.title]="t('المدفوعات', 'Payments')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('المدفوعات', 'Payments') }}</span></button> }
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('المصروفات', 'Expenses')" [attr.title]="t('المصروفات', 'Expenses')" [class.active]="tab === 'expenses'" [attr.aria-current]="tab === 'expenses' ? 'page' : null" (click)="setTab('expenses')"><span class="nav-icon expense-icon" aria-hidden="true">−</span><span>{{ t('المصروفات', 'Expenses') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('الإشعارات', 'Notifications')" [attr.title]="t('الإشعارات', 'Notifications')" [class.active]="tab === 'notifications'" [attr.aria-current]="tab === 'notifications' ? 'page' : null" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t('الإشعارات', 'Notifications') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('الموردون', 'Suppliers')" [attr.title]="t('الموردون', 'Suppliers')" [class.active]="tab === 'suppliers'" [attr.aria-current]="tab === 'suppliers' ? 'page' : null" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('الموردون', 'Suppliers') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('المشتريات', 'Purchasing')" [attr.title]="t('المشتريات', 'Purchasing')" [class.active]="tab === 'purchases'" [attr.aria-current]="tab === 'purchases' ? 'page' : null" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('المشتريات', 'Purchasing') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('الفواتير الدورية', 'Recurring invoices')" [attr.title]="t('الفواتير الدورية', 'Recurring invoices')" [class.active]="tab === 'recurring'" [attr.aria-current]="tab === 'recurring' ? 'page' : null" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('الدورية', 'Recurring') }}</span></button>
-          @if (canAccessTab('health')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('الحالة التشغيلية', 'Operational health')" [attr.title]="t('الحالة التشغيلية', 'Operational health')" [class.active]="tab === 'health'" [attr.aria-current]="tab === 'health' ? 'page' : null" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('الحالة', 'Health') }}</span></button> }
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('المساعد الذكي', 'AI assistant')" [attr.title]="t('المساعد الذكي', 'AI assistant')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('المساعد الذكي', 'AI assistant') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [attr.title]="t('دليل التطبيق والإصدارات', 'App guide & versions')" [class.active]="tab === 'release-guide'" [attr.aria-current]="tab === 'release-guide' ? 'page' : null" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('دليل التطبيق والإصدارات', 'App guide & versions') }}</span></button>
-          <button #mobileMoreTrigger class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t('المزيد من الأقسام', 'More sections')" [attr.aria-expanded]="mobileMoreOpen" [attr.aria-controls]="mobileMoreOpen ? 'mobile-more-menu' : null" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('المزيد', 'More') }}</span></button>
+        <aside class="sidebar" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2')">
+          <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>{{ t('common.app_title') }}</span></a>
+          <p class="nav-label">{{ t('ui.m_criw1m') }}</p>
+          <button class="nav-item" [attr.aria-label]="t('ui.m_1sgyd06')" [attr.title]="t('ui.m_1sgyd06')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('ui.m_1sgyd06') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1k2jewg')" [attr.title]="t('ui.m_1k2jewg')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('ui.m_1k2jewg') }}</span></button>
+          @if (canAccessTab('taxes')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_17hm8dv')" [attr.title]="t('ui.m_17hm8dv')" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('ui.m_17hm8dv') }}</span></button> }
+          <button class="nav-item" [attr.aria-label]="t('ui.m_1h7f08p')" [attr.title]="t('ui.m_1h7f08p')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('ui.m_1h7f08p') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_xpe4pk')" [attr.title]="t('ui.m_xpe4pk')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('ui.m_xpe4pk') }}</span></button>
+          <button class="nav-item" [attr.aria-label]="t('ui.m_tvy79l')" [attr.title]="t('ui.m_tvy79l')" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('ui.m_tvy79l') }}</span></button>
+          @if (canAccessTab('employees')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1whxhp7')" [attr.title]="t('ui.m_1whxhp7')" [class.active]="tab === 'employees'" [attr.aria-current]="tab === 'employees' ? 'page' : null" (click)="setTab('employees')"><span class="nav-icon" aria-hidden="true">♙</span><span>{{ t('ui.m_1whxhp7') }}</span></button> }
+          @if (canAccessTab('team')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('catalog.team.title')" [attr.title]="t('catalog.team.title')" [class.active]="tab === 'team'" [attr.aria-current]="tab === 'team' ? 'page' : null" (click)="setTab('team')"><span class="nav-icon" aria-hidden="true">♧</span><span>{{ t('catalog.team.title') }}</span></button> }
+          @if (canAccessTab('platform-admin')) { <button class="nav-item platform-admin-nav" [attr.aria-label]="t('ui.m_1gkme2m')" [attr.title]="t('ui.m_1gkme2m')" [class.active]="tab === 'platform-admin'" [attr.aria-current]="tab === 'platform-admin' ? 'page' : null" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('ui.m_1gkme2m') }}</span></button> }
+@if (canAccessTab('audit')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_hd46sj')" [attr.title]="t('ui.m_hd46sj')" [class.active]="tab === 'audit'" [attr.aria-current]="tab === 'audit' ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('ui.m_hd46sj') }}</span></button> }
+                    @if (canAccessTab('payments')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_14ms9re')" [attr.title]="t('ui.m_14ms9re')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('ui.m_14ms9re') }}</span></button> }
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_l71hva')" [attr.title]="t('ui.m_l71hva')" [class.active]="tab === 'expenses'" [attr.aria-current]="tab === 'expenses' ? 'page' : null" (click)="setTab('expenses')"><span class="nav-icon expense-icon" aria-hidden="true">−</span><span>{{ t('ui.m_l71hva') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_vlrg7')" [attr.title]="t('ui.m_vlrg7')" [class.active]="tab === 'notifications'" [attr.aria-current]="tab === 'notifications' ? 'page' : null" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t('ui.m_vlrg7') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1yzd6rs')" [attr.title]="t('ui.m_1yzd6rs')" [class.active]="tab === 'suppliers'" [attr.aria-current]="tab === 'suppliers' ? 'page' : null" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('ui.m_1yzd6rs') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_s8z24b')" [attr.title]="t('ui.m_s8z24b')" [class.active]="tab === 'purchases'" [attr.aria-current]="tab === 'purchases' ? 'page' : null" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('ui.m_s8z24b') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_11lck86')" [attr.title]="t('ui.m_11lck86')" [class.active]="tab === 'recurring'" [attr.aria-current]="tab === 'recurring' ? 'page' : null" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('ui.m_ccqp2u') }}</span></button>
+          @if (canAccessTab('health')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_18z2l5z')" [attr.title]="t('ui.m_18z2l5z')" [class.active]="tab === 'health'" [attr.aria-current]="tab === 'health' ? 'page' : null" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('ui.m_3lp8ed') }}</span></button> }
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_dzn3ev')" [attr.title]="t('ui.m_dzn3ev')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('ui.m_dzn3ev') }}</span></button>
+          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_a3qirn')" [attr.title]="t('ui.m_a3qirn')" [class.active]="tab === 'release-guide'" [attr.aria-current]="tab === 'release-guide' ? 'page' : null" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('ui.m_a3qirn') }}</span></button>
+          <button #mobileMoreTrigger class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t('ui.m_nxf6ap')" [attr.aria-expanded]="mobileMoreOpen" [attr.aria-controls]="mobileMoreOpen ? 'mobile-more-menu' : null" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('ui.m_dh4eov') }}</span></button>
           @if (mobileMoreOpen) {
-            <nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('أقسام إضافية', 'Additional sections')">
+            <nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('ui.m_1c7twvy')">
               <label class="mobile-more-search">
-                <span class="sr-only">{{ t('البحث في الأقسام', 'Search sections') }}</span>
+                <span class="sr-only">{{ t('ui.m_1eu8swe') }}</span>
                 <input type="search" name="mobileMoreSearch" autocomplete="off" enterkeyhint="search"
-                  [attr.aria-label]="t('البحث في الأقسام', 'Search sections')"
-                  [placeholder]="t('ابحث عن قسم…', 'Search sections…')"
+                  [attr.aria-label]="t('ui.m_1eu8swe')"
+                  [placeholder]="t('ui.m_1uhhx5z')"
                   [(ngModel)]="mobileMoreSearch" />
               </label>
               @if (filteredMobileMoreGroups.length) {
                 @for (group of filteredMobileMoreGroups; track group.id) {
                 <section class="mobile-more-group" [attr.aria-labelledby]="'mobile-more-' + group.id + '-heading'">
-                  <h3 [id]="'mobile-more-' + group.id + '-heading'">{{ t(group.titleAr, group.titleEn) }}</h3>
+                  <h3 [id]="'mobile-more-' + group.id + '-heading'">{{ t(group.titleKey) }}</h3>
                   @for (module of group.modules; track module.tab) {
                     <button class="nav-item" type="button" [class.active]="tab === module.tab" [attr.aria-current]="tab === module.tab ? 'page' : null" (click)="selectMobileMoreTab(module.tab)">
                       <span class="nav-icon" aria-hidden="true">{{ module.icon }}</span>
-                      <span>{{ t(module.titleAr, module.titleEn) }}</span>
+                      <span>{{ t(module.titleKey) }}</span>
                     </button>
                   }
                 </section>
                 }
               } @else {
-                <p class="mobile-more-empty" role="status">{{ t('لا توجد أقسام مطابقة للبحث.', 'No sections match your search.') }}</p>
+                <p class="mobile-more-empty" role="status">{{ t('ui.m_ehdjlq') }}</p>
               }
               <div class="mobile-more-actions">
-                <button class="nav-item mobile-menu-action" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? 'English' : 'العربية' }}</span></button>
-                <button class="nav-item mobile-menu-action" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t('تسجيل الخروج', 'Sign out') }}</span></button>
+                <button class="nav-item mobile-menu-action" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</span></button>
+                <button class="nav-item mobile-menu-action" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t('ui.m_r2b303') }}</span></button>
               </div>
             </nav>
           }
-          <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('جلسة موثّقة', 'Verified session') }}<small>{{ t('يتحقق الخادم من صلاحيات مساحة العمل', 'The server verifies workspace permissions') }}</small></div>
+          <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('ui.m_17dx7ed') }}<small>{{ t('ui.m_ab5ft9') }}</small></div>
         </aside>
         <main class="main" id="main-content" tabindex="-1">
           @if (!isInstalled) {
-            <section class="mobile-install-card" [attr.aria-label]="t('تثبيت التطبيق', 'Install app')">
+            <section class="mobile-install-card" [attr.aria-label]="t('ui.m_1ig5s72')">
               <div class="mobile-install-copy">
                 <span class="mobile-install-icon" aria-hidden="true">⇧</span>
                 <div>
-                  <strong>{{ t('ثبّت مساعد أعمالك', 'Install your business assistant') }}</strong>
-                  <small>{{ t('وصول أسرع من الشاشة الرئيسية', 'Open it directly from your home screen') }}</small>
+                  <strong>{{ t('ui.m_1i6f7xh') }}</strong>
+                  <small>{{ t('ui.m_1itaw9f') }}</small>
                 </div>
               </div>
-              <button class="secondary install-button mobile-install-button" type="button" (click)="installApp()">{{ t('تثبيت', 'Install') }}</button>
+              <button class="secondary install-button mobile-install-button" type="button" (click)="installApp()">{{ t('ui.m_76lwbh') }}</button>
             </section>
           }
           @if (installHelp && !isInstalled) {
             <div class="install-help install-help-inline" role="status">
-              {{ t('لو لم تظهر نافذة التثبيت: افتح قائمة المتصفح ⋮ ثم اختر «تثبيت التطبيق» أو «إضافة إلى الشاشة الرئيسية».', 'If no install prompt appears, open the browser menu and choose “Install app” or “Add to Home screen”.') }}
-              <button type="button" class="secondary" (click)="installHelp = false">{{ t('حسنًا', 'Got it') }}</button>
+              {{ t('ui.m_14cdic2') }}
+              <button type="button" class="secondary" (click)="installHelp = false">{{ t('ui.m_1av23fu') }}</button>
             </div>
           }
           @if (tab === 'platform-admin' && platformAdminAvailable) {
@@ -178,40 +206,40 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               <aba-platform-admin [language]="language" [userEmail]="userEmail" (signOutRequested)="logout()" (languageToggleRequested)="toggleLanguage()" />
             } @placeholder {
               <section abaCard class="panel narrow">
-                <aba-state-message kind="loading" [description]="t('جارٍ تحميل مركز الإدارة…', 'Loading Platform Admin…')" />
+                <aba-state-message kind="loading" [description]="t('ui.m_icu2ib')" />
               </section>
             }
           } @else {
           <header class="topbar">
-            <div class="topbar-heading"><p class="eyebrow">{{ t('مساحة العمل', 'Workspace') }}</p><h1>{{ pageTitle }}</h1></div>
-            <div class="user-area">@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('تثبيت التطبيق', 'Install app') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? 'English' : 'العربية' }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('تسجيل الخروج', 'Sign out') }}</button></div>
+            <div class="topbar-heading"><p class="eyebrow">{{ t('ui.m_criw1m') }}</p><h1>{{ pageTitle }}</h1></div>
+            <div class="user-area">@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('ui.m_1ig5s72') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('ui.m_r2b303') }}</button></div>
           </header>
-          @if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="sessionExpired ? t('تسجيل الدخول مجددًا', 'Sign in again') : accessDenied ? t('العودة للرئيسية', 'Go to Home') : t('إعادة المحاولة', 'Retry')" (action)="sessionExpired ? logout() : accessDenied ? setTab('overview') : retry()" /> }
-          @if (loading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل بيانات مساحة العمل…', 'Loading workspace data…')" /> }
+          @if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="sessionExpired ? t('ui.m_14surv3') : accessDenied ? t('ui.m_atfuse') : t('ui.m_worzj7')" (action)="sessionExpired ? logout() : accessDenied ? setTab('overview') : retry()" /> }
+          @if (loading) { <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" /> }
 
           @if (!business) {
             <section abaCard class="panel narrow">
-              <p class="eyebrow">{{ t('ابدأ هنا', 'GET STARTED') }}</p><h2>{{ t('أنشئ مساحة عملك الأولى', 'Create your first workspace') }}</h2>
-              <p class="muted">{{ t('مساحة العمل مرتبطة بحسابك الذي تم التحقق منه. لا يمكن للمستخدمين الآخرين الوصول إليها دون عضوية.', 'This workspace belongs to your verified account. Other users cannot access it without membership.') }}</p>
+              <p class="eyebrow">{{ t('ui.m_117ileb') }}</p><h2>{{ t('ui.m_sgf5dv') }}</h2>
+              <p class="muted">{{ t('ui.m_1bmd66c') }}</p>
               <form #workspaceForm="ngForm" class="stack" (ngSubmit)="workspaceForm.valid && createWorkspace()">
-                <label>{{ t('اسم النشاط التجاري', 'Business name') }}<input #businessNameModel="ngModel" name="businessName" required maxlength="160" [(ngModel)]="businessName" [attr.aria-invalid]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'true' : null" [attr.aria-describedby]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'workspace-name-error' : null">
+                <label>{{ t('ui.m_lzm3kh') }}<input #businessNameModel="ngModel" name="businessName" required maxlength="160" [(ngModel)]="businessName" [attr.aria-invalid]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'true' : null" [attr.aria-describedby]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'workspace-name-error' : null">
                   @if (businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted)) {
-                    <small id="workspace-name-error" class="field-error" aria-live="polite">{{ businessNameModel.errors?.['required'] ? t('اسم النشاط التجاري مطلوب.', 'Business name is required.') : t('اسم النشاط يجب ألا يتجاوز 160 حرفًا.', 'Business name must be 160 characters or fewer.') }}</small>
+                    <small id="workspace-name-error" class="field-error" aria-live="polite">{{ businessNameModel.errors?.['required'] ? t('ui.m_dqqjgk') : t('ui.m_nclsue') }}</small>
                   }
                 </label>
-                <label>{{ t('العملة الافتراضية', 'Default currency') }}<select name="currency" [(ngModel)]="currencyCode"><option value="EGP">جنيه مصري</option><option value="USD">دولار أمريكي</option><option value="EUR">يورو</option><option value="GBP">جنيه إسترليني</option><option value="SAR">ريال سعودي</option><option value="AED">درهم إماراتي</option></select></label>
-                <button class="primary" type="submit" [disabled]="loading">{{ t('إنشاء مساحة عمل', 'Create workspace') }}</button>
+                <label>{{ t('ui.m_1n6idjh') }}<select name="currency" [(ngModel)]="currencyCode"><option value="EGP">{{ currencyName("EGP") }}</option><option value="USD">{{ currencyName("USD") }}</option><option value="EUR">{{ currencyName("EUR") }}</option><option value="GBP">{{ currencyName("GBP") }}</option><option value="SAR">{{ currencyName("SAR") }}</option><option value="AED">{{ currencyName("AED") }}</option></select></label>
+                <button class="primary" type="submit" [disabled]="loading">{{ t('ui.m_uddskc') }}</button>
               </form>
             </section>
           } @else {
-            <section class="workspace-bar" [attr.aria-label]="t('مساحة العمل الحالية', 'Current workspace')">
-              <div class="workspace-current"><span class="eyebrow">{{ t('النشاط الحالي', 'Current business') }}</span><strong id="workspace-current-name" aria-live="polite">{{ business.name }}</strong></div>
-              <select [attr.aria-label]="t('اختيار النشاط', 'Select business')" aria-describedby="workspace-current-name" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
+            <section class="workspace-bar" [attr.aria-label]="t('ui.m_qhibn3')">
+              <div class="workspace-current"><span class="eyebrow">{{ t('ui.m_k9m7mg') }}</span><strong id="workspace-current-name" aria-live="polite">{{ business.name }}</strong></div>
+              <select [attr.aria-label]="t('ui.m_10nmufl')" aria-describedby="workspace-current-name" [ngModel]="selectedBusinessId" (ngModelChange)="switchBusiness($event)">
                 @for (item of businesses; track item.id) { <option [value]="item.id">{{ item.name }}</option> }
               </select>
-              <div class="workspace-release-meta workspace-release-meta-inline" [attr.aria-label]="t('إصدار التطبيق ووقت النشر', 'App version and deployment time')">
-                <span class="version-pill" [attr.title]="t('إصدار الواجهة وواجهة API', 'UI and API release versions') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
-                <small>{{ t('وقت بناء النسخة:', 'Build time:') }} {{ buildTimeLabel }}</small>
+              <div class="workspace-release-meta workspace-release-meta-inline" [attr.aria-label]="t('ui.m_zepwzq')">
+                <span class="version-pill" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
+                <small>{{ t('ui.m_1d7lshv') }} {{ buildTimeLabel }}</small>
               </div>
             </section>
             <aba-mobile-app-header
@@ -231,33 +259,78 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               (signOutRequested)="logout()" />
 
             @if (tab === 'overview') {
+              <aba-workspace-invitations mode="accept" [businessId]="business?.id || null" [language]="language" (accepted)="loadBusinesses()" />
+
               @if (dashboard) {
-                <section class="dashboard-period" [attr.aria-label]="t('فترة مؤشرات النشاط', 'Business metrics reporting period')">
+                <section class="dashboard-period" [attr.aria-label]="t('ui.m_14yh7ls')">
                   <div class="dashboard-period__heading">
-                    <h2 class="dashboard-period__title">{{ t('ملخص النشاط', 'Business summary') }}</h2>
-                    <strong>{{ t('آخر 30 يومًا', 'Last 30 days') }}</strong>
+                    <h2 class="dashboard-period__title">{{ t('ui.m_1wch2zm') }}</h2>
+                    <strong>{{ t('ui.m_1ql1fm2') }}</strong>
                   </div>
                   <div class="dashboard-period__details">
-                    <span>{{ t('من', 'From') }} <bdi dir="ltr">{{ dashboard.period.start_date || '—' }}</bdi> {{ t('إلى', 'to') }} <bdi dir="ltr">{{ dashboard.period.end_date || '—' }}</bdi></span>
-                    <span>{{ t('التوقيت المحلي للنشاط', 'Business timezone') }}: <bdi>{{ dashboard.period.timezone || '—' }}</bdi></span>
+                    <span>{{ t('ui.m_15qcbwy') }} <bdi dir="ltr">{{ dashboard.period.start_date || '—' }}</bdi> {{ t('ui.m_8f9vz0') }} <bdi dir="ltr">{{ dashboard.period.end_date || '—' }}</bdi></span>
+                    <span>{{ t('ui.m_j805b6') }}: <bdi>{{ dashboard.period.timezone || '—' }}</bdi></span>
                   </div>
                 </section>
-                <section class="metric-grid" [attr.aria-label]="t('مؤشرات النشاط حسب العملة', 'Currency-separated business metrics')">
-                  <aba-metric-card role="group" aria-labelledby="metric-invoiced-sales-label"><span id="metric-invoiced-sales-label" metricLabel>{{ t('المبيعات بالفواتير', 'Invoiced sales') }}</span>
-                    @for (item of dashboard.invoiced_sales; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('فاتورة صادرة', 'issued invoices') }}</small> } @if (!dashboard.invoiced_sales.length) { <strong>—</strong><small>{{ t('لا توجد مبيعات بفواتير صادرة خلال الفترة', 'No invoiced sales in this period') }}</small> }<small class="metric-basis">{{ t('حسب تاريخ إصدار الفاتورة', 'By invoice issue date') }}</small></aba-metric-card>
-                  <aba-metric-card role="group" aria-labelledby="metric-collected-payments-label"><span id="metric-collected-payments-label" metricLabel>{{ t('التحصيلات', 'Collected payments') }}</span>
-                    @for (item of dashboard.collected_payments; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('دفعة مسجلة', 'recorded payments') }}</small> } @if (!dashboard.collected_payments.length) { <strong>—</strong><small>{{ t('لا توجد مدفوعات مسجلة خلال الفترة', 'No payments recorded in this period') }}</small> }<small class="metric-basis">{{ t('حسب وقت استلام الدفعة', 'By payment received time') }}</small></aba-metric-card>
-                  <aba-metric-card role="group" aria-labelledby="metric-expenses-label"><span id="metric-expenses-label" metricLabel>{{ t('المصروفات', 'Expenses') }}</span>
-                    @for (item of dashboard.expenses; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('مصروف مسجل', 'recorded expenses') }}</small> } @if (!dashboard.expenses.length) { <strong>—</strong><small>{{ t('لا توجد مصروفات مسجلة خلال الفترة', 'No expenses recorded in this period') }}</small> }<small class="metric-basis">{{ t('حسب تاريخ تكبد المصروف', 'By expense incurred date') }}</small></aba-metric-card>
-                  <aba-metric-card role="group" aria-labelledby="metric-outstanding-balances-label"><span id="metric-outstanding-balances-label" metricLabel>{{ t('المبالغ المستحقة', 'Outstanding balances') }}</span>
-                    @for (item of dashboard.outstanding_balances; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small class="metric-basis">{{ t('الفواتير الصادرة بعد خصم المبالغ المخصصة', 'Issued invoices after allocated payments') }}</small> } @if (!dashboard.outstanding_balances.length) { <strong>—</strong><small>{{ t('لا توجد فواتير مستحقة خلال الفترة', 'No outstanding invoices in this period') }}</small> }</aba-metric-card>
+                <section class="metric-grid" [attr.aria-label]="t('ui.m_1gk81ud')">
+                  <aba-metric-card class="metric-card-action" role="button" tabindex="0" [attr.aria-label]="t('ui.m_fnf54u')" (click)="setTab('invoices')" (keydown.enter)="setTab('invoices')" (keydown.space)="$event.preventDefault(); setTab('invoices')"><span metricLabel>{{ t('ui.m_fnf54u') }}</span>
+                    @for (item of dashboard.invoiced_sales; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('ui.m_18n4mlp') }}</small> } @if (!dashboard.invoiced_sales.length) { <strong>—</strong><small>{{ t('ui.m_e17yyr') }}</small> }<small class="metric-basis">{{ t('ui.m_zszhha') }}</small></aba-metric-card>
+                  <aba-metric-card class="metric-card-action" role="button" tabindex="0" [attr.aria-label]="t('ui.m_1ukns6h')" (click)="setTab('payments')" (keydown.enter)="setTab('payments')" (keydown.space)="$event.preventDefault(); setTab('payments')"><span metricLabel>{{ t('ui.m_1ukns6h') }}</span>
+                    @for (item of dashboard.collected_payments; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('ui.m_1dedwxn') }}</small> } @if (!dashboard.collected_payments.length) { <strong>—</strong><small>{{ t('ui.m_5s5eo') }}</small> }<small class="metric-basis">{{ t('ui.m_nbfv39') }}</small></aba-metric-card>
+                  <aba-metric-card class="metric-card-action" role="button" tabindex="0" [attr.aria-label]="t('ui.m_l71hva')" (click)="setTab('expenses')" (keydown.enter)="setTab('expenses')" (keydown.space)="$event.preventDefault(); setTab('expenses')"><span metricLabel>{{ t('ui.m_l71hva') }}</span>
+                    @for (item of dashboard.expenses; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('ui.m_jgq8i') }}</small> } @if (!dashboard.expenses.length) { <strong>—</strong><small>{{ t('ui.m_53hyf8') }}</small> }<small class="metric-basis">{{ t('ui.m_1mhn6p1') }}</small></aba-metric-card>
+                  <aba-metric-card class="metric-card-action" role="button" tabindex="0" [attr.aria-label]="t('ui.m_v5uwri')" (click)="setTab('invoices')" (keydown.enter)="setTab('invoices')" (keydown.space)="$event.preventDefault(); setTab('invoices')"><span metricLabel>{{ t('ui.m_v5uwri') }}</span>
+                    @for (item of dashboard.outstanding_balances; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small class="metric-basis">{{ t('ui.m_1wagqaw') }}</small> } @if (!dashboard.outstanding_balances.length) { <strong>—</strong><small>{{ t('ui.m_1k06qyq') }}</small> }</aba-metric-card>
                 </section>
-                <section class="notice dashboard-trust-note" role="note"><strong>{{ t('ملاحظات على المؤشرات', 'Metric notes') }}</strong><span>{{ t('قيمة الفواتير الصادرة لا تعني أن المبلغ تم تحصيله. لكل مؤشر أساس زمني مستقل، والعملات لا تُجمع. لا تمثل هذه المؤشرات صافي الربح لأن تكلفة المنتجات وتكاليف أخرى قد تكون غير مكتملة.', 'Issued invoice value is not the same as collected payments. Each metric uses its own source timestamp, currencies are never combined, and these figures are not net profit because product cost and other costs may be incomplete.') }}</span></section>
+                <section class="dashboard-actions" [attr.aria-label]="t('ui.m_1423muo')">
+                  @if (canAccessTab('invoices')) {
+                    <button class="dashboard-action dashboard-action--primary" type="button"
+                      (click)="setTab('invoices'); startNewInvoiceDraft()">
+                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
+                      <span class="dashboard-action__copy">
+                        <strong>{{ t('ui.m_12vszs4') }}</strong>
+                        <small>{{ t('ui.m_61q6l7') }}</small>
+                      </span>
+                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
+                    </button>
+                  }
+                  @if (canAccessTab('expenses')) {
+                    <button class="dashboard-action" type="button" (click)="setTab('expenses')">
+                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
+                      <span class="dashboard-action__copy">
+                        <strong>{{ t('ui.m_p4p38y') }}</strong>
+                        <small>{{ t('ui.m_ehnfke') }}</small>
+                      </span>
+                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
+                    </button>
+                  }
+                  @if (canAccessTab('customers')) {
+                    <button class="dashboard-action" type="button" (click)="setTab('customers'); customerCreateOpen = true">
+                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
+                      <span class="dashboard-action__copy">
+                        <strong>{{ t('ui.m_1yvcfg6') }}</strong>
+                        <small>{{ t('ui.m_15gmqko') }}</small>
+                      </span>
+                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
+                    </button>
+                  }
+                  @if (canAccessTab('products')) {
+                    <button class="dashboard-action" type="button" (click)="setTab('products'); productCreateOpen = true">
+                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
+                      <span class="dashboard-action__copy">
+                        <strong>{{ t('ui.m_1nbakc8') }}</strong>
+                        <small>{{ t('ui.m_snu8sb') }}</small>
+                      </span>
+                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
+                    </button>
+                  }
+                </section>
+                <section class="notice dashboard-trust-note" role="note"><strong>{{ t('ui.m_lgrza4') }}</strong><span>{{ t('ui.m_1yfmgqi') }}</span></section>
               } @else if (loading) {
                 <section class="dashboard-period dashboard-period--skeleton" aria-hidden="true">
                   <div class="dashboard-period__heading">
-                    <h2 class="dashboard-period__title">{{ t('ملخص النشاط', 'Business summary') }}</h2>
-                    <strong>{{ t('آخر 30 يومًا', 'Last 30 days') }}</strong>
+                    <h2 class="dashboard-period__title">{{ t('ui.m_1wch2zm') }}</h2>
+                    <strong>{{ t('ui.m_1ql1fm2') }}</strong>
                   </div>
                   <div class="dashboard-period-skeleton__details">
                     <span></span><span></span>
@@ -271,15 +344,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 </section>
 
               } @else if (!error) {
-                <aba-state-message kind="empty" [description]="t('لا توجد مؤشرات نشاط متاحة حاليًا.', 'No business metrics are available yet.')" />
+                <aba-state-message kind="empty" [description]="t('ui.m_1x7j987')" />
               }
               <section abaCard class="panel module-launcher" aria-labelledby="module-launcher-title">
-                <aba-section-header [titleId]="'module-launcher-title'" [title]="t('الوصول السريع', 'Quick access')" [description]="t('اختصارات للأقسام الأساسية في مساحة العمل.', 'Shortcuts to key workspace areas.')" [count]="homeQuickAccessCards.length" />
-                <nav class="home-shortcut-list" [attr.aria-label]="t('اختصارات للأقسام الأساسية', 'Shortcuts to key sections')">
+                <aba-section-header [titleId]="'module-launcher-title'" [title]="t('ui.m_1423muo')" [description]="t('ui.m_1srbbxd')" [count]="homeQuickAccessCards.length" />
+                <nav class="home-shortcut-list" [attr.aria-label]="t('ui.m_1ufo715')">
                   @for (module of homeQuickAccessCards; track module.tab) {
                     <button class="home-shortcut-link" type="button" (click)="setTab(module.tab)">
                       <span class="home-shortcut-link__icon" aria-hidden="true">{{ module.icon }}</span>
-                      <span class="home-shortcut-link__label">{{ t(module.titleAr, module.titleEn) }}</span>
+                      <span class="home-shortcut-link__label">{{ t(module.titleKey) }}</span>
                     </button>
                   }
                 </nav>
@@ -288,17 +361,17 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <details class="module-directory-disclosure">
                   <summary class="module-directory-summary">
                     <span class="module-directory-summary__copy">
-                      <span class="module-directory-summary__title" role="heading" aria-level="2" id="module-directory-title">{{ t('كل أقسام مساحة العمل', 'All workspace modules') }}</span>
-                      <small>{{ t('افتح لعرض الأقسام المتاحة حسب صلاحياتك الحالية.', 'Expand to browse modules available under your current permissions.') }}</small>
+                      <span class="module-directory-summary__title" role="heading" aria-level="2" id="module-directory-title">{{ t('ui.m_1h6gxl7') }}</span>
+                      <small>{{ t('ui.m_ytvtiu') }}</small>
                     </span>
                     <span class="count">{{ homeModuleCards.length }}</span>
                     <span class="module-directory-toggle" aria-hidden="true">＋</span>
                   </summary>
                   <label class="module-directory-search">
-                    <span class="sr-only">{{ t('البحث في أقسام مساحة العمل', 'Search workspace modules') }}</span>
+                    <span class="sr-only">{{ t('ui.m_1yd5km1') }}</span>
                     <input type="search" name="homeModuleSearch" autocomplete="off"
-                      [attr.aria-label]="t('البحث في أقسام مساحة العمل', 'Search workspace modules')"
-                      [placeholder]="t('ابحث باسم القسم أو وصفه…', 'Search by module name or description…')"
+                      [attr.aria-label]="t('ui.m_1yd5km1')"
+                      [placeholder]="t('ui.m_3bdru5')"
                       [(ngModel)]="homeModuleSearch" />
                   </label>
                   @if (filteredHomeModuleCards.length) {
@@ -306,13 +379,13 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     @for (module of filteredHomeModuleCards; track module.tab) {
                       <aba-quick-access-card
                         [icon]="module.icon"
-                        [title]="t(module.titleAr, module.titleEn)"
-                        [description]="t(module.descriptionAr, module.descriptionEn)"
+                        [title]="t(module.titleKey)"
+                        [description]="t(module.descriptionKey)"
                         (activated)="setTab(module.tab)" />
                     }
                   </div>
                   } @else {
-                    <p class="module-directory-empty" role="status">{{ t('لا توجد أقسام مطابقة للبحث.', 'No modules match your search.') }}</p>
+                    <p class="module-directory-empty" role="status">{{ t('ui.m_c4eu5t') }}</p>
                   }
                 </details>
               </section>
@@ -321,62 +394,62 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'notifications') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('قائمة الإشعارات', 'Notification queue') " [description]=" t('يتم حفظ بيانات الإشعار وحالته فقط؛ الإرسال الفعلي يحتاج مزودًا وعامل تسليم منشورًا.', 'This stores notification metadata and status only; delivery requires a configured provider and deployed worker.') "><span class="count">{{ filteredNotifications.length }} / {{ notifications.length }}</span></aba-section-header>
+                <aba-section-header [title]=" t('ui.m_6wit46') " [description]=" t('ui.m_1a21njv') "><span class="count">{{ filteredNotifications.length }} / {{ notifications.length }}</span></aba-section-header>
                 @if (business?.role === 'owner') {
                 <form #notificationForm="ngForm" class="stack" (ngSubmit)="notificationForm.valid && createNotification()">
-                  <label>{{ t('نوع الإشعار', 'Notification type') }}<select #notificationKindControl="ngModel" name="notificationKind" required [attr.aria-invalid]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'notification-kind-error' : null" [(ngModel)]="notificationKind">
-                    <option value="business">{{ t('مساحات العمل', 'Businesses') }}</option>
-                    <option value="invoices">{{ t('الفواتير', 'Invoices') }}</option>
-                    <option value="payments">{{ t('المدفوعات', 'Payments') }}</option>
-                    <option value="expenses">{{ t('المصروفات', 'Expenses') }}</option>
-                    <option value="inventory">{{ t('المخزون', 'Inventory') }}</option>
-                    <option value="reminders">{{ t('التذكيرات', 'Reminders') }}</option>
-                    <option value="reports">{{ t('التقارير', 'Reports') }}</option>
-                    <option value="suppliers">{{ t('الموردون', 'Suppliers') }}</option>
-                    <option value="purchases">{{ t('المشتريات', 'Purchases') }}</option>
-                    <option value="recurring">{{ t('الفواتير الدورية', 'Recurring invoices') }}</option>
-                    <option value="assistant">{{ t('المساعد الذكي', 'AI assistant') }}</option>
-                    <option value="system">{{ t('النظام', 'System') }}</option>
+                  <label>{{ t('ui.m_1ulxyq2') }}<select #notificationKindControl="ngModel" name="notificationKind" required [attr.aria-invalid]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'notification-kind-error' : null" [(ngModel)]="notificationKind">
+                    <option value="business">{{ t('ui.m_1821fhb') }}</option>
+                    <option value="invoices">{{ t('ui.m_1h7f08p') }}</option>
+                    <option value="payments">{{ t('ui.m_14ms9re') }}</option>
+                    <option value="expenses">{{ t('ui.m_l71hva') }}</option>
+                    <option value="inventory">{{ t('ui.m_1w4exkr') }}</option>
+                    <option value="reminders">{{ t('ui.m_1f2h79i') }}</option>
+                    <option value="reports">{{ t('ui.m_zmcikc') }}</option>
+                    <option value="suppliers">{{ t('ui.m_1yzd6rs') }}</option>
+                    <option value="purchases">{{ t('ui.m_57w0yx') }}</option>
+                    <option value="recurring">{{ t('ui.m_11lck86') }}</option>
+                    <option value="assistant">{{ t('ui.m_dzn3ev') }}</option>
+                    <option value="system">{{ t('ui.m_kl4jvd') }}</option>
                   </select></label>
-                  <label>{{ t('العنوان', 'Title') }}<input #notificationTitleControl="ngModel" name="notificationTitle" required maxlength="160" [attr.aria-invalid]="notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted) ? 'notification-title-error' : null" [(ngModel)]="notificationTitle"></label>
-                  <label>{{ t('المحتوى', 'Message') }}<textarea #notificationBodyControl="ngModel" name="notificationBody" required maxlength="1000" rows="3" [attr.aria-invalid]="notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted) ? 'notification-body-error' : null" [(ngModel)]="notificationBody"></textarea></label>
-                  <label>{{ t('موعد الإرسال (اختياري)', 'Scheduled time (optional)') }}<input name="notificationScheduledAt" type="datetime-local" [(ngModel)]="notificationScheduledAt"></label>
-                  <button class="primary" type="submit" [disabled]="notificationsLoading">{{ t('إضافة إلى قائمة الانتظار', 'Queue notification') }}</button>
+                  <label>{{ t('ui.m_1m8bms') }}<input #notificationTitleControl="ngModel" name="notificationTitle" required maxlength="160" [attr.aria-invalid]="notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted) ? 'notification-title-error' : null" [(ngModel)]="notificationTitle"></label>
+                  <label>{{ t('ui.m_cjak9a') }}<textarea #notificationBodyControl="ngModel" name="notificationBody" required maxlength="1000" rows="3" [attr.aria-invalid]="notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted) ? 'notification-body-error' : null" [(ngModel)]="notificationBody"></textarea></label>
+                  <label>{{ t('ui.m_1ocecai') }}<input name="notificationScheduledAt" type="datetime-local" [(ngModel)]="notificationScheduledAt"></label>
+                  <button class="primary" type="submit" [disabled]="notificationsLoading">{{ t('ui.m_d76gji') }}</button>
                 </form>
                 @if ((notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted)) || (notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted)) || (notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted))) {
                   <div class="form-validation" aria-live="polite">
-                    @if (notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted)) { <small id="notification-kind-error" class="field-error">{{ t('اختر نوع الإشعار.', 'Choose a notification type.') }}</small> }
-                    @if (notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted)) { <small id="notification-title-error" class="field-error">{{ t('أدخل عنوان الإشعار (بحد أقصى 160 حرفًا).', 'Enter a notification title (up to 160 characters).') }}</small> }
-                    @if (notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted)) { <small id="notification-body-error" class="field-error">{{ t('أدخل محتوى الإشعار (بحد أقصى 1000 حرف).', 'Enter a notification message (up to 1000 characters).') }}</small> }
+                    @if (notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted)) { <small id="notification-kind-error" class="field-error">{{ t('ui.m_guqotm') }}</small> }
+                    @if (notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted)) { <small id="notification-title-error" class="field-error">{{ t('ui.m_92hmvu') }}</small> }
+                    @if (notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted)) { <small id="notification-body-error" class="field-error">{{ t('ui.m_1qli6jw') }}</small> }
                   </div>
                 }
-                } @else { <aba-state-message kind="info" [description]="t('إضافة الإشعارات متاحة لمالك مساحة العمل فقط.', 'Only workspace owners can queue notifications.')" /> }
+                } @else { <aba-state-message kind="info" [description]="t('ui.m_1oi5fhe')" /> }
                 @if (operationsError && operationsErrorTab === 'notifications') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'notifications') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'notifications' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="notificationSearch" type="search" [attr.aria-label]="t('البحث في الإشعارات', 'Search notifications')" [placeholder]="t('ابحث بالعنوان أو المحتوى أو النوع أو الحالة…', 'Search by title, message, type or status…')" [(ngModel)]="notificationSearch"></div>
-                <aba-record-table [ariaLabel]="t('جدول الإشعارات','Notifications table')" [columns]="notificationTableColumns" [rows]="notificationTableRows" [loading]="notificationsLoading && !notifications.length" [loadingDescription]="t('جارٍ تحميل الإشعارات…', 'Loading notifications…')" [emptyTitle]="t('قائمة الإشعارات فارغة','Notification queue is empty')" [emptyDescription]="notificationSearch.trim() ? t('لا توجد إشعارات مطابقة للبحث.','No notifications match this search.') : t('لا توجد إشعارات حتى الآن.','No notifications yet.')" />
+                <div class="list-tools operations-search aba-record-toolbar"><input name="notificationSearch" type="search" [attr.aria-label]="t('ui.m_1qze32v')" [placeholder]="t('ui.m_1aqo4qr')" [(ngModel)]="notificationSearch"></div>
+                <aba-record-table [ariaLabel]="t('ui.m_1qfr3uw')" [columns]="notificationTableColumns" [rows]="notificationTableRows" [loading]="notificationsLoading && !notifications.length" [loadingDescription]="t('ui.m_fwia2s')" [emptyTitle]="t('ui.m_1mw6u5')" [emptyDescription]="notificationSearch.trim() ? t('ui.m_23ba9u') : t('ui.m_1yt5n1a')" />
               </section>
             }
 
 
 @if (tab === 'suppliers') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('دليل الموردين', 'Supplier directory') " [description]=" t('بيانات الموردين مرتبطة بمساحة العمل الحالية.', 'Supplier records belong to the current workspace.') "><span class="count">{{ filteredSuppliers.length }} / {{ suppliers.length }}</span></aba-section-header>
+                <aba-section-header [title]=" t('ui.m_3w60yt') " [description]=" t('ui.m_6u1nke') "><span class="count">{{ filteredSuppliers.length }} / {{ suppliers.length }}</span></aba-section-header>
 <details class="aba-record-create">
-                  <summary><span>{{ t('إضافة مورد', 'Add supplier') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
+                  <summary><span>{{ t('ui.m_p2zqz3') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
                 <form #supplierForm="ngForm" class="inline-form" (ngSubmit)="supplierForm.valid && createSupplier()">
-                  <input #supplierNameControl="ngModel" name="supplierName" required maxlength="160" [attr.aria-label]="t('اسم المورد', 'Supplier name')" [attr.aria-invalid]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'supplier-name-error' : null" [placeholder]="t('اسم المورد', 'Supplier name')" [(ngModel)]="supplierName">
-                  <input #supplierEmailControl="ngModel" name="supplierEmail" type="email" maxlength="254" [attr.aria-label]="t('البريد الإلكتروني', 'Email')" [attr.aria-invalid]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'supplier-email-error' : null" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="supplierEmail">
-                  <input name="supplierPhone" maxlength="32" [attr.aria-label]="t('الهاتف', 'Phone')" [placeholder]="t('الهاتف (اختياري)', 'Phone (optional)')" [(ngModel)]="supplierPhone">
-                  <input name="supplierAddress" maxlength="500" [attr.aria-label]="t('العنوان', 'Address')" [placeholder]="t('العنوان (اختياري)', 'Address (optional)')" [(ngModel)]="supplierAddress">
-                  <button class="primary" type="submit" [disabled]="suppliersLoading">{{ t('إضافة مورد', 'Add supplier') }}</button>
+                  <input #supplierNameControl="ngModel" name="supplierName" required maxlength="160" [attr.aria-label]="t('ui.m_jj4jgj')" [attr.aria-invalid]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'supplier-name-error' : null" [placeholder]="t('ui.m_jj4jgj')" [(ngModel)]="supplierName">
+                  <input #supplierEmailControl="ngModel" name="supplierEmail" type="email" maxlength="254" [attr.aria-label]="t('ui.m_112c7vo')" [attr.aria-invalid]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'supplier-email-error' : null" [placeholder]="t('ui.m_u2wvbv')" [(ngModel)]="supplierEmail">
+                  <input name="supplierPhone" maxlength="32" [attr.aria-label]="t('ui.m_19jxea1')" [placeholder]="t('ui.m_1fpllb8')" [(ngModel)]="supplierPhone">
+                  <input name="supplierAddress" maxlength="500" [attr.aria-label]="t('ui.m_1d6x93e')" [placeholder]="t('ui.m_1dvmwnl')" [(ngModel)]="supplierAddress">
+                  <button class="primary" type="submit" [disabled]="suppliersLoading">{{ t('ui.m_p2zqz3') }}</button>
                 </form>
                 @if ((supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted)) || (supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted))) {
                   <div class="form-validation" aria-live="polite">
-                    @if (supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted)) { <small id="supplier-name-error" class="field-error">{{ t('أدخل اسم المورد (بحد أقصى 160 حرفًا).', 'Enter a supplier name (up to 160 characters).') }}</small> }
-                    @if (supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted)) { <small id="supplier-email-error" class="field-error">{{ t('أدخل بريدًا إلكترونيًا صحيحًا أو اترك الحقل فارغًا.', 'Enter a valid email address or leave this field blank.') }}</small> }
+                    @if (supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted)) { <small id="supplier-name-error" class="field-error">{{ t('ui.m_1840rkw') }}</small> }
+                    @if (supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted)) { <small id="supplier-email-error" class="field-error">{{ t('ui.m_stzy3f') }}</small> }
                   </div>
                 }
 
@@ -385,8 +458,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (operationsError && operationsErrorTab === 'suppliers') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'suppliers') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'suppliers' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="supplierSearch" type="search" [attr.aria-label]="t('البحث عن مورد', 'Search suppliers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف أو العنوان…', 'Search by name, email, phone or address…')" [(ngModel)]="supplierSearch"></div>
-                <aba-record-table [ariaLabel]="t('جدول الموردين', 'Suppliers table')" [columns]="supplierTableColumns" [rows]="supplierTableRows" [loading]="suppliersLoading && !suppliers.length" [loadingDescription]="t('جارٍ تحميل الموردين…', 'Loading suppliers…')" [emptyTitle]="t('لا يوجد موردون', 'No suppliers yet')" [emptyDescription]="supplierSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No suppliers match this search.') : t('أضف الموردين لتسهيل ربطهم بأوامر الشراء.', 'Add suppliers to link them to purchase orders.')" />
+                <div class="list-tools operations-search aba-record-toolbar"><input name="supplierSearch" type="search" [attr.aria-label]="t('ui.m_1mc30sn')" [placeholder]="t('ui.m_jtec0a')" [(ngModel)]="supplierSearch"></div>
+                <aba-record-table [ariaLabel]="t('ui.m_13lj997')" [columns]="supplierTableColumns" [rows]="supplierTableRows" [loading]="suppliersLoading && !suppliers.length" [loadingDescription]="t('ui.m_16wb349')" [emptyTitle]="t('ui.m_1u3jkgy')" [emptyDescription]="supplierSearch.trim() ? t('ui.m_ka2uzv') : t('ui.m_9e3ceh')" />
 
               </section>
             }
@@ -394,24 +467,24 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
 @if (tab === 'purchases') {
               <section abaCard class="panel">
-                <aba-section-header id="purchases-section-heading" tabindex="-1" [title]=" t('أوامر الشراء', 'Purchase orders') " [description]=" t('استلام الكميات يسجل حركات مخزون؛ اعتماد الاستلام متاح للمالك فقط.', 'Receiving records stock movements; only owners can receive orders.') "><span class="count">{{ filteredPurchaseOrders.length }} / {{ purchaseOrders.length }}</span></aba-section-header>
+                <aba-section-header id="purchases-section-heading" tabindex="-1" [title]=" t('ui.m_1x15ykz') " [description]=" t('ui.m_roz4sr') "><span class="count">{{ filteredPurchaseOrders.length }} / {{ purchaseOrders.length }}</span></aba-section-header>
 <details class="aba-record-create">
-                  <summary><span>{{ t('إنشاء أمر شراء', 'Create purchase order') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
+                  <summary><span>{{ t('ui.m_iqb29f') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
                 <form #purchaseForm="ngForm" class="stack" (ngSubmit)="purchaseForm.valid && createPurchaseOrder()">
-                  <label>{{ t('رقم أمر الشراء', 'Order number') }}<input #purchaseOrderNumberControl="ngModel" name="purchaseOrderNumber" required maxlength="64" [attr.aria-invalid]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'purchase-number-error' : null" [(ngModel)]="purchaseOrderNumber"></label>
-                  <label>{{ t('المورد', 'Supplier') }}<select #purchaseSupplierControl="ngModel" name="purchaseSupplierId" required [attr.aria-invalid]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'purchase-supplier-error' : null" [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('اختر المورد', 'Choose supplier') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
-                  <label>{{ t('المنتج', 'Product') }}<select #purchaseProductControl="ngModel" name="purchaseProductId" required [attr.aria-invalid]="purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted) ? 'purchase-product-error' : null" [(ngModel)]="purchaseProductId"><option value="" disabled>{{ t('اختر المنتج', 'Choose product') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.sku || product.id.slice(0,8) }}</option> }</select></label>
-                  <div class="inline-form"><label>{{ t('الكمية', 'Quantity') }}<input #purchaseQuantityControl="ngModel" name="purchaseQuantity" type="number" min="0.001" step="0.001" required [attr.aria-invalid]="purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted) ? 'purchase-quantity-error' : null" [(ngModel)]="purchaseQuantity"></label><label>{{ t('تكلفة الوحدة', 'Unit cost') }}<input #purchaseUnitCostControl="ngModel" name="purchaseUnitCost" type="number" min="0" step="0.01" required [attr.aria-invalid]="purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted) ? 'purchase-unit-cost-error' : null" [(ngModel)]="purchaseUnitCost"></label></div>
-                  <button class="primary" type="submit" [disabled]="purchasesLoading || !suppliers.length || !products.length">{{ t('إنشاء أمر شراء', 'Create purchase order') }}</button>
+                  <label>{{ t('ui.m_19p1zn3') }}<input #purchaseOrderNumberControl="ngModel" name="purchaseOrderNumber" required maxlength="64" [attr.aria-invalid]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'purchase-number-error' : null" [(ngModel)]="purchaseOrderNumber"></label>
+                  <label>{{ t('ui.m_x27ir1') }}<select #purchaseSupplierControl="ngModel" name="purchaseSupplierId" required [attr.aria-invalid]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'purchase-supplier-error' : null" [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('ui.m_el3aam') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
+                  <label>{{ t('ui.m_7fwfk0') }}<select #purchaseProductControl="ngModel" name="purchaseProductId" required [attr.aria-invalid]="purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted) ? 'purchase-product-error' : null" [(ngModel)]="purchaseProductId"><option value="" disabled>{{ t('ui.m_1kwxnkp') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.sku || product.id.slice(0,8) }}</option> }</select></label>
+                  <div class="inline-form"><label>{{ t('ui.m_ocneuo') }}<input #purchaseQuantityControl="ngModel" name="purchaseQuantity" type="number" min="0.001" step="0.001" required [attr.aria-invalid]="purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted) ? 'purchase-quantity-error' : null" [(ngModel)]="purchaseQuantity"></label><label>{{ t('ui.m_19mrznv') }}<input #purchaseUnitCostControl="ngModel" name="purchaseUnitCost" type="number" min="0" step="0.01" required [attr.aria-invalid]="purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted) ? 'purchase-unit-cost-error' : null" [(ngModel)]="purchaseUnitCost"></label></div>
+                  <button class="primary" type="submit" [disabled]="purchasesLoading || !suppliers.length || !products.length">{{ t('ui.m_iqb29f') }}</button>
                 </form>
                 @if ((purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted)) || (purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted)) || (purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted)) || (purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted)) || (purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted))) {
                   <div class="form-validation" aria-live="polite">
-                    @if (purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted)) { <small id="purchase-number-error" class="field-error">{{ t('أدخل رقم أمر الشراء (بحد أقصى 64 حرفًا).', 'Enter an order number (up to 64 characters).') }}</small> }
-                    @if (purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted)) { <small id="purchase-supplier-error" class="field-error">{{ t('اختر المورد.', 'Choose a supplier.') }}</small> }
-                    @if (purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted)) { <small id="purchase-product-error" class="field-error">{{ t('اختر المنتج.', 'Choose a product.') }}</small> }
-                    @if (purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted)) { <small id="purchase-quantity-error" class="field-error">{{ t('أدخل كمية لا تقل عن 0.001 وبخطوة 0.001.', 'Enter a quantity of at least 0.001 in 0.001 increments.') }}</small> }
-                    @if (purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted)) { <small id="purchase-unit-cost-error" class="field-error">{{ t('أدخل تكلفة وحدة تساوي صفرًا أو أكثر وبحد أقصى منزلتين عشريتين.', 'Enter a unit cost of zero or more with up to two decimal places.') }}</small> }
+                    @if (purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted)) { <small id="purchase-number-error" class="field-error">{{ t('ui.m_lv9gfw') }}</small> }
+                    @if (purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted)) { <small id="purchase-supplier-error" class="field-error">{{ t('ui.m_17l7adv') }}</small> }
+                    @if (purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted)) { <small id="purchase-product-error" class="field-error">{{ t('ui.m_lkov6w') }}</small> }
+                    @if (purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted)) { <small id="purchase-quantity-error" class="field-error">{{ t('ui.m_jsv2pg') }}</small> }
+                    @if (purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted)) { <small id="purchase-unit-cost-error" class="field-error">{{ t('ui.m_13qo8kh') }}</small> }
                   </div>
                 }
 
@@ -420,8 +493,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (operationsError && operationsErrorTab === 'purchases') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'purchases') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'purchases' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="purchaseSearch" type="search" [attr.aria-label]="t('البحث في أوامر الشراء', 'Search purchase orders')" [placeholder]="t('ابحث برقم الأمر أو المورد أو المنتج أو الحالة…', 'Search by order, supplier, product or status…')" [(ngModel)]="purchaseSearch"></div>
-                <aba-record-table [ariaLabel]="t('جدول أوامر الشراء والاستلام', 'Purchase orders and receiving table')" [columns]="purchaseTableColumns" [rows]="purchaseTableRows" [loading]="purchasesLoading && !purchaseOrders.length" [loadingDescription]="t('جارٍ تحميل أوامر الشراء…', 'Loading purchase orders…')" [actionsHeading]="t('الإجراءات', 'Actions')" [emptyTitle]="t('لا توجد أوامر شراء', 'No purchase orders yet')" [emptyDescription]="purchaseSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No purchase orders match this search.') : t('أنشئ أمر شراء لربط المورد بالمنتجات والكميات المطلوبة.', 'Create a purchase order to connect a supplier with products and requested quantities.')" (rowAction)="onPurchaseRecordAction($event)" />
+                <div class="list-tools operations-search aba-record-toolbar"><input name="purchaseSearch" type="search" [attr.aria-label]="t('ui.m_x2km9j')" [placeholder]="t('ui.m_1bqn1oi')" [(ngModel)]="purchaseSearch"></div>
+                <aba-record-table [ariaLabel]="t('ui.m_1xlq4zq')" [columns]="purchaseTableColumns" [rows]="purchaseTableRows" [loading]="purchasesLoading && !purchaseOrders.length" [loadingDescription]="t('ui.m_1c93aea')" [actionsHeading]="t('ui.m_1dbhmlo')" [emptyTitle]="t('ui.m_1skqw0x')" [emptyDescription]="purchaseSearch.trim() ? t('ui.m_ckscgw') : t('ui.m_1yhbnd3')" (rowAction)="onPurchaseRecordAction($event)" />
 
               </section>
             }
@@ -429,161 +502,164 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
 @if (tab === 'recurring') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('جدولة الفواتير الدورية', 'Recurring invoice schedules') " [description]=" t('هذه إعدادات الجدولة فقط؛ إنشاء الفواتير تلقائيًا يحتاج عامل جدولة منشورًا.', 'These are schedule settings only; automatic invoice generation requires a deployed scheduler worker.') "><span class="count">{{ filteredRecurringSchedules.length }} / {{ recurringSchedules.length }}</span></aba-section-header>
+                <aba-section-header [title]=" t('ui.m_slegw7') " [description]=" t('ui.m_1e0c20g') "><span class="count">{{ filteredRecurringSchedules.length }} / {{ recurringSchedules.length }}</span></aba-section-header>
                 @if (business?.role === 'owner') {
                 <form #recurringForm="ngForm" class="stack" (ngSubmit)="recurringForm.valid && createRecurringSchedule()">
-                  <label>{{ t('العميل (اختياري)', 'Customer (optional)') }}<select name="recurringCustomerId" [(ngModel)]="recurringCustomerId"><option value="">{{ t('بدون عميل محدد', 'No specific customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
-                  <div class="inline-form"><label>{{ t('الفاصل بالأيام', 'Interval in days') }}<input #recurringIntervalControl="ngModel" name="recurringIntervalDays" type="number" min="1" max="3650" required [attr.aria-invalid]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'recurring-interval-error' : null" [(ngModel)]="recurringIntervalDays"></label><label>{{ t('التشغيل التالي', 'Next run') }}<input #recurringNextRunControl="ngModel" name="recurringNextRunAt" type="datetime-local" required [attr.aria-invalid]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'recurring-next-run-error' : null" [(ngModel)]="recurringNextRunAt"></label></div>
-                  <label>{{ t('المنطقة الزمنية', 'Timezone') }}<input #recurringTimezoneControl="ngModel" name="recurringTimezone" required maxlength="64" [attr.aria-invalid]="recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted) ? 'recurring-timezone-error' : null" [(ngModel)]="recurringTimezone"></label>
-                  <button class="primary" type="submit" [disabled]="recurringLoading">{{ t('حفظ الجدولة', 'Save schedule') }}</button>
+                  <label>{{ t('ui.m_eoh95l') }}<select name="recurringCustomerId" [(ngModel)]="recurringCustomerId"><option value="">{{ t('ui.m_8pt45d') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
+                  <div class="inline-form"><label>{{ t('ui.m_py5g30') }}<input #recurringIntervalControl="ngModel" name="recurringIntervalDays" type="number" min="1" max="3650" required [attr.aria-invalid]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'recurring-interval-error' : null" [(ngModel)]="recurringIntervalDays"></label><label>{{ t('ui.m_1e7ftdu') }}<input #recurringNextRunControl="ngModel" name="recurringNextRunAt" type="datetime-local" required [attr.aria-invalid]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'recurring-next-run-error' : null" [(ngModel)]="recurringNextRunAt"></label></div>
+                  <label>{{ t('ui.m_z76sxh') }}<input #recurringTimezoneControl="ngModel" name="recurringTimezone" required maxlength="64" [attr.aria-invalid]="recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted) ? 'recurring-timezone-error' : null" [(ngModel)]="recurringTimezone"></label>
+                  <button class="primary" type="submit" [disabled]="recurringLoading">{{ t('ui.m_r0fiju') }}</button>
                 </form>
                 @if ((recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted)) || (recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted)) || (recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted))) {
                   <div class="form-validation" aria-live="polite">
-                    @if (recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted)) { <small id="recurring-interval-error" class="field-error">{{ t('أدخل فاصلًا من يوم واحد إلى 3650 يومًا.', 'Enter an interval from 1 to 3650 days.') }}</small> }
-                    @if (recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted)) { <small id="recurring-next-run-error" class="field-error">{{ t('اختر موعد التشغيل التالي.', 'Choose the next run date and time.') }}</small> }
-                    @if (recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted)) { <small id="recurring-timezone-error" class="field-error">{{ t('أدخل المنطقة الزمنية (بحد أقصى 64 حرفًا).', 'Enter a timezone (up to 64 characters).') }}</small> }
+                    @if (recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted)) { <small id="recurring-interval-error" class="field-error">{{ t('ui.m_9goc5p') }}</small> }
+                    @if (recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted)) { <small id="recurring-next-run-error" class="field-error">{{ t('ui.m_1husn1x') }}</small> }
+                    @if (recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted)) { <small id="recurring-timezone-error" class="field-error">{{ t('ui.m_1t55sm0') }}</small> }
                   </div>
                 }
-                } @else { <aba-state-message kind="info" [description]="t('إنشاء جداول الفواتير الدورية متاح لمالك مساحة العمل فقط.', 'Only workspace owners can create recurring invoice schedules.')" /> }
+                } @else { <aba-state-message kind="info" [description]="t('ui.m_t5zhtj')" /> }
                 @if (operationsError && operationsErrorTab === 'recurring') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'recurring') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'recurring' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="recurringSearch" type="search" [attr.aria-label]="t('البحث في الجداول الدورية', 'Search recurring schedules')" [placeholder]="t('ابحث بالعميل أو الفاصل أو المنطقة الزمنية أو الحالة…', 'Search by customer, interval, timezone or state…')" [(ngModel)]="recurringSearch"></div>
-                <aba-record-table [ariaLabel]="t('جدول الفواتير الدورية','Recurring schedules table')" [columns]="recurringTableColumns" [rows]="recurringTableRows" [loading]="recurringLoading && !recurringSchedules.length" [loadingDescription]="t('جارٍ تحميل الجداول الدورية…', 'Loading recurring schedules…')" [emptyTitle]="t('لا توجد جداول دورية','No recurring schedules')" [emptyDescription]="recurringSearch.trim() ? t('لا توجد جداول مطابقة للبحث.','No schedules match this search.') : t('لا توجد جداول بعد.','No schedules yet.')" />
+                <div class="list-tools operations-search aba-record-toolbar"><input name="recurringSearch" type="search" [attr.aria-label]="t('ui.m_aljqyp')" [placeholder]="t('ui.m_z7f6xc')" [(ngModel)]="recurringSearch"></div>
+                <aba-record-table [ariaLabel]="t('ui.m_uxwqg9')" [columns]="recurringTableColumns" [rows]="recurringTableRows" [loading]="recurringLoading && !recurringSchedules.length" [loadingDescription]="t('ui.m_10b19k6')" [emptyTitle]="t('ui.m_4r8x8c')" [emptyDescription]="recurringSearch.trim() ? t('ui.m_11cvrt7') : t('ui.m_kxnfs6')" />
               </section>
             }
 
 
 @if (tab === 'health' && business?.role === 'owner') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('الحالة التشغيلية', 'Operational health') " [description]=" t('فحص قراءة فقط للاتصال بقاعدة البيانات وحالة الإعدادات الأساسية.', 'Read-only check of database connectivity and core service configuration.') "><span class="count">{{ operationalHealth ? operationalHealthStatusLabel(operationalHealth.status) : t('غير مفحوص', 'Not checked') }}</span></aba-section-header>
-                <button class="primary" type="button" (click)="loadOperationalHealth()" [disabled]="healthLoading">{{ healthLoading ? t('جارٍ الفحص…', 'Checking…') : t('تحديث الفحص', 'Refresh check') }}</button>
+                <aba-section-header [title]=" t('ui.m_18z2l5z') " [description]=" t('ui.m_1ps0q5f') "><span class="count">{{ operationalHealth ? operationalHealthStatusLabel(operationalHealth.status) : t('ui.m_159bgv6') }}</span></aba-section-header>
+                <button class="primary" type="button" (click)="loadOperationalHealth()" [disabled]="healthLoading">{{ healthLoading ? t('ui.m_1v22gnm') : t('ui.m_9aw201') }}</button>
                 @if (healthError) { <aba-state-message kind="error" [description]="healthError" /> }
                 @if (operationalHealth) {
                   <div class="metric-grid">
-                    <article class="metric"><span>{{ t('اتصال قاعدة البيانات', 'Database connection') }}</span><strong>{{ operationalHealth.database_connected ? t('متصل', 'Connected') : t('غير متصل', 'Unavailable') }}</strong></article>
-                    <article class="metric"><span>{{ t('جدول ترحيلات قاعدة البيانات', 'Migration metadata') }}</span><strong>{{ operationalHealth.migration_table_available ? t('متاح', 'Available') : t('غير متاح', 'Missing') }}</strong><small>{{ operationalHealth.migration_revision || t('لا توجد مراجعة مؤكدة', 'No confirmed revision') }}</small></article>
-                    <article class="metric"><span>{{ t('إعداد الذكاء الاصطناعي', 'AI configuration') }}</span><strong>{{ operationalHealth.ai_configured ? t('مهيأ', 'Configured') : t('غير مهيأ', 'Not configured') }}</strong></article>
-                    <article class="metric"><span>{{ t('عامل إرسال الإشعارات', 'Notification delivery worker') }}</span><strong>{{ operationalHealth.notification_delivery_configured ? t('مهيأ', 'Configured') : t('غير مهيأ', 'Not configured') }}</strong></article>
-                    <article class="metric"><span>{{ t('عامل الفواتير الدورية', 'Recurring invoice worker') }}</span><strong>{{ operationalHealth.recurring_invoice_worker_configured ? t('مهيأ', 'Configured') : t('غير مهيأ', 'Not configured') }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_1ko8298') }}</span><strong>{{ operationalHealth.database_connected ? t('ui.m_1mjv33c') : t('ui.m_1mbcqq8') }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_e3dmsb') }}</span><strong>{{ operationalHealth.migration_table_available ? t('ui.m_bq5tlp') : t('ui.m_1izwear') }}</strong><small>{{ operationalHealth.migration_revision || t('ui.m_18sx15n') }}</small></article>
+                    <article class="metric"><span>{{ t('ui.m_1jpiz8c') }}</span><strong>{{ operationalHealth.ai_configured ? t('ui.m_1irrjj2') : t('ui.m_1aa7dsy') }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_fc2ud1') }}</span><strong>{{ operationalHealth.notification_delivery_configured ? t('ui.m_1irrjj2') : t('ui.m_1aa7dsy') }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_1hq6krq') }}</span><strong>{{ operationalHealth.recurring_invoice_worker_configured ? t('ui.m_1irrjj2') : t('ui.m_1aa7dsy') }}</strong></article>
                   </div>
-                  <p class="muted">{{ t('آخر فحص:', 'Last checked:') }} {{ operationalHealth.checked_at | date:'medium' }}. {{ t('الفحص لا يكشف الأسرار ولا يغيّر البيانات.', 'The check reveals no secrets and does not change data.') }}</p>
+                  <p class="muted">{{ t('ui.m_1je9a30') }} {{ formatRecordDate(operationalHealth.checked_at) }}. {{ t('ui.m_3o0ahe') }}</p>
                 }
               </section>
             }
 
 @if (tab === 'reports') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('نتيجة التشغيل الأولية', 'Preliminary operating result') " [description]=" t('نتيجة أولية مبنية على إيرادات الفواتير الصادرة والمصروفات المسجلة، ولا تخصم تكلفة البضاعة المباعة.', 'Preliminary result based on issued-invoice revenue and recorded expenses; cost of goods sold is not deducted.') "><span class="count">{{ t('تقرير مالي', 'Financial report') }}</span></aba-section-header>
+                <aba-section-header [title]=" t('ui.m_1k2jewg') " [description]=" t('ui.m_7hhfvq') "><span class="count">{{ t('ui.m_7xexd4') }}</span></aba-section-header>
                 <form #profitLossForm="ngForm" class="inline-form" (ngSubmit)="profitLossForm.valid && loadProfitLoss()">
-                  <select name="profitLossPeriod" [attr.aria-label]="t('الفترة المالية', 'Reporting period')" [(ngModel)]="profitLossPeriod"><option value="30d">{{ t('آخر 30 يومًا', 'Last 30 days') }}</option><option value="month">{{ t('الشهر الحالي', 'Current month') }}</option><option value="all">{{ t('كل الوقت', 'All time') }}</option><option value="custom">{{ t('فترة مخصصة', 'Custom period') }}</option></select>
+                  <select name="profitLossPeriod" [attr.aria-label]="t('ui.m_cwfche')" [(ngModel)]="profitLossPeriod"><option value="30d">{{ t('ui.m_1ql1fm2') }}</option><option value="month">{{ t('ui.m_1sm3j94') }}</option><option value="all">{{ t('ui.m_bp8vk5') }}</option><option value="custom">{{ t('ui.m_57v6ro') }}</option></select>
                   @if (profitLossPeriod === 'custom') {
-                    <label>{{ t('من', 'From') }}<input #profitLossStartControl="ngModel" type="date" name="profitLossStart" required [attr.aria-invalid]="profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted) ? 'true' : null" [attr.aria-describedby]="profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted) ? 'profit-loss-start-error' : null" [(ngModel)]="profitLossStart">@if (profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted)) { <small id="profit-loss-start-error" class="field-error" role="alert">{{ t('اختر تاريخ البداية.', 'Choose a start date.') }}</small> }</label>
-                    <label>{{ t('إلى', 'To') }}<input #profitLossEndControl="ngModel" type="date" name="profitLossEnd" required [attr.aria-invalid]="profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted) ? 'true' : null" [attr.aria-describedby]="profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted) ? 'profit-loss-end-error' : null" [(ngModel)]="profitLossEnd">@if (profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted)) { <small id="profit-loss-end-error" class="field-error" role="alert">{{ t('اختر تاريخ النهاية.', 'Choose an end date.') }}</small> }</label>
+                    <label>{{ t('ui.m_15qcbwy') }}<input #profitLossStartControl="ngModel" type="date" name="profitLossStart" required [attr.aria-invalid]="profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted) ? 'true' : null" [attr.aria-describedby]="profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted) ? 'profit-loss-start-error' : null" [(ngModel)]="profitLossStart">@if (profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted)) { <small id="profit-loss-start-error" class="field-error" role="alert">{{ t('ui.m_c9vs17') }}</small> }</label>
+                    <label>{{ t('ui.m_8ibmd8') }}<input #profitLossEndControl="ngModel" type="date" name="profitLossEnd" required [attr.aria-invalid]="profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted) ? 'true' : null" [attr.aria-describedby]="profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted) ? 'profit-loss-end-error' : null" [(ngModel)]="profitLossEnd">@if (profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted)) { <small id="profit-loss-end-error" class="field-error" role="alert">{{ t('ui.m_146gz4o') }}</small> }</label>
                   }
-                  <button class="primary" type="submit" [disabled]="reportLoading">{{ reportLoading ? t('جارٍ الحساب…', 'Calculating…') : t('عرض التقرير', 'Run report') }}</button>
+                  <button class="primary" type="submit" [disabled]="reportLoading">{{ reportLoading ? t('ui.m_1k98007') : t('ui.m_10jsbot') }}</button>
                 </form>
                 @if (reportError) { <aba-state-message kind="error" [description]="reportError" /> }
                 @if (profitLoss) {
-                  <p class="muted">{{ profitLoss.period.start_date || t('من بداية السجلات', 'From the beginning of records') }} — {{ profitLoss.period.end_date || t('حتى الآن', 'through today') }} · {{ profitLoss.period.timezone || 'UTC' }}</p>
-                  <p class="muted"><strong>{{ t('أساس الإيراد:', 'Revenue basis:') }}</strong> {{ revenueBasisLabel(profitLoss.revenue_basis) }}</p>
-                  <aba-record-table [ariaLabel]="t('جدول نتيجة التشغيل حسب العملة','Operating result by currency table')" [columns]="profitLossTableColumns" [rows]="profitLossTableRows" [emptyTitle]="t('لا توجد بيانات','No data')" [emptyDescription]="t('لا توجد بيانات مالية للفترة المحددة.','No financial data for this period.')" />
-                  <div class="notice"><strong>{{ t('مهم قبل اعتبارها أرباحًا صافية', 'Important limitation') }}</strong><span>{{ t('هذا حساب مبدئي: لا يشمل تكلفة شراء البضاعة لأن تكلفة المنتج غير مرتبطة بعد بالمبيعات، كما أن الإيرادات تُحسب من الفواتير الصادرة لا من النقد المحصّل. لا يتم جمع العملات المختلفة.', 'This is a preliminary result: product purchase costs are not yet linked to sales, and revenue is based on issued invoices rather than cash collected. Different currencies are never combined.') }}</span></div>
+                  <p class="muted">{{ profitLoss.period.start_date || t('ui.m_ixi82b') }} — {{ profitLoss.period.end_date || t('ui.m_1pfkmow') }} · {{ profitLoss.period.timezone || 'UTC' }}</p>
+                  <p class="muted"><strong>{{ t('ui.m_8hpy6m') }}</strong> {{ revenueBasisLabel(profitLoss.revenue_basis) }}</p>
+                  <aba-record-table [ariaLabel]="t('ui.m_1irq6mk')" [columns]="profitLossTableColumns" [rows]="profitLossTableRows" [emptyTitle]="t('ui.m_zlnr36')" [emptyDescription]="t('ui.m_q1rdjf')" />
+                  <div class="notice"><strong>{{ t('ui.m_1tz1k9k') }}</strong><span>{{ t('ui.m_ujpaej') }}</span></div>
                 }
                 <div class="divider"></div>
-                <aba-section-header [level]="3" [title]="t('أعمار المديونيات', 'Receivables aging')" [description]="t('الأرصدة المتبقية حسب تاريخ الاستحقاق، مع فصل كل عملة.', 'Outstanding balances by due date, with currencies kept separate.')" />
-                <form #agingForm="ngForm" class="inline-form" (ngSubmit)="agingForm.valid && loadReceivablesAging()"><label>{{ t('التقرير حتى تاريخ', 'Report as of') }}<input #agingAsOfControl="ngModel" type="date" name="agingAsOf" required [attr.aria-invalid]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'true' : null" [attr.aria-describedby]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'aging-as-of-error' : null" [(ngModel)]="agingAsOf">@if (agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted)) { <small id="aging-as-of-error" class="field-error" role="alert">{{ t('اختر تاريخ التقرير.', 'Choose a report date.') }}</small> }</label><button class="primary" type="submit" [disabled]="agingLoading">{{ agingLoading ? t('جارٍ التحميل…', 'Loading…') : t('عرض المديونيات', 'Load receivables') }}</button></form>
+                <aba-section-header [level]="3" [title]="t('ui.m_2oaefr')" [description]="t('ui.m_1dmo8qz')" />
+                <form #agingForm="ngForm" class="inline-form" (ngSubmit)="agingForm.valid && loadReceivablesAging()"><label>{{ t('ui.m_tyw1lj') }}<input #agingAsOfControl="ngModel" type="date" name="agingAsOf" required [attr.aria-invalid]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'true' : null" [attr.aria-describedby]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'aging-as-of-error' : null" [(ngModel)]="agingAsOf">@if (agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted)) { <small id="aging-as-of-error" class="field-error" role="alert">{{ t('ui.m_4apqf4') }}</small> }</label><button class="primary" type="submit" [disabled]="agingLoading">{{ agingLoading ? t('ui.m_1rza5t5') : t('ui.m_1gsyti0') }}</button></form>
                 @if (agingError) { <aba-state-message kind="error" [description]="agingError" /> }
                 @if (agingReport) {
-                  <div class="section-head"><p class="muted">{{ t('تاريخ التقرير:', 'As of:') }} {{ agingReport.as_of_date }} · {{ agingReport.invoice_count }} {{ t('فاتورة', 'invoices') }}</p><button class="secondary" type="button" (click)="exportReceivablesAgingCsv()" [disabled]="!agingReport.invoices.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
+                  <div class="section-head"><p class="muted">{{ t('ui.m_vnv6l5') }} {{ agingReport.as_of_date }} · {{ agingReport.invoice_count }} {{ t('ui.m_pe8fvb') }}</p><button class="secondary" type="button" (click)="exportReceivablesAgingCsv()" [disabled]="!agingReport.invoices.length">{{ t('ui.m_nbsw3y') }}</button></div>
                   @for (summary of agingReport.by_currency; track summary.currency_code) {
-                    <article class="metric"><span>{{ t('إجمالي المستحق', 'Total outstanding') }} · {{ summary.currency_code }}</span><strong>{{ summary.total_outstanding }} {{ summary.currency_code }}</strong><div class="aging-buckets">@for (bucket of summary.buckets; track bucket.bucket) { <div><small>{{ agingBucketLabel(bucket.bucket) }}</small><strong>{{ bucket.outstanding_amount }} {{ summary.currency_code }}</strong></div> }</div></article>
+                    <article class="metric"><span>{{ t('ui.m_1dusybc') }} · {{ summary.currency_code }}</span><strong>{{ summary.total_outstanding }} {{ summary.currency_code }}</strong><div class="aging-buckets">@for (bucket of summary.buckets; track bucket.bucket) { <div><small>{{ agingBucketLabel(bucket.bucket) }}</small><strong>{{ bucket.outstanding_amount }} {{ summary.currency_code }}</strong></div> }</div></article>
                   }
                   @if (agingReport.data_quality_warnings.length) {
-                    <div class="notice warning-notice"><strong>{{ t('تحذيرات محاسبية تحتاج مراجعة', 'Accounting warnings need review') }}</strong>
+                    <div class="notice warning-notice"><strong>{{ t('ui.m_fhk738') }}</strong>
                       @for (warning of agingReport.data_quality_warnings; track warning.invoice_id + warning.type) {
                         <p><strong>{{ warning.invoice_number }}</strong> — {{ agingWarningLabel(warning.type) }}</p>
-                        @if (warning.excess_allocated) { <p>{{ t('قيمة التخصيص الزائد:', 'Excess allocation:') }} {{ warning.excess_allocated }} {{ warning.invoice_currency || '' }}</p> }
-                        @if (warning.mismatched_allocations_amount) { <p>{{ t('تخصيصات بعملة مختلفة:', 'Mismatched-currency allocations:') }} {{ warning.mismatched_allocations_amount }}</p> }
+                        @if (warning.excess_allocated) { <p>{{ t('ui.m_29qoiu') }} {{ warning.excess_allocated }} {{ warning.invoice_currency || '' }}</p> }
+                        @if (warning.mismatched_allocations_amount) { <p>{{ t('ui.m_1hrsgrk') }} {{ warning.mismatched_allocations_amount }}</p> }
                       }
                     </div>
                   }
-                  <aba-record-table [ariaLabel]="t('جدول أعمار المديونيات','Receivables aging table')" [columns]="agingTableColumns" [rows]="agingTableRows" [emptyTitle]="t('لا توجد فواتير مستحقة','No outstanding invoices')" [emptyDescription]="t('لا توجد فواتير مستحقة في تاريخ التقرير.','No outstanding invoices as of the report date.')" />
-                  @if (agingReport.limitations.length) { <div class="notice"><strong>{{ t('حدود التقرير', 'Report limitations') }}</strong>@for (limitation of agingReport.limitations; track limitation) { <p>{{ reportLimitationLabel(limitation) }}</p> }</div> }
+                  <aba-record-table [ariaLabel]="t('ui.m_15doge2')" [columns]="agingTableColumns" [rows]="agingTableRows" [emptyTitle]="t('ui.m_1fbb4i1')" [emptyDescription]="t('ui.m_18nc6st')" />
+                  @if (agingReport.limitations.length) { <div class="notice"><strong>{{ t('ui.m_akne82') }}</strong>@for (limitation of agingReport.limitations; track limitation) { <p>{{ reportLimitationLabel(limitation) }}</p> }</div> }
                 }
               </section>
             }
 
+            @if (tab === 'team' && business?.id) {
+              <aba-workspace-invitations mode="manage" [businessId]="business.id" [language]="language" />
+            }
             @if (tab === 'customers') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('قائمة العملاء', 'Customer list') " [description]=" t('تقتصر السجلات على مساحة العمل المحددة.', 'Records are limited to the selected workspace.') "><span class="count">{{ filteredCustomers.length }} / {{ customers.length }} {{ t('عميل', 'customers') }}</span></aba-section-header>
-<details class="aba-record-create">
-                  <summary><span>{{ t('إضافة عميل جديد', 'Add new customer') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
+                <aba-section-header [title]=" t('ui.m_1lifkl9') " [description]=" t('ui.m_15gmqko') "><span class="count">{{ filteredCustomers.length }} / {{ customers.length }} {{ t('ui.m_15kaq4w') }}</span></aba-section-header>
+<details class="aba-record-create" [open]="customerCreateOpen" (toggle)="customerCreateOpen = $any($event.target).open">
+                  <summary><span>{{ t('ui.m_1yvcfg6') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
                 <form #customerForm="ngForm" class="inline-form" (ngSubmit)="customerForm.valid && createCustomer()">
-                  <input #customerNameModel="ngModel" [attr.aria-label]="t('اسم العميل', 'Customer name')" name="customerName" [placeholder]="t('اسم العميل', 'Customer name')" required maxlength="160" [(ngModel)]="customerName" [attr.aria-invalid]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'customer-name-error' : null">
+                  <input #customerNameModel="ngModel" [attr.aria-label]="t('ui.m_e80x9i')" name="customerName" [placeholder]="t('ui.m_e80x9i')" required maxlength="160" [(ngModel)]="customerName" [attr.aria-invalid]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'customer-name-error' : null">
                   @if (customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted)) {
-                    <small id="customer-name-error" class="field-error" aria-live="polite">{{ t('اسم العميل مطلوب.', 'Customer name is required.') }}</small>
+                    <small id="customer-name-error" class="field-error" aria-live="polite">{{ t('ui.m_1ucyubn') }}</small>
                   }
-                  <input #customerEmailModel="ngModel" [attr.aria-label]="t('بريد العميل الإلكتروني', 'Customer email')" name="customerEmail" type="email" maxlength="254" [placeholder]="t('البريد الإلكتروني (اختياري)', 'Email (optional)')" [(ngModel)]="customerEmail" [attr.aria-invalid]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'customer-email-error' : null">
+                  <input #customerEmailModel="ngModel" [attr.aria-label]="t('ui.m_1hdfjhy')" name="customerEmail" type="email" maxlength="254" [placeholder]="t('ui.m_u2wvbv')" [(ngModel)]="customerEmail" [attr.aria-invalid]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'customer-email-error' : null">
                   @if (customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted)) {
-                    <small id="customer-email-error" class="field-error" aria-live="polite">{{ t('أدخل بريدًا إلكترونيًا صحيحًا أو اترك الحقل فارغًا.', 'Enter a valid email address or leave this field blank.') }}</small>
+                    <small id="customer-email-error" class="field-error" aria-live="polite">{{ t('ui.m_stzy3f') }}</small>
                   }
-                  <input [attr.aria-label]="t('هاتف العميل', 'Customer phone')" name="customerPhone" maxlength="32" [placeholder]="t('الهاتف (اختياري)', 'Phone (optional)')" [(ngModel)]="customerPhone">
-                  <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة عميل', 'Add customer') }}</button>
+                  <input [attr.aria-label]="t('ui.m_jf17kv')" name="customerPhone" maxlength="32" [placeholder]="t('ui.m_1fpllb8')" [(ngModel)]="customerPhone">
+                  <button class="primary" type="submit" [disabled]="loading">{{ t('ui.m_zesk98') }}</button>
                 </form>
 
                   </div>
                 </details>
                 @if (customerMessage) { <aba-state-message [kind]="customerMessageKind" [description]="customerMessage" /> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('استيراد العملاء من CSV', 'Import customers from CSV') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('استيراد العملاء من CSV', 'CSV customer import')">
-                  <h3>{{ t('استيراد العملاء من CSV', 'Import customers from CSV') }}</h3>
-                  <p>{{ t('اختَر ملف CSV يحتوي على name ويمكنه تضمين email وphone وaddress وnotes. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with name and optional email, phone, address, and notes. Preview does not save data.') }}</p>
-                  <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV للعملاء', 'Choose customer CSV file')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('ui.m_p4xhry') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
+                  <h3>{{ t('ui.m_p4xhry') }}</h3>
+                  <p>{{ t('ui.m_1239wd4') }}</p>
+                  <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1m32l6p')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
                   @if (customerImportFileName) { <small>{{ customerImportFileName }}</small> }
                   <div class="csv-import-actions">
-                    <button class="secondary" type="button" (click)="previewCustomerImport()" [disabled]="customerImportLoading || !customerImportCsvText">{{ customerImportLoading ? t('جارٍ المعالجة…', 'Working…') : t('معاينة الملف', 'Preview file') }}</button>
-                    @if (customerImportPreview?.valid) { <button class="primary" type="button" (click)="confirmCustomerImport()" [disabled]="customerImportLoading">{{ t('استيراد', 'Import') }} {{ customerImportPreview?.row_count }} {{ t('صف', 'rows') }}</button> }
+                    <button class="secondary" type="button" (click)="previewCustomerImport()" [disabled]="customerImportLoading || !customerImportCsvText">{{ customerImportLoading ? t('ui.m_1idcscy') : t('ui.m_fa926w') }}</button>
+                    @if (customerImportPreview?.valid) { <button class="primary" type="button" (click)="confirmCustomerImport()" [disabled]="customerImportLoading">{{ t('ui.m_1njm451') }} {{ customerImportPreview?.row_count }} {{ t('ui.m_xwx2zw') }}</button> }
                   </div>
                   @if (customerImportPreview) {
-                    <aba-state-message [kind]="customerImportPreview.valid ? 'info' : 'warning'" [description]="customerImportPreview.valid ? t('الملف صالح. لم يتم حفظ بيانات بعد.', 'File is valid. No data has been saved yet.') + ' · ' + customerImportPreview.row_count + ' ' + t('صف', 'rows') : t('الملف يحتوي على أخطاء؛ أصلحها ثم أعد المعاينة.', 'The file has errors. Fix them and preview again.') + ' · ' + customerImportPreview.row_count + ' ' + t('صف', 'rows')" />
+                    <aba-state-message [kind]="customerImportPreview.valid ? 'info' : 'warning'" [description]="customerImportPreview.valid ? t('ui.m_17hi1u7') + ' · ' + customerImportPreview.row_count + ' ' + t('ui.m_xwx2zw') : t('ui.m_187ekp') + ' · ' + customerImportPreview.row_count + ' ' + t('ui.m_xwx2zw')" />
                     @if (customerImportPreview.errors.length) {
                       <ul class="csv-import-errors">
                         @for (item of customerImportPreview.errors; track $index) {
-                          <li>{{ t('صف', 'Row') }} {{ item.row }} · {{ item.field }} · {{ importErrorLabel(item.code) }}@if (item.max_length) { ({{ t('الحد الأقصى', 'max') }} {{ item.max_length }}) }</li>
+                          <li>{{ t('ui.m_foews7') }} {{ item.row }} · {{ item.field }} · {{ importErrorLabel(item.code) }}@if (item.max_length) { ({{ t('ui.m_a9jpls') }} {{ item.max_length }}) }</li>
                         }
                       </ul>
                     }
                   }
                   @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
-                </section></div></details> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
-                <div class="list-tools aba-record-toolbar"><input name="customerSearch" type="search" [attr.aria-label]="t('البحث عن عميل', 'Search customers')" [placeholder]="t('ابحث بالاسم أو البريد أو الهاتف…', 'Search by name, email, or phone…')" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
-                <aba-customer-directory [ariaLabel]="t('دليل العملاء', 'Customer directory')" [customers]="filteredCustomers" [locale]="language" [loading]="loading && !customers.length" [loadingDescription]="t('جارٍ تحميل العملاء…', 'Loading customers…')" [emptyTitle]="t('لا يوجد عملاء', 'No customers yet')" [emptyDescription]="customerSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No customers match this search.') : t('أضف أول عميل لبدء ربطه بالفواتير.', 'Add your first customer to link them with invoices.')" (rowAction)="onCustomerRecordAction($event)" />
+                </section></div></details> } @else { <aba-state-message kind="info" [description]="t('ui.m_15zjjtn')" /> }
+                <div class="list-tools aba-record-toolbar"><input name="customerSearch" type="search" [attr.aria-label]="t('ui.m_cbuclg')" [placeholder]="t('ui.m_oe2vue')" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }</div>
+                <aba-customer-directory [ariaLabel]="t('ui.m_5lit5y')" [customers]="filteredCustomers" [locale]="language" [loading]="loading && !customers.length" [loadingDescription]="t('ui.m_14qa8nk')" [emptyTitle]="t('ui.m_v7mhxb')" [emptyDescription]="customerSearch.trim() ? t('ui.m_1lfpojf') : t('ui.m_9nmick')" (rowAction)="onCustomerRecordAction($event)" />
                 @if (customersHasMore || customersLoadingMore) {
                   <div class="inline-form record-load-more" aria-live="polite">
-                    <span class="muted">{{ customers.length }} {{ t('عميل تم تحميلهم', 'customers loaded') }}</span>
+                    <span class="muted">{{ customers.length }} {{ t('ui.m_1sao2d6') }}</span>
                     <button class="secondary" type="button" (click)="loadMoreCustomers()" [disabled]="customersLoadingMore">
-                      {{ customersLoadingMore ? t('جارٍ تحميل العملاء…', 'Loading customers…') : t('تحميل المزيد من العملاء', 'Load more customers') }}
+                      {{ customersLoadingMore ? t('ui.m_14qa8nk') : t('ui.m_1m9ykss') }}
                     </button>
                   </div>
                 }
 
                 @if (statementVisible) {
                   <section abaCard class="panel statement-panel">
-                    <aba-section-header [level]="3" [title]="t('كشف حساب العميل', 'Customer statement') + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t('الرصيد مفصول حسب العملة. هذا التقرير لا يستبدل دفتر أستاذ مزدوج القيد.', 'Balances stay separate by currency. This report is not a double-entry general ledger.')"><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('إغلاق', 'Close') }}</button></aba-section-header>
+                    <aba-section-header [level]="3" [title]="t('ui.m_152dm1w') + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t('ui.m_ysb7zm')"><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('ui.m_1whnkun') }}</button></aba-section-header>
                     <div class="inline-form statement-filters">
-                      <label>{{ t('من تاريخ', 'From date') }}<input type="date" name="statementFromDate" [(ngModel)]="statementFromDate"></label>
-                      <label>{{ t('إلى تاريخ', 'To date') }}<input type="date" name="statementToDate" [(ngModel)]="statementToDate"></label>
-                      <button class="primary" type="button" (click)="applyCustomerStatementFilters()" [disabled]="statementLoading">{{ t('تطبيق الفترة', 'Apply range') }}</button>
-                      <button class="secondary" type="button" (click)="clearCustomerStatementFilters()" [disabled]="statementLoading || (!statementFromDate && !statementToDate)">{{ t('مسح الفترة', 'Clear range') }}</button>
+                      <label>{{ t('ui.m_6ousik') }}<input type="date" name="statementFromDate" [(ngModel)]="statementFromDate"></label>
+                      <label>{{ t('ui.m_hltyrq') }}<input type="date" name="statementToDate" [(ngModel)]="statementToDate"></label>
+                      <button class="primary" type="button" (click)="applyCustomerStatementFilters()" [disabled]="statementLoading">{{ t('ui.m_1vs0iyd') }}</button>
+                      <button class="secondary" type="button" (click)="clearCustomerStatementFilters()" [disabled]="statementLoading || (!statementFromDate && !statementToDate)">{{ t('ui.m_1kg6ptq') }}</button>
                     </div>
-                    @if (statementFromDate || statementToDate) { <p class="muted">{{ t('الرصيد المعروض يجمع الحركات داخل الفترة المحددة فقط، ولا يشمل رصيد ما قبل بدايتها.', 'Displayed balances sum movements inside the selected range only; they do not include the opening balance before the range.') }}</p> }
-                    @if (statementLoading) { <aba-state-message kind="loading" [description]="t('جارٍ تحميل كشف الحساب…', 'Loading statement…')" /> }
+                    @if (statementFromDate || statementToDate) { <p class="muted">{{ t('ui.m_gqq69s') }}</p> }
+                    @if (statementLoading) { <aba-state-message kind="loading" [description]="t('ui.m_1jqptmt')" /> }
                     @if (statementError) { <aba-state-message kind="error" [description]="statementError" /> }
                     @if (customerStatement) {
-                      <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t('الرصيد', 'Balance') }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
-                      <aba-record-table [ariaLabel]="t('كشف حساب العميل','Customer statement')" [columns]="customerStatementTableColumns" [rows]="customerStatementTableRows" [emptyTitle]="t('لا توجد حركات','No statement activity')" [emptyDescription]="t('لا توجد حركات مطابقة للفترة المحددة.','No statement activity matches the selected period.')" />
-                      <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('التالي', 'Next') }}</button></div>
+                      <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t('ui.m_lyblb3') }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
+                      <aba-record-table [ariaLabel]="t('ui.m_152dm1w')" [columns]="customerStatementTableColumns" [rows]="customerStatementTableRows" [emptyTitle]="t('ui.m_3op8q6')" [emptyDescription]="t('ui.m_18o73kt')" />
+                      <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t('ui.m_14wy3hz') }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('ui.m_thb9eg') }}</button></div>
                       @for (limitation of customerStatement.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
                     }
                   </section>
@@ -593,63 +669,63 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'products') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('المنتجات والخدمات', 'Products & services') " [description]=" t('يتم حفظ الأسعار بدقة عشرية.', 'Prices are stored using decimal precision.') "><span class="count">{{ filteredProducts.length }} / {{ products.length }} {{ t('منتج', 'products') }}</span></aba-section-header>
-<details class="aba-record-create">
-                  <summary><span>{{ t('إضافة منتج أو خدمة', 'Add product or service') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
+                <aba-section-header [title]=" t('ui.m_137u0ee') " [description]=" t('ui.m_snu8sb') "><span class="count">{{ filteredProducts.length }} / {{ products.length }} {{ t('ui.m_1hpnko') }}</span></aba-section-header>
+<details class="aba-record-create" [open]="productCreateOpen" (toggle)="productCreateOpen = $any($event.target).open">
+                  <summary><span>{{ t('ui.m_1nbakc8') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
                 <form #productForm="ngForm" class="inline-form" (ngSubmit)="productForm.valid && createProduct()">
-                  <label>{{ t('اسم المنتج', 'Product name') }}<input #productNameModel="ngModel" [attr.aria-label]="t('اسم المنتج', 'Product name')" name="productName" [placeholder]="t('اسم المنتج', 'Product name')" required [(ngModel)]="productName" [attr.aria-invalid]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'product-name-error' : null">
+                  <label>{{ t('ui.m_h0c2cm') }}<input #productNameModel="ngModel" [attr.aria-label]="t('ui.m_h0c2cm')" name="productName" [placeholder]="t('ui.m_h0c2cm')" required [(ngModel)]="productName" [attr.aria-invalid]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'product-name-error' : null">
                     @if (productNameModel.invalid && (productNameModel.touched || productForm.submitted)) {
-                      <small id="product-name-error" class="field-error" aria-live="polite">{{ t('اسم المنتج مطلوب.', 'Product name is required.') }}</small>
+                      <small id="product-name-error" class="field-error" aria-live="polite">{{ t('ui.m_1ymmcl') }}</small>
                     }
                   </label>
-                  <label>{{ t('سعر الوحدة', 'Unit price') }}<input #productPriceModel="ngModel" [attr.aria-label]="t('سعر الوحدة', 'Unit price')" name="productPrice" type="number" min="0" step="0.01" [placeholder]="t('سعر الوحدة', 'Unit price')" required [(ngModel)]="productPrice" [attr.aria-invalid]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'product-price-error' : null">
+                  <label>{{ t('ui.m_1iz2xk3') }}<input #productPriceModel="ngModel" [attr.aria-label]="t('ui.m_1iz2xk3')" name="productPrice" type="number" min="0" step="0.01" [placeholder]="t('ui.m_1iz2xk3')" required [(ngModel)]="productPrice" [attr.aria-invalid]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'product-price-error' : null">
                     @if (productPriceModel.invalid && (productPriceModel.touched || productForm.submitted)) {
-                      <small id="product-price-error" class="field-error" aria-live="polite">{{ productPriceModel.errors?.['required'] ? t('سعر الوحدة مطلوب.', 'Unit price is required.') : t('أدخل سعرًا صحيحًا لا يقل عن صفر.', 'Enter a valid unit price of zero or more.') }}</small>
+                      <small id="product-price-error" class="field-error" aria-live="polite">{{ productPriceModel.errors?.['required'] ? t('ui.m_9pqcpe') : t('ui.m_1hiyjor') }}</small>
                     }
                   </label>
-                  <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> {{ t('متابعة المخزون', 'Track stock') }}</label>
+                  <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> {{ t('ui.m_13pn7xu') }}</label>
                   @if (stockTracked) {
                     @if (business?.role === 'owner') {
-                      <label>{{ t('الكمية الافتتاحية بالمخزن', 'Opening stock quantity') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('الكمية الافتتاحية مطلوبة عند متابعة المخزون.', 'Opening quantity is required when stock tracking is enabled.') : t('أدخل كمية لا تقل عن صفر.', 'Enter a quantity of zero or more.') }}</small> }</label>
+                      <label>{{ t('ui.m_dsef9m') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('ui.m_1tupg8c') : t('ui.m_1rtcb8u') }}</small> }</label>
                     } @else {
-                      <small class="muted">{{ t('يمكنك متابعة المخزون برصيد افتتاحي صفر. تسجيل كمية افتتاحية أكبر من صفر متاح لمالك مساحة العمل فقط.', 'You can track stock with zero opening stock. Only workspace owners can set a positive opening stock quantity.') }}</small>
+                      <small class="muted">{{ t('ui.m_1xw7d7y') }}</small>
                     }
                   }
-                  <button class="primary" type="submit" [disabled]="loading">{{ t('إضافة منتج', 'Add product') }}</button>
+                  <button class="primary" type="submit" [disabled]="loading">{{ t('ui.m_eex0xa') }}</button>
                 </form>
 
                   </div>
                 </details>
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('استيراد المنتجات من CSV', 'Import products from CSV') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('استيراد المنتجات من CSV', 'CSV product import')">
-                  <h3>{{ t('استيراد المنتجات من CSV', 'Import products from CSV') }}</h3>
-                  <p>{{ t('اختَر ملف CSV يحتوي على sku وname وunit_price. المعاينة لا تحفظ أي بيانات.', 'Choose a CSV with sku, name and unit_price. Preview does not save any data.') }}</p>
-                  <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('اختيار ملف CSV', 'Choose CSV file')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('ui.m_1wgx28b') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_ps78ce')">
+                  <h3>{{ t('ui.m_1wgx28b') }}</h3>
+                  <p>{{ t('ui.m_1kaqi1p') }}</p>
+                  <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1yr2ptt')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
                   @if (importFileName) { <small>{{ importFileName }}</small> }
                   <div class="csv-import-actions">
-                    <button class="secondary" type="button" (click)="previewProductImport()" [disabled]="importLoading || !importCsvText">{{ importLoading ? t('جارٍ المعالجة…', 'Working…') : t('معاينة الملف', 'Preview file') }}</button>
-                    @if (importPreview?.valid) { <button class="primary" type="button" (click)="confirmProductImport()" [disabled]="importLoading">{{ t('استيراد', 'Import') }} {{ importPreview?.row_count }} {{ t('صف', 'rows') }}</button> }
+                    <button class="secondary" type="button" (click)="previewProductImport()" [disabled]="importLoading || !importCsvText">{{ importLoading ? t('ui.m_1idcscy') : t('ui.m_fa926w') }}</button>
+                    @if (importPreview?.valid) { <button class="primary" type="button" (click)="confirmProductImport()" [disabled]="importLoading">{{ t('ui.m_1njm451') }} {{ importPreview?.row_count }} {{ t('ui.m_xwx2zw') }}</button> }
                   </div>
                   @if (importPreview) {
-                    <aba-state-message [kind]="importPreview.valid ? 'info' : 'warning'" [description]="importPreview.valid ? t('الملف صالح. لم يتم حفظ بيانات بعد.', 'File is valid. No data has been saved yet.') + ' · ' + importPreview.row_count + ' ' + t('صف', 'rows') : t('الملف يحتوي على أخطاء؛ أصلحها ثم أعد المعاينة.', 'The file has errors. Fix them and preview again.') + ' · ' + importPreview.row_count + ' ' + t('صف', 'rows')" />
+                    <aba-state-message [kind]="importPreview.valid ? 'info' : 'warning'" [description]="importPreview.valid ? t('ui.m_17hi1u7') + ' · ' + importPreview.row_count + ' ' + t('ui.m_xwx2zw') : t('ui.m_187ekp') + ' · ' + importPreview.row_count + ' ' + t('ui.m_xwx2zw')" />
                     @if (importPreview.errors.length) {
                       <ul class="csv-import-errors">
                         @for (item of importPreview.errors; track $index) {
-                          <li>{{ t('صف', 'Row') }} {{ item.row }} · {{ item.field }} · {{ importErrorLabel(item.code) }}@if (item.first_row) { ({{ t('أول ظهور في الصف', 'first seen on row') }} {{ item.first_row }}) }@if (item.max_length) { ({{ t('الحد الأقصى', 'max') }} {{ item.max_length }}) }</li>
+                          <li>{{ t('ui.m_foews7') }} {{ item.row }} · {{ item.field }} · {{ importErrorLabel(item.code) }}@if (item.first_row) { ({{ t('ui.m_q66wuq') }} {{ item.first_row }}) }@if (item.max_length) { ({{ t('ui.m_a9jpls') }} {{ item.max_length }}) }</li>
                         }
                       </ul>
                     }
                   }
                   @if (importMessage) { <aba-state-message [kind]="importMessageKind" [description]="importMessage" /> }
-                </section></div></details> } @else { <aba-state-message kind="info" [description]="t('استيراد CSV متاح لمالك مساحة العمل فقط.', 'CSV imports are available to workspace owners only.')" /> }
-                <div class="list-tools aba-record-toolbar"><input name="productSearch" type="search" [attr.aria-label]="t('البحث عن منتج', 'Search products')" [placeholder]="t('ابحث عن منتج أو رمز SKU…', 'Search products or SKU…')" [(ngModel)]="productSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }</div>
-                <aba-product-catalog [ariaLabel]="t('كتالوج المنتجات والمخزون', 'Product and inventory catalogue')" [products]="filteredProducts" [locale]="language" [currencyCode]="business?.currency_code || ''" [loading]="loading && !products.length" [loadingDescription]="t('جارٍ تحميل المنتجات…', 'Loading products…')" [emptyTitle]="t('لا توجد منتجات', 'No products yet')" [emptyDescription]="productSearch.trim() ? t('لا توجد نتائج مطابقة للبحث.', 'No products match this search.') : t('أضف منتجًا أو خدمة لبدء إدارة الكتالوج والمخزون.', 'Add a product or service to start managing the catalogue and stock.')" />
+                </section></div></details> } @else { <aba-state-message kind="info" [description]="t('ui.m_15zjjtn')" /> }
+                <div class="list-tools aba-record-toolbar"><input name="productSearch" type="search" [attr.aria-label]="t('ui.m_1y4yidi')" [placeholder]="t('ui.m_12onvgc')" [(ngModel)]="productSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }</div>
+                <aba-product-catalog [ariaLabel]="t('ui.m_1q9q53d')" [products]="filteredProducts" [locale]="language" [currencyCode]="business?.currency_code || ''" [loading]="loading && !products.length" [loadingDescription]="t('ui.m_dm5wol')" [emptyTitle]="t('ui.m_12dkqai')" [emptyDescription]="productSearch.trim() ? t('ui.m_87y3du') : t('ui.m_nd32m5')" />
                 @if (productsHasMore || productsLoadingMore) {
                   <div class="inline-form record-load-more" aria-live="polite">
-                    <span class="muted">{{ products.length }} {{ t('صنف تم تحميله', 'items loaded') }}</span>
+                    <span class="muted">{{ products.length }} {{ t('ui.m_1s9tcxi') }}</span>
                     <button class="secondary" type="button" (click)="loadMoreProducts()" [disabled]="productsLoadingMore">
-                      {{ productsLoadingMore ? t('جارٍ تحميل المنتجات…', 'Loading products…') : t('تحميل المزيد من الأصناف', 'Load more items') }}
+                      {{ productsLoadingMore ? t('ui.m_dm5wol') : t('ui.m_iziq6h') }}
                     </button>
                   </div>
                 }
@@ -659,10 +735,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'invoices') {
               <section abaCard class="panel">
-                <aba-section-header id="invoices-section-heading" tabindex="-1" [title]=" t('المبيعات والفواتير', 'Sales & invoices') " [description]=" t('كل فاتورة صادرة مرتبطة بعميل؛ اختر العميل لعرض فواتيره.', 'Every issued invoice is linked to a customer; filter by customer to view their invoices.') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('فاتورة', 'invoices') }}</span></aba-section-header>
+                <aba-section-header id="invoices-section-heading" tabindex="-1" [title]=" t('ui.m_5lvhyt') " [description]=" t('ui.m_61q6l7') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('ui.m_pe8fvb') }}</span></aba-section-header>
                 <div class="invoice-toolbar">
                   @if (invoiceCreateOpen) {
-                    <section class="invoice-create-panel" [attr.aria-label]="t('نموذج إضافة فاتورة', 'Add invoice editor')">
+                    <section class="invoice-create-panel" [attr.aria-label]="t('ui.m_h8xosr')">
                       <aba-invoice-draft-editor
                         [language]="language" [products]="products" [customers]="customers"
                         [currencyCode]="business.currency_code" [invoiceNumber]="invoiceNumber"
@@ -679,7 +755,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     </section>
                   } @else {
                     <button type="button" class="primary invoice-create-button" (click)="startNewInvoiceDraft()">
-                      {{ t('إضافة فاتورة جديدة', 'Create a new invoice') }}
+                      {{ t('ui.m_12vszs4') }}
                     </button>
                   }
                 </div>
@@ -687,35 +763,35 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <div class="invoice-controls">
                   <label class="invoice-search">
                     <svg class="invoice-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                    <input name="invoiceSearch" type="search" [attr.aria-label]="t('البحث باسم العميل أو رقم الفاتورة', 'Search by customer name or invoice number')" [placeholder]="t('ابحث باسم العميل أو رقم الفاتورة…', 'Search customer or invoice number…')" [(ngModel)]="invoiceSearch">
+                    <input name="invoiceSearch" type="search" [attr.aria-label]="t('ui.m_qwjq9v')" [placeholder]="t('ui.m_2onysz')" [(ngModel)]="invoiceSearch">
                   </label>
-                  <label class="invoice-filter"><span>{{ t('الحالة', 'Status') }}</span>
-                    <select name="invoiceStatusFilter" [attr.aria-label]="t('تصفية حسب حالة الفاتورة', 'Filter by invoice status')" [(ngModel)]="invoiceStatusFilter">
-                      <option value="all">{{ t('كل الحالات', 'All statuses') }}</option>
-                      <option value="draft">{{ t('مسودة', 'Draft') }}</option>
-                      <option value="issued">{{ t('صادرة', 'Issued') }}</option>
-                      <option value="void">{{ t('ملغاة', 'Voided') }}</option>
+                  <label class="invoice-filter"><span>{{ t('ui.m_jnmvwl') }}</span>
+                    <select name="invoiceStatusFilter" [attr.aria-label]="t('ui.m_1v8j5sa')" [(ngModel)]="invoiceStatusFilter">
+                      <option value="all">{{ t('ui.m_1cyu9lp') }}</option>
+                      <option value="draft">{{ t('ui.m_1vbs2bw') }}</option>
+                      <option value="issued">{{ t('ui.m_7bugfd') }}</option>
+                      <option value="void">{{ t('ui.m_1a2uk7t') }}</option>
                     </select>
                   </label>
-                  <label class="invoice-filter"><span>{{ t('العميل', 'Customer') }}</span>
-                    <select name="invoiceFilterCustomer" [attr.aria-label]="t('تصفية الفواتير حسب العميل', 'Filter invoices by customer')" [(ngModel)]="invoiceFilterCustomerId">
-                      <option value="">{{ t('كل العملاء', 'All customers') }}</option>
+                  <label class="invoice-filter"><span>{{ t('ui.m_ubgrc2') }}</span>
+                    <select name="invoiceFilterCustomer" [attr.aria-label]="t('ui.m_1k3k63e')" [(ngModel)]="invoiceFilterCustomerId">
+                      <option value="">{{ t('ui.m_1c6r7y7') }}</option>
                       @for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }
                     </select>
                   </label>
                   @if (customersHasMore) {
                     <button class="secondary invoice-load-more-customers" type="button" (click)="loadMoreInvoiceCustomers()" [disabled]="customersLoadingMore">
-                      {{ customersLoadingMore ? t('جارٍ تحميل العملاء…', 'Loading customers…') : t('تحميل 100 عميل إضافي للبحث', 'Load 100 more customers to search') }}
+                      {{ customersLoadingMore ? t('ui.m_14qa8nk') : t('ui.m_8ighyf') }}
                     </button>
                   }
-                  @if (business?.role === 'owner') { <button class="secondary invoice-export" type="button" (click)="exportCurrentList()" [disabled]="!filteredInvoices.length">{{ t('تصدير CSV', 'Export CSV') }}</button> }
+                  @if (business?.role === 'owner') { <button class="secondary invoice-export" type="button" (click)="exportCurrentList()" [disabled]="!filteredInvoices.length">{{ t('ui.m_nbsw3y') }}</button> }
                 </div>
                 @if (loading && !invoices.length) {
-                  <p class="invoice-list-state" role="status" aria-live="polite">{{ t('جارٍ تحميل الفواتير…', 'Loading invoices…') }}</p>
+                  <p class="invoice-list-state" role="status" aria-live="polite">{{ t('ui.m_x2q4oa') }}</p>
                 } @else if (error && !invoices.length) {
                   <aba-state-message kind="error" [description]="error" />
                 } @else if (!filteredInvoices.length) {
-                  <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId) ? t('لا توجد فواتير مطابقة للبحث والفلاتر.', 'No invoices match your search and filters.') : t('لا توجد فواتير بعد. أضف عميلًا ومنتجًا ثم أنشئ مسودة فاتورتك الأولى.', 'No invoices yet. Add a customer and product, then create your first invoice draft.')" />
+                  <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId) ? t('ui.m_1rrfha5') : t('ui.m_1ehm2eq')" />
                 } @else {
                   <div class="invoice-cards">
                     @for (invoice of filteredInvoices; track invoice.id) {
@@ -725,7 +801,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                             <span class="invoice-customer-avatar" aria-hidden="true">{{ customerInitialForInvoice(invoice.customer_id) }}</span>
                             <div class="invoice-card-customer-copy">
                               <strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong>
-                              <small class="invoice-card-meta">{{ invoice.invoice_number }} · {{ invoice.issue_date ? (invoice.issue_date | date:'mediumDate') : (invoice.created_at ? t('تاريخ الإنشاء: ', 'Created: ') + (invoice.created_at | date:'mediumDate') : t('التاريخ غير متاح', 'Date unavailable')) }} · <bdi dir="ltr">{{ invoice.currency_code }}</bdi></small>
+                              <small class="invoice-card-meta">{{ invoice.invoice_number }} · {{ invoice.issue_date ? formatRecordDate(invoice.issue_date, 'date') : (invoice.created_at ? t('ui.m_1ipvpcp') + formatRecordDate(invoice.created_at, 'date') : t('ui.m_8ghcxc')) }} · <bdi dir="ltr">{{ invoice.currency_code }}</bdi></small>
                             </div>
                           </div>
                           <span class="invoice-status-badge"
@@ -738,19 +814,19 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                         </header>
                         <div class="invoice-card-financials">
                           <div>
-                            <small>{{ t('الإجمالي', 'Total') }}</small>
-                            <strong><bdi dir="ltr">{{ invoice.total | number:'1.2-2' }}</bdi></strong>
+                            <small>{{ t('ui.m_l97slj') }}</small>
+                            <strong><bdi dir="ltr">{{ formatNumber(invoice.total) }}</bdi></strong>
                           </div>
                           <div>
-                            <small>{{ t('المدفوع', 'Paid') }}</small>
+                            <small>{{ t('ui.m_twygqw') }}</small>
                             <strong>@if (invoice.allocated_payments !== undefined) {
-                              <bdi dir="ltr">{{ invoice.allocated_payments | number:'1.2-2' }}</bdi>
+                              <bdi dir="ltr">{{ formatNumber(invoice.allocated_payments) }}</bdi>
                             } @else { — }</strong>
                           </div>
                           <div>
-                            <small>{{ t('المتبقي', 'Remaining') }}</small>
+                            <small>{{ t('ui.m_1e1esfj') }}</small>
                             <strong>@if (invoice.status === 'issued' && invoice.outstanding_amount !== undefined) {
-                              <bdi dir="ltr">{{ invoice.outstanding_amount | number:'1.2-2' }}</bdi>
+                              <bdi dir="ltr">{{ formatNumber(invoice.outstanding_amount) }}</bdi>
                             } @else { — }</strong>
                           </div>
                         </div>
@@ -760,7 +836,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                             [class.tone-partial]="invoicePaymentTone(invoice) === 'partial'"
                             [class.tone-unpaid]="invoicePaymentTone(invoice) === 'unpaid'"
                             role="progressbar"
-                            [attr.aria-label]="t('نسبة سداد الفاتورة', 'Invoice payment progress')"
+                            [attr.aria-label]="t('ui.m_18e9r9q')"
                             [attr.aria-valuemin]="0" [attr.aria-valuemax]="100"
                             [attr.aria-valuenow]="invoicePaymentProgress(invoice)">
                             <span [style.width.%]="invoicePaymentProgress(invoice)"></span>
@@ -774,16 +850,16 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                         }
                         <div class="invoice-actions">
                           @if (invoice.status === 'draft') {
-                            <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('تعديل', 'Edit') }}</button>
+                            <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('ui.m_s21yyp') }}</button>
                             @if (business?.role === 'owner') {
-                              <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('إصدار', 'Issue') }}</button>
-                              <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button>
+                              <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('ui.m_ninief') }}</button>
+                              <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('ui.m_lnwycg') }}</button>
                             }
                           } @else if (invoice.status === 'issued') {
-                            <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('طباعة', 'Print') }}</button>
+                            <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('ui.m_qskvru') }}</button>
                             @if (business?.role === 'owner') {
-                              @if (hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('سداد', 'Pay') }}</button> }
-                              <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('إلغاء', 'Void') }}</button>
+                              @if (hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('ui.m_1r6bzbj') }}</button> }
+                              <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('ui.m_lnwycg') }}</button>
                             }
                           }
                         </div>
@@ -791,48 +867,48 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     }
                   </div>
                 }
-                @if (invoicesHasMore) { <button class="secondary" type="button" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore">{{ invoicesLoadingMore ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل فواتير إضافية', 'Load more invoices') }}</button> }
-                <p class="footnote">{{ t('إصدار الفاتورة يخصم المخزون المتابع بشكل ذري، ويرفض العملية إذا كانت الكمية غير كافية.', 'Issuing an invoice deducts tracked stock atomically and rejects the operation if stock is insufficient.') }}</p>
+                @if (invoicesHasMore) { <button class="secondary" type="button" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore">{{ invoicesLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_14d2jh7') }}</button> }
+                <p class="footnote">{{ t('ui.m_lpprue') }}</p>
               </section>
             }
 
             @if (tab === 'payments' && business?.role !== 'owner') {
-              <section abaCard class="panel"><aba-state-message kind="error" [description]="t('تسجيل المدفوعات متاح لمالك مساحة العمل فقط. اطلب من المالك منحك الصلاحية المناسبة.', 'Recording payments is restricted to workspace owners. Ask the owner to grant the appropriate access.')" /></section>
+              <section abaCard class="panel"><aba-state-message kind="error" [description]="t('ui.m_1ju8ouz')" /></section>
             }
             @if (tab === 'payments' && business.role === 'owner') {
-              <section abaCard class="panel"><aba-section-header [title]="t('تسجيل دفعة', 'Record payment')" [description]="t('سجّل المبلغ المستلم، ويمكنك تخصيصه لفاتورة صادرة.', 'Record the amount received and optionally allocate it to an issued invoice.')">
-                  <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t('دفعة', 'payments') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('تصدير CSV', 'Export CSV') }}</button></div>
+              <section abaCard class="panel"><aba-section-header [title]="t('ui.m_3k0fux')" [description]="t('ui.m_cj3m99')">
+                  <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t('ui.m_1ouah2m') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('ui.m_nbsw3y') }}</button></div>
                 </aba-section-header>
                 <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="(paymentRetryPending || paymentForm.valid) && createPayment()">
-                  <input #paymentAmountModel="ngModel" [attr.aria-label]="t('مبلغ الدفعة', 'Payment amount')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المستلم', 'Amount received')" required [(ngModel)]="paymentAmount" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('أدخل مبلغًا صحيحًا أكبر من صفر وبمنزلتين عشريتين كحد أقصى.', 'Enter a positive amount with no more than two decimal places.') }}</small> }
-                  <select #paymentCustomerModel="ngModel" [attr.aria-label]="t('عميل الدفعة', 'Payment customer')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'payment-customer-error' : null"><option value="" disabled>{{ t('اختر العميل', 'Choose customer') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>@if (paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted)) { <small id="payment-customer-error" class="field-error" aria-live="polite">{{ t('اختيار العميل مطلوب.', 'Choose a customer.') }}</small> }
-                  <select [attr.aria-label]="t('طريقة الدفع', 'Payment method')" name="paymentMethod" [(ngModel)]="paymentMethod" [disabled]="paymentRetryPending"><option value="cash">{{ t('نقدًا', 'Cash') }}</option><option value="bank_transfer">{{ t('تحويل بنكي', 'Bank transfer') }}</option><option value="card">{{ t('بطاقة', 'Card') }}</option><option value="wallet">{{ t('محفظة إلكترونية', 'E-wallet') }}</option><option value="other">{{ t('أخرى', 'Other') }}</option></select>
-                  <select [attr.aria-label]="t('الفاتورة المراد تخصيص الدفعة لها', 'Invoice to allocate payment to')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" [disabled]="paymentRetryPending" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t('عدم تخصيص الدفعة الآن', 'Do not allocate yet') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
-                  @if (invoicesHasMore) { <button type="button" class="secondary" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore || paymentRetryPending">{{ invoicesLoadingMore ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل فواتير إضافية', 'Load more invoices') }}</button> }
-                  @if (paymentInvoiceId) { <input [attr.aria-label]="t('المبلغ المراد تخصيصه', 'Amount to allocate')" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ المخصص للفاتورة', 'Amount allocated to invoice')" [(ngModel)]="paymentAllocationAmount" [disabled]="paymentRetryPending"> }
-                  <input [attr.aria-label]="t('مرجع الدفعة', 'Payment reference')" name="paymentReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="paymentReference" [disabled]="paymentRetryPending">
-                  <button class="primary" type="submit" [disabled]="paymentLoading">{{ paymentLoading ? t('جارٍ التسجيل…', 'Recording…') : paymentRetryPending ? t('إعادة المحاولة بنفس الدفعة', 'Retry same payment') : t('تسجيل دفعة', 'Record payment') }}</button>
+                  <input #paymentAmountModel="ngModel" [attr.aria-label]="t('ui.m_q9mxbb')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_1smcjxm')" required [(ngModel)]="paymentAmount" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('ui.m_me0lkl') }}</small> }
+                  <select #paymentCustomerModel="ngModel" [attr.aria-label]="t('ui.m_edaho8')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'payment-customer-error' : null"><option value="" disabled>{{ t('ui.m_p0vza7') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>@if (paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted)) { <small id="payment-customer-error" class="field-error" aria-live="polite">{{ t('ui.m_5b5dll') }}</small> }
+                  <select [attr.aria-label]="t('ui.m_h7ngs9')" name="paymentMethod" [(ngModel)]="paymentMethod" [disabled]="paymentRetryPending"><option value="cash">{{ t('ui.m_1xk4i7j') }}</option><option value="bank_transfer">{{ t('ui.m_bof380') }}</option><option value="card">{{ t('ui.m_tq9n36') }}</option><option value="wallet">{{ t('ui.m_1bho9og') }}</option><option value="other">{{ t('ui.m_47rh1w') }}</option></select>
+                  <select [attr.aria-label]="t('ui.m_vkei9c')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" [disabled]="paymentRetryPending" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t('ui.m_1xrgrqj') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
+                  @if (invoicesHasMore) { <button type="button" class="secondary" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore || paymentRetryPending">{{ invoicesLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_14d2jh7') }}</button> }
+                  @if (paymentInvoiceId) { <input [attr.aria-label]="t('ui.m_lc0rf5')" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_1okokqi')" [(ngModel)]="paymentAllocationAmount" [disabled]="paymentRetryPending"> }
+                  <input [attr.aria-label]="t('ui.m_15jj1na')" name="paymentReference" maxlength="128" [placeholder]="t('ui.m_v160u1')" [(ngModel)]="paymentReference" [disabled]="paymentRetryPending">
+                  <button class="primary" type="submit" [disabled]="paymentLoading">{{ paymentLoading ? t('ui.m_1ty0fxd') : paymentRetryPending ? t('ui.m_1pvlpdc') : t('ui.m_3k0fux') }}</button>
                 </form>
-                @if (paymentRetryPending) { <p class="footnote" role="status">{{ t('هناك محاولة دفع نتيجتها غير مؤكدة. لا تغيّر البيانات؛ استخدم زر إعادة المحاولة بنفس الطلب.', 'A previous payment attempt has an uncertain outcome. Do not change its details; use Retry same payment.') }}</p> }
+                @if (paymentRetryPending) { <p class="footnote" role="status">{{ t('ui.m_1yhgb5f') }}</p> }
                 @if (paymentMessage) { <aba-state-message [kind]="paymentMessageKind" [description]="paymentMessage" /> }
-                <p class="footnote">{{ t('العملة المحددة هي', 'The selected currency is') }} {{ business.currency_code }} {{ t('لمساحة العمل دي. يتحقق النظام من المبلغ المخصص مقارنة بالرصيد المستحق، وتظل المبالغ غير المخصصة مسجلة كمدفوعات مستلمة.', 'for this workspace. Allocations are checked against the outstanding balance, and unallocated amounts remain recorded as received payments.') }}</p>
-                <div class="list-tools operations-search aba-record-toolbar"><input name="paymentSearch" type="search" [attr.aria-label]="t('البحث في المدفوعات', 'Search payments')" [placeholder]="t('ابحث بالعميل أو المرجع أو طريقة الدفع أو حالة التخصيص…', 'Search by customer, reference, method or allocation state…')" [(ngModel)]="paymentSearch"></div>
-                <aba-record-table [ariaLabel]="t('جدول المدفوعات','Payments table')" [columns]="paymentTableColumns" [rows]="paymentTableRows" [loading]="paymentLoading && !payments.length" [loadingDescription]="t('جارٍ تحميل المدفوعات…', 'Loading payments…')" [emptyTitle]="t('لا توجد مدفوعات','No payments yet')" [emptyDescription]="paymentSearch.trim() ? t('لا توجد دفعات مطابقة للبحث.','No payments match this search.') : t('لا توجد دفعات مسجلة حتى الآن.','No payments have been recorded yet.')" />
-                @if (paymentsHasMore) { <button class="secondary" type="button" (click)="loadMorePayments()" [disabled]="paymentsLoadingMore">{{ paymentsLoadingMore ? t('جارٍ تحميل المزيد…', 'Loading more…') : t('تحميل دفعات إضافية', 'Load more payments') }}</button> }
+                <p class="footnote">{{ t('ui.m_1c93fyv') }} {{ business.currency_code }} {{ t('ui.m_1sweklr') }}</p>
+                <div class="list-tools operations-search aba-record-toolbar"><input name="paymentSearch" type="search" [attr.aria-label]="t('ui.m_nmj0be')" [placeholder]="t('ui.m_hoei9y')" [(ngModel)]="paymentSearch"></div>
+                <aba-record-table [ariaLabel]="t('ui.m_mxsp4b')" [columns]="paymentTableColumns" [rows]="paymentTableRows" [loading]="paymentLoading && !payments.length" [loadingDescription]="t('ui.m_1kn1f7h')" [emptyTitle]="t('ui.m_1c2srea')" [emptyDescription]="paymentSearch.trim() ? t('ui.m_1igz78g') : t('ui.m_1nttjd')" />
+                @if (paymentsHasMore) { <button class="secondary" type="button" (click)="loadMorePayments()" [disabled]="paymentsLoadingMore">{{ paymentsLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_1olqej1') }}</button> }
               </section>
             }
 
             @if (tab === 'taxes' && business.role === 'owner') {
               <section abaCard class="panel">
-                <aba-section-header [title]="t('ملخص الضرائب', 'Tax summary')" [description]="t('يعرض الضرائب المحفوظة على الفواتير الصادرة مع فصل كل عملة.', 'Shows saved tax totals on issued invoices, separated by currency.')" />
+                <aba-section-header [title]="t('ui.m_nxo405')" [description]="t('ui.m_1dw63nh')" />
                 <form class="inline-form" (ngSubmit)="loadTaxSummary()">
-                  <label>{{ t('من تاريخ', 'Start date') }}<input name="taxStartDate" type="date" [(ngModel)]="taxStartDate"></label>
-                  <label>{{ t('إلى تاريخ', 'End date') }}<input name="taxEndDate" type="date" [(ngModel)]="taxEndDate"></label>
-                  <button class="primary" type="submit" [disabled]="taxLoading">{{ taxLoading ? t('جارٍ الحساب…', 'Calculating…') : t('عرض التقرير', 'Run report') }}</button>
+                  <label>{{ t('ui.m_10pndrs') }}<input name="taxStartDate" type="date" [(ngModel)]="taxStartDate"></label>
+                  <label>{{ t('ui.m_aulmks') }}<input name="taxEndDate" type="date" [(ngModel)]="taxEndDate"></label>
+                  <button class="primary" type="submit" [disabled]="taxLoading">{{ taxLoading ? t('ui.m_1k98007') : t('ui.m_10jsbot') }}</button>
                 </form>
                 @if (taxError) { <aba-state-message kind="error" [description]="taxError" /> }
                 @if (taxSummaryReport) {
-                  <aba-record-table [ariaLabel]="t('ملخص الضرائب حسب العملة','Tax summary by currency')" [columns]="taxTableColumns" [rows]="taxTableRows" [emptyTitle]="t('لا توجد بيانات ضريبية','No tax data')" [emptyDescription]="t('لا توجد فواتير صادرة في الفترة المحددة.','No issued invoices in the selected period.')" />
+                  <aba-record-table [ariaLabel]="t('ui.m_1ciqipn')" [columns]="taxTableColumns" [rows]="taxTableRows" [emptyTitle]="t('ui.m_1xb2mzp')" [emptyDescription]="t('ui.m_j6qlz4')" />
                   @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ reportLimitationLabel(limitation) }}</p> }
                 }
               </section>
@@ -840,55 +916,55 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'audit') {
               <section abaCard class="panel">
-                <aba-section-header [title]="t('سجل العمليات', 'Activity log')" [description]="t('سجل قراءة فقط للأحداث المسجلة في مساحة العمل الحالية.', 'Read-only history of recorded events in the current workspace.')"><span class="count">{{ auditTotal }} {{ t('حدث', 'events') }}</span></aba-section-header>
+                <aba-section-header [title]="t('ui.m_hd46sj')" [description]="t('ui.m_fie4u1')"><span class="count">{{ auditTotal }} {{ t('ui.m_187o97') }}</span></aba-section-header>
                  <form class="inline-form" (ngSubmit)="loadAuditEvents(0)">
-                  <label>{{ t('نوع العملية', 'Action') }}<select name="auditAction" [(ngModel)]="auditAction">
-                    <option value="">{{ t('كل العمليات', 'All actions') }}</option>
-                    <option value="invoice.issued">{{ t('إصدار فاتورة', 'Invoice issued') }}</option>
-                    <option value="invoice.created">{{ t('إنشاء فاتورة', 'Invoice created') }}</option>
-                    <option value="invoice.draft_updated">{{ t('تعديل مسودة فاتورة', 'Invoice draft updated') }}</option>
-                    <option value="invoice.voided">{{ t('إلغاء فاتورة', 'Invoice voided') }}</option>
-                    <option value="payment.recorded">{{ t('تسجيل دفعة', 'Payment recorded') }}</option>
-                    <option value="expense.created">{{ t('تسجيل مصروف', 'Expense recorded') }}</option>
-                    <option value="customer.created">{{ t('إضافة عميل', 'Customer created') }}</option>
-                    <option value="product.created">{{ t('إضافة منتج', 'Product created') }}</option>
-                    <option value="stock.movement_recorded">{{ t('تسجيل حركة مخزون', 'Stock movement recorded') }}</option>
-                    <option value="supplier.created">{{ t('إضافة مورد', 'Supplier created') }}</option>
-                    <option value="customer.updated">{{ t('تعديل بيانات عميل', 'Customer updated') }}</option>
-                    <option value="customer.deactivated">{{ t('تعطيل عميل', 'Customer deactivated') }}</option>
-                    <option value="product.updated">{{ t('تعديل منتج', 'Product updated') }}</option>
-                    <option value="product.deactivated">{{ t('تعطيل منتج', 'Product deactivated') }}</option>
-                    <option value="purchase_order.created">{{ t('إنشاء أمر شراء', 'Purchase order created') }}</option>
-                    <option value="purchase_order.approved">{{ t('اعتماد أمر شراء', 'Purchase order approved') }}</option>
-                    <option value="purchase_order.received">{{ t('استلام أمر شراء', 'Purchase order received') }}</option>
-                    <option value="sales_return.created">{{ t('تسجيل مرتجع بيع', 'Sales return created') }}</option>
-                    <option value="sales_return.approved">{{ t('اعتماد مرتجع بيع', 'Sales return approved') }}</option>
-                    <option value="recurring_invoice_schedule.created">{{ t('إنشاء جدول فاتورة دورية', 'Recurring invoice schedule created') }}</option>
-                    <option value="data_import.completed">{{ t('اكتمال استيراد البيانات', 'Data import completed') }}</option>
-                    <option value="pricing_rule.created">{{ t('إنشاء قاعدة تسعير', 'Pricing rule created') }}</option>
+                  <label>{{ t('ui.m_16u0xte') }}<select name="auditAction" [(ngModel)]="auditAction">
+                    <option value="">{{ t('ui.m_s5wvrw') }}</option>
+                    <option value="invoice.issued">{{ t('ui.m_1dgwo7k') }}</option>
+                    <option value="invoice.created">{{ t('ui.m_s89hy1') }}</option>
+                    <option value="invoice.draft_updated">{{ t('ui.m_1h1mtay') }}</option>
+                    <option value="invoice.voided">{{ t('ui.m_1b7zju0') }}</option>
+                    <option value="payment.recorded">{{ t('ui.m_1fzpn4c') }}</option>
+                    <option value="expense.created">{{ t('ui.m_1eswv36') }}</option>
+                    <option value="customer.created">{{ t('ui.m_7ayrnh') }}</option>
+                    <option value="product.created">{{ t('ui.m_w0ko2p') }}</option>
+                    <option value="stock.movement_recorded">{{ t('ui.m_1jl8qoq') }}</option>
+                    <option value="supplier.created">{{ t('ui.m_n1vp0a') }}</option>
+                    <option value="customer.updated">{{ t('ui.m_1j81wf0') }}</option>
+                    <option value="customer.deactivated">{{ t('ui.m_11zlj4h') }}</option>
+                    <option value="product.updated">{{ t('ui.m_bu5930') }}</option>
+                    <option value="product.deactivated">{{ t('ui.m_8y4ee1') }}</option>
+                    <option value="purchase_order.created">{{ t('ui.m_1ghnskj') }}</option>
+                    <option value="purchase_order.approved">{{ t('ui.m_xyjlem') }}</option>
+                    <option value="purchase_order.received">{{ t('ui.m_5cn0in') }}</option>
+                    <option value="sales_return.created">{{ t('ui.m_6u7t2s') }}</option>
+                    <option value="sales_return.approved">{{ t('ui.m_kb0bxp') }}</option>
+                    <option value="recurring_invoice_schedule.created">{{ t('ui.m_xaohcb') }}</option>
+                    <option value="data_import.completed">{{ t('ui.m_rs4k6j') }}</option>
+                    <option value="pricing_rule.created">{{ t('ui.m_yytv5x') }}</option>
                   </select></label>
-                  <label>{{ t('نوع السجل', 'Target type') }}<select name="auditTarget" [(ngModel)]="auditTargetType">
-                    <option value="">{{ t('كل السجلات', 'All record types') }}</option>
-                    <option value="invoice">{{ t('فاتورة', 'Invoice') }}</option>
-                    <option value="payment">{{ t('دفعة', 'Payment') }}</option>
-                    <option value="expense">{{ t('مصروف', 'Expense') }}</option>
-                    <option value="customer">{{ t('عميل', 'Customer') }}</option>
-                    <option value="product">{{ t('منتج', 'Product') }}</option>
-                    <option value="business">{{ t('نشاط تجاري', 'Business') }}</option>
-                    <option value="supplier">{{ t('مورد', 'Supplier') }}</option>
-                    <option value="stock_movement">{{ t('حركة مخزون', 'Stock movement') }}</option>
-                    <option value="purchase_order">{{ t('أمر شراء', 'Purchase order') }}</option>
-                    <option value="sales_return">{{ t('مرتجع بيع', 'Sales return') }}</option>
-                    <option value="recurring_invoice_schedule">{{ t('جدول فاتورة دورية', 'Recurring invoice schedule') }}</option>
-                    <option value="import_job">{{ t('عملية استيراد', 'Import job') }}</option>
-                    <option value="pricing_rule">{{ t('قاعدة تسعير', 'Pricing rule') }}</option>
+                  <label>{{ t('ui.m_1bu5iqp') }}<select name="auditTarget" [(ngModel)]="auditTargetType">
+                    <option value="">{{ t('ui.m_1c69yfk') }}</option>
+                    <option value="invoice">{{ t('ui.m_1nfhuv2') }}</option>
+                    <option value="payment">{{ t('ui.m_p9fxzd') }}</option>
+                    <option value="expense">{{ t('ui.m_q7obp1') }}</option>
+                    <option value="customer">{{ t('ui.m_1uow5er') }}</option>
+                    <option value="product">{{ t('ui.m_13rez2z') }}</option>
+                    <option value="business">{{ t('ui.m_1evo6p1') }}</option>
+                    <option value="supplier">{{ t('ui.m_1ec9f70') }}</option>
+                    <option value="stock_movement">{{ t('ui.m_1yixbf5') }}</option>
+                    <option value="purchase_order">{{ t('ui.m_zu2vq6') }}</option>
+                    <option value="sales_return">{{ t('ui.m_1b010yp') }}</option>
+                    <option value="recurring_invoice_schedule">{{ t('ui.m_3pds34') }}</option>
+                    <option value="import_job">{{ t('ui.m_g2eok7') }}</option>
+                    <option value="pricing_rule">{{ t('ui.m_9ckn2u') }}</option>
                   </select></label>
-                  <button class="primary" type="submit" [disabled]="auditLoading">{{ t('تصفية', 'Filter') }}</button>
-                  <button class="secondary" type="button" (click)="auditAction=''; auditTargetType=''; loadAuditEvents(0)" [disabled]="auditLoading">{{ t('مسح الفلاتر', 'Clear filters') }}</button>
+                  <button class="primary" type="submit" [disabled]="auditLoading">{{ t('ui.m_11q6v6c') }}</button>
+                  <button class="secondary" type="button" (click)="auditAction=''; auditTargetType=''; loadAuditEvents(0)" [disabled]="auditLoading">{{ t('ui.m_1np7zc4') }}</button>
                 </form>
                 @if (auditError) { <aba-state-message kind="error" [description]="auditError" /> }
-                <aba-record-table [ariaLabel]="t('جدول سجل العمليات','Activity log table')" [columns]="auditTableColumns" [rows]="auditTableRows" [loading]="auditLoading && !auditEvents.length" [loadingDescription]="t('جارٍ تحميل سجل النشاط…', 'Loading activity log…')" [emptyTitle]="t('لا توجد أحداث','No activity yet')" [emptyDescription]="t('لا توجد أحداث مطابقة للفلاتر.','No events match these filters.')" />
-                <div class="inline-form"><span class="muted">{{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} / {{ auditTotal }}</span><button class="secondary" type="button" (click)="loadAuditEvents((auditOffset > 50 ? auditOffset - 50 : 0))" [disabled]="auditLoading || auditOffset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadAuditEvents(auditOffset + 50)" [disabled]="auditLoading || auditOffset + auditEvents.length >= auditTotal">{{ t('التالي', 'Next') }}</button></div>
+                <aba-record-table [ariaLabel]="t('ui.m_j3pe5o')" [columns]="auditTableColumns" [rows]="auditTableRows" [loading]="auditLoading && !auditEvents.length" [loadingDescription]="t('ui.m_19p9gnl')" [emptyTitle]="t('ui.m_1en86jm')" [emptyDescription]="t('ui.m_1f0oymq')" />
+                <div class="inline-form"><span class="muted">{{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} / {{ auditTotal }}</span><button class="secondary" type="button" (click)="loadAuditEvents((auditOffset > 50 ? auditOffset - 50 : 0))" [disabled]="auditLoading || auditOffset === 0">{{ t('ui.m_14wy3hz') }}</button><button class="secondary" type="button" (click)="loadAuditEvents(auditOffset + 50)" [disabled]="auditLoading || auditOffset + auditEvents.length >= auditTotal">{{ t('ui.m_thb9eg') }}</button></div>
               </section>
             }
 
@@ -897,7 +973,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <aba-release-guide [language]="language" [appVersion]="appVersion" />
               } @placeholder {
                 <section abaCard class="panel narrow">
-                  <aba-state-message kind="loading" [description]="t('جارٍ تحميل دليل التطبيق…', 'Loading the app guide…')" />
+                  <aba-state-message kind="loading" [description]="t('ui.m_111geup')" />
                 </section>
               }
             }
@@ -907,69 +983,69 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <aba-employee-payroll [businessId]="business.id" [currencyCode]="business.currency_code" [language]="language" (payrollPaid)="refreshAfterPayrollPayment()"></aba-employee-payroll>
               } @placeholder {
                 <section abaCard class="panel narrow">
-                  <aba-state-message kind="loading" [description]="t('جارٍ تحميل الموظفين والمرتبات…', 'Loading employees & payroll…')" />
+                  <aba-state-message kind="loading" [description]="t('ui.m_9hwp1p')" />
                 </section>
               }
             }
 
             @if (tab === 'expenses') {
               <section abaCard class="panel">
-                <aba-section-header [title]="t('تسجيل مصروف', 'Record an expense')" [description]="t('سجّل مصروفات النشاط مع التصنيف والتاريخ والعملة.', 'Track business spending with a clear category, date and currency.')" [count]="filteredExpenses.length + ' / ' + expenses.length + ' ' + t('مصروفات', 'expenses')" />
+                <aba-section-header [title]="t('ui.m_p4p38y')" [description]="t('ui.m_ehnfke')" [count]="filteredExpenses.length + ' / ' + expenses.length + ' ' + t('ui.m_7rwk8h')" />
                 <form #expenseForm="ngForm" class="inline-form expense-form" (ngSubmit)="expenseForm.valid && createExpense()">
-                  <label class="expense-category-field">{{ t('تصنيف المصروف', 'Expense category') }}<select #expenseCategoryControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تصنيف المصروف', 'Expense category')" [attr.aria-invalid]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'expense-category-error' : null" name="expenseCategory" required [(ngModel)]="expenseCategory">
-                    <option value="General">{{ t('عام', 'General') }}</option>
-                    <option value="Supplies">{{ t('مستلزمات', 'Supplies') }}</option>
-                    <option value="Rent">{{ t('إيجار', 'Rent') }}</option>
-                    <option value="Utilities">{{ t('مرافق وفواتير', 'Utilities') }}</option>
-                    <option value="Transport">{{ t('نقل ومواصلات', 'Transport') }}</option>
-                    <option value="Marketing">{{ t('تسويق', 'Marketing') }}</option>
-                    <option value="Payroll">{{ t('رواتب', 'Payroll') }}</option>
-                    <option value="Maintenance">{{ t('صيانة', 'Maintenance') }}</option>
-                    <option value="Other">{{ t('أخرى', 'Other') }}</option>
+                  <label class="expense-category-field">{{ t('ui.m_10l7fjw') }}<select #expenseCategoryControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_10l7fjw')" [attr.aria-invalid]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'expense-category-error' : null" name="expenseCategory" required [(ngModel)]="expenseCategory">
+                    <option value="General">{{ t('ui.m_uchan8') }}</option>
+                    <option value="Supplies">{{ t('ui.m_rsaf82') }}</option>
+                    <option value="Rent">{{ t('ui.m_9liqbp') }}</option>
+                    <option value="Utilities">{{ t('ui.m_sgynvi') }}</option>
+                    <option value="Transport">{{ t('ui.m_dby46m') }}</option>
+                    <option value="Marketing">{{ t('ui.m_1psm7ne') }}</option>
+                    <option value="Payroll">{{ t('ui.m_vn50om') }}</option>
+                    <option value="Maintenance">{{ t('ui.m_db4mz5') }}</option>
+                    <option value="Other">{{ t('ui.m_47rh1w') }}</option>
                   </select></label>
-                  <input #expenseDescriptionControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('وصف المصروف', 'Expense description')" [attr.aria-invalid]="expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted) ? 'expense-description-error' : null" name="expenseDescription" maxlength="500" [placeholder]="t('الوصف', 'Description')" required [(ngModel)]="expenseDescription">
-                  <input #expenseAmountControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('مبلغ المصروف', 'Expense amount')" [attr.aria-invalid]="expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted) ? 'expense-amount-error' : null" name="expenseAmount" type="number" min="0.01" step="0.01" [placeholder]="t('المبلغ', 'Amount')" required [(ngModel)]="expenseAmount">
-                  <input #expenseDateControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('تاريخ ووقت المصروف', 'Expense date and time')" [attr.aria-invalid]="expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted) ? 'expense-date-error' : null" name="expenseDate" type="datetime-local" required [(ngModel)]="expenseDate">
-                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('المورد', 'Vendor')" name="expenseVendor" maxlength="160" [placeholder]="t('المورد (اختياري)', 'Vendor (optional)')" [(ngModel)]="expenseVendor">
-                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('مرجع المصروف', 'Expense reference')" name="expenseReference" maxlength="128" [placeholder]="t('المرجع (اختياري)', 'Reference (optional)')" [(ngModel)]="expenseReference">
-                  <button class="primary" type="submit" [disabled]="loading || expenseSubmissionUncertain">{{ t('حفظ المصروف', 'Save expense') }}</button>
+                  <input #expenseDescriptionControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_tfnzm8')" [attr.aria-invalid]="expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted) ? 'expense-description-error' : null" name="expenseDescription" maxlength="500" [placeholder]="t('ui.m_1552j8m')" required [(ngModel)]="expenseDescription">
+                  <input #expenseAmountControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_19u7acj')" [attr.aria-invalid]="expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted) ? 'expense-amount-error' : null" name="expenseAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_i3lh6b')" required [(ngModel)]="expenseAmount">
+                  <input #expenseDateControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_1tz0tea')" [attr.aria-invalid]="expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted) ? 'expense-date-error' : null" name="expenseDate" type="datetime-local" required [(ngModel)]="expenseDate">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_w7k03r')" name="expenseVendor" maxlength="160" [placeholder]="t('ui.m_1klr7r6')" [(ngModel)]="expenseVendor">
+                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_8m31k6')" name="expenseReference" maxlength="128" [placeholder]="t('ui.m_v160u1')" [(ngModel)]="expenseReference">
+                  <button class="primary" type="submit" [disabled]="loading || expenseSubmissionUncertain">{{ t('ui.m_xi9fpn') }}</button>
                 </form>
                 @if ((expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted)) || (expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted)) || (expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted)) || (expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted))) {
                   <div class="expense-validation" aria-live="polite">
-                    @if (expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted)) { <small id="expense-category-error" class="field-error">{{ t('اختر تصنيف المصروف.', 'Choose an expense category.') }}</small> }
-                    @if (expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted)) { <small id="expense-description-error" class="field-error">{{ t('اكتب وصف المصروف (بحد أقصى 500 حرف).', 'Enter an expense description (up to 500 characters).') }}</small> }
-                    @if (expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted)) { <small id="expense-amount-error" class="field-error">{{ t('أدخل مبلغًا أكبر من صفر وبحد أقصى منزلتين عشريتين.', 'Enter an amount greater than zero with up to two decimal places.') }}</small> }
-                    @if (expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted)) { <small id="expense-date-error" class="field-error">{{ t('اختر تاريخ ووقت المصروف.', 'Choose the expense date and time.') }}</small> }
+                    @if (expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted)) { <small id="expense-category-error" class="field-error">{{ t('ui.m_hshr2e') }}</small> }
+                    @if (expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted)) { <small id="expense-description-error" class="field-error">{{ t('ui.m_pzmh99') }}</small> }
+                    @if (expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted)) { <small id="expense-amount-error" class="field-error">{{ t('ui.m_1sa72kc') }}</small> }
+                    @if (expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted)) { <small id="expense-date-error" class="field-error">{{ t('ui.m_17vb8am') }}</small> }
                   </div>
                 }
-                <p class="expense-cash-semantics">{{ t('تسجيل المصروف يوثق وقت تحمّله، ولا يعني أنه تم دفعه أو تسويته نقديًا.', 'Recording an expense captures when it was incurred; it does not confirm that cash was paid or settled.') }}</p>
-                <p class="footnote">{{ t('العملة مرتبطة بمساحة العمل الحالية:', 'Currency follows the current workspace:') }} {{ business.currency_code }}. {{ t('تُحتسب المصروفات في التقارير المتاحة ولا تُحسب تكلفة البضاعة تلقائيًا.', 'Expenses appear in available reports and are not automatically treated as cost of goods.') }}</p>
+                <p class="expense-cash-semantics">{{ t('ui.m_xenywp') }}</p>
+                <p class="footnote">{{ t('ui.m_ks5nuz') }} {{ business.currency_code }}. {{ t('ui.m_1r2awxh') }}</p>
                 @if (expenseMessage) { <aba-state-message kind="success" [description]="expenseMessage" /> }
                 @if (expenseSubmissionUncertain) {
-                  <aba-state-message kind="error" [description]="t('تعذر تأكيد نتيجة الحفظ. لا تعِد الإرسال قبل تحديث القائمة ومراجعتها.', 'The save result is uncertain. Refresh and review the list before trying again.')" [actionLabel]="t('فحص قائمة المصروفات', 'Check expense list')" [actionDisabled]="loading" (action)="checkExpenseSubmissionOutcome()" />
+                  <aba-state-message kind="error" [description]="t('ui.m_bv3h04')" [actionLabel]="t('ui.m_r6p4yr')" [actionDisabled]="loading" (action)="checkExpenseSubmissionOutcome()" />
                 }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="expenseSearch" type="search" [attr.aria-label]="t('البحث في المصروفات', 'Search expenses')" [placeholder]="t('ابحث بالتصنيف أو الوصف أو المورد أو المرجع…', 'Search by category, description, vendor or reference…')" [(ngModel)]="expenseSearch"></div>
-                <aba-record-table [ariaLabel]="t('جدول المصروفات','Expenses table')" [columns]="expenseTableColumns" [rows]="expenseTableRows" [loading]="loading && !expenses.length" [loadingDescription]="t('جارٍ تحميل المصروفات…', 'Loading expenses…')" [emptyTitle]="t('لا توجد مصروفات','No expenses yet')" [emptyDescription]="expenseSearch.trim() ? t('لا توجد مصروفات مطابقة للبحث.','No expenses match this search.') : t('لم يتم تسجيل مصروفات بعد.','No expenses recorded yet.')" />
+                <div class="list-tools operations-search aba-record-toolbar"><input name="expenseSearch" type="search" [attr.aria-label]="t('ui.m_qat44q')" [placeholder]="t('ui.m_34prmq')" [(ngModel)]="expenseSearch"></div>
+                <aba-record-table [ariaLabel]="t('ui.m_zyptez')" [columns]="expenseTableColumns" [rows]="expenseTableRows" [loading]="loading && !expenses.length" [loadingDescription]="t('ui.m_luj2e5')" [emptyTitle]="t('ui.m_ia2bhy')" [emptyDescription]="expenseSearch.trim() ? t('ui.m_1ow9n49') : t('ui.m_1xx6js5')" />
               </section>
             }
 
             @if (tab === 'integrity' && business.role === 'owner') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('مراجعة سلامة البيانات', 'Data integrity review') " [description]=" t('تقرير قراءة فقط لاكتشاف السجلات القديمة غير المرتبطة والتخصيصات غير المتطابقة.', 'Read-only report for unlinked legacy invoices and mismatched allocations.') "><span class="count">{{ (dataIntegrityReport?.generated_at | date:'short') || t('لم يتم التحديث', 'Not refreshed') }}</span></aba-section-header>
-                <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t('جارٍ الفحص…', 'Checking…') : t('فحص البيانات', 'Run integrity check') }}</button>
+                <aba-section-header [title]=" t('ui.m_3j4vfw') " [description]=" t('ui.m_rq55ji') "><span class="count">{{ formatRecordDate(dataIntegrityReport?.generated_at, 'short') || t('ui.m_xo2kma') }}</span></aba-section-header>
+                <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t('ui.m_1v22gnm') : t('ui.m_t1s0tt') }}</button>
                 @if (integrityError) { <aba-state-message kind="error" [description]="integrityError" /> }
                 @if (dataIntegrityReport) {
-                  <div class="notice warning-notice"><strong>{{ t('تحتاج مراجعة بشرية', 'Human review required') }}</strong><span>{{ integrityWarningLabel(dataIntegrityReport.warning) }}</span></div>
+                  <div class="notice warning-notice"><strong>{{ t('ui.m_8kfz56') }}</strong><span>{{ integrityWarningLabel(dataIntegrityReport.warning) }}</span></div>
                   <div class="metric-grid">
-                    <article class="metric"><span>{{ t('فواتير صادرة بلا عميل', 'Issued invoices without a customer') }}</span><strong>{{ dataIntegrityReport.unlinked_issued_invoices.total }}</strong></article>
-                    <article class="metric"><span>{{ t('تخصيصات بعملات مختلفة', 'Currency-mismatched allocations') }}</span><strong>{{ dataIntegrityReport.currency_mismatched_allocations.total }}</strong></article>
-                    <article class="metric"><span>{{ t('تخصيصات بعملاء مختلفين', 'Customer-mismatched allocations') }}</span><strong>{{ dataIntegrityReport.customer_mismatched_allocations.total }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_r33nse') }}</span><strong>{{ dataIntegrityReport.unlinked_issued_invoices.total }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_56uiuq') }}</span><strong>{{ dataIntegrityReport.currency_mismatched_allocations.total }}</strong></article>
+                    <article class="metric"><span>{{ t('ui.m_15jyanv') }}</span><strong>{{ dataIntegrityReport.customer_mismatched_allocations.total }}</strong></article>
                   </div>
-                  <h3>{{ t('الفواتير غير المرتبطة', 'Unlinked issued invoices') }}</h3>
-                  <aba-record-table [ariaLabel]="t('الفواتير غير المرتبطة بعميل','Invoices without customer')" [columns]="integrityInvoiceColumns" [rows]="integrityInvoiceRows" [emptyTitle]="t('لا توجد فواتير غير مرتبطة','No unlinked invoices')" [emptyDescription]="t('لم يتم العثور على فواتير تحتاج مراجعة في هذه الفئة.','No invoices need review in this category.')" />
-                  <h3>{{ t('تخصيصات المدفوعات التي تحتاج مراجعة', 'Payment allocations needing review') }}</h3>
-                  <aba-record-table [ariaLabel]="t('تخصيصات تحتاج مراجعة','Allocations requiring review')" [columns]="integrityAllocationColumns" [rows]="integrityAllocationRows" [emptyTitle]="t('لا توجد تخصيصات تحتاج مراجعة','No allocations need review')" [emptyDescription]="t('لم يتم العثور على تخصيصات غير متطابقة.','No mismatched allocations found.')" />
-                  <div class="inline-form"><span class="muted">{{ t('الصفحة', 'Offset') }} {{ dataIntegrityReport.offset }} · {{ t('حد الصفحة', 'Page size') }} {{ dataIntegrityReport.limit }}</span><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset > 0 ? dataIntegrityReport.offset - dataIntegrityReport.limit : 0)" [disabled]="integrityLoading || dataIntegrityReport.offset === 0">{{ t('السابق', 'Previous') }}</button><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset + dataIntegrityReport.limit)" [disabled]="integrityLoading || dataIntegrityReport.offset + dataIntegrityReport.limit >= maxIntegrityTotal">{{ t('التالي', 'Next') }}</button></div>
+                  <h3>{{ t('ui.m_h5fuqc') }}</h3>
+                  <aba-record-table [ariaLabel]="t('ui.m_1muvs8z')" [columns]="integrityInvoiceColumns" [rows]="integrityInvoiceRows" [emptyTitle]="t('ui.m_ej8yte')" [emptyDescription]="t('ui.m_ydex7x')" />
+                  <h3>{{ t('ui.m_ord1a3') }}</h3>
+                  <aba-record-table [ariaLabel]="t('ui.m_xbtfmu')" [columns]="integrityAllocationColumns" [rows]="integrityAllocationRows" [emptyTitle]="t('ui.m_hrqqij')" [emptyDescription]="t('ui.m_uxsaek')" />
+                  <div class="inline-form"><span class="muted">{{ t('ui.m_3dypht') }} {{ dataIntegrityReport.offset }} · {{ t('ui.m_1o0uw0o') }} {{ dataIntegrityReport.limit }}</span><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset > 0 ? dataIntegrityReport.offset - dataIntegrityReport.limit : 0)" [disabled]="integrityLoading || dataIntegrityReport.offset === 0">{{ t('ui.m_14wy3hz') }}</button><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset + dataIntegrityReport.limit)" [disabled]="integrityLoading || dataIntegrityReport.offset + dataIntegrityReport.limit >= maxIntegrityTotal">{{ t('ui.m_thb9eg') }}</button></div>
                 }
               </section>
             }
@@ -977,54 +1053,54 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @if (tab === 'assistant') {
               <div class="assistant-workspace" [class.has-chat]="chatMessages.length > 0">
               <section abaCard class="panel chat-panel">
-                <aba-section-header [title]=" t('مساعد الأعمال الذكي', 'AI Business Assistant') " [description]=" t('الإجابات مبنية على السجلات الحديثة لمساحة العمل الحالية فقط.', 'Answers use recent records from the current workspace only.') ">
+                <aba-section-header [title]=" t('ui.m_1ajyrpz') " [description]=" t('ui.m_1yriqyt') ">
                   <div class="chat-header-actions">
-                    <span class="count">{{ t('قراءة فقط', 'READ ONLY') }}</span>
-                    <button type="button" class="chat-new-button" (click)="startNewChat()" [disabled]="chatSending || (!chatMessages.length && !chatDraft.trim())">{{ t('محادثة جديدة', 'New chat') }}</button>
+                    <span class="count">{{ t('ui.m_1bvwx8l') }}</span>
+                    <button type="button" class="chat-new-button" (click)="startNewChat()" [disabled]="chatSending || (!chatMessages.length && !chatDraft.trim())">{{ t('ui.m_gz9o3g') }}</button>
                   </div>
                 </aba-section-header>
-                <div #chatLog class="chat-log" role="log" tabindex="0" aria-live="polite" aria-relevant="additions" aria-atomic="false" [attr.aria-busy]="chatSending ? 'true' : null" [attr.aria-label]="t('سجل محادثة المساعد، قابل للتمرير', 'Assistant conversation history, scrollable')">
-                  @if (!chatMessages.length) { <aba-state-message kind="empty" [description]="t('ابدأ بسؤال سريع عن نشاطك أو اختَر اقتراحًا بالأسفل.', 'Start with a quick business question or choose a suggestion below.')" /> }
+                <div #chatLog class="chat-log" role="log" tabindex="0" aria-live="polite" aria-relevant="additions" aria-atomic="false" [attr.aria-busy]="chatSending ? 'true' : null" [attr.aria-label]="t('ui.m_180k0we')">
+                  @if (!chatMessages.length) { <aba-state-message kind="empty" [description]="t('ui.m_1dsxkpa')" /> }
                   @for (message of chatMessages; track $index; let messageIndex = $index) {
                     <article class="chat-message" [class.user-message]="message.role === 'user'">
                       <div class="chat-message-head">
-                        <span>{{ message.role === 'user' ? t('أنت', 'You') : t('المساعد الذكي', 'AI assistant') }}</span>
+                        <span>{{ message.role === 'user' ? t('ui.m_ma3u89') : t('ui.m_dzn3ev') }}</span>
                         @if (message.role === 'assistant') {
-                          <button type="button" class="chat-copy-button" (click)="copyAssistantMessage(message.content, messageIndex)" [attr.aria-label]="t('نسخ رد المساعد', 'Copy assistant response')">
-                            <span aria-live="polite">{{ chatCopyStatus?.index === messageIndex ? (chatCopyStatus?.success ? t('تم النسخ', 'Copied') : t('تعذر النسخ', 'Copy failed')) : t('نسخ', 'Copy') }}</span>
+                          <button type="button" class="chat-copy-button" (click)="copyAssistantMessage(message.content, messageIndex)" [attr.aria-label]="t('ui.m_14dh0xk')">
+                            <span aria-live="polite">{{ chatCopyStatus?.index === messageIndex ? (chatCopyStatus?.success ? t('ui.m_d2vkge') : t('ui.m_qenrab')) : t('ui.m_1dtdc5p') }}</span>
                           </button>
                         }
                       </div>
-                      @if (message.mode === 'local-fallback') { <small class="source-list">{{ t('وضع مجاني محدود · إجابة من سجلات النشاط', 'Free limited mode · grounded in business records') }}</small> }
+                      @if (message.mode === 'local-fallback') { <small class="source-list">{{ t('ui.m_1raguvh') }}</small> }
                       <p>{{ message.content }}</p>
-                      @if (message.sources?.length) { <small class="source-list">{{ t('المصادر:', 'Sources:') }} @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? t('فاتورة', 'Invoice') : (source.type === 'expense' ? t('مصروف', 'Expense') : source.type) }} · {{ source.invoice_number || (source.type === 'expense' && source.category ? expenseCategoryLabel(source.category) : (source.category || source.id)) }}</span> }</small> }
+                      @if (message.sources?.length) { <small class="source-list">{{ t('ui.m_1uui693') }} @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? t('ui.m_1nfhuv2') : (source.type === 'expense' ? t('ui.m_q7obp1') : source.type) }} · {{ source.invoice_number || (source.type === 'expense' && source.category ? expenseCategoryLabel(source.category) : (source.category || source.id)) }}</span> }</small> }
                     </article>
                   }
                 </div>
                 
-                @if (chatError) { <aba-state-message kind="error" [description]="chatError" [actionLabel]="chatConfigurationMissing ? '' : t('إعادة المحاولة', 'Retry')" [actionDisabled]="chatSending || !chatDraft.trim()" (action)="sendChat()" /> }
-                @if (chatSending) { <aba-state-message kind="loading" [description]="t('المساعد الذكي يجهّز الإجابة…', 'The AI assistant is preparing an answer…')" /> }
-                <form #chatForm="ngForm" class="chat-form" (ngSubmit)="chatForm.valid && chatDraft.trim() && sendChat()"><textarea #chatMessageControl="ngModel" name="chatMessage" rows="2" maxlength="2000" enterkeyhint="send" (keydown.enter)="handleChatKeydown($any($event))" [attr.aria-label]="t('سؤالك للمساعد الذكي', 'Your question for the AI assistant')" [attr.aria-invalid]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'true' : null" [attr.aria-describedby]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'chat-message-hint chat-message-error' : 'chat-message-hint'" [placeholder]="t('اكتب سؤالك عن نشاطك…', 'Ask a question about your business…')" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t('جارٍ الإرسال…', 'Sending…') : t('إرسال', 'Send') }}</button></form>
-                <div class="chat-composer-meta"><small id="chat-message-hint">{{ t('Enter للإرسال · Shift + Enter لسطر جديد', 'Enter to send · Shift + Enter for a new line') }}</small><small>{{ chatDraft.length }} / 2000</small></div>
-                @if ((chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted)) { <small id="chat-message-error" class="field-error" role="alert">{{ t('اكتب سؤالك قبل الإرسال (بحد أقصى 2000 حرف).', 'Enter your question before sending (up to 2000 characters).') }}</small> }
-                <p class="footnote">{{ t('المساعد للقراءة فقط. عند عدم إعداد مفتاح مزوّد الذكاء الاصطناعي يعمل بوضع مجاني محدود للإجابات المبنية على أحدث السجلات، ولا يُعدّ بديلًا للمساعد التوليدي الكامل.', 'Read-only assistant. Without an AI provider key, a free limited fallback answers from recent records; it is not a full generative AI replacement.') }}</p>
+                @if (chatError) { <aba-state-message kind="error" [description]="chatError" [actionLabel]="chatConfigurationMissing ? '' : t('ui.m_worzj7')" [actionDisabled]="chatSending || !chatDraft.trim()" (action)="sendChat()" /> }
+                @if (chatSending) { <aba-state-message kind="loading" [description]="t('ui.m_1xguwi5')" /> }
+                <form #chatForm="ngForm" class="chat-form" (ngSubmit)="chatForm.valid && chatDraft.trim() && sendChat()"><textarea #chatMessageControl="ngModel" name="chatMessage" rows="2" maxlength="2000" enterkeyhint="send" (keydown.enter)="handleChatKeydown($any($event))" [attr.aria-label]="t('ui.m_1d2fatg')" [attr.aria-invalid]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'true' : null" [attr.aria-describedby]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'chat-message-hint chat-message-error' : 'chat-message-hint'" [placeholder]="t('ui.m_1pafgoq')" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t('ui.m_1sgwbzd') : t('ui.m_rf7y63') }}</button></form>
+                <div class="chat-composer-meta"><small id="chat-message-hint">{{ t('ui.m_vdvf9x') }}</small><small>{{ chatDraft.length }} / 2000</small></div>
+                @if ((chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted)) { <small id="chat-message-error" class="field-error" role="alert">{{ t('ui.m_18j0gfn') }}</small> }
+                <p class="footnote">{{ t('ui.m_118u9lx') }}</p>
               </section>
-              <aside class="assistant-suggestions" aria-label="{{ t('اقتراحات الأسئلة', 'Suggested questions') }}"><p>{{ t('جرّب تسأل', 'Try asking') }}</p><div class="suggestion-grid"><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ما الفواتير المستحقة التي تحتاج متابعة؟', 'Which outstanding invoices need follow-up?'))"><span class="suggestion-icon">↗</span><strong>{{ t('متابعة التحصيل', 'Receivables follow-up') }}</strong><small>{{ t('اعرف الفواتير المستحقة', 'Find outstanding invoices') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('لخّص أداء النشاط خلال آخر 30 يومًا.', 'Summarize business performance over the last 30 days.'))"><span class="suggestion-icon">✦</span><strong>{{ t('ملخص الأداء', 'Performance summary') }}</strong><small>{{ t('مبيعات ومصروفات', 'Sales and expenses') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ما المنتجات التي تحتاج إعادة تخزين؟', 'Which products may need restocking?'))"><span class="suggestion-icon">▦</span><strong>{{ t('المخزون', 'Inventory check') }}</strong><small>{{ t('راجع المنتجات والمخزون', 'Review products and stock') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('اعرض لي نظرة عامة على العملاء والفواتير.', 'Give me an overview of customers and invoices.'))"><span class="suggestion-icon">◎</span><strong>{{ t('نظرة عامة', 'Business overview') }}</strong><small>{{ t('عملاء وفواتير', 'Customers and invoices') }}</small></button></div></aside>
+              <aside class="assistant-suggestions" aria-label="{{ t('ui.m_1is9ve0') }}"><p>{{ t('ui.m_lxd4e7') }}</p><div class="suggestion-grid"><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_1clvjpr'))"><span class="suggestion-icon">↗</span><strong>{{ t('ui.m_1dkpjlm') }}</strong><small>{{ t('ui.m_70o2ur') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_1ij9tr8'))"><span class="suggestion-icon">✦</span><strong>{{ t('ui.m_159lqb4') }}</strong><small>{{ t('ui.m_1ktypo7') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_4tgkt3'))"><span class="suggestion-icon">▦</span><strong>{{ t('ui.m_yezco3') }}</strong><small>{{ t('ui.m_1a12moo') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_xc417r'))"><span class="suggestion-icon">◎</span><strong>{{ t('ui.m_b2oroc') }}</strong><small>{{ t('ui.m_ap19ks') }}</small></button></div></aside>
               </div>
             }
           }
-          <footer>{{ t('مساعد الأعمال الذكي', 'AI Business Assistant') }} <span>{{ t('جلسة Firebase موثّقة · واجهة API معزولة حسب النشاط · قاعدة بيانات PostgreSQL', 'Verified Firebase session · business-scoped API · PostgreSQL database') }}</span></footer>
+          <footer>{{ t('ui.m_1ajyrpz') }} <span>{{ t('ui.m_1f5dk3e') }}</span></footer>
           }
         </main>
       }
       @if (pendingInvoiceVoid) {
         <aba-confirm-dialog
-          [title]="t('تأكيد إلغاء الفاتورة', 'Confirm invoice void') + ' · ' + pendingInvoiceVoid.invoice_number"
-          [message]="t('سيتم تغيير حالة الفاتورة إلى ملغاة.', 'This will mark the invoice as void.')"
-          [warning]="t('إذا كانت هناك دفعات مخصصة، توقف وراجع مالك مساحة العمل. هذه الشاشة لا تنفذ رد مبالغ أو إشعارات دائنة.', 'If payments are allocated, stop and review with the workspace owner. This screen does not process refunds or credit notes.')"
-          [confirmLabel]="t('إلغاء الفاتورة', 'Void invoice')"
-          [cancelLabel]="t('الاحتفاظ بالفاتورة', 'Keep invoice')"
-          [busyLabel]="t('جارٍ الإلغاء...', 'Voiding...')"
+          [title]="t('ui.m_azron7') + ' · ' + pendingInvoiceVoid.invoice_number"
+          [message]="t('ui.m_13c8e52')"
+          [warning]="t('ui.m_1rhb2df')"
+          [confirmLabel]="t('ui.m_p2fc6q')"
+          [cancelLabel]="t('ui.m_mbs8k3')"
+          [busyLabel]="t('ui.m_1ex5gf4')"
           [busy]="loading"
           [confirmDisabled]="!!invoiceVoidError"
           [error]="invoiceVoidError"
@@ -1036,14 +1112,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       }
       @if (pendingPurchaseApproval) {
         <aba-confirm-dialog
-          [title]="t('تأكيد اعتماد أمر الشراء', 'Confirm purchase order approval') + ' · ' + pendingPurchaseApproval.order_number"
-          [message]="t('سيتم اعتماد مسودة أمر الشراء فقط. لن يتم تسجيل استلام أو حركة مخزون.', 'This approves the draft purchase order only. It does not record receipt or a stock movement.')"
-          [warning]="t('راجع المورد والأصناف والكميات والتكلفة قبل الاعتماد. لا ينشئ الاعتماد فاتورة مورد أو مستحقات أو مدفوعات.', 'Review the supplier, items, quantities and unit costs. Approval does not create supplier bills, payables or payments.')"
-          [detailsTitle]="t('مراجعة الأمر قبل الاعتماد', 'Review order before approval')"
+          [title]="t('ui.m_1pj46jy') + ' · ' + pendingPurchaseApproval.order_number"
+          [message]="t('ui.m_o7tlrf')"
+          [warning]="t('ui.m_wvb17f')"
+          [detailsTitle]="t('ui.m_14aur8c')"
           [details]="pendingPurchaseApprovalDetails"
-          [confirmLabel]="t('اعتماد الأمر', 'Approve order')"
-          [cancelLabel]="t('إبقاءه مسودة', 'Keep as draft')"
-          [busyLabel]="t('جارٍ الاعتماد...', 'Approving...')"
+          [confirmLabel]="t('ui.m_4bqrmd')"
+          [cancelLabel]="t('ui.m_1233hg7')"
+          [busyLabel]="t('ui.m_z167k8')"
           [busy]="purchasesLoading"
           [confirmDisabled]="!!purchaseApprovalError"
           [error]="purchaseApprovalError"
@@ -1055,14 +1131,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       }
       @if (pendingPurchaseReceipt) {
         <aba-confirm-dialog
-          [title]="t('تأكيد استلام أمر الشراء', 'Confirm purchase receipt') + ' · ' + pendingPurchaseReceipt.order_number"
-          [message]="t('سيتم تسجيل الكميات المتبقية أدناه وتحديث المخزون عبر عملية الاستلام الحالية.', 'This will record the remaining quantities below and update stock through the existing receiving workflow.')"
-          [warning]="t('راجع كل كمية قبل التأكيد. إذا لم تتأكد من النتيجة، حدّث حالة الأمر قبل أي محاولة أخرى.', 'Review every quantity before confirming. If the result is uncertain, refresh the order status before any retry.')"
-          [detailsTitle]="t('الكميات المتبقية التي سيتم استلامها', 'Remaining quantities to receive')"
+          [title]="t('ui.m_qssa8w') + ' · ' + pendingPurchaseReceipt.order_number"
+          [message]="t('ui.m_1srrito')"
+          [warning]="t('ui.m_e0ddqk')"
+          [detailsTitle]="t('ui.m_126kkr6')"
           [details]="pendingPurchaseReceiptDetails"
-          [confirmLabel]="t('تسجيل الاستلام', 'Record receipt')"
-          [cancelLabel]="t('مراجعة لاحقًا', 'Review later')"
-          [busyLabel]="t('جارٍ التسجيل...', 'Recording...')"
+          [confirmLabel]="t('ui.m_vc9tiw')"
+          [cancelLabel]="t('ui.m_1gc2kb4')"
+          [busyLabel]="t('ui.m_k3q67h')"
           [busy]="purchasesLoading"
           [confirmDisabled]="!!purchaseReceiptError"
           [error]="purchaseReceiptError"
@@ -1377,14 +1453,10 @@ export class AppComponent implements OnInit, OnDestroy {
   readonly appVersion = APP_BUILD_INFO.version;
   readonly uiCommitLabel = APP_BUILD_INFO.commit;
   get buildTimeLabel(): string {
-    if (!APP_BUILD_INFO.builtAt) return this.t('وقت البناء غير متاح', 'Build time unavailable');
-    return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en-GB', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-      timeZone: 'Africa/Cairo',
-    }).format(new Date(APP_BUILD_INFO.builtAt));
+    if (!APP_BUILD_INFO.builtAt) return this.t('ui.m_1ilhynh');
+    return this.localization.formatDate(APP_BUILD_INFO.builtAt, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Cairo' });
   }
-  apiVersionLabel = 'غير متاح';
+  apiVersionLabel = '';
   apiCommitLabel = 'unknown';
   language: 'ar' | 'en' = 'ar';
   initialized = false;
@@ -1519,6 +1591,8 @@ export class AppComponent implements OnInit, OnDestroy {
   expenseSubmissionUncertain = false;
   businessName = '';
   currencyCode = 'EGP';
+  customerCreateOpen = false;
+  productCreateOpen = false;
   customerName = '';
   customerEmail = '';
   customerPhone = '';
@@ -1597,9 +1671,10 @@ export class AppComponent implements OnInit, OnDestroy {
   @ViewChild('chatLog') private chatLog?: ElementRef<HTMLElement>;
   isInstalled = false;
   installHelp = false;
+  appUpdateAvailable = false;
   private installPrompt: (Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }) | null = null;
 
-  constructor(private readonly auth: AuthService, private readonly api: ApiService) {
+  constructor(private readonly auth: AuthService, private readonly api: ApiService, private readonly localization: LocalizationService) {
     const standalone = window.matchMedia('(display-mode: standalone)');
     this.isInstalled = standalone.matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
     standalone.addEventListener?.('change', event => { this.isInstalled = event.matches; });
@@ -1612,39 +1687,39 @@ export class AppComponent implements OnInit, OnDestroy {
       this.installHelp = false;
       this.installPrompt = null;
     });
-    try {
-      const savedLanguage = localStorage.getItem('aba-language');
-      if (savedLanguage === 'ar' || savedLanguage === 'en') this.language = savedLanguage;
-    } catch { /* language preference is optional */ }
+    this.apiVersionLabel = this.t('common.notAvailable');
+    this.language = this.localization.currentLanguage;
     this.syncDocumentLanguage();
   }
 
   toggleLanguage(): void {
-    this.language = this.language === 'ar' ? 'en' : 'ar';
-    try { localStorage.setItem('aba-language', this.language); } catch { /* private browsing may block storage */ }
-    this.syncDocumentLanguage();
+    const nextLanguage = this.language === 'ar' ? 'en' : 'ar';
+    void this.localization.setLanguage(nextLanguage).then(language => {
+      this.language = language;
+      this.syncDocumentLanguage();
+    });
   }
 
   private syncDocumentLanguage(): void {
-    document.documentElement.lang = this.language;
-    document.documentElement.dir = this.language === 'ar' ? 'rtl' : 'ltr';
-    document.title = this.t('مساعد الأعمال الذكي', 'AI Business Assistant');
+    this.localization.syncDocumentLanguage();
   }
 
-  t(arabic: string, english: string): string {
-    return this.language === 'ar' ? arabic : english;
+  get locale(): string { return this.localization.locale; }
+
+  t(key: string, params?: Record<string, string | number>): string {
+    return this.localization.translate(key, params);
   }
 
   customerNameForInvoice(customerId?: string | null): string {
-    if (!customerId) return this.t('عميل غير محدد (سجل قديم)', 'Unlinked customer (legacy record)');
+    if (!customerId) return this.t('ui.m_f2sjwn');
     return this.customers.find(customer => customer.id === customerId)?.name
-      || this.t('العميل غير موجود في القائمة الحالية', 'Customer not in the current list');
+      || this.t('ui.m_30i7q4');
   }
 
   customerInitialForInvoice(customerId?: string | null): string {
-    if (!customerId) return this.t('؟', '?');
+    if (!customerId) return this.t('ui.m_14aibpr');
     const name = this.customers.find(customer => customer.id === customerId)?.name?.trim();
-    return name ? Array.from(name)[0] ?? this.t('؟', '?') : this.t('؟', '?');
+    return name ? Array.from(name)[0] ?? this.t('ui.m_14aibpr') : this.t('ui.m_14aibpr');
   }
 
   invoicePaymentTone(invoice: Invoice): 'paid' | 'partial' | 'unpaid' | null {
@@ -1668,7 +1743,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const progress = this.invoicePaymentProgress(invoice);
     if (progress === null) return '';
     const percent = Math.round(progress);
-    return this.t('تم سداد ' + percent + '%', percent + '% paid');
+    return this.t('ui.m_15p0qq6', { percent: percent });
   }
 
   invoiceCardStatusTone(invoice: Invoice): string {
@@ -1678,9 +1753,9 @@ export class AppComponent implements OnInit, OnDestroy {
 
   invoiceCardStatusLabel(invoice: Invoice): string {
     const tone = this.invoicePaymentTone(invoice);
-    if (tone === 'paid') return this.t('مدفوعة', 'Paid');
-    if (tone === 'partial') return this.t('مدفوعة جزئياً', 'Partially paid');
-    if (tone === 'unpaid') return this.t('غير مدفوعة', 'Unpaid');
+    if (tone === 'paid') return this.t('ui.m_bpbe6s');
+    if (tone === 'partial') return this.t('ui.m_rlfln6');
+    if (tone === 'unpaid') return this.t('ui.m_1przb3c');
     return this.invoiceStatusLabel(invoice.status);
   }
 
@@ -1690,31 +1765,31 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredCustomers(): Customer[] {
-    return filterCustomers(this.customers, this.customerSearch);
+    return filterCustomers(this.customers, this.customerSearch, this.localization.locale);
   }
 
   get supplierTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'name',label:this.t('المورد','Supplier'),primary:true},
-    {key:'email',label:this.t('البريد الإلكتروني','Email')},
-    {key:'phone',label:this.t('الهاتف','Phone')},
-    {key:'address',label:this.t('العنوان','Address')},
-    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
+    {key:'name',label:this.t('ui.m_x27ir1'),primary:true},
+    {key:'email',label:this.t('ui.m_112c7vo')},
+    {key:'phone',label:this.t('ui.m_19jxea1')},
+    {key:'address',label:this.t('ui.m_1d6x93e')},
+    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
   ]; }
   get supplierTableRows(): readonly AbaRecordTableRow[] { return this.filteredSuppliers.map(supplier=>({
     id:supplier.id,cells:{
-      name:supplier.name,email:supplier.email||this.t('غير مسجل','Not provided'),
-      phone:supplier.phone||this.t('غير مسجل','Not provided'),
-      address:supplier.address||this.t('غير مسجل','Not provided'),
-      status:supplier.is_active?this.t('نشط','Active'):this.t('غير نشط','Inactive'),
+      name:supplier.name,email:supplier.email||this.t('ui.m_2wkjj4'),
+      phone:supplier.phone||this.t('ui.m_2wkjj4'),
+      address:supplier.address||this.t('ui.m_2wkjj4'),
+      status:supplier.is_active?this.t('ui.m_sjpv56'):this.t('ui.m_1200s7g'),
     },
   })); }
   get purchaseTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'order',label:this.t('رقم الأمر','Order no.'),primary:true},
-    {key:'supplier',label:this.t('المورد','Supplier')},
-    {key:'products',label:this.t('الأصناف','Items')},
-    {key:'received',label:this.t('المستلم / المطلوب','Received / ordered')},
-    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
-    {key:'total',label:this.t('الإجمالي','Total'),kind:'numeric'},
+    {key:'order',label:this.t('ui.m_1ehdmao'),primary:true},
+    {key:'supplier',label:this.t('ui.m_x27ir1')},
+    {key:'products',label:this.t('ui.m_i0oou8')},
+    {key:'received',label:this.t('ui.m_17gz66i')},
+    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
+    {key:'total',label:this.t('ui.m_l97slj'),kind:'numeric'},
   ]; }
   get purchaseTableRows(): readonly AbaRecordTableRow[] { return this.filteredPurchaseOrders.map(order=>({
     id:order.id,cells:{
@@ -1724,9 +1799,9 @@ export class AppComponent implements OnInit, OnDestroy {
     },
     actions:this.business?.role==='owner'
       ? this.canApprovePurchaseOrder(order)
-        ? [{id:'approve',label:this.t('اعتماد الأمر','Approve'),disabled:this.purchasesLoading}]
+        ? [{id:'approve',label:this.t('ui.m_12b6e8x'),disabled:this.purchasesLoading}]
         : this.canReceivePurchaseOrder(order)
-          ? [{id:'receive',label:this.t('استلام المتبقي','Receive remaining'),disabled:this.purchasesLoading}]
+          ? [{id:'receive',label:this.t('ui.m_1hw0oss'),disabled:this.purchasesLoading}]
           : []
       : [],
   })); }
@@ -1755,15 +1830,15 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredProducts(): Product[] {
-    return filterProducts(this.products, this.productSearch, this.business?.currency_code || '');
+    return filterProducts(this.products, this.productSearch, this.business?.currency_code || '', this.localization.locale);
   }
 
   get filteredInvoices(): Invoice[] {
-    return filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId, status => this.invoiceStatusLabel(status), id => this.customerNameForInvoice(id));
+    return filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId, status => this.invoiceStatusLabel(status), id => this.customerNameForInvoice(id), this.localization.locale);
   }
 
   get filteredSuppliers(): Supplier[] {
-    return filterSuppliers(this.suppliers, this.supplierSearch);
+    return filterSuppliers(this.suppliers, this.supplierSearch, this.localization.locale);
   }
 
   get filteredPurchaseOrders(): PurchaseOrder[] {
@@ -1773,6 +1848,7 @@ export class AppComponent implements OnInit, OnDestroy {
       id => this.supplierNameFor(id),
       id => this.productNameFor(id),
       status => this.purchaseOrderStatusLabel(status),
+      this.localization.locale,
     );
   }
 
@@ -1781,77 +1857,86 @@ export class AppComponent implements OnInit, OnDestroy {
       this.recurringSchedules,
       this.recurringSearch,
       id => this.customerNameForInvoice(id),
+      active => this.t(active ? 'app.recurringSchedule.active' : 'app.recurringSchedule.inactive'),
+      this.localization.locale,
     );
   }
 
   get filteredNotifications(): NotificationRecord[] {
-    return filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind), status => this.notificationStatusLabel(status));
+    return filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind), status => this.notificationStatusLabel(status), this.localization.locale);
   }
 
   get filteredExpenses(): Expense[] {
-    return filterExpenses(this.expenses, this.expenseSearch, category => this.expenseCategoryLabel(category));
+    return filterExpenses(this.expenses, this.expenseSearch, category => this.expenseCategoryLabel(category), this.localization.locale);
   }
 
   get filteredPayments(): Payment[] {
-    return filterPayments(this.payments, this.paymentSearch, id => this.customerNameForInvoice(id), method => this.paymentMethodLabel(method));
+    return filterPayments(
+      this.payments,
+      this.paymentSearch,
+      id => this.customerNameForInvoice(id),
+      method => this.paymentMethodLabel(method),
+      allocated => this.t(allocated ? 'app.paymentAllocation.allocated' : 'app.paymentAllocation.unallocated'),
+      this.localization.locale,
+    );
   }
 
 
   get paymentTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'customer',label:this.t('العميل','Customer'),primary:true},
-    {key:'amount',label:this.t('المبلغ','Amount'),kind:'numeric'},
-    {key:'received',label:this.t('تاريخ الاستلام','Received at')},
-    {key:'method',label:this.t('طريقة الدفع','Method')},
-    {key:'reference',label:this.t('المرجع','Reference')},
-    {key:'allocation',label:this.t('التخصيص','Allocation'),kind:'status'},
+    {key:'customer',label:this.t('ui.m_ubgrc2'),primary:true},
+    {key:'amount',label:this.t('ui.m_i3lh6b'),kind:'numeric'},
+    {key:'received',label:this.t('ui.m_10i3wh4')},
+    {key:'method',label:this.t('ui.m_nic0dr')},
+    {key:'reference',label:this.t('ui.m_eimrhe')},
+    {key:'allocation',label:this.t('ui.m_1s2dqci'),kind:'status'},
   ]; }
   get paymentTableRows(): readonly AbaRecordTableRow[] { return this.filteredPayments.map(item=>({id:item.id,cells:{
     customer:this.customerNameForInvoice(item.customer_id),amount:`${item.amount} ${item.currency_code}`,
-    received:this.formatRecordDate(item.received_at),method:item.method?this.paymentMethodLabel(item.method):this.t('غير محددة','Not specified'),
-    reference:item.reference||'—',allocation:item.allocations.length?`${item.allocations.length} ${this.t('تخصيصات','allocations')}`:this.t('غير مخصصة','Unallocated'),
+    received:this.formatRecordDate(item.received_at),method:item.method?this.paymentMethodLabel(item.method):this.t('ui.m_1q43mlw'),
+    reference:item.reference||'—',allocation:item.allocations.length?`${item.allocations.length} ${this.t('ui.m_3fih4j')}`:this.t('ui.m_lcn3j8'),
   }})); }
   get expenseTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'date',label:this.t('التاريخ','Date')},
-    {key:'description',label:this.t('الوصف','Description'),primary:true},
-    {key:'category',label:this.t('التصنيف','Category'),kind:'status'},
-    {key:'vendor',label:this.t('المورد','Vendor')},
-    {key:'reference',label:this.t('المرجع','Reference')},
-    {key:'amount',label:this.t('المبلغ','Amount'),kind:'numeric'},
+    {key:'date',label:this.t('ui.m_1fcm91o')},
+    {key:'description',label:this.t('ui.m_1552j8m'),primary:true},
+    {key:'category',label:this.t('ui.m_1ebfv92'),kind:'status'},
+    {key:'vendor',label:this.t('ui.m_w7k03r')},
+    {key:'reference',label:this.t('ui.m_eimrhe')},
+    {key:'amount',label:this.t('ui.m_i3lh6b'),kind:'numeric'},
   ]; }
   get expenseTableRows(): readonly AbaRecordTableRow[] { return this.filteredExpenses.map(item=>({id:item.id,cells:{
     date:this.formatRecordDate(item.incurred_at),description:item.description,category:this.expenseCategoryLabel(item.category),
-    vendor:item.vendor_name||this.t('بدون مورد','No vendor'),reference:item.reference||'—',amount:`${item.amount} ${item.currency_code}`,
+    vendor:item.vendor_name||this.t('ui.m_xt63l4'),reference:item.reference||'—',amount:`${item.amount} ${item.currency_code}`,
   }})); }
   get recurringTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'customer',label:this.t('العميل','Customer'),primary:true},
-    {key:'interval',label:this.t('التكرار','Interval')},
-    {key:'nextRun',label:this.t('التشغيل التالي','Next run')},
-    {key:'timezone',label:this.t('المنطقة الزمنية','Timezone')},
-    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
+    {key:'customer',label:this.t('ui.m_ubgrc2'),primary:true},
+    {key:'interval',label:this.t('ui.m_soswtl')},
+    {key:'nextRun',label:this.t('ui.m_1e7ftdu')},
+    {key:'timezone',label:this.t('ui.m_z76sxh')},
+    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
   ]; }
   get recurringTableRows(): readonly AbaRecordTableRow[] { return this.filteredRecurringSchedules.map(item=>({id:item.id,cells:{
-    customer:item.customer_id?this.customerNameForInvoice(item.customer_id):this.t('غير محدد','Not assigned'),
-    interval:`${item.interval_days} ${this.t('يوم','days')}`,nextRun:this.formatRecordDate(item.next_run_at),timezone:item.timezone,
-    status:item.is_active?this.t('نشطة','Active'):this.t('متوقفة','Inactive'),
+    customer:item.customer_id?this.customerNameForInvoice(item.customer_id):this.t('ui.m_j3ewjv'),
+    interval:`${item.interval_days} ${this.t('ui.m_5mk40x')}`,nextRun:this.formatRecordDate(item.next_run_at),timezone:item.timezone,
+    status:item.is_active?this.t('ui.m_1vhpjk3'):this.t('ui.m_vspcsf'),
   }})); }
   get notificationTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'title',label:this.t('الإشعار','Notification'),primary:true},
-    {key:'kind',label:this.t('النوع','Type'),kind:'status'},
-    {key:'status',label:this.t('الحالة','Status'),kind:'status'},
-    {key:'scheduled',label:this.t('موعد الإرسال','Scheduled')},
-    {key:'created',label:this.t('تاريخ الإنشاء','Created')},
-    {key:'body',label:this.t('المحتوى','Message')},
+    {key:'title',label:this.t('ui.m_r04zvh'),primary:true},
+    {key:'kind',label:this.t('ui.m_1uc2roh'),kind:'status'},
+    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
+    {key:'scheduled',label:this.t('ui.m_15oe042')},
+    {key:'created',label:this.t('ui.m_1pb5uxl')},
+    {key:'body',label:this.t('ui.m_cjak9a')},
   ]; }
   get notificationTableRows(): readonly AbaRecordTableRow[] { return this.filteredNotifications.map(item=>({id:item.id,cells:{
     title:item.title,kind:this.notificationKindLabel(item.kind),status:this.notificationStatusLabel(item.status),
-    scheduled:item.scheduled_at?this.formatRecordDate(item.scheduled_at):this.t('غير مجدول','Unscheduled'),created:this.formatRecordDate(item.created_at,'short'),body:item.body,
+    scheduled:item.scheduled_at?this.formatRecordDate(item.scheduled_at):this.t('ui.m_6apaf4'),created:this.formatRecordDate(item.created_at,'short'),body:item.body,
   }})); }
   get auditTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'date',label:this.t('التاريخ','Date')},
-    {key:'action',label:this.t('العملية','Action'),primary:true},
-    {key:'target',label:this.t('نوع السجل','Target')},
-    {key:'recordId',label:this.t('المعرّف','Record ID')},
-    {key:'actor',label:this.t('المنفذ','Actor')},
+    {key:'date',label:this.t('ui.m_1fcm91o')},
+    {key:'action',label:this.t('ui.m_bnvfl5'),primary:true},
+    {key:'target',label:this.t('ui.m_p4bngz')},
+    {key:'recordId',label:this.t('ui.m_1bdb1fj')},
+    {key:'actor',label:this.t('ui.m_s2x2wd')},
   ]; }
   get auditTableRows(): readonly AbaRecordTableRow[] { return this.auditEvents.map(item=>({id:item.id,cells:{
     date:this.formatRecordDate(item.created_at,'short'),action:this.auditActionLabel(item.action),target:this.auditTargetLabel(item.target_type),
@@ -1860,67 +1945,67 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
   get agingTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'invoice',label:this.t('رقم الفاتورة','Invoice'),primary:true},
-    {key:'outstanding',label:this.t('المتبقي','Outstanding'),kind:'numeric'},
-    {key:'bucket',label:this.t('عمر المديونية','Aging bucket'),kind:'status'},
-    {key:'dueDate',label:this.t('تاريخ الاستحقاق','Due date')},
-    {key:'customer',label:this.t('حالة العميل','Customer link'),kind:'status'},
+    {key:'invoice',label:this.t('ui.m_rblc1v'),primary:true},
+    {key:'outstanding',label:this.t('ui.m_11hlijv'),kind:'numeric'},
+    {key:'bucket',label:this.t('ui.m_bgcabs'),kind:'status'},
+    {key:'dueDate',label:this.t('ui.m_1i1a5f0')},
+    {key:'customer',label:this.t('ui.m_1c1fxy9'),kind:'status'},
   ]; }
   get agingTableRows(): readonly AbaRecordTableRow[] { return (this.agingReport?.invoices||[]).map(invoice=>({id:invoice.invoice_id,cells:{
     invoice:invoice.invoice_number,outstanding:`${invoice.outstanding_amount} ${invoice.currency_code}`,
-    bucket:this.agingBucketLabel(invoice.aging_bucket),dueDate:invoice.due_date?this.formatRecordDate(invoice.due_date,'date'):this.t('بدون تاريخ استحقاق','No due date'),
-    customer:invoice.customer_link_missing?this.t('غير مرتبط — مراجعة يدوية','Missing — manual review'):this.t('مرتبط','Linked'),
+    bucket:this.agingBucketLabel(invoice.aging_bucket),dueDate:invoice.due_date?this.formatRecordDate(invoice.due_date,'date'):this.t('ui.m_frwrnt'),
+    customer:invoice.customer_link_missing?this.t('ui.m_15owwjm'):this.t('ui.m_e1gxkn'),
   }})); }
   get profitLossTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'currency',label:this.t('العملة','Currency'),primary:true},
-    {key:'revenue',label:this.t('الإيرادات','Revenue'),kind:'numeric'},
-    {key:'returns',label:this.t('المرتجعات المعتمدة','Approved returns'),kind:'numeric'},
-    {key:'expenses',label:this.t('المصروفات','Expenses'),kind:'numeric'},
-    {key:'result',label:this.t('النتيجة قبل تكلفة البضاعة','Result before COGS'),kind:'numeric'},
+    {key:'currency',label:this.t('ui.m_1jd5ck6'),primary:true},
+    {key:'revenue',label:this.t('ui.m_4635nj'),kind:'numeric'},
+    {key:'returns',label:this.t('ui.m_x5f4g8'),kind:'numeric'},
+    {key:'expenses',label:this.t('ui.m_l71hva'),kind:'numeric'},
+    {key:'result',label:this.t('ui.m_1jzh8n6'),kind:'numeric'},
   ]; }
   get profitLossTableRows(): readonly AbaRecordTableRow[] { return (this.profitLoss?.currencies||[]).map(row=>({id:row.currency_code,cells:{
-    currency:row.currency_code,revenue:`${row.revenue} · ${row.revenue_invoice_count} ${this.t('فاتورة','invoices')}`,
-    returns:`${row.approved_return_total} · ${row.approved_return_count} ${this.t('مرتجع','returns')}`,
-    expenses:`${row.expenses} · ${row.expense_count} ${this.t('مصروف','expenses')}`,
+    currency:row.currency_code,revenue:`${row.revenue} · ${row.revenue_invoice_count} ${this.t('ui.m_pe8fvb')}`,
+    returns:`${row.approved_return_total} · ${row.approved_return_count} ${this.t('ui.m_1wap8ub')}`,
+    expenses:`${row.expenses} · ${row.expense_count} ${this.t('ui.m_1ghkia')}`,
     result:row.operating_result_before_cost_of_goods,
   }})); }
   get taxTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'currency',label:this.t('العملة','Currency'),primary:true},
-    {key:'tax',label:this.t('إجمالي الضريبة','Tax total'),kind:'numeric'},
-    {key:'count',label:this.t('الفواتير الصادرة','Issued invoices'),kind:'numeric'},
+    {key:'currency',label:this.t('ui.m_1jd5ck6'),primary:true},
+    {key:'tax',label:this.t('ui.m_129leiq'),kind:'numeric'},
+    {key:'count',label:this.t('ui.m_1dnybga'),kind:'numeric'},
   ]; }
   get taxTableRows(): readonly AbaRecordTableRow[] { return (this.taxSummaryReport?.currencies||[]).map(row=>({id:row.currency_code,cells:{
     currency:row.currency_code,tax:`${row.tax_total} ${row.currency_code}`,count:String(row.invoice_count),
   }})); }
   get integrityInvoiceColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'invoice',label:this.t('الفاتورة','Invoice'),primary:true},
-    {key:'total',label:this.t('الإجمالي','Total'),kind:'numeric'},
-    {key:'date',label:this.t('تاريخ الإنشاء','Created')},
-    {key:'record',label:this.t('معرّف السجل','Record ID')},
+    {key:'invoice',label:this.t('ui.m_1cuzqu5'),primary:true},
+    {key:'total',label:this.t('ui.m_l97slj'),kind:'numeric'},
+    {key:'date',label:this.t('ui.m_1pb5uxl')},
+    {key:'record',label:this.t('ui.m_356wdy')},
   ]; }
   get integrityInvoiceRows(): readonly AbaRecordTableRow[] { return (this.dataIntegrityReport?.unlinked_issued_invoices.items||[]).map(row=>({id:row.invoice_id,cells:{
     invoice:row.invoice_number,total:`${row.total} ${row.currency_code}`,date:this.formatRecordDate(row.created_at,'short'),record:row.invoice_id,
   }})); }
   get integrityAllocationColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'invoice',label:this.t('الفاتورة','Invoice'),primary:true},
-    {key:'issue',label:this.t('نوع المراجعة','Review issue'),kind:'status'},
-    {key:'amount',label:this.t('المبلغ','Amount'),kind:'numeric'},
-    {key:'paymentCurrency',label:this.t('عملة الدفعة','Payment currency')},
-    {key:'invoiceCurrency',label:this.t('عملة الفاتورة','Invoice currency')},
-    {key:'customers',label:this.t('مطابقة العميل','Customer match')},
-    {key:'reference',label:this.t('مرجع الدفعة','Payment reference')},
+    {key:'invoice',label:this.t('ui.m_1cuzqu5'),primary:true},
+    {key:'issue',label:this.t('ui.m_1jiia8p'),kind:'status'},
+    {key:'amount',label:this.t('ui.m_i3lh6b'),kind:'numeric'},
+    {key:'paymentCurrency',label:this.t('ui.m_1ghw6ju')},
+    {key:'invoiceCurrency',label:this.t('ui.m_uoq0dn')},
+    {key:'customers',label:this.t('ui.m_xwq7hv')},
+    {key:'reference',label:this.t('ui.m_15jj1na')},
   ]; }
   get integrityAllocationRows(): readonly AbaRecordTableRow[] {
     const currency=(this.dataIntegrityReport?.currency_mismatched_allocations.items||[]).map(row=>({id:`currency-${row.allocation_id}`,cells:{
-      invoice:row.invoice_number,issue:this.t('اختلاف العملة','Currency mismatch'),
+      invoice:row.invoice_number,issue:this.t('ui.m_4oned'),
       amount:`${row.allocated_amount} ${row.payment_currency}`,paymentCurrency:row.payment_currency,
       invoiceCurrency:row.invoice_currency,customers:'—',reference:row.payment_reference||row.payment_id,
     }}));
     const customer=(this.dataIntegrityReport?.customer_mismatched_allocations.items||[]).map(row=>({id:`customer-${row.allocation_id}`,cells:{
-      invoice:row.invoice_number,issue:this.t('اختلاف العميل','Customer mismatch'),
+      invoice:row.invoice_number,issue:this.t('ui.m_1pczd49'),
       amount:`${row.allocated_amount} ${row.invoice_currency}`,paymentCurrency:row.payment_currency,
       invoiceCurrency:row.invoice_currency,
-      customers:`${this.t('عميل الدفعة:','Payment customer:')} ${row.payment_customer_id||'—'} · ${this.t('عميل الفاتورة:','Invoice customer:')} ${row.invoice_customer_id||'—'}`,
+      customers:`${this.t('ui.m_1i2qel0')} ${row.payment_customer_id||'—'} · ${this.t('ui.m_1k6zcv')} ${row.invoice_customer_id||'—'}`,
       reference:row.payment_reference||row.payment_id,
     }}));
     return [...currency,...customer];
@@ -1976,6 +2061,11 @@ export class AppComponent implements OnInit, OnDestroy {
     void this.loadApiVersion();
     void this.initializeApp();
     if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+      const handleControllerChange = createServiceWorkerUpdateHandler(
+        Boolean(navigator.serviceWorker.controller),
+        () => { this.appUpdateAvailable = true; },
+      );
+      navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
       const registerWorker = () => navigator.serviceWorker.register('/sw.js').catch(() => {
         // The app remains usable if service-worker registration is unavailable.
       });
@@ -2022,7 +2112,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
 
     this.signedIn = true;
-    this.userEmail = user.email || 'مستخدم مسجّل الدخول';
+    this.userEmail = user.email || this.t('common.signedInUser');
     this.loading = true;
     try {
       await this.checkPlatformAdminAccess();
@@ -2062,276 +2152,9 @@ export class AppComponent implements OnInit, OnDestroy {
       this.apiVersionLabel = release.version;
       this.apiCommitLabel = release.commit || 'unknown';
     } catch {
-      this.apiVersionLabel = this.t('غير متاح', 'unavailable');
+      this.apiVersionLabel = this.t('ui.m_1qagjrx');
       this.apiCommitLabel = 'unknown';
     }
-  }
-
-  toggleMobileMore(): void {
-    if (this.mobileMoreOpen) this.mobileMoreSearch = '';
-    this.mobileMoreOpen = !this.mobileMoreOpen;
-  }
-
-  @HostListener('document:keydown.escape')
-  closeMobileMoreOnEscape(): void {
-    if (!this.mobileMoreOpen) return;
-    this.mobileMoreOpen = false;
-    this.mobileMoreSearch = '';
-    this.mobileMoreTrigger?.nativeElement.focus();
-  }
-
-  /** Restore keyboard focus to the More trigger after a secondary destination is selected. */
-  selectMobileMoreTab(tab: Tab): void {
-    this.mobileMoreSearch = '';
-    this.setTab(tab);
-    this.mobileMoreTrigger?.nativeElement.focus();
-  }
-
-  @HostListener('document:pointerdown', ['$event'])
-  closeMobileMoreOnOutsidePointer(event: PointerEvent): void {
-    if (!this.mobileMoreOpen) return;
-    const target = event.target as Node | null;
-    if (!target) return;
-    if (this.mobileMoreTrigger?.nativeElement.contains(target)
-      || this.mobileMoreMenu?.nativeElement.contains(target)) return;
-    this.mobileMoreOpen = false;
-    this.mobileMoreSearch = '';
-  }
-
-  async installApp(): Promise<void> {
-    this.installHelp = false;
-    if (this.isInstalled) return;
-    if (!this.installPrompt) { this.installHelp = true; return; }
-    try {
-      await this.installPrompt.prompt();
-      const choice = await this.installPrompt.userChoice;
-      if (choice.outcome === 'accepted') { this.isInstalled = true; }
-    } catch { this.installHelp = true; }
-    finally { this.installPrompt = null; }
-  }
-
-  async initializeApp(): Promise<void> {
-    this.authFlowInProgress = true;
-    this.initialized = false;
-    this.startupFailed = false;
-    this.loading = true;
-    this.error = '';
-    this.syncDocumentLanguage();
-    try {
-      let config: Awaited<ReturnType<AuthService['getRuntimeConfig']>>;
-      try {
-        config = await this.auth.getRuntimeConfig();
-      } catch (error) {
-        this.startupFailed = true;
-        this.error = this.message(error);
-        return;
-      }
-      this.setupNeeded = !config.apiBaseUrl?.trim() ||
-        !config.firebase?.apiKey || !config.firebase?.authDomain ||
-        !config.firebase?.projectId || !config.firebase?.appId;
-      if (this.setupNeeded) return;
-      const user = await this.auth.currentUser();
-      this.currentAuthUid = user?.uid ?? null;
-      this.currentAuthEmail = user?.email ?? null;
-      if (user) {
-        this.signedIn = true;
-        this.userEmail = user.email || 'مستخدم مسجّل الدخول';
-        await this.checkPlatformAdminAccess();
-        await this.loadBusinesses();
-      }
-    } catch (error) {
-      this.error = this.message(error);
-    } finally {
-      this.authFlowInProgress = false;
-      this.loading = false;
-      this.initialized = true;
-      this.applyPendingAuthSnapshot();
-    }
-  }
-
-  expenseCategoryLabel(category: string): string {
-    const labelsAr: Record<string, string> = {
-      General: 'عام',
-      Supplies: 'مستلزمات',
-      Rent: 'إيجار',
-      Utilities: 'مرافق وفواتير',
-      Transport: 'نقل ومواصلات',
-      Marketing: 'تسويق',
-      Payroll: 'رواتب',
-      Maintenance: 'صيانة',
-      Other: 'أخرى',
-    };
-    const labelsEn: Record<string, string> = {
-      General: 'General',
-      Supplies: 'Supplies',
-      Rent: 'Rent',
-      Utilities: 'Utilities',
-      Transport: 'Transport',
-      Marketing: 'Marketing',
-      Payroll: 'Payroll',
-      Maintenance: 'Maintenance',
-      Other: 'Other',
-    };
-    return (this.language === 'ar' ? labelsAr : labelsEn)[category] || category;
-  }
-
-  paymentMethodLabel(method: string): string {
-    const labelsAr: Record<string, string> = {
-      cash: 'نقدًا',
-      bank_transfer: 'تحويل بنكي',
-      card: 'بطاقة',
-      wallet: 'محفظة إلكترونية',
-      other: 'أخرى',
-    };
-    const labelsEn: Record<string, string> = {
-      cash: 'Cash',
-      bank_transfer: 'Bank transfer',
-      card: 'Card',
-      wallet: 'E-wallet',
-      other: 'Other',
-    };
-    return (this.language === 'ar' ? labelsAr : labelsEn)[method] || method;
-  }
-
-  notificationStatusLabel(status: string): string {
-    const labelsAr: Record<string, string> = {
-      pending: 'قيد الانتظار',
-      sent: 'تم الإرسال',
-      failed: 'فشل الإرسال',
-      cancelled: 'ملغي',
-    };
-    const labelsEn: Record<string, string> = {
-      pending: 'Pending',
-      sent: 'Sent',
-      failed: 'Failed',
-      cancelled: 'Cancelled',
-    };
-    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || status || this.t('حالة غير محددة', 'Unknown status');
-  }
-
-  notificationKindLabel(kind: string): string {
-    const labels: Record<string, { ar: string; en: string }> = {
-      business: { ar: 'مساحات العمل', en: 'Businesses' },
-      businesses: { ar: 'مساحات العمل', en: 'Businesses' },
-      invoices: { ar: 'الفواتير', en: 'Invoices' },
-      payments: { ar: 'المدفوعات', en: 'Payments' },
-      expenses: { ar: 'المصروفات', en: 'Expenses' },
-      inventory: { ar: 'المخزون', en: 'Inventory' },
-      reminders: { ar: 'التذكيرات', en: 'Reminders' },
-      reports: { ar: 'التقارير', en: 'Reports' },
-      suppliers: { ar: 'الموردون', en: 'Suppliers' },
-      purchases: { ar: 'المشتريات', en: 'Purchases' },
-      recurring: { ar: 'الفواتير الدورية', en: 'Recurring invoices' },
-      assistant: { ar: 'المساعد الذكي', en: 'AI assistant' },
-      system: { ar: 'النظام', en: 'System' }
-    };
-    return labels[kind]?.[this.language] || kind;
-  }
-
-  customerStatementEventLabel(eventType: string): string {
-    const labels: Record<string, { ar: string; en: string }> = {
-      invoice_issued: { ar: 'إصدار فاتورة', en: 'Invoice issued' },
-      payment_allocation: { ar: 'تخصيص دفعة', en: 'Payment allocation' },
-      currency_mismatch_allocation: { ar: 'تخصيص بعملة غير مطابقة', en: 'Currency-mismatch allocation' },
-    };
-    return labels[eventType]?.[this.language] || eventType;
-  }
-
-  auditActionLabel(action: string): string {
-    return formatAuditActionLabel(action, this.language);
-  }
-
-  auditTargetLabel(target: string): string {
-    return formatAuditTargetLabel(target, this.language);
-  }
-
-  revenueBasisLabel(value: string): string {
-    const normalized = value.trim().toLowerCase().replace(/[_-]+/g, ' ');
-    if (normalized.includes('gross issued invoice totals before sales returns')) {
-      return this.t('إجمالي الفواتير الصادرة قبل خصم المرتجعات، شاملًا الضريبة المسجلة', 'Gross issued invoice totals before sales returns; stored tax included');
-    }
-    if (normalized === 'gross issued invoice total' || normalized === 'gross issued invoice totals') {
-      return this.t('إجمالي الفواتير الصادرة قبل خصم المرتجعات', 'Gross issued invoice total');
-    }
-    if (normalized === 'issued invoices' || normalized === 'issued invoice total') {
-      return this.t('إجمالي الفواتير الصادرة', 'Issued invoice total');
-    }
-    return value;
-  }
-
-  integrityWarningLabel(value: string): string {
-    const normalized = value.trim().toLowerCase();
-    if (normalized.startsWith('this report identifies records for manual review only.')) {
-      return this.t('هذا التقرير يحدد السجلات التي تحتاج مراجعة بشرية فقط. لا يخمّن روابط العملاء ولا يعدّل الفواتير أو المدفوعات أو التخصيصات.', 'This report identifies records for human review only. It does not guess customer links or modify invoices, payments, or allocations.');
-    }
-    if (normalized === 'manual review only' || normalized === 'report is for manual review only') {
-      return this.t('هذا التقرير للمراجعة البشرية فقط، ولا يغيّر البيانات تلقائيًا.', 'This report is for human review only and does not change data automatically.');
-    }
-    return value;
-  }
-
-  reportLimitationLabel(value: string): string {
-    const normalized = value.trim().toLowerCase();
-    const known: Record<string, { ar: string; en: string }> = {
-      'manual review only': { ar: 'للمراجعة البشرية فقط', en: 'Manual review only' },
-      'report is read-only': { ar: 'التقرير للقراءة فقط', en: 'Report is read-only' },
-      'amounts are separated by currency': { ar: 'تُعرض المبالغ منفصلة حسب العملة', en: 'Amounts are separated by currency' },
-      'uses saved tax totals on issued invoices; it does not recalculate historical taxes.': { ar: 'يعتمد على قيم الضرائب المحفوظة في الفواتير الصادرة ولا يعيد حساب الضرائب التاريخية.', en: 'Uses saved tax totals on issued invoices; it does not recalculate historical taxes.' },
-      'currency totals are kept separate and are not converted.': { ar: 'تُعرض إجماليات العملات منفصلة ولا يتم تحويلها.', en: 'Currency totals are kept separate and are not converted.' },
-      'this is an operational summary, not a jurisdiction-specific tax filing.': { ar: 'هذا ملخص تشغيلي وليس إقرارًا ضريبيًا رسميًا خاصًا بجهة ضريبية.', en: 'This is an operational summary, not a jurisdiction-specific tax filing.' },
-      'revenue is based on issued invoice totals, not cash collected.': { ar: 'يُحسب الإيراد من إجمالي الفواتير الصادرة، وليس من النقد المحصّل.', en: 'Revenue is based on issued invoice totals, not cash collected.' },
-      'invoice totals include stored tax amounts; approved sales returns are not netted from this figure.': { ar: 'تشمل إجماليات الفواتير الضرائب المسجلة، ولا تُخصم المرتجعات المعتمدة من هذا الرقم.', en: 'Invoice totals include stored tax amounts; approved sales returns are not netted from this figure.' },
-      'this result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.': { ar: 'تُخصم المصروفات المسجلة فقط، ولا تُحتسب تكلفة البضاعة لأن تكلفة شراء المنتجات غير مرتبطة بالمبيعات بعد.', en: 'This result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.' },
-      'tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.': { ar: 'لا يعرض التقرير معالجة الالتزام الضريبي وتوزيع الضريبة على المرتجعات كسجل محاسبي متكامل.', en: 'Tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.' },
-      'currency totals are kept separate and are never converted.': { ar: 'تُعرض إجماليات العملات منفصلة ولا يتم تحويلها.', en: 'Currency totals are kept separate and are never converted.' },
-      'only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.': { ar: 'تظهر الفواتير الصادرة ذات الرصيد المتبقي الموجب فقط في فئات الأعمار؛ وتُستبعد المسودات والفواتير الملغاة.', en: 'Only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.' },
-      'fully settled invoices are excluded from open receivables aging.': { ar: 'تُستبعد الفواتير المسددة بالكامل من أعمار المديونيات المفتوحة.', en: 'Fully settled invoices are excluded from open receivables aging.' },
-      'overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.': { ar: 'تُستبعد الفواتير ذات التخصيص الزائد من أرصدة المديونيات وتظهر ضمن تحذيرات جودة البيانات.', en: 'Overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.' },
-      'invoices without due dates are reported separately and are not assumed current.': { ar: 'تُعرض الفواتير بلا تاريخ استحقاق بشكل منفصل ولا تُعتبر مستحقة حاليًا افتراضيًا.', en: 'Invoices without due dates are reported separately and are not assumed current.' },
-      'legacy invoices without customer links are flagged for review, not auto-corrected.': { ar: 'تُعلَّم الفواتير القديمة التي لا ترتبط بعميل للمراجعة ولا يتم تصحيحها تلقائيًا.', en: 'Legacy invoices without customer links are flagged for review, not auto-corrected.' },
-      'currency-mismatched allocations are listed as warnings and never reduce receivables.': { ar: 'تظهر التخصيصات ذات العملات المختلفة كتحذيرات ولا تقلل المديونيات.', en: 'Currency-mismatched allocations are listed as warnings and never reduce receivables.' },
-      'this is an accounts-receivable aging report, not net profit or a full general ledger.': { ar: 'هذا تقرير لأعمار المديونيات وليس تقرير صافي أرباح أو دفتر أستاذ عام متكامل.', en: 'This is an accounts-receivable aging report, not net profit or a full general ledger.' }
-    };
-    return known[normalized]?.[this.language] || value;
-  }
-
-  operationalHealthStatusLabel(status: string): string {
-    if (status === 'ok') return this.t('سليم', 'Healthy');
-    if (status === 'degraded') return this.t('يحتاج مراجعة', 'Degraded');
-    return status || this.t('حالة غير محددة', 'Unknown status');
-  }
-
-  invoiceStatusLabel(status: string): string {
-    const labelsAr: Record<string, string> = { draft: 'مسودة', issued: 'صادرة', void: 'ملغاة', paid: 'مدفوعة', overdue: 'متأخرة' };
-    const labelsEn: Record<string, string> = { draft: 'Draft', issued: 'Issued', void: 'Voided', paid: 'Paid', overdue: 'Overdue' };
-    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || this.t('غير محددة', 'Unknown');
-  }
-
-  purchaseOrderStatusLabel(status: string): string {
-    const labelsAr: Record<string, string> = {
-      draft: 'مسودة',
-      approved: 'معتمد',
-      partially_received: 'مستلم جزئيًا',
-      received: 'مستلم بالكامل',
-      cancelled: 'ملغي',
-    };
-    const labelsEn: Record<string, string> = {
-      draft: 'Draft',
-      approved: 'Approved',
-      partially_received: 'Partially received',
-      received: 'Received',
-      cancelled: 'Cancelled',
-    };
-    return (this.language === 'ar' ? labelsAr : labelsEn)[status] || status || this.t('حالة غير محددة', 'Unknown status');
-  }
-
-  get pageTitle(): string {
-    const titles: Record<Tab, string> = {
-      overview: 'الرئيسية', customers: 'العملاء',
-      products: 'المنتجات والمخزون', invoices: 'المبيعات والفواتير',
-      payments: 'المدفوعات', expenses: 'المصروفات', employees: 'الموظفون والمرتبات', suppliers: 'الموردون', purchases: 'المشتريات', recurring: 'الفواتير الدورية', notifications: 'الإشعارات', health: 'الحالة التشغيلية', assistant: 'مساعد الأعمال الذكي', reports: 'نتيجة التشغيل الأولية', taxes: 'التقارير الضريبية', audit: 'سجل العمليات', integrity: 'مراجعة سلامة البيانات', 'release-guide': 'دليل التطبيق والإصدارات', 'platform-admin': 'إدارة المنصة'
-    };
-    return this.language === 'ar' ? titles[this.tab] : ({ overview: 'Overview', customers: 'Customers', products: 'Products & inventory', invoices: 'Sales & invoices', payments: 'Payments', expenses: 'Expenses', employees: 'Employees & payroll', suppliers: 'Suppliers', purchases: 'Purchasing', recurring: 'Recurring invoices', notifications: 'Notifications', health: 'Operational health', assistant: 'AI business assistant', reports: 'Preliminary operating result', taxes: 'Tax summary', audit: 'Activity log', integrity: 'Data integrity review', 'release-guide': 'App guide & versions', 'platform-admin': 'Platform admin' } as Record<Tab, string>)[this.tab];
   }
 
   private async checkPlatformAdminAccess(): Promise<void> {
@@ -2360,7 +2183,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.currentAuthUid = user.uid;
       this.currentAuthEmail = user.email ?? null;
       this.signedIn = true;
-      this.userEmail = user.email || 'مستخدم مسجّل الدخول';
+      this.userEmail = user.email || this.t('common.signedInUser');
       await this.checkPlatformAdminAccess();
       await this.loadBusinesses();
     } catch (error) {
@@ -2391,22 +2214,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get sessionExpired(): boolean {
-    // Keep recovery behavior stable when the user changes the UI language
-    // after the original error message was created.
-    return [
-      'انتهت صلاحية جلسة الدخول أو تعذر التحقق منها. سجّل الخروج ثم سجّل الدخول مرة أخرى.',
-      'Your sign-in session is no longer valid or could not be verified. Sign out and sign in again.'
-    ].includes(this.error);
+    return this.lastErrorKind === 'session-expired' && this.error === this.lastErrorMessage;
   }
 
   get accessDenied(): boolean {
-    // The stored error may be in the previous language after a language toggle.
-    return [
-      'لا تملك الصلاحية للوصول إلى مساحة العمل أو تنفيذ هذا الإجراء. اطلب من مالك مساحة العمل مراجعة دورك.',
-      'You do not have permission to access this workspace or perform this action.',
-      'حسابك غير مخوّل للوصول إلى إدارة المنصة. إذا كنت تحتاج هذه الصلاحية، راجع مسؤول المنصة.',
-      'Your account is not authorized to access platform administration. Contact the platform administrator if you need this access.'
-    ].includes(this.error);
+    return this.lastErrorKind === 'access-denied' && this.error === this.lastErrorMessage;
   }
 
   retry(): void {
@@ -2664,7 +2476,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async switchBusiness(id: string): Promise<void> {
     if (this.invoiceDraftSaving || this.paymentLoading || this.paymentRetryPending) {
-      this.error = this.t('أكمل حفظ مسودة الفاتورة أو أعد محاولة الدفعة الحالية قبل تغيير مساحة العمل.', 'Finish saving the invoice draft or retry the pending payment before switching workspaces.');
+      this.error = this.t('ui.m_1ca11bx');
       return;
     }
     this.statementVisible = false;
@@ -2734,19 +2546,19 @@ export class AppComponent implements OnInit, OnDestroy {
     this.error = '';
     try {
       const paymentsRequest = this.canAccessTab('payments') ? this.api.payments(id) : Promise.resolve([]);
-      const [dashboard, عميل, منتج, فاتورة, دفعة, مصروفات] = await Promise.all([
+      const [dashboard, customerPage, productPage, invoicePage, paymentPage, expensePage] = await Promise.all([
         this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), paymentsRequest, this.api.expenses(id)
       ]);
       if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
       this.dashboard = dashboard;
       this.homeDashboardError = '';
       this.profitLoss = null;
-      this.setCustomerPage(عميل);
+      this.setCustomerPage(customerPage);
       if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
-      this.setProductPage(منتج);
-      this.setInvoicePage(فاتورة);
-      this.setPaymentPage(دفعة);
-      this.expenses = مصروفات;
+      this.setProductPage(productPage);
+      this.setInvoicePage(invoicePage);
+      this.setPaymentPage(paymentPage);
+      this.expenses = expensePage;
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
       if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
     } catch (error) {
@@ -2988,15 +2800,270 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   agingBucketLabel(bucket: string): string {
-    const ar: Record<string, string> = { not_due: 'غير مستحقة بعد', '1_30_days': '1–30 يومًا', '31_60_days': '31–60 يومًا', '61_90_days': '61–90 يومًا', over_90_days: 'أكثر من 90 يومًا', no_due_date: 'بدون تاريخ استحقاق' };
-    const en: Record<string, string> = { not_due: 'Not yet due', '1_30_days': '1–30 days', '31_60_days': '31–60 days', '61_90_days': '61–90 days', over_90_days: 'Over 90 days', no_due_date: 'No due date' };
-    return (this.language === 'ar' ? ar : en)[bucket] || bucket;
+    const keys: Record<string, string> = {
+      not_due: 'app.agingBucket.not_due',
+      '1_30_days': 'app.agingBucket.1_30_days',
+      '31_60_days': 'app.agingBucket.31_60_days',
+      '61_90_days': 'app.agingBucket.61_90_days',
+      over_90_days: 'app.agingBucket.over_90_days',
+      no_due_date: 'app.agingBucket.no_due_date',
+    };
+    return keys[bucket] ? this.t(keys[bucket]) : bucket;
   }
 
   agingWarningLabel(type: string): string {
-    const ar: Record<string, string> = { payment_currency_mismatch: 'تخصيص دفعة بعملة مختلفة', allocations_exceed_invoice_total: 'إجمالي تخصيصات الدفعات يتجاوز قيمة الفاتورة' };
-    const en: Record<string, string> = { payment_currency_mismatch: 'Payment allocation uses a different currency', allocations_exceed_invoice_total: 'Payment allocations exceed invoice total' };
-    return (this.language === 'ar' ? ar : en)[type] || type;
+    const keys: Record<string, string> = {
+      payment_currency_mismatch: 'app.agingWarning.payment_currency_mismatch',
+      allocations_exceed_invoice_total: 'app.agingWarning.allocations_exceed_invoice_total',
+    };
+    return keys[type] ? this.t(keys[type]) : type;
+  }
+
+
+  toggleMobileMore(): void {
+    if (this.mobileMoreOpen) this.mobileMoreSearch = '';
+    this.mobileMoreOpen = !this.mobileMoreOpen;
+  }
+
+  @HostListener('document:keydown.escape')
+  closeMobileMoreOnEscape(): void {
+    if (!this.mobileMoreOpen) return;
+    this.mobileMoreOpen = false;
+    this.mobileMoreSearch = '';
+    this.mobileMoreTrigger?.nativeElement.focus();
+  }
+
+  /** Restore keyboard focus to the More trigger after a secondary destination is selected. */
+  selectMobileMoreTab(tab: Tab): void {
+    this.mobileMoreSearch = '';
+    this.setTab(tab);
+    this.mobileMoreTrigger?.nativeElement.focus();
+  }
+
+  @HostListener('document:pointerdown', ['$event'])
+  closeMobileMoreOnOutsidePointer(event: PointerEvent): void {
+    if (!this.mobileMoreOpen) return;
+    const target = event.target as Node | null;
+    if (!target) return;
+    if (this.mobileMoreTrigger?.nativeElement.contains(target)
+      || this.mobileMoreMenu?.nativeElement.contains(target)) return;
+    this.mobileMoreOpen = false;
+    this.mobileMoreSearch = '';
+  }
+
+  async installApp(): Promise<void> {
+    this.installHelp = false;
+    if (this.isInstalled) return;
+    if (!this.installPrompt) { this.installHelp = true; return; }
+    try {
+      await this.installPrompt.prompt();
+      const choice = await this.installPrompt.userChoice;
+      if (choice.outcome === 'accepted') { this.isInstalled = true; }
+    } catch { this.installHelp = true; }
+    finally { this.installPrompt = null; }
+  }
+
+  reloadAppAfterUpdate(): void {
+    this.appUpdateAvailable = false;
+    window.location.reload();
+  }
+
+  async initializeApp(): Promise<void> {
+    this.authFlowInProgress = true;
+    this.initialized = false;
+    this.startupFailed = false;
+    this.loading = true;
+    this.error = '';
+    this.syncDocumentLanguage();
+    try {
+      let config: Awaited<ReturnType<AuthService['getRuntimeConfig']>>;
+      try {
+        config = await this.auth.getRuntimeConfig();
+      } catch (error) {
+        this.startupFailed = true;
+        this.error = this.message(error);
+        return;
+      }
+      this.setupNeeded = !config.apiBaseUrl?.trim() ||
+        !config.firebase?.apiKey || !config.firebase?.authDomain ||
+        !config.firebase?.projectId || !config.firebase?.appId;
+      if (this.setupNeeded) return;
+      const user = await this.auth.currentUser();
+      this.currentAuthUid = user?.uid ?? null;
+      this.currentAuthEmail = user?.email ?? null;
+      if (user) {
+        this.signedIn = true;
+        this.userEmail = user.email || this.t('common.signedInUser');
+        await this.checkPlatformAdminAccess();
+        await this.loadBusinesses();
+      }
+    } catch (error) {
+      this.error = this.message(error);
+    } finally {
+      this.authFlowInProgress = false;
+      this.loading = false;
+      this.initialized = true;
+      this.applyPendingAuthSnapshot();
+    }
+  }
+
+  expenseCategoryLabel(category: string): string {
+    const keys: Record<string, string> = {
+      General: 'app.expenseCategory.general', Supplies: 'app.expenseCategory.supplies',
+      Rent: 'app.expenseCategory.rent', Utilities: 'app.expenseCategory.utilities',
+      Transport: 'app.expenseCategory.transport', Marketing: 'app.expenseCategory.marketing',
+      Payroll: 'app.expenseCategory.payroll', Maintenance: 'app.expenseCategory.maintenance',
+      Other: 'app.expenseCategory.other',
+    };
+    return keys[category] ? this.t(keys[category]) : category;
+  }
+
+  paymentMethodLabel(method: string): string {
+    const keys: Record<string, string> = {
+      cash: 'app.paymentMethod.cash', bank_transfer: 'app.paymentMethod.bank_transfer',
+      card: 'app.paymentMethod.card', wallet: 'app.paymentMethod.wallet', other: 'app.paymentMethod.other',
+    };
+    return keys[method] ? this.t(keys[method]) : method;
+  }
+
+  currencyName(code: string): string {
+    const normalized = code.toUpperCase();
+    const keys: Record<string, string> = {
+      EGP: 'app.currencyName.egp',
+      USD: 'app.currencyName.usd',
+      EUR: 'app.currencyName.eur',
+      GBP: 'app.currencyName.gbp',
+      SAR: 'app.currencyName.sar',
+      AED: 'app.currencyName.aed',
+    };
+    return keys[normalized] ? this.t(keys[normalized]) : normalized;
+  }
+
+  notificationStatusLabel(status: string): string {
+    const keys: Record<string, string> = {
+      pending: 'app.notificationStatus.pending', sent: 'app.notificationStatus.sent',
+      failed: 'app.notificationStatus.failed', cancelled: 'app.notificationStatus.cancelled',
+    };
+    return keys[status] ? this.t(keys[status]) : status || this.t('app.labels.unknownStatus');
+  }
+
+  notificationKindLabel(kind: string): string {
+    const keys: Record<string, string> = {
+      business: 'app.notificationKind.business', businesses: 'app.notificationKind.businesses',
+      invoices: 'app.notificationKind.invoices', payments: 'app.notificationKind.payments',
+      expenses: 'app.notificationKind.expenses', inventory: 'app.notificationKind.inventory',
+      reminders: 'app.notificationKind.reminders', reports: 'app.notificationKind.reports',
+      suppliers: 'app.notificationKind.suppliers', purchases: 'app.notificationKind.purchases',
+      recurring: 'app.notificationKind.recurring', assistant: 'app.notificationKind.assistant',
+      system: 'app.notificationKind.system',
+    };
+    return keys[kind] ? this.t(keys[kind]) : kind;
+  }
+
+  customerStatementEventLabel(eventType: string): string {
+    const keys: Record<string, string> = {
+      invoice_issued: 'app.customerStatementEvent.invoice_issued',
+      payment_allocation: 'app.customerStatementEvent.payment_allocation',
+      currency_mismatch_allocation: 'app.customerStatementEvent.currency_mismatch_allocation',
+    };
+    return keys[eventType] ? this.t(keys[eventType]) : eventType;
+  }
+
+  auditActionLabel(action: string): string {
+    return this.t(formatAuditActionLabel(action));
+  }
+
+  auditTargetLabel(target: string): string {
+    return this.t(formatAuditTargetLabel(target));
+  }
+
+  revenueBasisLabel(value: string): string {
+    const normalized = value.trim().toLowerCase().replace(/[_-]+/g, ' ');
+    if (normalized.includes('gross issued invoice totals before sales returns')) return this.t('ui.m_19xyqei');
+    if (normalized === 'gross issued invoice total' || normalized === 'gross issued invoice totals') return this.t('ui.m_rms1b9');
+    if (normalized === 'issued invoices' || normalized === 'issued invoice total') return this.t('ui.m_9mwoh2');
+    return value;
+  }
+
+  integrityWarningLabel(value: string): string {
+    const normalized = value.trim().toLowerCase();
+    if (normalized.startsWith('this report identifies records for manual review only.')) return this.t('ui.m_jm2qpm');
+    if (normalized === 'manual review only' || normalized === 'report is for manual review only') return this.t('ui.m_5watgl');
+    return value;
+  }
+
+  reportLimitationLabel(value: string): string {
+    const normalized = value.trim().toLowerCase();
+    const keys: Record<string, string> = {
+  "manual review only": "app.reportLimitation.1",
+  "report is read-only": "app.reportLimitation.2",
+  "amounts are separated by currency": "app.reportLimitation.3",
+  "uses saved tax totals on issued invoices; it does not recalculate historical taxes.": "app.reportLimitation.4",
+  "currency totals are kept separate and are not converted.": "app.reportLimitation.5",
+  "this is an operational summary, not a jurisdiction-specific tax filing.": "app.reportLimitation.6",
+  "revenue is based on issued invoice totals, not cash collected.": "app.reportLimitation.7",
+  "invoice totals include stored tax amounts; approved sales returns are not netted from this figure.": "app.reportLimitation.8",
+  "this result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.": "app.reportLimitation.9",
+  "tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.": "app.reportLimitation.10",
+  "currency totals are kept separate and are never converted.": "app.reportLimitation.11",
+  "only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.": "app.reportLimitation.12",
+  "fully settled invoices are excluded from open receivables aging.": "app.reportLimitation.13",
+  "overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.": "app.reportLimitation.14",
+  "invoices without due dates are reported separately and are not assumed current.": "app.reportLimitation.15",
+  "legacy invoices without customer links are flagged for review, not auto-corrected.": "app.reportLimitation.16",
+  "currency-mismatched allocations are listed as warnings and never reduce receivables.": "app.reportLimitation.17",
+  "this is an accounts-receivable aging report, not net profit or a full general ledger.": "app.reportLimitation.18"
+};
+    return keys[normalized] ? this.t(keys[normalized]) : value;
+  }
+
+  operationalHealthStatusLabel(status: string): string {
+    if (status === 'ok') return this.t('ui.m_1nehj8y');
+    if (status === 'degraded') return this.t('ui.m_124oetm');
+    return status || this.t('app.labels.unknownStatus');
+  }
+
+  invoiceStatusLabel(status: string): string {
+    const keys: Record<string, string> = {
+      draft: 'app.invoiceStatus.draft', issued: 'app.invoiceStatus.issued',
+      void: 'app.invoiceStatus.void', paid: 'app.invoiceStatus.paid', overdue: 'app.invoiceStatus.overdue',
+    };
+    return keys[status] ? this.t(keys[status]) : this.t('app.labels.unknownStatus');
+  }
+
+  purchaseOrderStatusLabel(status: string): string {
+    const keys: Record<string, string> = {
+      draft: 'app.purchaseOrderStatus.draft', approved: 'app.purchaseOrderStatus.approved',
+      partially_received: 'app.purchaseOrderStatus.partially_received',
+      received: 'app.purchaseOrderStatus.received', cancelled: 'app.purchaseOrderStatus.cancelled',
+    };
+    return keys[status] ? this.t(keys[status]) : status || this.t('app.labels.unknownStatus');
+  }
+
+  get pageTitle(): string {
+    const keys: Record<Tab, string> = {
+  "overview": "app.pageTitle.overview",
+  "customers": "app.pageTitle.customers",
+  "products": "app.pageTitle.products",
+  "invoices": "app.pageTitle.invoices",
+  "payments": "app.pageTitle.payments",
+  "expenses": "app.pageTitle.expenses",
+  "employees": "app.pageTitle.employees",
+  "suppliers": "app.pageTitle.suppliers",
+  "purchases": "app.pageTitle.purchases",
+  "recurring": "app.pageTitle.recurring",
+  "notifications": "app.pageTitle.notifications",
+  "health": "app.pageTitle.health",
+  "assistant": "app.pageTitle.assistant",
+  "reports": "app.pageTitle.reports",
+  "taxes": "app.pageTitle.taxes",
+  "audit": "app.pageTitle.audit",
+  "integrity": "app.pageTitle.integrity",
+  "release-guide": "app.pageTitle.release-guide",
+  "team": "catalog.team.title",
+  "platform-admin": "app.pageTitle.platform-admin"
+};
+    return this.t(keys[this.tab]);
   }
 
   async loadReceivablesAging(): Promise<void> {
@@ -3024,7 +3091,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.profitLossLoadGuard.invalidate();
       this.profitLoss = null;
       this.reportLoading = false;
-      this.reportError = this.t('حدد تاريخ البداية والنهاية.', 'Choose both a start and end date.');
+      this.reportError = this.t('ui.m_unhyh1');
       return;
     }
     const loadVersion = this.profitLossLoadGuard.begin();
@@ -3059,7 +3126,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.taxSummaryLoadGuard.invalidate();
       this.taxSummaryReport = null;
       this.taxLoading = false;
-      this.taxError = this.t('تاريخ البداية يجب ألا يتجاوز تاريخ النهاية.', 'Start date must not be after end date.');
+      this.taxError = this.t('ui.m_mbbjx0');
       return;
     }
     this.taxLoading = true;
@@ -3146,10 +3213,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private setOperationsFailure(tab: OperationsMessageTab, error: unknown): void {
     if (this.operationsMessageTab === tab && this.operationsMessage) {
-      this.operationsWarning = this.t(
-        'تم تنفيذ العملية بنجاح، لكن تعذر تحديث القائمة. حدّث البيانات قبل إعادة المحاولة.',
-        'The operation succeeded, but the list could not be refreshed. Refresh the data before retrying.'
-      ) + ' ' + this.message(error);
+      this.operationsWarning = this.t('ui.m_1ngg92z') + ' ' + this.message(error);
       return;
     }
     this.operationsError = this.message(error);
@@ -3188,10 +3252,7 @@ export class AppComponent implements OnInit, OnDestroy {
         scheduled_at: this.notificationScheduledAt ? new Date(this.notificationScheduledAt).toISOString() : undefined,
       });
       if (this.business?.id !== businessId) return;
-      this.setOperationsSuccess('notifications', this.t(
-        'تمت إضافة الإشعار إلى قائمة الانتظار. لم يتم تأكيد إرساله للمستلمين.',
-        'Notification added to the queue; delivery to recipients is not confirmed.'
-      ));
+      this.setOperationsSuccess('notifications', this.t('ui.m_1618gqb'));
       this.notificationTitle = '';
       this.notificationBody = '';
       this.notificationScheduledAt = '';
@@ -3242,7 +3303,7 @@ export class AppComponent implements OnInit, OnDestroy {
         address: this.supplierAddress.trim() || undefined,
       });
       if (this.business?.id !== businessId) return;
-      this.setOperationsSuccess('suppliers', this.t('تم حفظ المورد.', 'Supplier saved.'));
+      this.setOperationsSuccess('suppliers', this.t('ui.m_oddjud'));
       this.supplierName = '';
       this.supplierEmail = '';
       this.supplierPhone = '';
@@ -3261,7 +3322,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const quantity = Number(this.purchaseQuantity);
     const unitCost = Number(this.purchaseUnitCost);
     if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitCost) || unitCost < 0) {
-      this.operationsError = this.t('تحقق من الكمية والتكلفة.', 'Check the quantity and unit cost.');
+      this.operationsError = this.t('ui.m_12jqxlj');
       this.operationsErrorTab = 'purchases';
       return;
     }
@@ -3275,10 +3336,7 @@ export class AppComponent implements OnInit, OnDestroy {
         lines: [{ product_id: this.purchaseProductId, quantity: this.purchaseQuantity, unit_cost: this.purchaseUnitCost }],
       });
       if (this.business?.id !== businessId) return;
-      this.setOperationsSuccess('purchases', this.t(
-        'تم إنشاء أمر الشراء. لم يتم استلام الكميات بعد.',
-        'Purchase order created. No quantities have been received yet.'
-      ));
+      this.setOperationsSuccess('purchases', this.t('ui.m_1ouzvty'));
       this.purchaseOrderNumber = '';
       this.purchaseQuantity = '1';
       this.purchaseUnitCost = '0';
@@ -3321,12 +3379,12 @@ export class AppComponent implements OnInit, OnDestroy {
     const order = this.pendingPurchaseApproval;
     if (!order) return [];
     const lineDetails = order.lines.map(line =>
-      `${this.productNameFor(line.product_id)} × ${line.quantity} · ${this.t('تكلفة الوحدة', 'Unit cost')}: ${line.unit_cost} ${order.currency_code}`
+      `${this.productNameFor(line.product_id)} × ${line.quantity} · ${this.t('ui.m_19mrznv')}: ${line.unit_cost} ${order.currency_code}`
     );
     return [
-      `${this.t('المورد', 'Supplier')}: ${this.supplierNameFor(order.supplier_id)}`,
+      `${this.t('ui.m_x27ir1')}: ${this.supplierNameFor(order.supplier_id)}`,
       ...lineDetails,
-      `${this.t('الإجمالي', 'Total')}: ${order.total} ${order.currency_code}`,
+      `${this.t('ui.m_l97slj')}: ${order.total} ${order.currency_code}`,
     ];
   }
 
@@ -3341,18 +3399,12 @@ export class AppComponent implements OnInit, OnDestroy {
       const approved = await this.api.approvePurchaseOrder(businessId, order.id);
       if (this.business?.id !== businessId) return;
       if (approved.id !== order.id || approved.status !== 'approved') {
-        throw new Error(this.t(
-          'لم يؤكد الخادم اعتماد أمر الشراء المتوقع. حدّث القائمة قبل إعادة المحاولة.',
-          'The server did not confirm the expected purchase-order approval. Refresh the order list before retrying.'
-        ));
+        throw new Error(this.t('ui.m_v2cy1w'));
       }
       this.purchaseOrders = this.purchaseOrders.map(item => item.id === order.id ? { ...item, ...approved } : item);
       this.pendingPurchaseApproval = null;
       this.confirmationReturnFocus = null;
-      this.setOperationsSuccess('purchases', this.t(
-        'تم اعتماد أمر الشراء. لم يتم تسجيل الاستلام أو حركة المخزون.',
-        'Purchase order approved. No quantities were received and no stock movement was recorded.'
-      ));
+      this.setOperationsSuccess('purchases', this.t('ui.m_vgcvj1'));
     } catch (error) {
       if (this.business?.id === businessId) {
         this.setOperationsFailure('purchases', error);
@@ -3383,7 +3435,7 @@ export class AppComponent implements OnInit, OnDestroy {
   get pendingPurchaseReceiptDetails(): string[] {
     return (this.pendingPurchaseReceipt?.lines || [])
       .filter(line => this.hasRemainingQuantity(line))
-      .map(line => `${this.productNameFor(line.product_id)} · ${line.remaining_quantity} ${this.t('وحدة', 'units')}`);
+      .map(line => `${this.productNameFor(line.product_id)} · ${line.remaining_quantity} ${this.t('ui.m_ung25p')}`);
   }
 
   async confirmPurchaseOrderReceipt(): Promise<void> {
@@ -3405,7 +3457,7 @@ export class AppComponent implements OnInit, OnDestroy {
       if (this.business?.id !== businessId) return;
       this.pendingPurchaseReceipt = null;
       this.confirmationReturnFocus = null;
-      this.setOperationsSuccess('purchases', this.t('تم تسجيل الاستلام.', 'Receiving was recorded.'));
+      this.setOperationsSuccess('purchases', this.t('ui.m_1tmkq6x'));
       try {
         const [orders, products, dashboard] = await Promise.all([
           this.api.purchaseOrders(businessId),
@@ -3434,7 +3486,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.beginOperationsAction();
     const interval = Number(this.recurringIntervalDays);
     if (!Number.isInteger(interval) || interval < 1 || interval > 3650) {
-      this.operationsError = this.t('الفاصل يجب أن يكون بين يوم و3650 يومًا.', 'Interval must be between 1 and 3650 days.');
+      this.operationsError = this.t('ui.m_1jvv49p');
       this.operationsErrorTab = 'recurring';
       return;
     }
@@ -3448,10 +3500,7 @@ export class AppComponent implements OnInit, OnDestroy {
         next_run_at: new Date(this.recurringNextRunAt).toISOString(),
       });
       if (this.business?.id !== businessId) return;
-      this.setOperationsSuccess('recurring', this.t(
-        'تم حفظ جدول الفوترة الدورية. هذا لا يعني إنشاء الفواتير تلقائيًا.',
-        'Recurring invoice schedule saved. This does not generate invoices automatically.'
-      ));
+      this.setOperationsSuccess('recurring', this.t('ui.m_6a3p89'));
       const items = await this.api.recurringSchedules(businessId);
       if (this.business?.id === businessId) this.recurringSchedules = items;
     } catch (error) {
@@ -3521,7 +3570,12 @@ export class AppComponent implements OnInit, OnDestroy {
 
   /** Home quick access stays focused on the five existing key destinations. */
   get filteredHomeModuleCards(): readonly WorkspaceModuleCard[] {
-    return filterWorkspaceModules(this.homeModuleCards, this.homeModuleSearch, this.language === 'ar' ? 'ar-EG' : 'en');
+    return filterWorkspaceModules(
+      this.homeModuleCards,
+      this.homeModuleSearch,
+      this.localization.locale,
+      key => this.t(key),
+    );
   }
 
   get homeQuickAccessCards(): readonly WorkspaceModuleCard[] {
@@ -3545,12 +3599,17 @@ export class AppComponent implements OnInit, OnDestroy {
 
   /** Search only the already-authorized mobile destinations; this is navigation UX, not access control. */
   get filteredMobileMoreGroups(): readonly (WorkspaceModuleGroup & { modules: readonly WorkspaceModuleCard[] })[] {
-    const query = this.mobileMoreSearch.trim().normalize('NFKC').toLocaleLowerCase(this.language === 'ar' ? 'ar-EG' : 'en');
+    const query = this.mobileMoreSearch.trim().normalize('NFKC').toLocaleLowerCase(this.localization.locale);
     if (!query) return this.mobileMoreGroups;
     return this.mobileMoreGroups.map(group => {
       const locale = this.language === 'ar' ? 'ar-EG' : 'en';
-      const groupMatches = `${group.titleAr} ${group.titleEn}`.normalize('NFKC').toLocaleLowerCase(locale).includes(query);
-      const modules = groupMatches ? group.modules : filterWorkspaceModules(group.modules, this.mobileMoreSearch, locale);
+      const groupMatches = this.t(group.titleKey).normalize('NFKC').toLocaleLowerCase(locale).includes(query);
+      const modules = groupMatches ? group.modules : filterWorkspaceModules(
+        group.modules,
+        this.mobileMoreSearch,
+        locale,
+        key => this.t(key),
+      );
       return { ...group, modules };
     }).filter(group => group.modules.length > 0);
   }
@@ -3587,29 +3646,31 @@ export class AppComponent implements OnInit, OnDestroy {
     const dateOnly = style === 'date' && /^\d{4}-\d{2}-\d{2}$/.test(value);
     const parsed = new Date(dateOnly ? `${value}T12:00:00` : value);
     if (!Number.isFinite(parsed.getTime())) return '—';
-    const locale = this.language === 'ar' ? 'ar-EG' : 'en-GB';
+    const locale = this.localization.locale;
     const options: Intl.DateTimeFormatOptions = style === 'date'
       ? { dateStyle: 'medium' }
       : style === 'short'
         ? { dateStyle: 'short', timeStyle: 'short' }
         : { dateStyle: 'medium', timeStyle: 'short' };
-    return new Intl.DateTimeFormat(locale, options).format(parsed);
+    return this.localization.formatDate(parsed, options);
+  }
+
+  formatNumber(value: string | number | null | undefined, fractionDigits = 2): string {
+    return this.localization.formatNumber(value, fractionDigits, fractionDigits);
   }
 
   formatCustomerStatementDate(value: string | null | undefined): string {
     if (!value || !Number.isFinite(Date.parse(value))) return '—';
-    return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en-GB', {
-      dateStyle: 'short', timeStyle: 'short',
-    }).format(new Date(value));
+    return this.localization.formatDate(value, { dateStyle: 'short', timeStyle: 'short' });
   }
 
   get customerStatementTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'date',label:this.t('التاريخ','Date')},
-    {key:'event',label:this.t('الحركة','Event'),primary:true},
-    {key:'reference',label:this.t('المرجع','Reference')},
-    {key:'debit',label:this.t('مدين','Debit'),kind:'numeric'},
-    {key:'credit',label:this.t('دائن','Credit'),kind:'numeric'},
-    {key:'balance',label:this.t('الرصيد','Balance'),kind:'numeric'},
+    {key:'date',label:this.t('ui.m_1fcm91o')},
+    {key:'event',label:this.t('ui.m_1ktv9rs'),primary:true},
+    {key:'reference',label:this.t('ui.m_eimrhe')},
+    {key:'debit',label:this.t('ui.m_b173yr'),kind:'numeric'},
+    {key:'credit',label:this.t('ui.m_12mq4cg'),kind:'numeric'},
+    {key:'balance',label:this.t('ui.m_lyblb3'),kind:'numeric'},
   ]; }
   get customerStatementTableRows(): readonly AbaRecordTableRow[] { return (this.customerStatement?.items||[]).map((event,index)=>({
     id:`${event.source_id}:${event.event_type}:${event.invoice_id||''}:${event.occurred_at}:${index}`,
@@ -3635,10 +3696,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async applyCustomerStatementFilters(): Promise<void> {
     if (this.statementFromDate && this.statementToDate && this.statementFromDate > this.statementToDate) {
-      this.statementError = this.t(
-        'تاريخ البداية لازم يكون قبل تاريخ النهاية أو مساويًا له.',
-        'Start date must be on or before end date.'
-      );
+      this.statementError = this.t('ui.m_r5b60p');
       return;
     }
     await this.loadCustomerStatementPage(0);
@@ -3709,7 +3767,7 @@ export class AppComponent implements OnInit, OnDestroy {
       });
       if (this.business?.id !== businessId) return;
       this.customerName = ''; this.customerEmail = ''; this.customerPhone = '';
-      this.customerMessage = this.t('تم حفظ العميل بنجاح.', 'Customer saved successfully.');
+      this.customerMessage = this.t('ui.m_vj0603');
       try {
         const customers = await this.api.customers(businessId);
         if (this.business?.id !== businessId) return;
@@ -3718,10 +3776,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (this.business?.id === businessId) {
           this.customerMessageKind = 'warning';
-          this.customerMessage = this.t(
-            'تم حفظ العميل، لكن تعذر تحديث القائمة. لا تضف العميل مرة أخرى؛ حدّث البيانات أولًا.',
-            'The customer was saved, but the list could not refresh. Do not add the customer again; refresh the data first.'
-          );
+          this.customerMessage = this.t('ui.m_9r6c8a');
         }
       }
     } catch (error) {
@@ -3743,12 +3798,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.importFileName = '';
     if (!file) return;
     if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv') {
-      this.error = this.t('اختَر ملف CSV فقط.', 'Choose a CSV file only.');
+      this.error = this.t('ui.m_1meqsrn');
       input.value = '';
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      this.error = this.t('حجم الملف يتجاوز 5 ميجابايت.', 'The file exceeds 5 MiB.');
+      this.error = this.t('ui.m_uiq9m8');
       input.value = '';
       return;
     }
@@ -3759,7 +3814,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.importFileName = file.name;
       this.error = '';
     } catch {
-      if (this.business?.id === businessId) this.error = this.t('تعذرت قراءة الملف.', 'Could not read the file.');
+      if (this.business?.id === businessId) this.error = this.t('ui.m_fq4yp3');
       input.value = '';
     }
   }
@@ -3794,10 +3849,7 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const result = await this.api.importProductCsv(businessId, csvText);
       if (this.business?.id !== businessId) return;
-      this.importMessage = this.t(
-        `تم استيراد ${result.row_count} صف بنجاح.`,
-        `Successfully imported ${result.row_count} rows.`
-      );
+      this.importMessage = this.t('ui.m_r5bt5z', { row_count: result.row_count });
       this.importPreview = null;
       this.importCsvText = '';
       this.importFileName = '';
@@ -3809,10 +3861,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (this.business?.id === businessId) {
           this.importMessageKind = 'warning';
-          this.importMessage = this.t(
-            'تم استيراد المنتجات، لكن تعذر تحديث القائمة. لا تعِد استيراد الملف؛ حدّث البيانات أولًا.',
-            'Products were imported, but the list could not refresh. Do not import the file again; refresh the data first.'
-          );
+          this.importMessage = this.t('ui.m_1lap6fd');
         }
       }
     } catch (error) {
@@ -3834,12 +3883,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.customerImportFileName = '';
     if (!file) return;
     if (!file.name.toLowerCase().endsWith('.csv') && file.type !== 'text/csv') {
-      this.error = this.t('اختَر ملف CSV فقط.', 'Choose a CSV file only.');
+      this.error = this.t('ui.m_1meqsrn');
       input.value = '';
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
-      this.error = this.t('حجم الملف يتجاوز 5 ميجابايت.', 'The file exceeds 5 MiB.');
+      this.error = this.t('ui.m_uiq9m8');
       input.value = '';
       return;
     }
@@ -3850,7 +3899,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.customerImportFileName = file.name;
       this.error = '';
     } catch {
-      if (this.business?.id === businessId) this.error = this.t('تعذرت قراءة الملف.', 'Could not read the file.');
+      if (this.business?.id === businessId) this.error = this.t('ui.m_fq4yp3');
       input.value = '';
     }
   }
@@ -3886,10 +3935,7 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       const result = await this.api.importCustomerCsv(businessId, csvText);
       if (this.business?.id !== businessId) return;
-      this.customerImportMessage = this.t(
-        `تم استيراد ${result.row_count} صف بنجاح.`,
-        `Successfully imported ${result.row_count} rows.`
-      );
+      this.customerImportMessage = this.t('ui.m_r5bt5z', { row_count: result.row_count });
       this.customerImportPreview = null;
       this.customerImportCsvText = '';
       this.customerImportFileName = '';
@@ -3903,10 +3949,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (this.business?.id === businessId) {
           this.customerImportMessageKind = 'warning';
-          this.customerImportMessage = this.t(
-            'تم استيراد العملاء، لكن تعذر تحديث القائمة. لا تعِد استيراد الملف؛ حدّث البيانات أولًا.',
-            'Customers were imported, but the list could not refresh. Do not import the file again; refresh the data first.'
-          );
+          this.customerImportMessage = this.t('ui.m_l4fw90');
         }
       }
     } catch (error) {
@@ -3917,21 +3960,15 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   importErrorLabel(code: string): string {
-    const ar: Record<string, string> = {
-      required: 'حقل مطلوب', too_long: 'النص أطول من المسموح',
-      invalid_decimal: 'سعر غير صالح (حتى منزلتين عشريتين)',
-      invalid_boolean: 'قيمة متابعة المخزون غير صحيحة',
-      duplicate_in_file: 'قيمة مكررة داخل الملف',
-      already_exists: 'البريد الإلكتروني أو الرمز موجود بالفعل'
+    const keys: Record<string, string> = {
+      required: 'app.importError.required',
+      too_long: 'app.importError.too_long',
+      invalid_decimal: 'app.importError.invalid_decimal',
+      invalid_boolean: 'app.importError.invalid_boolean',
+      duplicate_in_file: 'app.importError.duplicate_in_file',
+      already_exists: 'app.importError.already_exists',
     };
-    const en: Record<string, string> = {
-      required: 'Required field', too_long: 'Text exceeds the allowed length',
-      invalid_decimal: 'Invalid price (up to 2 decimal places)',
-      invalid_boolean: 'Invalid stock tracking value',
-      duplicate_in_file: 'Duplicate email or SKU in this file',
-      already_exists: 'Email or SKU already exists'
-    };
-    return (this.language === 'ar' ? ar : en)[code] || code;
+    return keys[code] ? this.t(keys[code]) : code;
   }
 
   async createProduct(): Promise<void> {
@@ -3948,7 +3985,7 @@ export class AppComponent implements OnInit, OnDestroy {
       });
       if (this.business?.id !== businessId) return;
       this.productName = ''; this.productPrice = ''; this.stockTracked = false; this.productOpeningQuantity = '0';
-      this.productMessage = this.t('تم حفظ المنتج بنجاح.', 'Product saved successfully.');
+      this.productMessage = this.t('ui.m_b4kbxp');
       try {
         const products = await this.api.products(businessId);
         if (this.business?.id !== businessId) return;
@@ -3957,10 +3994,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (this.business?.id === businessId) {
           this.productMessageKind = 'warning';
-          this.productMessage = this.t(
-            'تم حفظ المنتج، لكن تعذر تحديث القائمة. لا تضف المنتج مرة أخرى؛ حدّث البيانات أولًا.',
-            'The product was saved, but the list could not refresh. Do not add the product again; refresh the data first.'
-          );
+          this.productMessage = this.t('ui.m_h29v8u');
         }
       }
     } catch (error) {
@@ -4007,7 +4041,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const taxRate = Number(this.invoiceTaxRate);
     if (!Number.isFinite(discountRate) || discountRate < 0 || discountRate > 100 ||
         !Number.isFinite(taxRate) || taxRate < 0 || taxRate > 100) {
-      this.error = this.t('أدخل نسب خصم وضريبة صحيحة من 0 إلى 100.', 'Enter valid discount and tax rates from 0 to 100.');
+      this.error = this.t('ui.m_1szpit2');
       return;
     }
     const businessId = this.business.id;
@@ -4052,8 +4086,8 @@ export class AppComponent implements OnInit, OnDestroy {
         total: saved.total,
       };
       this.invoiceMessage = editingInvoiceId
-        ? this.t('تم تحديث مسودة الفاتورة. الإجماليات المعروضة واردة من الخادم.', 'Invoice draft updated. Displayed totals came from the server.')
-        : this.t('تم حفظ مسودة الفاتورة. الإجماليات المعروضة واردة من الخادم.', 'Invoice draft saved. Displayed totals came from the server.');
+        ? this.t('ui.m_1nk3bl8')
+        : this.t('ui.m_fxutv5');
       this.invoiceMessageKind = 'success';
       this.invoiceCreateOpen = true;
 
@@ -4068,10 +4102,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (isCurrent()) {
           this.invoiceMessageKind = 'warning';
-          this.invoiceMessage = this.t(
-            'تم حفظ المسودة، لكن تعذر تحديث القائمة. لا تعاود الحفظ؛ حدّث البيانات أولًا.',
-            'Draft saved, but the list could not refresh. Do not save it again; refresh the data first.'
-          );
+          this.invoiceMessage = this.t('ui.m_nltda1');
         }
       }
     } catch (error) {
@@ -4082,20 +4113,14 @@ export class AppComponent implements OnInit, OnDestroy {
         this.invoiceDraftUncertain = false;
         this.error = this.message(error);
         this.invoiceMessageKind = 'warning';
-        this.invoiceMessage = this.t(
-          'رفض الخادم حفظ المسودة قبل الكتابة. صحّح البيانات ثم حاول مرة أخرى.',
-          'The server rejected the draft before persistence. Correct the details and try again.'
-        );
+        this.invoiceMessage = this.t('ui.m_1tgnhbq');
       } else {
         if (!isCurrent()) return;
         this.pendingInvoiceDraftOutcome = outcomeSnapshot;
         this.invoiceDraftUncertain = true;
         this.error = this.message(error);
         this.invoiceMessageKind = 'warning';
-        this.invoiceMessage = this.t(
-          'نتيجة حفظ المسودة غير مؤكدة. تم قفل النموذج لمنع إنشاء فاتورة مكررة؛ تحقّق من حالة الفاتورة.',
-          'The draft save outcome is uncertain. The editor is locked to prevent a duplicate invoice; verify its status.'
-        );
+        this.invoiceMessage = this.t('ui.m_1l6qzdy');
       }
     } finally {
       if (isCurrent()) {
@@ -4124,10 +4149,7 @@ export class AppComponent implements OnInit, OnDestroy {
       const match = findInvoiceDraftRecoveryMatch(invoices, pending);
       if (!match) {
         this.invoiceMessageKind = 'warning';
-        this.invoiceMessage = this.t(
-          'لم تظهر فاتورة بنفس الرقم في أحدث قائمة. لم نُعد إرسال الطلب؛ استمر في التحقق من سجل الفواتير قبل إنشاء فاتورة أخرى.',
-          'No invoice with that number appeared in the latest list. The request was not resubmitted; keep verifying the invoice register before creating another invoice.'
-        );
+        this.invoiceMessage = this.t('ui.m_1kah5c4');
         return;
       }
 
@@ -4153,18 +4175,12 @@ export class AppComponent implements OnInit, OnDestroy {
       this.invoiceDraftOutcomeVault.delete(authUid, businessId);
       this.invoiceCreateOpen = true;
       this.invoiceMessageKind = 'warning';
-      this.invoiceMessage = this.t(
-        'وجدنا مسودة بنفس الرقم. راجع البنود والإجماليات المعروضة؛ لم نُعد إرسال طلب الحفظ ولم نفترض أن كل التعديلات السابقة تم حفظها.',
-        'A draft with that number was found. Review the displayed lines and totals; no save was resubmitted and we have not assumed every attempted edit was persisted.'
-      );
+      this.invoiceMessage = this.t('ui.m_18n49hx');
     } catch (error) {
       if (isCurrent()) {
         this.error = this.message(error);
         this.invoiceMessageKind = 'warning';
-        this.invoiceMessage = this.t(
-          'تعذر التحقق من حالة الفاتورة. سيظل النموذج مقفولًا لمنع التكرار.',
-          'Could not verify the invoice status. The editor remains locked to prevent a duplicate.'
-        );
+        this.invoiceMessage = this.t('ui.m_1y7z87x');
       }
     } finally {
       if (isCurrent()) this.loading = false;
@@ -4188,7 +4204,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const businessCurrency = businessSnapshot.currency_code;
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      this.error = this.t('اسمح بفتح نافذة الطباعة من المتصفح ثم حاول مرة أخرى.', 'Allow pop-ups for printing, then try again.');
+      this.error = this.t('ui.m_1ki7klw');
       return;
     }
     this.loading = true;
@@ -4200,7 +4216,7 @@ export class AppComponent implements OnInit, OnDestroy {
         return;
       }
       if (detail.status !== 'issued') {
-        throw new Error(this.t('الفاتورة لم تعد صادرة؛ حدّث القائمة قبل الطباعة.', 'This invoice is no longer issued. Refresh the invoice list before printing.'));
+        throw new Error(this.t('ui.m_mfugf1'));
       }
       const rows = detail.lines.map(line =>
         '<tr><td>' + this.escapePrintHtml(line.description) + '</td><td class="number">' +
@@ -4212,10 +4228,17 @@ export class AppComponent implements OnInit, OnDestroy {
       const invoiceNumber = this.escapePrintHtml(detail.invoice_number);
       const currency = this.escapePrintHtml(detail.currency_code);
       const total = this.escapePrintHtml(detail.total);
-      const direction = this.language === 'ar' ? 'rtl' : 'ltr';
-      const labels = this.language === 'ar'
-        ? { title: 'فاتورة', customer: 'العميل', item: 'البند', quantity: 'الكمية', price: 'سعر الوحدة', amount: 'الإجمالي', total: 'الإجمالي المستحق', note: 'مستند مستخرج من سجلات النشاط المحفوظة.' }
-        : { title: 'Invoice', customer: 'Customer', item: 'Item', quantity: 'Quantity', price: 'Unit price', amount: 'Line total', total: 'Total due', note: 'Generated from saved business records.' };
+      const direction = this.localization.direction;
+      const labels = {
+        title: this.escapePrintHtml(this.t('app.invoicePrint.title')),
+        customer: this.escapePrintHtml(this.t('app.invoicePrint.customer')),
+        item: this.escapePrintHtml(this.t('app.invoicePrint.item')),
+        quantity: this.escapePrintHtml(this.t('app.invoicePrint.quantity')),
+        price: this.escapePrintHtml(this.t('app.invoicePrint.price')),
+        amount: this.escapePrintHtml(this.t('app.invoicePrint.amount')),
+        total: this.escapePrintHtml(this.t('app.invoicePrint.total')),
+        note: this.escapePrintHtml(this.t('app.invoicePrint.note')),
+      };
       printWindow.onload = () => printWindow.print();
       printWindow.document.open();
       printWindow.document.write(
@@ -4234,7 +4257,7 @@ export class AppComponent implements OnInit, OnDestroy {
         '<table><thead><tr><th>' + labels.item + '</th><th class="number">' + labels.quantity + '</th><th class="number">' + labels.price + '</th><th class="number">' + labels.amount + '</th></tr></thead>' +
         '<tbody>' + rows + '</tbody></table><div class="total">' + labels.total + ': ' + total + ' ' + currency + '</div>' +
         '<p class="muted" style="margin-top:24px">' + labels.note + '</p><div class="actions"><button onclick="window.print()">' +
-        (this.language === 'ar' ? 'طباعة / حفظ PDF' : 'Print / Save PDF') + '</button></div></body></html>'
+        this.escapePrintHtml(this.t('app.invoicePrint.print')) + '</button></div></body></html>'
       );
       printWindow.document.close();
       printWindow.focus();
@@ -4259,7 +4282,7 @@ export class AppComponent implements OnInit, OnDestroy {
       const detail = await this.api.invoiceDetail(businessId, invoice.id);
       if (!isCurrent()) return;
       if (!detail.lines.length) {
-        throw new Error(this.t('لا تحتوي المسودة على بنود قابلة للتعديل.', 'This draft has no editable invoice lines.'));
+        throw new Error(this.t('ui.m_a38j3f'));
       }
       this.editingInvoiceId = invoice.id;
       this.invoiceNumber = detail.invoice_number;
@@ -4314,7 +4337,7 @@ export class AppComponent implements OnInit, OnDestroy {
     try {
       await this.api.issueInvoice(businessId, invoice.id);
       if (!isCurrent()) return;
-      this.invoiceMessage = this.t('تم إصدار الفاتورة بنجاح.', 'Invoice issued successfully.');
+      this.invoiceMessage = this.t('ui.m_18zpfhv');
       try {
         const [invoices, dashboard, products] = await Promise.all([
           this.api.invoices(businessId),
@@ -4328,10 +4351,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (isCurrent()) {
           this.invoiceMessageKind = 'warning';
-          this.invoiceMessage = this.t(
-            'تم إصدار الفاتورة، لكن تعذر تحديث العرض. لا تعاود إصدارها؛ حدّث البيانات أولًا.',
-            'The invoice was issued, but the view could not refresh. Do not issue it again; refresh the data first.'
-          );
+          this.invoiceMessage = this.t('ui.m_7nu8k8');
         }
       }
     } catch (error) {
@@ -4369,12 +4389,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoiceMessageKind = 'success';
     this.invoiceVoidError = '';
     try {
-      await this.api.voidInvoice(businessId, invoice.id, 'أُلغي بواسطة مستخدم مخوّل في مساحة العمل');
+      await this.api.voidInvoice(businessId, invoice.id, this.t('app.audit.voidInvoiceReason'));
       if (!isCurrent()) return;
       this.pendingInvoiceVoid = null;
       this.confirmationReturnFocus = null;
       if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
-      this.invoiceMessage = this.t('تم إلغاء الفاتورة بنجاح.', 'Invoice voided successfully.');
+      this.invoiceMessage = this.t('ui.m_15f0lzn');
       try {
         const [invoices, dashboard, products] = await Promise.all([
           this.api.invoices(businessId),
@@ -4388,20 +4408,14 @@ export class AppComponent implements OnInit, OnDestroy {
       } catch {
         if (isCurrent()) {
           this.invoiceMessageKind = 'warning';
-          this.invoiceMessage = this.t(
-            'تم إلغاء الفاتورة، لكن تعذر تحديث العرض. لا تعاود الإلغاء؛ حدّث البيانات أولًا.',
-            'The invoice was voided, but the view could not refresh. Do not void it again; refresh the data first.'
-          );
+          this.invoiceMessage = this.t('ui.m_1ovfo1u');
         }
       }
     } catch (error) {
       if (isCurrent()) {
         this.invoiceVoidError = this.message(error);
         this.invoiceMessageKind = 'warning';
-        this.invoiceMessage = this.t(
-          'تعذر تأكيد نتيجة الإلغاء. لا تعاود المحاولة قبل تحديث حالة الفاتورة.',
-          'Could not confirm the void result. Do not retry until the invoice status is refreshed.'
-        );
+        this.invoiceMessage = this.t('ui.m_cbiq5f');
       }
     } finally {
       if (isCurrent()) this.loading = false;
@@ -4415,17 +4429,17 @@ export class AppComponent implements OnInit, OnDestroy {
 
   payInvoice(invoice: Invoice): void {
     if (this.paymentLoading || this.paymentRetryPending) {
-      this.error = this.t('هناك محاولة دفع نتيجتها غير مؤكدة. أعد المحاولة بنفس الطلب قبل اختيار فاتورة أخرى.', 'A payment attempt has an uncertain outcome. Retry the same request before selecting another invoice.');
+      this.error = this.t('ui.m_1c87pqx');
       return;
     }
     if (!this.business || this.business.role !== 'owner' || invoice.status !== 'issued') return;
     if (!invoice.customer_id || invoice.outstanding_amount === undefined) {
-      this.error = this.t('تعذر تحديد العميل أو الرصيد المستحق. حدّث البيانات وحاول مرة أخرى.', 'Could not determine the customer or outstanding balance. Refresh data and try again.');
+      this.error = this.t('ui.m_b6y553');
       return;
     }
     const outstanding = Number(invoice.outstanding_amount);
     if (!Number.isFinite(outstanding) || outstanding <= 0) {
-      this.error = this.t('الفاتورة مسددة بالكامل أو لا يوجد رصيد مستحق.', 'This invoice is fully paid or has no outstanding balance.');
+      this.error = this.t('ui.m_iaurud');
       return;
     }
     this.error = '';
@@ -4434,7 +4448,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.paymentInvoiceId = invoice.id;
     this.paymentAmount = outstanding.toFixed(2);
     this.paymentAllocationAmount = outstanding.toFixed(2);
-    this.paymentMessage = this.t('تم اختيار الفاتورة وتحديد الرصيد المستحق. راجع المبلغ وطريقة الدفع ثم سجّل الدفعة.', 'Invoice selected and outstanding balance filled in. Review the amount and method, then record the payment.');
+    this.paymentMessage = this.t('ui.m_qxhoxi');
     this.paymentMessageKind = 'info';
   }
 
@@ -4446,11 +4460,11 @@ export class AppComponent implements OnInit, OnDestroy {
     const amount = Number(this.expenseAmount);
     const occurredAt = new Date(this.expenseDate);
     if (!category || !description || !String(this.expenseAmount ?? '').trim() || !Number.isFinite(amount) || amount <= 0) {
-      this.error = this.t('أدخل تصنيفًا ووصفًا ومبلغًا أكبر من صفر.', 'Enter a category, description, and a positive amount.');
+      this.error = this.t('ui.m_i7atfd');
       return;
     }
     if (!this.expenseDate || !Number.isFinite(occurredAt.getTime())) {
-      this.error = this.t('أدخل تاريخًا ووقتًا صحيحين للمصروف.', 'Enter a valid expense date and time.');
+      this.error = this.t('ui.m_10t3tvt');
       return;
     }
     const currencyCode = this.business.currency_code;
@@ -4474,7 +4488,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.expenseDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
       this.expenseVendor = '';
       this.expenseReference = '';
-      this.expenseMessage = this.t('تم تسجيل المصروف بنجاح.', 'Expense recorded successfully.');
+      this.expenseMessage = this.t('ui.m_h0kei5');
       try {
         const [expenses, dashboard] = await Promise.all([
           this.api.expenses(businessId),
@@ -4485,13 +4499,13 @@ export class AppComponent implements OnInit, OnDestroy {
         this.dashboard = dashboard;
       } catch {
         if (this.business?.id === businessId) {
-          this.error = this.t('تم تسجيل المصروف، لكن تعذر تحديث القائمة. أعد تحميل البيانات.', 'Expense was saved, but the list could not refresh. Reload workspace data.');
+          this.error = this.t('ui.m_14xth7t');
         }
       }
     } catch (error) {
       if (this.business?.id === businessId) {
         this.expenseSubmissionUncertain = true;
-        this.error = this.t('تعذر تأكيد نتيجة حفظ المصروف. حدّث القائمة قبل إعادة المحاولة.', 'Could not confirm the expense save result. Refresh the list before retrying.') + ' ' + this.message(error);
+        this.error = this.t('ui.m_1womw08') + ' ' + this.message(error);
       }
     } finally {
       if (this.business?.id === businessId) this.loading = false;
@@ -4512,7 +4526,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.expenses = expenses;
       this.dashboard = dashboard;
       this.expenseSubmissionUncertain = false;
-      this.expenseMessage = this.t('تم تحديث القائمة. راجع آخر المصروفات قبل إعادة المحاولة.', 'Expense list refreshed. Review recent entries before retrying.');
+      this.expenseMessage = this.t('ui.m_1arh565');
     } catch (error) {
       if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
@@ -4564,12 +4578,12 @@ export class AppComponent implements OnInit, OnDestroy {
     } else {
       const amount = String(this.paymentAmount ?? '').trim();
       if (!amount || !this.paymentCustomerId) {
-        this.error = this.t('اختَر العميل وأدخل مبلغ الدفعة.', 'Choose a customer and enter the payment amount.');
+        this.error = this.t('ui.m_9n1g6u');
         return;
       }
       const allocation = String(this.paymentAllocationAmount ?? '').trim();
       if (this.paymentInvoiceId && !allocation) {
-        this.error = this.t('أدخل المبلغ المراد تخصيصه للفاتورة المحددة.', 'Enter the amount to allocate to the selected invoice.');
+        this.error = this.t('ui.m_1oyq50a');
         return;
       }
       if (!this.paymentIdempotencyKey) {
@@ -4607,7 +4621,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.paymentAllocationAmount = '';
       this.paymentReference = '';
       this.paymentIdempotencyKey = '';
-      this.paymentMessage = this.t('تم تسجيل الدفعة بنجاح.', 'Payment recorded successfully.');
+      this.paymentMessage = this.t('ui.m_mw2rdb');
       this.paymentMessageKind = 'success';
 
       try {
@@ -4622,10 +4636,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.setInvoicePage(invoices);
       } catch {
         if (isCurrent()) {
-          this.paymentMessage = this.t(
-            'تم تسجيل الدفعة، لكن تعذر تحديث العرض. لا تعاود تسجيل الدفعة؛ حدّث البيانات أولًا.',
-            'Payment was recorded, but the view could not refresh. Do not record it again; refresh the data first.'
-          );
+          this.paymentMessage = this.t('ui.m_vbnvuw');
           this.paymentMessageKind = 'warning';
         }
       }
@@ -4641,10 +4652,7 @@ export class AppComponent implements OnInit, OnDestroy {
       } else {
         this.pendingPaymentRetrySnapshot = retrySnapshot;
         this.paymentRetryPending = true;
-        this.paymentMessage = this.t(
-          'لم نتمكن من تأكيد نتيجة الدفعة. أعد المحاولة بنفس البيانات دون تغييرها؛ تم الاحتفاظ بنفس الطلب ومفتاح التكرار.',
-          'The payment outcome is uncertain. Retry the exact same details; the original payload and idempotency key were preserved.'
-        );
+        this.paymentMessage = this.t('ui.m_1pkbfrw');
         this.paymentMessageKind = 'warning';
       }
     } finally {
@@ -4811,63 +4819,57 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
+  private lastErrorKind: 'session-expired' | 'access-denied' | null = null;
+  private lastErrorMessage: string | null = null;
+
   private message(error: unknown, context: 'auth' | 'api' = 'api'): string {
     const value = error as { code?: string; message?: string };
     const code = typeof value?.code === 'string' ? value.code : '';
     const message = typeof value?.message === 'string' ? value.message : '';
-    const authMessages: Record<string, string> = {
-      'auth/email-already-in-use': 'هذا البريد لديه حساب بالفعل. سجّل الدخول أو استخدم بريدًا آخر.',
-      'auth/invalid-email': 'أدخل بريدًا إلكترونيًا صحيحًا.',
-      'auth/weak-password': 'اختر كلمة مرور أقوى من 6 أحرف على الأقل.',
-      'auth/operation-not-allowed': 'التسجيل بالبريد الإلكتروني وكلمة المرور غير مفعّل في Firebase Authentication. فعّل مزوّد البريد الإلكتروني وكلمة المرور من وحدة تحكم Firebase.',
-      'auth/unauthorized-domain': 'نطاق الموقع غير مصرح به في Firebase Authentication. أضف ai-business-assistant-web.vercel.app إلى النطاقات المصرح بها.',
-      'auth/network-request-failed': 'تعذر الاتصال بخدمة Firebase Authentication. تحقق من الإنترنت وقيود مفتاح Firebase ثم حاول مجددًا.',
-      'auth/too-many-requests': 'حظر Firebase المحاولات المتكررة مؤقتًا. انتظر قليلًا ثم حاول مجددًا.'
+    this.lastErrorKind = null;
+    this.lastErrorMessage = null;
+
+    const authKeys: Record<string, string> = {
+      'auth/email-already-in-use': 'app.authError.auth_email_already_in_use',
+      'auth/invalid-email': 'app.authError.auth_invalid_email',
+      'auth/weak-password': 'app.authError.auth_weak_password',
+      'auth/operation-not-allowed': 'app.authError.auth_operation_not_allowed',
+      'auth/unauthorized-domain': 'app.authError.auth_unauthorized_domain',
+      'auth/network-request-failed': 'app.authError.auth_network_request_failed',
+      'auth/too-many-requests': 'app.authError.auth_too_many_requests',
     };
-    if (code && authMessages[code]) {
-      if (this.language === 'ar') return authMessages[code];
-      const englishAuthMessages: Record<string, string> = {
-        'auth/email-already-in-use': 'This email already has an account. Sign in or use another email.',
-        'auth/invalid-email': 'Enter a valid email address.',
-        'auth/weak-password': 'Choose a stronger password with at least 6 characters.',
-        'auth/operation-not-allowed': 'Email/Password sign-in is disabled. Enable it in Firebase Authentication.',
-        'auth/unauthorized-domain': 'This site domain is not authorized. Add the current domain to Firebase Authentication authorized domains.',
-        'auth/network-request-failed': 'Could not reach Firebase Authentication. Check your connection and Firebase settings.',
-        'auth/too-many-requests': 'Firebase temporarily blocked repeated attempts. Wait a little and try again.'
-      };
-      return englishAuthMessages[code] || authMessages[code];
-    }
+    if (code && authKeys[code]) return this.t(authKeys[code]);
+
     const deniedMessage = message.trim();
     if (deniedMessage === 'Authentication required' || deniedMessage === 'Authenticated subject is missing') {
-      return this.t(
-        'انتهت صلاحية جلسة الدخول أو تعذر التحقق منها. سجّل الخروج ثم سجّل الدخول مرة أخرى.',
-        'Your sign-in session is no longer valid or could not be verified. Sign out and sign in again.'
-      );
+      this.lastErrorKind = 'session-expired';
+      const translated = this.t('ui.m_agj0gj');
+      this.lastErrorMessage = translated;
+      return translated;
     }
     if (deniedMessage === 'Platform administrator access is not granted.') {
-      return this.t(
-        'حسابك غير مخوّل للوصول إلى إدارة المنصة. إذا كنت تحتاج هذه الصلاحية، راجع مسؤول المنصة.',
-        'Your account is not authorized to access platform administration. Contact the platform administrator if you need this access.'
-      );
+      this.lastErrorKind = 'access-denied';
+      const translated = this.t('ui.m_1404mrg');
+      this.lastErrorMessage = translated;
+      return translated;
     }
     if ([
       'No active membership for this business',
       'Business role is not permitted for this operation',
-      'No access to this business workspace.'
+      'No access to this business workspace.',
     ].includes(deniedMessage) || /^(?:forbidden|permission denied|not authorized|access denied)\b/i.test(deniedMessage)) {
-      return this.t(
-        'لا تملك الصلاحية للوصول إلى مساحة العمل أو تنفيذ هذا الإجراء. اطلب من مالك مساحة العمل مراجعة دورك.',
-        'You do not have permission to access this workspace or perform this action. Ask the workspace owner to review your role.'
-      );
+      this.lastErrorKind = 'access-denied';
+      const translated = this.t('ui.m_1nbaoyf');
+      this.lastErrorMessage = translated;
+      return translated;
     }
-    if (/AI chat is not configured/i.test(message)) return this.t('المساعد الذكي غير مفعّل على الخادم بعد. يلزم ضبط OPENAI_API_KEY في إعدادات Environment Variables لمشروع ai-business-assistant-api على Vercel ثم إعادة النشر. لم أضف مفتاحًا أو خدمة مدفوعة من دون موافقتك.', 'The AI assistant is not enabled on the backend yet. Set OPENAI_API_KEY in the ai-business-assistant-api Vercel project environment variables, then redeploy. No key or paid service was added without your approval.');
-    if (/timed out/i.test(message)) return this.t('انتهت مهلة التحقق من إعدادات التطبيق أو جلسة الدخول. تحقق من الاتصال ثم اضغط «إعادة المحاولة».', 'App configuration or sign-in verification timed out. Check your connection, then choose Retry.');
-    if (message.startsWith('API_CONNECTION_FAILED:')) return this.t('تعذر الاتصال بخادم البيانات. تحقق من الإنترنت وإعداد CORS_ALLOWED_ORIGINS في الخادم ثم أعد المحاولة.', 'Could not reach the business API. Check your internet connection and the server CORS_ALLOWED_ORIGINS setting, then retry.');
+    if (/AI chat is not configured/i.test(message)) return this.t('ui.m_1kpvtc1');
+    if (/timed out/i.test(message)) return this.t('ui.m_1wa8x7o');
+    if (message.startsWith('API_CONNECTION_FAILED:')) return this.t('ui.m_1qj0ayu');
     if (/failed to fetch|networkerror|load failed/i.test(message)) {
-      if (context === 'auth') return this.t('تعذر الاتصال بخدمة Firebase Authentication. تحقق من الإنترنت وتفعيل تسجيل الدخول بالبريد وكلمة المرور وإضافة نطاق الموقع إلى النطاقات المصرح بها في Firebase.', 'Could not reach Firebase Authentication. Check your internet, enable Email/Password sign-in, and authorize this site domain in Firebase.');
-      return this.t('تعذر الوصول إلى الخدمة. تحقق من اتصال الإنترنت وإعدادات API وCORS ثم حاول مجددًا.', 'The service could not be reached. Check your internet connection, API availability, and CORS settings, then retry.');
+      return context === 'auth' ? this.t('ui.m_jjvwnu') : this.t('ui.m_g15vmh');
     }
     if (message) return message;
-    return this.t('حدث خطأ غير متوقع. حاول مجددًا.', 'An unexpected error occurred. Please try again.');
+    return this.t('ui.m_s1b5tm');
   }
 }

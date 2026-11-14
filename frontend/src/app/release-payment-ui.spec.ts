@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
 
-const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 
 test('workspace navigation shows UI/API versions and build time in the workspace card', () => {
   assert.match(source, /class="workspace-release-meta workspace-release-meta-inline"/);

@@ -1,18 +1,21 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
+import { createServiceWorkerUpdateHandler } from './service-worker-update.ts';
 
-const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
-const invoiceEditorSource = readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8');
-const invoiceDraftSource = readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8');
-const releaseGuideSource = readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8');
-const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
-const stateMessageSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
-const recordTableSource = readFileSync(new URL('./shared/ui/aba-record-table.component.ts', import.meta.url), 'utf8');
-const quickAccessSource = readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8');
-const workspaceLoadGuardSource = readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8');
-const auditLabelsSource = readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8');
-const mobileHeaderSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8');
+const globalStyles = expandTranslationCalls(readFileSync(new URL('../styles.css', import.meta.url), 'utf8'));
+const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const invoiceEditorSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8'));
+const invoiceDraftSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8'));
+const releaseGuideSource = expandTranslationCalls(readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8'));
+const platformAdminSource = expandTranslationCalls(readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8'));
+const stateMessageSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8'));
+const recordTableSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-record-table.component.ts', import.meta.url), 'utf8'));
+const quickAccessSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8'));
+const workspaceLoadGuardSource = expandTranslationCalls(readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8'));
+const auditLabelsSource = expandTranslationCalls(readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8'));
+const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
 
 test('workspace shell imports every tenant guard helper used by its async views', () => {
   assert.match(workspaceLoadGuardSource, /export function isCurrentTenantRequest/);
@@ -31,7 +34,7 @@ test('mobile More menu has a correctly delimited active-class attribute', () => 
   assert.equal(line.includes('isMobileMoreTab(tab)""'), false);
 });
 
-const authSource = readFileSync(new URL('./auth.service.ts', import.meta.url), 'utf8');
+const authSource = expandTranslationCalls(readFileSync(new URL('./auth.service.ts', import.meta.url), 'utf8'));
 
 test('startup config fetch has a bounded wait and allows retry after failure', () => {
   assert.match(authSource, /new AbortController\(\)/);
@@ -98,14 +101,14 @@ test('AI suggestions live outside the chat panel in a compact responsive prompt 
 test('audit actions and record types have Arabic display labels', () => {
   assert.match(source, /this\.auditActionLabel\(item\.action\)/);
   assert.match(source, /this\.auditTargetLabel\(item\.target_type\)/);
-  assert.match(auditLabelsSource, /'invoice\.issued': \{ ar: 'إصدار فاتورة'/);
-  assert.match(auditLabelsSource, /'invoice\.voided': \{ ar: 'إلغاء فاتورة'/);
+  assert.match(auditLabelsSource, /"invoice\.issued": "audit\.actions\.m_1dgwo7k"/);
+  assert.match(auditLabelsSource, /"invoice\.voided": "audit\.actions\.m_1b7zju0"/);
   assert.match(source, /value="invoice\.draft_updated"/);
   assert.match(source, /value="stock\.movement_recorded"/);
   assert.match(source, /value="purchase_order\.approved"/);
   assert.match(source, /value="sales_return\.approved"/);
   assert.match(source, /value="recurring_invoice_schedule\.created"/);
-  assert.match(auditLabelsSource, /'supplier\.created': \{ ar: 'إضافة مورد'/);
+  assert.match(auditLabelsSource, /"supplier\.created": "audit\.actions\.m_n1vp0a"/);
   assert.equal((source.match(/<option value="supplier">/g) || []).length, 1);
 });
 
@@ -125,12 +128,12 @@ test('invoice customer filter can load additional customer pages for name search
 });
 
 test('invoice amounts use consistent grouped decimal formatting in the list and server summary', () => {
-  assert.match(source, /invoice\.total \| number:'1\.2-2'/);
-  assert.match(source, /invoice\.outstanding_amount \| number:'1\.2-2'/);
-  assert.match(invoiceEditorSource, /serverSummary\.subtotal \| number:'1\.2-2'/);
-  assert.match(invoiceEditorSource, /serverSummary\??\.discount_total \| number:'1\.2-2'/);
-  assert.match(invoiceEditorSource, /serverSummary\??\.tax_total \| number:'1\.2-2'/);
-  assert.match(invoiceEditorSource, /serverSummary\.total \| number:'1\.2-2'/);
+  assert.match(source, /formatNumber\(invoice\.total\)/);
+  assert.match(source, /formatNumber\(invoice\.outstanding_amount\)/);
+  assert.match(invoiceEditorSource, /formatNumber\(serverSummary\.subtotal\)/);
+  assert.match(invoiceEditorSource, /formatNumber\(serverSummary\??\.discount_total\)/);
+  assert.match(invoiceEditorSource, /formatNumber\(serverSummary\??\.tax_total\)/);
+  assert.match(invoiceEditorSource, /formatNumber\(serverSummary\.total\)/);
 });
 
 test('invoice list uses compact responsive cards with readable financial and status hierarchy', () => {
@@ -152,7 +155,7 @@ test('financial and integrity report basis labels are localized', () => {
   assert.match(source, /reportLimitationLabel\(limitation\)/);
 });
 
-const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
+const apiSource = expandTranslationCalls(readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8'));
 
 test('API requests abort when the backend stalls instead of blocking workspace startup indefinitely', () => {
   assert.match(apiSource, /new AbortController\(\)/);
@@ -167,10 +170,11 @@ test('API requests abort when the backend stalls instead of blocking workspace s
 });
 
 test('report labels translate the actual backend revenue-basis and integrity-warning wording', () => {
-  assert.match(source, /gross issued invoice totals before sales returns/);
-  assert.match(source, /this report identifies records for manual review only/);
-  assert.match(source, /Legacy invoices without customer links are flagged for review, not auto-corrected\./);
-  assert.match(source, /Uses saved tax totals on issued invoices; it does not recalculate historical taxes\./);
+  assert.match(source, /normalized\.includes\('gross issued invoice totals before sales returns'\)/);
+  assert.match(source, /Gross issued invoice totals before sales returns/i);
+  assert.match(source, /This report identifies records for manual review only/i);
+  assert.match(source, /\"uses saved tax totals on issued invoices; it does not recalculate historical taxes\.\": \"app\.reportLimitation\.4\"/);
+  assert.match(source, /\"legacy invoices without customer links are flagged for review, not auto-corrected\.\": \"app\.reportLimitation\.16\"/);
 });
 
 
@@ -216,7 +220,7 @@ test('customer CSV import requires preview before confirmation and localizes fee
 });
 
 test('customer CSV import API methods target customer preview and execution routes', () => {
-  const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
+  const apiSource = expandTranslationCalls(readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8'));
   assert.match(apiSource, /previewCustomerCsv\(businessId: string, csvText: string\)/);
   assert.match(apiSource, /imports\/customers\.csv\/preview/);
   assert.match(apiSource, /importCustomerCsv\(businessId: string, csvText: string\)/);
@@ -263,7 +267,7 @@ test('mobile More navigation renders grouped destinations from the shared catalo
   assert.match(menu, /@for \(group of filteredMobileMoreGroups; track group\.id\)/);
   assert.match(menu, /@for \(module of group\.modules; track module\.tab\)/);
   assert.match(menu, /module\.icon/);
-  assert.match(menu, /t\(module\.titleAr, module\.titleEn\)/);
+  assert.match(menu, /t\(module\.titleKey\)/);
   assert.match(menu, /tab === module\.tab \? 'page' : null/);
   assert.match(source, /WORKSPACE_MODULE_GROUPS/);
   assert.match(source, /max-height:min\(70dvh,560px\);overflow-y:auto;overscroll-behavior:contain/);
@@ -345,10 +349,10 @@ test('chat send preserves retry draft behavior and keeps the existing API contra
   assert.doesNotMatch(method, /this\.api\.chat\(this\.business\.id/);
 });
 
-const sharedStateSource = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
-const sharedCardSource = readFileSync(new URL('./shared/ui/aba-card.component.ts', import.meta.url), 'utf8');
-const sharedMetricSource = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
-const globalStylesSource = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
+const sharedStateSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8'));
+const sharedCardSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-card.component.ts', import.meta.url), 'utf8'));
+const sharedMetricSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8'));
+const globalStylesSource = expandTranslationCalls(readFileSync(new URL('../styles.css', import.meta.url), 'utf8'));
 
 test('shared state feedback owns info, warning, success, error and accessible action behavior', () => {
   assert.ok(sharedStateSource.includes("AbaStateKind = 'loading' | 'empty' | 'error' | 'success' | 'info' | 'warning'"));
@@ -608,6 +612,7 @@ test('expired API sessions offer sign-out and re-authentication instead of a fut
   assert.match(source, /\[actionLabel\]="sessionExpired \? t\('تسجيل الدخول مجددًا', 'Sign in again'\) : accessDenied \? t\('العودة للرئيسية', 'Go to Home'\) : t\('إعادة المحاولة', 'Retry'\)"/);
   assert.match(source, /\(action\)="sessionExpired \? logout\(\) : accessDenied \? setTab\('overview'\) : retry\(\)"/);
   assert.match(source, /get sessionExpired\(\): boolean/);
+  assert.match(source, /this\.lastErrorKind === 'session-expired' && this\.error === this\.lastErrorMessage/);
   const formatter = source.slice(source.indexOf('private message(error: unknown'));
   assert.match(formatter, /Authentication required/);
   assert.match(formatter, /Authenticated subject is missing/);
@@ -618,6 +623,7 @@ test('permission-denied feedback offers a safe return home instead of retrying a
   assert.match(source, /\[actionLabel\]="sessionExpired \? t\('تسجيل الدخول مجددًا', 'Sign in again'\) : accessDenied \? t\('العودة للرئيسية', 'Go to Home'\) : t\('إعادة المحاولة', 'Retry'\)"/);
   assert.match(source, /\(action\)="sessionExpired \? logout\(\) : accessDenied \? setTab\('overview'\) : retry\(\)"/);
   assert.match(source, /get accessDenied\(\): boolean/);
+  assert.match(source, /this\.lastErrorKind === 'access-denied' && this\.error === this\.lastErrorMessage/);
   assert.match(source, /Your account is not authorized to access platform administration/);
 });
 
@@ -715,8 +721,8 @@ test('invalid authentication, workspace, customer, invoice, payment and expense 
   assert.match(invoiceEditorSource, /if \(this\.saving \|\| this\.blocked\) return;/);
   assert.match(invoiceEditorSource, /this\.saveDraft\.emit\(payload\)/);
   assert.match(invoiceDraftSource, /if \(error\) throw new RangeError\(error\)/);
-  assert.match(invoiceDraftSource, /Choose a valid customer\./);
-  assert.match(invoiceDraftSource, /Add at least one invoice line\./);
+  assert.match(invoiceDraftSource, /invoiceDraft\.validation\.customer/);
+  assert.match(invoiceDraftSource, /invoiceDraft\.validation\.atLeastOneLine/);
 });
 
 test('product form exposes accessible required, non-negative price and conditional stock validation', () => {
@@ -998,23 +1004,20 @@ test('assistant source citations use bilingual labels and localized expense cate
 test('expense categories are localized in the list and available to local search', () => {
   assert.match(source, /category:this\.expenseCategoryLabel\(item\.category\)/);
   assert.match(source, /category => this\.expenseCategoryLabel\(category\)/);
-  assert.match(source, /Transport: 'نقل ومواصلات'/);
-  assert.match(source, /Transport: 'Transport'/);
+  assert.match(source, /Transport: 'app\.expenseCategory\.transport'/);
 });
 
 test('payment methods are localized in the list and available to local search', () => {
   assert.match(source, /method:item\.method\?this\.paymentMethodLabel\(item\.method\)/);
   assert.match(source, /method => this\.paymentMethodLabel\(method\)/);
-  assert.match(source, /bank_transfer: 'تحويل بنكي'/);
-  assert.match(source, /bank_transfer: 'Bank transfer'/);
+  assert.match(source, /bank_transfer: 'app\.paymentMethod\.bank_transfer'/);
 });
 
 test('notification status labels are localized in the list and available to local search', () => {
   assert.match(source, /notificationStatusLabel\(item\.status\)/);
   assert.match(source, /notificationStatusLabel\(status\)/);
-  assert.match(source, /failed: 'فشل الإرسال'/);
-  assert.match(source, /failed: 'Failed'/);
-  assert.match(source, /\[status\] \|\| status \|\| this\.t\('حالة غير محددة'/);
+  assert.match(source, /failed: 'app\.notificationStatus\.failed'/);
+  assert.match(source, /status \|\| this\.t\('حالة غير محددة', 'Unknown status'/);
 });
 
 test('operational health status uses a localized label instead of raw API codes', () => {
@@ -1027,9 +1030,8 @@ test('operational health status uses a localized label instead of raw API codes'
 test('purchase-order status labels are localized in the list and available to local search', () => {
   assert.match(source, /purchaseOrderStatusLabel\(order\.status\)/);
   assert.match(source, /purchaseOrderStatusLabel\(status\)/);
-  assert.match(source, /partially_received: 'مستلم جزئيًا'/);
-  assert.match(source, /partially_received: 'Partially received'/);
-  assert.match(source, /\[status\] \|\| status \|\| this\.t\('حالة غير محددة'/);
+  assert.match(source, /partially_received: 'app\.purchaseOrderStatus\.partially_received'/);
+  assert.match(source, /status \|\| this\.t\('حالة غير محددة', 'Unknown status'/);
 });
 
 test('purchase orders remain creatable by members while approval, receiving and payment writes are owner-only', () => {
@@ -1112,12 +1114,11 @@ test('session and permission recovery actions remain correct after a language to
   assert.ok(sessionStart >= 0 && deniedStart > sessionStart && retryStart > deniedStart);
   const sessionGetter = source.slice(sessionStart, deniedStart);
   const deniedGetter = source.slice(deniedStart, retryStart);
-  assert.match(sessionGetter, /انتهت صلاحية جلسة الدخول/);
-  assert.match(sessionGetter, /Your sign-in session is no longer valid/);
-  assert.match(deniedGetter, /لا تملك الصلاحية للوصول إلى مساحة العمل/);
-  assert.match(deniedGetter, /You do not have permission to access this workspace/);
-  assert.match(deniedGetter, /حسابك غير مخوّل للوصول إلى إدارة المنصة/);
-  assert.match(deniedGetter, /Your account is not authorized to access platform administration/);
+  assert.match(sessionGetter, /this\.lastErrorKind === 'session-expired'/);
+  assert.match(sessionGetter, /this\.error === this\.lastErrorMessage/);
+  assert.match(deniedGetter, /this\.lastErrorKind === 'access-denied'/);
+  assert.match(deniedGetter, /this\.error === this\.lastErrorMessage/);
+  assert.match(source, /this\.lastErrorMessage = translated/);
   assert.doesNotMatch(sessionGetter + deniedGetter, /this\.t\(/);
 });
 
@@ -1282,9 +1283,9 @@ test('invoice customer and dynamic line fields expose accessible localized valid
   assert.ok(invoiceEditorSource.includes("[name]=\"'price-' + line.id\""));
   assert.match(invoiceEditorSource, /this\.saveDraft\.emit\(payload\)/);
   assert.match(invoiceEditorSource, /role="alert"/);
-  assert.match(invoiceDraftSource, /Choose a valid customer\./);
-  assert.match(invoiceDraftSource, /Add at least one invoice line\./);
-  assert.match(invoiceDraftSource, /Every line needs a positive quantity/);
+  assert.match(invoiceDraftSource, /invoiceDraft\.validation\.customer/);
+  assert.match(invoiceDraftSource, /invoiceDraft\.validation\.atLeastOneLine/);
+  assert.match(invoiceDraftSource, /invoiceDraft\.validation\.quantity/);
 });
 
 test('payment submit remains available to reveal required-field validation', () => {
@@ -1417,10 +1418,10 @@ test('operations lists filter locally by their visible business fields', () => {
   assert.match(source, /get filteredPurchaseOrders\(\): PurchaseOrder\[\]/);
   assert.match(source, /get filteredRecurringSchedules\(\): RecurringInvoiceSchedule\[\]/);
   assert.match(source, /get filteredNotifications\(\): NotificationRecord\[\]/);
-  assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch\)/);
+  assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch, this\.localization\.locale\)/);
   assert.match(source, /filterPurchaseOrders\(\s*this\.purchaseOrders,\s*this\.purchaseSearch/);
   assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules,\s*this\.recurringSearch/);
-  assert.ok(source.includes('filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind), status => this.notificationStatusLabel(status))'));
+  assert.match(source, /filterNotifications\(this\.notifications, this\.notificationSearch, kind => this\.notificationKindLabel\(kind\), status => this\.notificationStatusLabel\(status\), this\.localization\.locale\)/);
   const clearStart = source.indexOf('private clearWorkspaceData(): void');
   const clearEnd = source.indexOf('\n  }', clearStart);
   const clear = source.slice(clearStart, clearEnd);
@@ -1428,10 +1429,10 @@ test('operations lists filter locally by their visible business fields', () => {
     assert.ok(source.includes(`${field} = '';`), `${field} is initialized`);
     assert.ok(clear.includes(`this.${field} = '';`), `${field} resets on workspace change`);
   }
-  assert.match(source, /No suppliers match this search/);
-  assert.match(source, /No purchase orders match this search/);
-  assert.match(source, /No schedules match this search/);
-  assert.match(source, /No notifications match this search/);
+  assert.match(source, /supplierSearch\.trim\(\) \? t\(/);
+  assert.match(source, /purchaseSearch\.trim\(\) \? t\(/);
+  assert.match(source, /recurringSearch\.trim\(\) \? t\(/);
+  assert.match(source, /notificationSearch\.trim\(\) \? t\(/);
 });
 
 
@@ -1443,10 +1444,10 @@ test('customer section markup does not render stray closing-tag text', () => {
 test('payment and expense lists expose local search and distinguish no-match from no-record states', () => {
   assert.match(source, /get filteredPayments\(\): Payment\[\]/);
   assert.match(source, /get filteredExpenses\(\): Expense\[\]/);
-  assert.match(source, /filterPayments\(this\.payments, this\.paymentSearch/);
-  assert.ok(source.includes('filterExpenses(this.expenses, this.expenseSearch, category => this.expenseCategoryLabel(category))'));
-  assert.match(source, /No payments match this search/);
-  assert.match(source, /No expenses match this search/);
+  assert.match(source, /filterPayments\(\s*this\.payments,\s*this\.paymentSearch/);
+  assert.match(source, /filterExpenses\(this\.expenses, this\.expenseSearch, category => this\.expenseCategoryLabel\(category\), this\.localization\.locale\)/);
+  assert.match(source, /paymentSearch\.trim\(\) \? t\(/);
+  assert.match(source, /expenseSearch\.trim\(\) \? t\(/);
   assert.match(source, /name="paymentSearch" type="search"/);
   assert.match(source, /name="expenseSearch" type="search"/);
 });
@@ -1454,16 +1455,16 @@ test('payment and expense lists expose local search and distinguish no-match fro
 
 test('notification kind localization covers the current business form value and legacy plural value', () => {
   assert.match(source, /<option value="business">/);
-  assert.match(source, /business: \{ ar: 'مساحات العمل', en: 'Businesses' \}/);
-  assert.match(source, /businesses: \{ ar: 'مساحات العمل', en: 'Businesses' \}/);
+  assert.match(source, /business: 'app\.notificationKind\.business'/);
+  assert.match(source, /businesses: 'app\.notificationKind\.businesses'/);
 });
 
 
 test('customer statement event types use bilingual labels while preserving unknown values', () => {
   assert.match(source, /customerStatementEventLabel\(event\.event_type\)/);
-  assert.match(source, /invoice_issued: \{ ar: 'إصدار فاتورة', en: 'Invoice issued' \}/);
-  assert.match(source, /payment_allocation: \{ ar: 'تخصيص دفعة', en: 'Payment allocation' \}/);
-  assert.match(source, /currency_mismatch_allocation: \{ ar: 'تخصيص بعملة غير مطابقة', en: 'Currency-mismatch allocation' \}/);
+  assert.match(source, /invoice_issued: 'app\.customerStatementEvent\.invoice_issued'/);
+  assert.match(source, /payment_allocation: 'app\.customerStatementEvent\.payment_allocation'/);
+  assert.match(source, /currency_mismatch_allocation: 'app\.customerStatementEvent\.currency_mismatch_allocation'/);
 });
 
 
@@ -1626,4 +1627,60 @@ test('purchase-order approval is owner-only, confirmation-first and tenant-reset
   assert.ok(apiSource.includes("'/purchase-orders/' + encodeURIComponent(orderId) + '/approve'"));
   assert.ok(source.includes('This approves the draft purchase order only. It does not record receipt or a stock movement.'));
   assert.ok(source.includes('Approval does not create supplier bills, payables or payments.'));
+});
+
+test('installed PWA announces a newly activated service worker and offers an explicit refresh', () => {
+  assert.ok(source.includes('appUpdateAvailable = false;'));
+  assert.ok(source.includes('role="status" aria-live="polite"'));
+  assert.ok(source.includes('A new app version is ready. Refresh to continue with the latest version.'));
+  assert.ok(source.includes('(click)="reloadAppAfterUpdate()"'));
+  assert.ok(source.includes('createServiceWorkerUpdateHandler('));
+  assert.match(source, /addEventListener\('controllerchange', handleControllerChange\)/);
+  assert.match(source, /reloadAppAfterUpdate\(\): void/);
+  assert.match(source, /window\.location\.reload\(\)/);
+});
+
+test('the first service-worker control acquisition is silent and the next replacement announces one update', () => {
+  let updateNotices = 0;
+  const onControllerChange = createServiceWorkerUpdateHandler(false, () => { updateNotices += 1; });
+
+  onControllerChange();
+  assert.equal(updateNotices, 0, 'initial installation/control acquisition must not show an update');
+  onControllerChange();
+  assert.equal(updateNotices, 1, 'the next controller replacement must announce the update');
+  onControllerChange();
+  assert.equal(updateNotices, 1, 'one page lifecycle must announce at most one update');
+});
+
+test('an already-controlled page announces its next service-worker replacement', () => {
+  let updateNotices = 0;
+  const onControllerChange = createServiceWorkerUpdateHandler(true, () => { updateNotices += 1; });
+
+  onControllerChange();
+  assert.equal(updateNotices, 1, 'an installed page receiving a replacement worker must announce it');
+  onControllerChange();
+  assert.equal(updateNotices, 1);
+});
+
+test('public sign-in shell keeps the PWA install action and fallback available before authentication', () => {
+  const authStart = source.indexOf('} @else if (!signedIn) {');
+  const authEnd = source.indexOf('} @else {', authStart);
+  const auth = source.slice(authStart, authEnd);
+  assert.ok(auth.includes('auth-mobile-install'));
+  assert.ok(auth.includes('@if (!isInstalled)'));
+  assert.ok(auth.includes('(click)="installApp()"'));
+  assert.ok(auth.includes('installHelp && !isInstalled'));
+  assert.ok(auth.includes('If no install prompt appears'));
+});
+
+test('PWA update notice stays touch-sized and readable in forced-colors mode', () => {
+  assert.match(globalStyles, /\.app-update-notice button \{[\s\S]*?min-height: 44px;/);
+  const noticeStylesStart = globalStyles.indexOf('.app-update-notice {');
+  const noticeStyles = globalStyles.slice(noticeStylesStart);
+  const forcedColorsStart = noticeStyles.indexOf('@media (forced-colors: active)');
+  const forcedColors = noticeStyles.slice(forcedColorsStart);
+  assert.ok(forcedColors.includes('.app-update-notice {'));
+  assert.ok(forcedColors.includes('background: Canvas;'));
+  assert.ok(forcedColors.includes('color: CanvasText;'));
+  assert.ok(forcedColors.includes('color: ButtonText;'));
 });

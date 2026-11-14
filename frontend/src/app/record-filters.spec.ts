@@ -85,8 +85,8 @@ test('filters recurring schedules by customer, interval, timezone and state', ()
   assert.deepEqual(filterRecurringSchedules(schedules, 'africa/cairo', customer).map(x => x.id), ['r1']);
   assert.deepEqual(filterRecurringSchedules(schedules, 'inactive', customer).map(x => x.id), ['r2']);
   assert.deepEqual(filterRecurringSchedules(schedules, 'active', customer).map(x => x.id), ['r1']);
-  assert.deepEqual(filterRecurringSchedules(schedules, 'نشطة', customer).map(x => x.id), ['r1']);
-  assert.deepEqual(filterRecurringSchedules(schedules, 'متوقفة', customer).map(x => x.id), ['r2']);
+  assert.deepEqual(filterRecurringSchedules(schedules, 'نشطة', customer, active => active ? 'نشطة' : 'متوقفة').map(x => x.id), ['r1']);
+  assert.deepEqual(filterRecurringSchedules(schedules, 'متوقفة', customer, active => active ? 'نشطة' : 'متوقفة').map(x => x.id), ['r2']);
 });
 
 test('filters notifications by title, message, kind and delivery status', () => {
@@ -123,6 +123,8 @@ test('filters payments by visible receipt details and allocation state without c
   assert.deepEqual(filterPayments(payments, 'nour', customer).map(x => x.id), ['p1']);
   assert.deepEqual(filterPayments(payments, 'RC-1', customer).map(x => x.id), ['p1']);
   assert.deepEqual(filterPayments(payments, 'unallocated', customer).map(x => x.id), ['p2']);
+  assert.deepEqual(filterPayments(payments, 'غير مخصصة', customer, method => method, allocated => allocated ? 'مخصصة' : 'غير مخصصة').map(x => x.id), ['p2']);
+  assert.deepEqual(filterPayments(payments, 'مخصصة', customer, method => method, allocated => allocated ? 'مخصصة' : 'غير مخصصة').map(x => x.id), ['p1']);
   assert.deepEqual(filterPayments(payments, 'allocated', customer).map(x => x.id), ['p1']);
   assert.deepEqual(filterPayments(payments, 'bank_transfer', customer).map(x => x.id), ['p2']);
   assert.deepEqual(filterPayments(payments, 'تحويل بنكي', customer, method => method === 'bank_transfer' ? 'تحويل بنكي' : method).map(x => x.id), ['p2']);

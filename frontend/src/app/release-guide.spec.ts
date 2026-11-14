@@ -3,7 +3,7 @@ import test from 'node:test';
 import { existsSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide.ts';
+import { FEATURE_CATALOG as SOURCE_FEATURE_CATALOG, RELEASE_HISTORY as SOURCE_RELEASE_HISTORY } from './release-guide.ts';
 
 const testDirectory = dirname(fileURLToPath(import.meta.url));
 const repositoryRoot = resolve(testDirectory, '../../..');
@@ -14,6 +14,42 @@ const hasBackendPackage = existsSync(resolve(repositoryRoot, 'backend/pyproject.
 const frontendPackage = JSON.parse(readFileSync(resolve(frontendRoot, 'package.json'), 'utf8'));
 const buildInfo = readFileSync(resolve(frontendRoot, 'src/app/build-info.ts'), 'utf8');
 const serviceWorker = readFileSync(resolve(frontendRoot, 'public/sw.js'), 'utf8');
+const arabicDictionary = JSON.parse(readFileSync(resolve(frontendRoot, 'public/i18n/ar.json'), 'utf8')) as Record<string, unknown>;
+const englishDictionary = JSON.parse(readFileSync(resolve(frontendRoot, 'public/i18n/en.json'), 'utf8')) as Record<string, unknown>;
+
+function translation(dictionary: Record<string, unknown>, key: string): string {
+  let value: unknown = dictionary;
+  for (const segment of key.split('.')) {
+    assert.ok(value && typeof value === 'object' && segment in value, `Missing translation key: ${key}`);
+    value = (value as Record<string, unknown>)[segment];
+  }
+  assert.equal(typeof value, 'string', `Translation must be a string: ${key}`);
+  return value as string;
+}
+
+const FEATURE_CATALOG = SOURCE_FEATURE_CATALOG.map(section => ({
+  ...section,
+  titleAr: translation(arabicDictionary, section.titleKey),
+  titleEn: translation(englishDictionary, section.titleKey),
+  noteAr: translation(arabicDictionary, section.noteKey),
+  noteEn: translation(englishDictionary, section.noteKey),
+  features: section.features.map(feature => ({
+    ...feature,
+    titleAr: translation(arabicDictionary, feature.titleKey),
+    titleEn: translation(englishDictionary, feature.titleKey),
+    detailAr: translation(arabicDictionary, feature.detailKey),
+    detailEn: translation(englishDictionary, feature.detailKey),
+  })),
+}));
+
+const RELEASE_HISTORY = SOURCE_RELEASE_HISTORY.map(release => ({
+  ...release,
+  titleAr: translation(arabicDictionary, release.titleKey),
+  titleEn: translation(englishDictionary, release.titleKey),
+  changesAr: release.changes.map(key => translation(arabicDictionary, key)),
+  changesEn: release.changes.map(key => translation(englishDictionary, key)),
+}));
+
 
 test('Vercel Web build stamps commit metadata before Angular compilation', () => {
   const vercelConfig = JSON.parse(readFileSync(resolve(frontendRoot, 'vercel.json'), 'utf8'));

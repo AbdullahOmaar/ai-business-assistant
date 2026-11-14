@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
 
-const ui = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const ui = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 
 test('data integrity review is owner-gated and read-only', () => {

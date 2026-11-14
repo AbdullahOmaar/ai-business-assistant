@@ -1,4 +1,5 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, inject } from '@angular/core';
+import { LocalizationService } from './localization.service';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
 import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
 import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
@@ -10,30 +11,30 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
   imports: [AbaCardComponent, AbaSectionHeaderComponent],
   template: `
     <section abaCard class="panel release-guide-panel" aria-labelledby="release-guide-title">
-      <p class="release-guide-eyebrow">{{ t('دليل مبسط', 'QUICK GUIDE') }}</p>
+      <p class="release-guide-eyebrow">{{ t('ui.m_mlq284') }}</p>
       <aba-section-header
         [titleId]="'release-guide-title'"
-        [title]="t('مميزات التطبيق والإصدارات', 'App features & versions')"
-        [description]="t('اعرف الموجود في التطبيق، ثم افتح الإصدار لمعرفة ما أُضيف مقارنة بالإصدارات السابقة.', 'Browse what the app offers, then open a version to see what changed from earlier releases.')">
-        <span class="release-guide-version-pill">{{ t('إصدار الواجهة', 'UI version') }} · v{{ appVersion }}</span>
+        [title]="t('ui.m_1og12ws')"
+        [description]="t('ui.m_oaeatq')">
+        <span class="release-guide-version-pill">{{ t('ui.m_1tydjt4') }} · v{{ appVersion }}</span>
       </aba-section-header>
 
       <aba-section-header
         [level]="3"
-        [title]="t('المميزات المتاحة', 'Available features')"
-        [description]="t('افتح القسم الذي تحتاجه فقط. بعض الأدوات تعتمد على صلاحية الحساب أو إعداد الخدمة.', 'Open only the section you need. Some tools depend on your account permissions or service setup.')" />
+        [title]="t('ui.m_16pb0nw')"
+        [description]="t('ui.m_mnc283')" />
       <div class="release-guide-groups">
         @for (group of featureCatalog; track group.id) {
           <details class="release-feature-group">
             <summary>
-              <strong>{{ t(group.titleAr, group.titleEn) }}</strong>
-              <small>{{ t(group.noteAr, group.noteEn) }}</small>
+              <strong>{{ t(group.titleKey) }}</strong>
+              <small>{{ t(group.noteKey) }}</small>
             </summary>
             <ul>
-              @for (feature of group.features; track feature.titleEn) {
+              @for (feature of group.features; track feature.titleKey) {
                 <li>
-                  <strong>{{ t(feature.titleAr, feature.titleEn) }}</strong>
-                  <span>{{ t(feature.detailAr, feature.detailEn) }}</span>
+                  <strong>{{ t(feature.titleKey) }}</strong>
+                  <span>{{ t(feature.detailKey) }}</span>
                 </li>
               }
             </ul>
@@ -43,32 +44,26 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
 
       <div class="release-history-title">
         <aba-section-header
-          [title]="t('سجل الإصدارات', 'Version history')"
-          [description]="t('كل إصدار يعرض الإضافات والتحسينات الجديدة فقط.', 'Each version lists only its new additions and improvements.')" />
+          [title]="t('ui.m_g7xbwh')"
+          [description]="t('ui.m_idm045')" />
       </div>
       <div class="release-history">
         @for (release of releaseHistory; track release.version) {
           <details class="release-version" [open]="release.version === appVersion">
             <summary>
               <span class="release-guide-version-pill">v{{ release.version }}</span>
-              <strong>{{ t(release.titleAr, release.titleEn) }}</strong>
+              <strong>{{ t(release.titleKey) }}</strong>
               @if (release.version === appVersion) {
-                <span class="release-guide-current-badge">{{ t('الإصدار الحالي', 'Current version') }}</span>
+                <span class="release-guide-current-badge">{{ t('ui.m_186wqlb') }}</span>
               }
             </summary>
-            @if (language === 'ar') {
-              <ul>
-                @for (change of release.changesAr; track change) { <li>{{ change }}</li> }
-              </ul>
-            } @else {
-              <ul>
-                @for (change of release.changesEn; track change) { <li>{{ change }}</li> }
-              </ul>
-            }
+            <ul>
+              @for (change of release.changes; track change) { <li>{{ t(change) }}</li> }
+            </ul>
           </details>
         }
       </div>
-      <p class="release-guide-footnote">{{ t('يتم تحديث هذا الدليل عند تجهيز إصدار جديد. الميزات التي تتطلب صلاحية أو إعدادًا تظهر ملاحظتها داخل قسمها.', 'This guide is updated for each new version. Features requiring permissions or setup are identified in their section.') }}</p>
+      <p class="release-guide-footnote">{{ t('ui.m_1bg4xxc') }}</p>
     </section>
   `,
   styles: [`
@@ -106,13 +101,14 @@ import { FEATURE_CATALOG, RELEASE_HISTORY } from './release-guide';
   `],
 })
 export class ReleaseGuideComponent {
+  private readonly localization = inject(LocalizationService);
   @Input() language: 'ar' | 'en' = 'ar';
   @Input() appVersion = '';
 
   readonly featureCatalog = FEATURE_CATALOG;
   readonly releaseHistory = RELEASE_HISTORY;
 
-  t(arabic: string, english: string): string {
-    return this.language === 'ar' ? arabic : english;
+  t(key: string, params?: Record<string, string | number>): string {
+    return this.localization.translate(key, params);
   }
 }

@@ -3,6 +3,8 @@ import type { Customer } from './api.service';
 import type { AbaRecordTableActionEvent } from './shared/ui/aba-record-table.component';
 import { sortCustomers, type CustomerSortField, type SortDirection } from './directory-sort';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
+import { inject } from '@angular/core';
+import { LocalizationService } from './localization.service';
 
 
 /**
@@ -22,14 +24,14 @@ import { AbaStateMessageComponent } from './shared/ui/aba-state-message.componen
       } @else if (customers().length) {
         <div class="customer-directory__mobile-sort">
           <label for="customer-directory-sort">
-            <span>{{ locale() === 'ar' ? 'ترتيب حسب' : 'Sort by' }}</span>
+            <span>{{ t('customerDirectory.m_tpfmbp') }}</span>
             <select id="customer-directory-sort" [value]="mobileSortValue" (change)="onMobileSortChange($event)">
-              <option value="name:asc">{{ locale() === 'ar' ? 'الاسم: أ–ي' : 'Name: A–Z' }}</option>
-              <option value="name:desc">{{ locale() === 'ar' ? 'الاسم: ي–أ' : 'Name: Z–A' }}</option>
-              <option value="email:asc">{{ locale() === 'ar' ? 'البريد: أ–ي' : 'Email: A–Z' }}</option>
-              <option value="email:desc">{{ locale() === 'ar' ? 'البريد: ي–أ' : 'Email: Z–A' }}</option>
-              <option value="phone:asc">{{ locale() === 'ar' ? 'الهاتف: تصاعدي' : 'Phone: ascending' }}</option>
-              <option value="phone:desc">{{ locale() === 'ar' ? 'الهاتف: تنازلي' : 'Phone: descending' }}</option>
+              <option value="name:asc">{{ t('customerDirectory.m_zh6wie') }}</option>
+              <option value="name:desc">{{ t('customerDirectory.m_1iina3u') }}</option>
+              <option value="email:asc">{{ t('customerDirectory.m_bl0g3s') }}</option>
+              <option value="email:desc">{{ t('customerDirectory.m_1jlg5ik') }}</option>
+              <option value="phone:asc">{{ t('customerDirectory.m_1b1jxnt') }}</option>
+              <option value="phone:desc">{{ t('customerDirectory.m_1izflgg') }}</option>
             </select>
           </label>
         </div>
@@ -41,23 +43,23 @@ import { AbaStateMessageComponent } from './shared/ui/aba-state-message.componen
               <tr>
                 <th scope="col" [attr.aria-sort]="ariaSort('name')">
                   <button type="button" (click)="toggleSort('name')">
-                    {{ locale() === 'ar' ? 'العميل' : 'Customer' }}
+                    {{ t('customerDirectory.m_ubgrc2') }}
                     <span aria-hidden="true">{{ sortIndicator('name') }}</span>
                   </button>
                 </th>
                 <th scope="col" [attr.aria-sort]="ariaSort('email')">
                   <button type="button" (click)="toggleSort('email')">
-                    {{ locale() === 'ar' ? 'البريد الإلكتروني' : 'Email' }}
+                    {{ t('customerDirectory.m_112c7vo') }}
                     <span aria-hidden="true">{{ sortIndicator('email') }}</span>
                   </button>
                 </th>
                 <th scope="col" [attr.aria-sort]="ariaSort('phone')">
                   <button type="button" (click)="toggleSort('phone')">
-                    {{ locale() === 'ar' ? 'الهاتف' : 'Phone' }}
+                    {{ t('customerDirectory.m_19jxea1') }}
                     <span aria-hidden="true">{{ sortIndicator('phone') }}</span>
                   </button>
                 </th>
-                <th scope="col">{{ locale() === 'ar' ? 'إجراءات' : 'Actions' }}</th>
+                <th scope="col">{{ t('customerDirectory.m_256ab9') }}</th>
               </tr>
             </thead>
             <tbody>
@@ -68,23 +70,23 @@ import { AbaStateMessageComponent } from './shared/ui/aba-state-message.componen
                     @if (customer.email) {
                       <a [href]="'mailto:' + customer.email"><bdi dir="ltr">{{ customer.email }}</bdi></a>
                     } @else {
-                      <span class="customer-directory__muted">{{ locale() === 'ar' ? 'غير مسجل' : 'Not provided' }}</span>
+                      <span class="customer-directory__muted">{{ t('customerDirectory.m_2wkjj4') }}</span>
                     }
                   </td>
                   <td>
                     @if (customer.phone) {
                       <a [href]="'tel:' + customer.phone"><bdi dir="ltr">{{ customer.phone }}</bdi></a>
                     } @else {
-                      <span class="customer-directory__muted">{{ locale() === 'ar' ? 'غير مسجل' : 'Not provided' }}</span>
+                      <span class="customer-directory__muted">{{ t('customerDirectory.m_2wkjj4') }}</span>
                     }
                   </td>
                   <td>
                     <div class="customer-directory__actions">
                       <button class="customer-directory__action" type="button" (click)="emitAction(customer.id, 'invoices', $event)" [attr.aria-label]="actionAriaLabel(customer, 'invoices')">
-                        {{ locale() === 'ar' ? 'الفواتير' : 'Invoices' }}
+                        {{ t('customerDirectory.m_1h7f08p') }}
                       </button>
                       <button class="customer-directory__action customer-directory__action--primary" type="button" (click)="emitAction(customer.id, 'statement', $event)" [attr.aria-label]="actionAriaLabel(customer, 'statement')">
-                        {{ locale() === 'ar' ? 'كشف الحساب' : 'Statement' }}
+                        {{ t('customerDirectory.m_np2h9e') }}
                       </button>
                     </div>
                   </td>
@@ -101,22 +103,22 @@ import { AbaStateMessageComponent } from './shared/ui/aba-state-message.componen
                 <h3>{{ customer.name }}</h3>
                 <div class="customer-directory__contact">
                   @if (customer.phone) {
-                    <a [href]="'tel:' + customer.phone" [attr.aria-label]="(locale() === 'ar' ? 'اتصال بـ ' : 'Call ') + customer.name"><bdi dir="ltr">{{ customer.phone }}</bdi></a>
+                    <a [href]="'tel:' + customer.phone" [attr.aria-label]="(t('customerDirectory.m_1kxahts')) + customer.name"><bdi dir="ltr">{{ customer.phone }}</bdi></a>
                   }
                   @if (customer.email) {
-                    <a [href]="'mailto:' + customer.email" [attr.aria-label]="(locale() === 'ar' ? 'مراسلة ' : 'Email ') + customer.name"><bdi dir="ltr">{{ customer.email }}</bdi></a>
+                    <a [href]="'mailto:' + customer.email" [attr.aria-label]="(t('customerDirectory.m_uodwjq')) + customer.name"><bdi dir="ltr">{{ customer.email }}</bdi></a>
                   }
                   @if (!customer.phone && !customer.email) {
-                    <span class="customer-directory__muted">{{ locale() === 'ar' ? 'لا توجد بيانات تواصل' : 'No contact details' }}</span>
+                    <span class="customer-directory__muted">{{ t('customerDirectory.m_1ypcn1i') }}</span>
                   }
                 </div>
               </div>
               <div class="customer-directory__actions">
                 <button class="customer-directory__action" type="button" (click)="emitAction(customer.id, 'invoices', $event)" [attr.aria-label]="actionAriaLabel(customer, 'invoices')">
-                  {{ locale() === 'ar' ? 'الفواتير' : 'Invoices' }}
+                  {{ t('customerDirectory.m_1h7f08p') }}
                 </button>
                 <button class="customer-directory__action customer-directory__action--primary" type="button" (click)="emitAction(customer.id, 'statement', $event)" [attr.aria-label]="actionAriaLabel(customer, 'statement')">
-                  {{ locale() === 'ar' ? 'كشف الحساب' : 'Statement' }}
+                  {{ t('customerDirectory.m_np2h9e') }}
                 </button>
               </div>
             </li>
@@ -130,6 +132,8 @@ import { AbaStateMessageComponent } from './shared/ui/aba-state-message.componen
   styleUrl: './customer-directory.component.css',
 })
 export class CustomerDirectoryComponent {
+  private readonly localization = inject(LocalizationService);
+  t(key: string): string { return this.localization.translate(key); }
   readonly ariaLabel = input.required<string>();
   readonly customers = input<readonly Customer[]>([]);
   readonly locale = input<'ar' | 'en'>('ar');
@@ -180,8 +184,8 @@ export class CustomerDirectoryComponent {
 
   actionAriaLabel(customer: Customer, action: 'invoices' | 'statement'): string {
     const label = action === 'invoices'
-      ? (this.locale() === 'ar' ? 'عرض فواتير' : 'View invoices for')
-      : (this.locale() === 'ar' ? 'كشف حساب' : 'Statement for');
+      ? (this.t('customerDirectory.m_1muaaw0'))
+      : (this.t('customerDirectory.m_mmu2iu'));
     return label + ' ' + customer.name;
   }
 

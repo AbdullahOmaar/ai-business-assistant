@@ -1,68 +1,68 @@
-export type AuditLanguage = 'ar' | 'en';
+type TranslationKeyMap = Readonly<Record<string, string>>;
 
-const AUDIT_ACTION_LABELS: Record<string, { ar: string; en: string }> = {
-  'invoice.issued': { ar: 'إصدار فاتورة', en: 'Invoice issued' },
-  'invoice.created': { ar: 'إنشاء فاتورة', en: 'Invoice created' },
-  'invoice.draft_updated': { ar: 'تعديل مسودة فاتورة', en: 'Invoice draft updated' },
-  'invoice.voided': { ar: 'إلغاء فاتورة', en: 'Invoice voided' },
-  'payment.recorded': { ar: 'تسجيل دفعة', en: 'Payment recorded' },
-  'expense.created': { ar: 'تسجيل مصروف', en: 'Expense recorded' },
-  'customer.created': { ar: 'إضافة عميل', en: 'Customer created' },
-  'product.created': { ar: 'إضافة منتج', en: 'Product created' },
-  'stock.movement_recorded': { ar: 'تسجيل حركة مخزون', en: 'Stock movement recorded' },
-  'supplier.created': { ar: 'إضافة مورد', en: 'Supplier created' },
-  'customer.updated': { ar: 'تعديل بيانات عميل', en: 'Customer updated' },
-  'customer.deactivated': { ar: 'تعطيل عميل', en: 'Customer deactivated' },
-  'product.updated': { ar: 'تعديل منتج', en: 'Product updated' },
-  'product.deactivated': { ar: 'تعطيل منتج', en: 'Product deactivated' },
-  'purchase_order.created': { ar: 'إنشاء أمر شراء', en: 'Purchase order created' },
-  'purchase_order.approved': { ar: 'اعتماد أمر شراء', en: 'Purchase order approved' },
-  'purchase_order.received': { ar: 'استلام أمر شراء', en: 'Purchase order received' },
-  'sales_return.created': { ar: 'تسجيل مرتجع بيع', en: 'Sales return created' },
-  'sales_return.approved': { ar: 'اعتماد مرتجع بيع', en: 'Sales return approved' },
-  'recurring_invoice_schedule.created': { ar: 'إنشاء جدول فاتورة دورية', en: 'Recurring invoice schedule created' },
-  'data_import.completed': { ar: 'اكتمال استيراد البيانات', en: 'Data import completed' },
-  'pricing_rule.created': { ar: 'إنشاء قاعدة تسعير', en: 'Pricing rule created' },
-  'notification.queued': { ar: 'إضافة إشعار إلى القائمة', en: 'Notification queued' },
-  'membership.role_changed': { ar: 'تغيير دور العضوية', en: 'Membership role changed' },
-  'membership.removed': { ar: 'إزالة عضوية مساحة العمل', en: 'Workspace membership removed' },
-  'employee.created': { ar: 'إضافة موظف', en: 'Employee created' },
-  'employee.updated': { ar: 'تعديل بيانات موظف', en: 'Employee updated' },
-  'payroll.created': { ar: 'إنشاء مسودة مرتب', en: 'Payroll draft created' },
-  'payroll.updated': { ar: 'تعديل مسودة مرتب', en: 'Payroll draft updated' },
-  'payroll.approved': { ar: 'اعتماد المرتب', en: 'Payroll approved' },
-  'payroll.paid': { ar: 'تسجيل صرف المرتب', en: 'Payroll payout recorded' },
-  'platform.business.activated': { ar: 'تفعيل مساحة عمل', en: 'Workspace activated' },
-  'platform.business.deactivated': { ar: 'إيقاف مساحة عمل', en: 'Workspace deactivated' },
-  'platform.user_role.granted': { ar: 'منح صلاحية منصة', en: 'Platform role granted' },
-  'platform.user_role.revoked': { ar: 'إلغاء صلاحية منصة', en: 'Platform role revoked' },
+const AUDIT_ACTION_KEYS: TranslationKeyMap = {
+  "invoice.issued": "audit.actions.m_1dgwo7k",
+  "invoice.created": "audit.actions.m_s89hy1",
+  "invoice.draft_updated": "audit.actions.m_1h1mtay",
+  "invoice.voided": "audit.actions.m_1b7zju0",
+  "payment.recorded": "audit.actions.m_1fzpn4c",
+  "expense.created": "audit.actions.m_1eswv36",
+  "customer.created": "audit.actions.m_7ayrnh",
+  "product.created": "audit.actions.m_w0ko2p",
+  "stock.movement_recorded": "audit.actions.m_1jl8qoq",
+  "supplier.created": "audit.actions.m_n1vp0a",
+  "customer.updated": "audit.actions.m_1j81wf0",
+  "customer.deactivated": "audit.actions.m_11zlj4h",
+  "product.updated": "audit.actions.m_bu5930",
+  "product.deactivated": "audit.actions.m_8y4ee1",
+  "purchase_order.created": "audit.actions.m_1ghnskj",
+  "purchase_order.approved": "audit.actions.m_xyjlem",
+  "purchase_order.received": "audit.actions.m_5cn0in",
+  "sales_return.created": "audit.actions.m_6u7t2s",
+  "sales_return.approved": "audit.actions.m_kb0bxp",
+  "recurring_invoice_schedule.created": "audit.actions.m_xaohcb",
+  "data_import.completed": "audit.actions.m_rs4k6j",
+  "pricing_rule.created": "audit.actions.m_yytv5x",
+  "notification.queued": "audit.actions.m_13n1z3d",
+  "membership.role_changed": "audit.actions.m_l1k3nf",
+  "membership.removed": "audit.actions.m_1tlmi9r",
+  "employee.created": "audit.actions.m_5gb65j",
+  "employee.updated": "audit.actions.m_s6fn06",
+  "payroll.created": "audit.actions.m_9py368",
+  "payroll.updated": "audit.actions.m_fwgers",
+  "payroll.approved": "audit.actions.m_471o6f",
+  "payroll.paid": "audit.actions.m_a3700r",
+  "platform.business.activated": "audit.actions.m_1yeuyii",
+  "platform.business.deactivated": "audit.actions.m_19x7oma",
+  "platform.user_role.granted": "audit.actions.m_1g5x0l2",
+  "platform.user_role.revoked": "audit.actions.m_1a0g454"
 };
 
-const AUDIT_TARGET_LABELS: Record<string, { ar: string; en: string }> = {
-  invoice: { ar: 'فاتورة', en: 'Invoice' },
-  payment: { ar: 'دفعة', en: 'Payment' },
-  expense: { ar: 'مصروف', en: 'Expense' },
-  customer: { ar: 'عميل', en: 'Customer' },
-  product: { ar: 'منتج', en: 'Product' },
-  supplier: { ar: 'مورد', en: 'Supplier' },
-  stock_movement: { ar: 'حركة مخزون', en: 'Stock movement' },
-  purchase_order: { ar: 'أمر شراء', en: 'Purchase order' },
-  sales_return: { ar: 'مرتجع بيع', en: 'Sales return' },
-  recurring_invoice_schedule: { ar: 'جدول فاتورة دورية', en: 'Recurring invoice schedule' },
-  import_job: { ar: 'عملية استيراد', en: 'Import job' },
-  pricing_rule: { ar: 'قاعدة تسعير', en: 'Pricing rule' },
-  business: { ar: 'نشاط تجاري', en: 'Business' },
-  notification: { ar: 'إشعار', en: 'Notification' },
-  business_membership: { ar: 'عضوية مساحة العمل', en: 'Workspace membership' },
-  membership: { ar: 'عضوية', en: 'Membership' },
-  employee: { ar: 'موظف', en: 'Employee' },
-  payroll: { ar: 'مرتب', en: 'Payroll' },
+const AUDIT_TARGET_KEYS: TranslationKeyMap = {
+  "invoice": "audit.targets.m_1nfhuv2",
+  "payment": "audit.targets.m_p9fxzd",
+  "expense": "audit.targets.m_q7obp1",
+  "customer": "audit.targets.m_1uow5er",
+  "product": "audit.targets.m_13rez2z",
+  "supplier": "audit.targets.m_1ec9f70",
+  "stock_movement": "audit.targets.m_1yixbf5",
+  "purchase_order": "audit.targets.m_zu2vq6",
+  "sales_return": "audit.targets.m_1b010yp",
+  "recurring_invoice_schedule": "audit.targets.m_3pds34",
+  "import_job": "audit.targets.m_g2eok7",
+  "pricing_rule": "audit.targets.m_9ckn2u",
+  "business": "audit.targets.m_1evo6p1",
+  "notification": "audit.targets.m_1cj9t7u",
+  "business_membership": "audit.targets.m_1ygj3zy",
+  "membership": "audit.targets.m_5zgvw5",
+  "employee": "audit.targets.m_13tf6tx",
+  "payroll": "audit.targets.m_xby7uc"
 };
 
-export function auditActionLabel(action: string, language: AuditLanguage): string {
-  return AUDIT_ACTION_LABELS[action]?.[language] || action;
+export function auditActionLabel(action: string): string {
+  return AUDIT_ACTION_KEYS[action] || action;
 }
 
-export function auditTargetLabel(target: string, language: AuditLanguage): string {
-  return AUDIT_TARGET_LABELS[target]?.[language] || target;
+export function auditTargetLabel(target: string): string {
+  return AUDIT_TARGET_KEYS[target] || target;
 }

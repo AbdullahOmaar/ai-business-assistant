@@ -12,6 +12,13 @@ export interface Business {
   timezone: string;
   role?: string;
 }
+export interface BusinessInvitation {
+  id: string; email: string; role: 'staff';
+  status: 'pending' | 'accepted' | 'revoked' | 'expired';
+  expires_at: string; created_at: string | null;
+}
+export interface BusinessInvitationCreated extends BusinessInvitation { token: string; }
+export interface BusinessMembership { id: string; business_id: string; role: 'owner' | 'staff'; created_at: string | null; }
 export interface Customer { id: string; name: string; email?: string | null; phone?: string | null; }
 export interface Product { id: string; name: string; sku?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; }
 export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; outstanding_amount?: string; issue_date?: string | null; created_at?: string | null; due_date?: string | null; }
@@ -411,6 +418,23 @@ export class ApiService {
       truncated: response.headers.get('X-Export-Truncated') === 'true',
       rowCount: Number(response.headers.get('X-Export-Row-Count') || 0)
     }));
+  }
+
+  createBusinessInvitation(businessId: string, email: string): Promise<BusinessInvitationCreated> {
+    return this.request<BusinessInvitationCreated>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/invitations`, 'POST', { email },
+    );
+  }
+  businessInvitations(businessId: string): Promise<BusinessInvitation[]> {
+    return this.request<BusinessInvitation[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invitations`);
+  }
+  revokeBusinessInvitation(businessId: string, invitationId: string): Promise<void> {
+    return this.request<void>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/invitations/${encodeURIComponent(invitationId)}`, 'DELETE',
+    );
+  }
+  acceptBusinessInvitation(token: string): Promise<BusinessMembership> {
+    return this.request<BusinessMembership>('/api/v1/invitations/accept', 'POST', { token });
   }
 
   listBusinesses(): Promise<Business[]> {

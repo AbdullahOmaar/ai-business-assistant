@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandDictionaryBackedProperties, expandTranslationCalls } from './localization-test-helpers.ts';
 
 const css = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const angular = JSON.parse(readFileSync(new URL('../../angular.json', import.meta.url), 'utf8'));
-const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const app = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const localization = readFileSync(new URL('./localization.service.ts', import.meta.url), 'utf8');
 const globalStyles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
-const guide = readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8');
+const guide = expandDictionaryBackedProperties(readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8'));
 
 test('the final AIBA visual direction defines a complete semantic token foundation', () => {
   const tokens = [...css.matchAll(/^\s*(--aiba-[\w-]+)\s*:/gm)].map(match => match[1]);
@@ -77,19 +79,13 @@ test('bootstrap and global body styles allow auth reflow below the legacy 320px 
 });
 
 test('browser title and root language metadata follow the persisted locale and language toggle', () => {
-  assert.ok(app.includes(`private syncDocumentLanguage(): void {
-    document.documentElement.lang = this.language;
-    document.documentElement.dir = this.language === 'ar' ? 'rtl' : 'ltr';
-    document.title = this.t('مساعد الأعمال الذكي', 'AI Business Assistant');
-  }`));
-  const languagePreference = app.indexOf("const savedLanguage = localStorage.getItem('aba-language');");
-  assert.ok(languagePreference >= 0);
-  assert.ok(app.indexOf('this.syncDocumentLanguage();', languagePreference) > languagePreference);
-  const toggleStart = app.indexOf('toggleLanguage(): void');
-  const syncStart = app.indexOf('private syncDocumentLanguage(): void', toggleStart);
-  assert.ok(app.slice(toggleStart, syncStart).includes('this.syncDocumentLanguage();'));
-  const startupStart = app.indexOf('async initializeApp(): Promise<void>');
-  assert.ok(app.slice(startupStart).includes('this.syncDocumentLanguage();'));
+  assert.match(localization, /document\.documentElement\.lang = this\.languageValue/);
+  assert.match(localization, /document\.documentElement\.dir = this\.direction/);
+  assert.match(localization, /document\.title = this\.translate\('common\.app_title'\)/);
+  assert.match(localization, /localStorage\.getItem\('aba-language'\)/);
+  assert.match(localization, /firstValueFrom\(this\.translations\.use\(requested\)\)/);
+  assert.match(app, /this\.localization\.setLanguage\(nextLanguage\)/);
+  assert.match(app, /this\.language = language/);
 });
 
 test('Angular loads the design system after the existing application stylesheet', () => {

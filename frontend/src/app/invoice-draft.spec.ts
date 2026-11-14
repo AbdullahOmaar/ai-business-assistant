@@ -4,7 +4,6 @@ import {
   InvoiceDraftOutcomeVault,
   findInvoiceDraftRecoveryMatch,
   invoiceDraftLinesFromExisting,
-  localizeInvoiceDraftValidationMessage,
   removeInvoiceDraftLine,
   toInvoiceDraftPayload,
   validateInvoiceDraft,
@@ -45,19 +44,19 @@ test('builds a mixed product/service request without client-calculated totals or
 });
 
 test('accepts the 64-character persisted invoice number limit and rejects longer values', () => {
-  assert.match(validateInvoiceDraft({ ...validInput(), invoice_number: ' ' }, products, customers) ?? '', /invoice number/i);
+  assert.match(validateInvoiceDraft({ ...validInput(), invoice_number: ' ' }, products, customers) ?? '', /invoiceDraft\.validation\.invoiceNumber/);
   assert.equal(validateInvoiceDraft({ ...validInput(), invoice_number: 'x'.repeat(64) }, products, customers), null);
-  assert.match(validateInvoiceDraft({ ...validInput(), invoice_number: 'x'.repeat(65) }, products, customers) ?? '', /invoice number/i);
+  assert.match(validateInvoiceDraft({ ...validInput(), invoice_number: 'x'.repeat(65) }, products, customers) ?? '', /invoiceDraft\.validation\.invoiceNumber/);
 });
 
 test('rejects missing or foreign customer references', () => {
-  assert.match(validateInvoiceDraft({ ...validInput(), customer_id: '' }, products, customers) ?? '', /customer/i);
-  assert.match(validateInvoiceDraft({ ...validInput(), customer_id: 'other' }, products, customers) ?? '', /customer/i);
+  assert.match(validateInvoiceDraft({ ...validInput(), customer_id: '' }, products, customers) ?? '', /invoiceDraft\.validation\.customer/);
+  assert.match(validateInvoiceDraft({ ...validInput(), customer_id: 'other' }, products, customers) ?? '', /invoiceDraft\.validation\.customer/);
 });
 
 test('rejects invalid currency and empty line lists', () => {
-  assert.match(validateInvoiceDraft({ ...validInput(), currency_code: 'EG' }, products, customers) ?? '', /currency/i);
-  assert.match(validateInvoiceDraft(validInput([]), products, customers) ?? '', /at least one/i);
+  assert.match(validateInvoiceDraft({ ...validInput(), currency_code: 'EG' }, products, customers) ?? '', /invoiceDraft\.validation\.currency/);
+  assert.match(validateInvoiceDraft(validInput([]), products, customers) ?? '', /invoiceDraft\.validation\.atLeastOneLine/);
 });
 
 test('rejects non-positive and over-precision quantities', () => {
@@ -68,14 +67,14 @@ test('rejects non-positive and over-precision quantities', () => {
 });
 
 test('rejects a product that is not in the supplied business catalog', () => {
-  assert.match(validateInvoiceDraft(validInput([{ ...productLine, product_id: 'foreign' }]), products, customers) ?? '', /catalog product/i);
+  assert.match(validateInvoiceDraft(validInput([{ ...productLine, product_id: 'foreign' }]), products, customers) ?? '', /invoiceDraft\.validation\.catalogProduct/);
 });
 
 test('requires manual service description and a non-negative two-decimal unit price', () => {
   for (const unit_price of ['', '-1', '1.001', '1e2']) {
     assert.ok(validateInvoiceDraft(validInput([{ ...manualLine, unit_price }]), products, customers));
   }
-  assert.match(validateInvoiceDraft(validInput([{ ...manualLine, description: ' ' }]), products, customers) ?? '', /description/i);
+  assert.match(validateInvoiceDraft(validInput([{ ...manualLine, description: ' ' }]), products, customers) ?? '', /invoiceDraft\.validation\.manualDescription/);
 });
 
 test('preserves input strings and order in the server request', () => {
@@ -98,7 +97,7 @@ test('preserves invoice notes in the draft payload and enforces the API length l
   const payload = toInvoiceDraftPayload({ ...validInput(), notes: '  Call before delivery  ' }, products, customers);
   assert.equal(payload.notes, 'Call before delivery');
   assert.equal(toInvoiceDraftPayload({ ...validInput(), notes: '   ' }, products, customers).notes, null);
-  assert.match(validateInvoiceDraft({ ...validInput(), notes: 'x'.repeat(2001) }, products, customers) ?? '', /notes/i);
+  assert.match(validateInvoiceDraft({ ...validInput(), notes: 'x'.repeat(2001) }, products, customers) ?? '', /invoiceDraft\.validation\.notesLength/);
   assert.equal(validateInvoiceDraft({ ...validInput(), notes: 'x'.repeat(2000) }, products, customers), null);
 });
 
@@ -106,7 +105,7 @@ test('matches the API maximum of 500 invoice lines', () => {
   const lines = Array.from({ length: 501 }, (_, index) => ({
     ...productLine, id: 'line-' + index,
   }));
-  assert.match(validateInvoiceDraft(validInput(lines), products, customers) ?? '', /500 lines/i);
+  assert.match(validateInvoiceDraft(validInput(lines), products, customers) ?? '', /invoiceDraft\.validation\.lineLimit/);
 });
 
 test('rejects whole-number precision beyond the API decimal limits', () => {
@@ -114,14 +113,6 @@ test('rejects whole-number precision beyond the API decimal limits', () => {
   assert.ok(validateInvoiceDraft(validInput([{ ...manualLine, unit_price: '1000000000000' }]), products, customers));
   assert.equal(validateInvoiceDraft(validInput([{ ...productLine, quantity: '99999999999.999' }]), products, customers), null);
   assert.equal(validateInvoiceDraft(validInput([{ ...manualLine, unit_price: '999999999999.99' }]), products, customers), null);
-});
-
-test('localizes known validation feedback and preserves unknown fallback', () => {
-  assert.equal(localizeInvoiceDraftValidationMessage('Enter an invoice number of 1 to 64 characters.', 'ar'), 'أدخل رقم فاتورة من حرف إلى 64 حرفًا.');
-  assert.equal(localizeInvoiceDraftValidationMessage('Choose a valid customer.', 'ar'), 'اختَر عميلًا صحيحًا.');
-  assert.equal(localizeInvoiceDraftValidationMessage('An invoice cannot contain more than 500 lines.', 'ar'), 'لا يمكن أن تحتوي الفاتورة على أكثر من 500 بند.');
-  assert.equal(localizeInvoiceDraftValidationMessage('unknown', 'ar'), 'unknown');
-  assert.equal(localizeInvoiceDraftValidationMessage('Choose a valid customer.', 'en'), 'Choose a valid customer.');
 });
 
 
@@ -166,7 +157,7 @@ test('keeps invoice line descriptions within the persisted 300-character column 
   );
   assert.match(
     validateInvoiceDraft(validInput([{ ...productLine, description: description301 }]), products, customers) ?? '',
-    /300 characters/i,
+    /invoiceDraft\.validation\.descriptionLength/,
   );
   assert.equal(
     validateInvoiceDraft(validInput([{ ...manualLine, description: description300 }]), products, customers),
@@ -174,7 +165,7 @@ test('keeps invoice line descriptions within the persisted 300-character column 
   );
   assert.match(
     validateInvoiceDraft(validInput([{ ...manualLine, description: description301 }]), products, customers) ?? '',
-    /300 characters/i,
+    /invoiceDraft\.validation\.descriptionLength/,
   );
 });
 

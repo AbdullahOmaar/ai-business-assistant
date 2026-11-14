@@ -91,6 +91,37 @@ class BusinessMembership(Base):
     business: Mapped[Business] = relationship(back_populates="memberships")
 
 
+class BusinessInvitation(Base):
+    """Single-use, email-bound invitation to join one workspace as STAFF."""
+
+    __tablename__ = "business_invitations"
+    __table_args__ = (
+        UniqueConstraint("token_hash", name="uq_business_invitation_token_hash"),
+        CheckConstraint(
+            "status IN ('pending', 'accepted', 'revoked', 'expired')",
+            name="ck_business_invitation_status",
+        ),
+        Index("ix_business_invitations_business_status", "business_id", "status"),
+        Index("ix_business_invitations_business_email", "business_id", "target_email"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    target_email: Mapped[str] = mapped_column(String(254), nullable=False)
+    token_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    invited_by_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    accepted_subject: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class Product(Base):
     """Business-scoped catalog item; stock quantity is not stored on this row."""
 

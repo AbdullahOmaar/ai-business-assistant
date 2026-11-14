@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandDictionaryBackedProperties, expandTranslationCalls } from './localization-test-helpers.ts';
 
-const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
-const component = readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8');
+const app = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const component = expandTranslationCalls(readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8'));
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
-const guide = readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8');
+const guide = expandDictionaryBackedProperties(readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8'));
 const access = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
 const catalogue = readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8');
 
@@ -34,7 +35,7 @@ test('employee workflows expose localized create, edit, deactivate, search, and 
   assert.match(component, /onEmployeeRecordAction\(\$event\)/);
   assert.match(component, /onPayrollRecordAction\(\$event\)/);
   assert.match(component, /formatPayrollPayoutDate\(payroll\.paid_at\)/);
-  assert.match(component, /Intl\.DateTimeFormat/);
+  assert.match(component, /this\.localization\.formatDate\(value, \{ dateStyle: 'medium' \}\)/);
   assert.match(component, /t\('الموظفون والمرتبات', 'Employees & payroll'\)/);
   assert.match(component, /Net pay is calculated on the server/);
   assert.match(component, /A different owner must approve the payroll draft/);
@@ -223,15 +224,15 @@ test('mobile payroll keeps its period filter with history and restores focus aft
 });
 
 test('employee table action heading and remaining record loading descriptions respect Arabic locale', () => {
-  assert.match(component, /\[actionsHeading\]="t\('الإجراءات','Actions'\)"/);
+  assert.match(component, /\[actionsHeading\]="t\('الإجراءات',\s*'Actions'\)"/);
   for (const fragment of [
     "[loadingDescription]=\"t('جارٍ تحميل الإشعارات…', 'Loading notifications…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل الجداول الدورية…', 'Loading recurring schedules…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل المدفوعات…', 'Loading payments…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل سجل النشاط…', 'Loading activity log…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل المصروفات…', 'Loading expenses…')\"",
-    "this.t('عميل الدفعة:','Payment customer:')",
-    "this.t('عميل الفاتورة:','Invoice customer:')",
+    "t('عميل الدفعة:', 'Payment customer:')",
+    "t('عميل الفاتورة:', 'Invoice customer:')",
   ]) assert.ok(app.includes(fragment), 'missing localized record UX: '+fragment);
 });
 

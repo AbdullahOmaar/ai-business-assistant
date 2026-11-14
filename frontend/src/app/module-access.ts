@@ -2,10 +2,10 @@ export type WorkspaceModuleTab =
   | 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses'
   | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity'
   | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring'
-  | 'notifications' | 'health';
+  | 'notifications' | 'health' | 'team';
 
 const OWNER_ONLY_TABS = new Set<WorkspaceModuleTab>([
-  'payments', 'employees', 'taxes', 'audit', 'integrity', 'health',
+  'payments', 'employees', 'taxes', 'audit', 'integrity', 'health', 'team',
 ]);
 
 export function canAccessWorkspaceTab(
@@ -22,7 +22,7 @@ export function canAccessWorkspaceTab(
 const MOBILE_MORE_TABS = new Set<WorkspaceModuleTab>([
   'products', 'payments', 'expenses', 'employees', 'assistant', 'reports',
   'audit', 'platform-admin', 'release-guide', 'suppliers', 'purchases',
-  'recurring', 'notifications', 'health', 'integrity', 'taxes',
+  'recurring', 'notifications', 'health', 'integrity', 'taxes', 'team',
 ]);
 
 /** Whether the mobile More navigation item should be active for the current tab. */

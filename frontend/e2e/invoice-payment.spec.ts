@@ -657,7 +657,7 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   await assertMobileEditorActionsAboveNav();
   await page.screenshot({ path: testInfo.outputPath('invoice-editor-390-ltr.png'), fullPage: false });
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.locator('.user-area').getByRole('button', { name: 'العربية', exact: true }).click();
+  await page.locator('.user-area .language-toggle').click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'rtl');
   await page.setViewportSize({ width: 320, height: 844 });
   await assertMobileEditorActionsAboveNav();
@@ -666,7 +666,7 @@ test('OWNER creates and edits a mixed product/service draft using server-returne
   await assertMobileEditorActionsAboveNav();
   await page.screenshot({ path: testInfo.outputPath('invoice-editor-390-rtl.png'), fullPage: false });
   await page.setViewportSize({ width: 1280, height: 900 });
-  await page.locator('.user-area').getByRole('button', { name: 'English', exact: true }).click();
+  await page.locator('.user-area .language-toggle').click();
   await expect(page.locator('.shell')).toHaveAttribute('dir', 'ltr');
   await page.getByRole('button', { name: 'Save draft', exact: true }).click();
 

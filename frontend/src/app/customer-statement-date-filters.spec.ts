@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
 
-const componentSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const componentSource = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 
 test('customer statement exposes accessible date-range controls and clear/apply actions', () => {
