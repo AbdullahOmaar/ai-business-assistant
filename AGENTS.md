@@ -59,6 +59,34 @@ Specific Owner approval remains required for irreversible/destructive data delet
 
 ---
 
+# OWNER DECISION — SINGLE-BATCH LONG-RUN EXECUTION & BLOCKER FALLTHROUGH — 2026-11-14
+
+Default mode is to complete the WHOLE user-requested outcome in one continuous execution batch, not one small step followed by a report. “Build all screens” means every in-scope screen/route/state and its integration, not a sample. MASTER remains accountable until the full parent outcome is closed.
+
+## Required execution behavior
+- Translate the request + canonical acceptance criteria into a complete deliverable queue: screens/routes, workflows, states, responsive/RTL variants, dependencies, defects, integrations and closeout. Inspect the repo/backlog to discover omissions; do not silently reduce scope.
+- Group the work into milestones/subtasks for control, but keep one parent outcome and one accountable owner. Record progress in the existing canonical Notion task / TASKS.md; do not create a parallel tracker.
+- Work through every Ready item sequentially or in safe parallel. Implement to acceptance, integrate, inspect actual behavior, repair defects, mark Done with evidence, then immediately start the next Ready item. Do not wait for “continue” between items.
+- Progress reports are checkpoints only. Do not end with a plan, audit, first error, partial screen set or status-only response while safe actionable work remains.
+- During implementation use focused feedback only when useful. Defer broad suites/build/CI to the coherent final milestone; after a failure fix the cause and rerun only affected checks.
+
+## Blocker fallthrough protocol
+A failed command, first approach, missing preferred tool, network/quota issue, or one blocked subtask does not stop the batch.
+1. Diagnose from actual logs/source/provider evidence and classify code defect vs environment/access/quota/dependency.
+2. Try materially different safe alternatives: repo pattern, equivalent available tool/provider, narrower operation, dependency split or reversible fallback. Never repeat the same failed approach unchanged.
+3. Make up to three distinct evidence-led approaches when feasible; stop sooner when more attempts are unsafe, impossible or redundant.
+4. If unresolved, mark only that item BLOCKED with exact cause, approaches/results, required input/resource and unblock condition.
+5. Immediately continue every independent Ready item. Revisit blocked items after the rest because later work may remove the blocker.
+6. Stop the whole batch only if the blocker invalidates the shared foundation for all remaining work, creates material safety/security/data-integrity risk, or requires a missing high-impact Owner decision. Explain why no safe independent work remains.
+
+## Batch closeout
+Reconcile every item in the original request/plan as Done, Blocked, Not Applicable (with evidence), or Cancelled (with reason). Never leave silent Pending/In Progress items. Complete all Ready work even when some items are Blocked. Do not call the parent outcome complete while required items remain blocked/unverified. Report completed work, blocked items + alternatives tried, files/branch/SHA, relevant final checks + NOT RUN, and exact next external input. Never ask “continue?” when work remains actionable.
+
+## Execution-window boundary
+Maximize continuous work within the available authorized run. These instructions cannot override platform turn/tool/token/time limits, paused chats or unavailable agent runtimes. When a run must end, write a durable queue checkpoint with the exact next item. On resume, read it and continue without repeating discovery or asking the user to restate the task.
+
+---
+
 # Autonomous Engineering Rules
 
 These rules apply to every coding agent and every task in this repository. Read this file before making changes.
