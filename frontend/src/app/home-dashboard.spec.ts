@@ -28,17 +28,17 @@ test('Home keeps the canonical four source-backed metrics and currency-separated
   assert.equal(home.split('(keydown.space)="$event.preventDefault(); setTab(').length - 1, 4,
     'each KPI card supports Space activation');
 
-  assert.match(home, /item\\.currency_code/);
+  assert.match(home, /item\.currency_code/);
   assert.equal(home.split('<bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi>').length - 1, 4,
     'each currency amount must retain its LTR number/code order inside an isolated bidi run');
   assert.equal(home.split('<bdi dir="ltr">{{ item.count }}</bdi>').length - 1, 3,
     'only the three source-backed metric counts are rendered and isolated');
 
-  assert.match(home, /item\\.count/);
+  assert.match(home, /item\.count/);
   const outstandingStart = home.indexOf("dashboard.outstanding_balances");
   const outstandingEnd = home.indexOf("</aba-metric-card>", outstandingStart);
   const outstandingCard = home.slice(outstandingStart, outstandingEnd);
-  assert.doesNotMatch(outstandingCard, /item\\.count/,
+  assert.doesNotMatch(outstandingCard, /item\.count/,
     'the API does not return an outstanding-balance count');
 });
 
