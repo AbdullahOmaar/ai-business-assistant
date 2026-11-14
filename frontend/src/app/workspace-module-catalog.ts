@@ -41,6 +41,7 @@ export const WORKSPACE_MODULE_CATALOG: readonly WorkspaceModuleCard[] = [
   { tab: 'payments', mobileGroup: 'finance-reports', icon: '↗', titleKey: "catalog.m_y1gowi", descriptionKey: "catalog.m_1uighj4" },
   { tab: 'expenses', mobileGroup: 'finance-reports', icon: '−', titleKey: "catalog.m_l71hva", descriptionKey: "catalog.m_1wkl48e" },
   { tab: 'employees', mobileGroup: 'team-admin', icon: '♙', titleKey: "catalog.m_4h0vw6", descriptionKey: "catalog.m_y7tfpx" },
+  { tab: 'team', mobileGroup: 'team-admin', icon: '♧', titleKey: 'catalog.team.title', descriptionKey: 'catalog.team.description' },
   { tab: 'assistant', mobileGroup: 'assistant-tools', icon: '✦', titleKey: "catalog.m_dzn3ev", descriptionKey: "catalog.m_3pvkiv" },
   { tab: 'reports', mobileGroup: 'finance-reports', icon: '∑', titleKey: "catalog.m_1k2jewg", descriptionKey: "catalog.m_3v76d2" },
   { tab: 'taxes', mobileGroup: 'finance-reports', icon: '%', titleKey: "catalog.m_nxo405", descriptionKey: "catalog.m_18eozy2" },

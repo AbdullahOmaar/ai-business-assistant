@@ -1318,7 +1318,11 @@
     "m_10k7813": "Purchase orders and receiving",
     "m_1tqh38n": "Recurring billing schedules",
     "m_14nrzc4": "Notification queue and statuses",
-    "m_j8aadc": "Operational health indicators"
+    "m_j8aadc": "Operational health indicators",
+    "team": {
+      "title": "Team",
+      "description": "Manage workspace members and invitations"
+    }
   },
   "audit": {
     "actions": {
@@ -1653,8 +1657,7 @@
     "paymentAllocation": {
       "allocated": "Allocated",
       "unallocated": "Unallocated"
-    }
-  ,
+    },
     "currencyName": {
       "egp": "Egyptian Pound",
       "usd": "US Dollar",

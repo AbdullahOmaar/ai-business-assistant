@@ -26,13 +26,14 @@ import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecord
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 import { AbaMobileAppHeaderComponent } from './shared/ui/aba-mobile-app-header.component';
 import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
+import { WorkspaceInvitationsComponent } from './workspace-invitations.component';
 import { findInvoiceDraftRecoveryMatch, invoiceDraftLinesFromExisting } from './invoice-draft';
 import type { InvoiceDraftLine, InvoiceDraftPayload, InvoiceDraftServerSummary, InvoiceDraftOutcomeSnapshot } from './invoice-draft';
 import { InvoiceDraftOutcomeVault } from './invoice-draft';
 import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot, PaymentRetryVault } from './payment-retry-snapshot';
 import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
 
-type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health';
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health' | 'team';
 type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recurring';
 
 const WORKSPACE_RECORD_PAGE_SIZE = 100;
@@ -40,7 +41,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerDirectoryComponent, ProductCatalogComponent, InvoiceDraftEditorComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerDirectoryComponent, ProductCatalogComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -136,6 +137,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_xpe4pk')" [attr.title]="t('ui.m_xpe4pk')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('ui.m_xpe4pk') }}</span></button>
           <button class="nav-item" [attr.aria-label]="t('ui.m_tvy79l')" [attr.title]="t('ui.m_tvy79l')" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('ui.m_tvy79l') }}</span></button>
           @if (canAccessTab('employees')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1whxhp7')" [attr.title]="t('ui.m_1whxhp7')" [class.active]="tab === 'employees'" [attr.aria-current]="tab === 'employees' ? 'page' : null" (click)="setTab('employees')"><span class="nav-icon" aria-hidden="true">♙</span><span>{{ t('ui.m_1whxhp7') }}</span></button> }
+          @if (canAccessTab('team')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('catalog.team.title')" [attr.title]="t('catalog.team.title')" [class.active]="tab === 'team'" [attr.aria-current]="tab === 'team' ? 'page' : null" (click)="setTab('team')"><span class="nav-icon" aria-hidden="true">♧</span><span>{{ t('catalog.team.title') }}</span></button> }
           @if (canAccessTab('platform-admin')) { <button class="nav-item platform-admin-nav" [attr.aria-label]="t('ui.m_1gkme2m')" [attr.title]="t('ui.m_1gkme2m')" [class.active]="tab === 'platform-admin'" [attr.aria-current]="tab === 'platform-admin' ? 'page' : null" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('ui.m_1gkme2m') }}</span></button> }
 @if (canAccessTab('audit')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_hd46sj')" [attr.title]="t('ui.m_hd46sj')" [class.active]="tab === 'audit'" [attr.aria-current]="tab === 'audit' ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('ui.m_hd46sj') }}</span></button> }
                     @if (canAccessTab('payments')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_14ms9re')" [attr.title]="t('ui.m_14ms9re')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('ui.m_14ms9re') }}</span></button> }
@@ -257,6 +259,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               (signOutRequested)="logout()" />
 
             @if (tab === 'overview') {
+              <aba-workspace-invitations mode="accept" [businessId]="business?.id || null" [language]="language" (accepted)="loadBusinesses()" />
+
               @if (dashboard) {
                 <section class="dashboard-period" [attr.aria-label]="t('ui.m_14yh7ls')">
                   <div class="dashboard-period__heading">
@@ -583,6 +587,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               </section>
             }
 
+            @if (tab === 'team' && business?.id) {
+              <aba-workspace-invitations mode="manage" [businessId]="business.id" [language]="language" />
+            }
             @if (tab === 'customers') {
               <section abaCard class="panel">
                 <aba-section-header [title]=" t('ui.m_1lifkl9') " [description]=" t('ui.m_15gmqko') "><span class="count">{{ filteredCustomers.length }} / {{ customers.length }} {{ t('ui.m_15kaq4w') }}</span></aba-section-header>
