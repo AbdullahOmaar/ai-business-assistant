@@ -16,7 +16,7 @@ import { ReleaseGuideComponent } from './release-guide.component';
 import { CustomerDirectoryComponent } from './customer-directory.component';
 import { ProductCatalogComponent } from './product-catalog.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
-import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor, type WorkspaceTab } from './core/navigation/workspace-route';
+import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
 import { filterWorkspaceModules, selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
 import { AbaConfirmDialogComponent } from './shared/ui/aba-confirm-dialog.component';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
@@ -34,7 +34,7 @@ import { InvoiceDraftOutcomeVault } from './invoice-draft';
 import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot, PaymentRetryVault } from './payment-retry-snapshot';
 import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
 
-type Tab = WorkspaceTab;
+type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health' | 'team';
 type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recurring';
 
 const WORKSPACE_RECORD_PAGE_SIZE = 100;
@@ -2259,14 +2259,12 @@ export class AppComponent implements OnInit, OnDestroy {
       const workspaceAccessChanged = this.business?.id !== chosen.id || this.business?.role !== chosen.role;
       this.selectedBusinessId = chosen.id;
       this.business = chosen;
-      // Clear stale tenant data before applying a pending deep link. On first auth
-      // resolution, keep the requested URL intact so it can be authorized below.
-      if (workspaceAccessChanged) {
-        this.clearWorkspaceData();
-        if (this.initialRouteApplied) this.syncWorkspaceUrl('overview', true);
-      }
       // Reuse the same access policy for direct URLs and interactive navigation.
       if (!this.canAccessTab(this.tab)) this.setTab('overview');
+      // Clear stale tenant data before applying a pending deep link. On first auth
+      // resolution, keep the requested URL intact so it can be authorized below.
+      if (workspaceAccessChanged) this.clearWorkspaceData();
+      if (workspaceAccessChanged && this.initialRouteApplied) this.syncWorkspaceUrl('overview', true);
       this.applyInitialWorkspaceRoute();
       await this.loadWorkspaceData();
     } catch (error) {
