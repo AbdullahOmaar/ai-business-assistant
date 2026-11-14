@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService } from './api.service';
+import { ApiService, LocalizationService } from './api.service';
 import type { BusinessInvitation, BusinessInvitationCreated } from './api.service';
 
 @Component({
@@ -12,41 +12,41 @@ import type { BusinessInvitation, BusinessInvitationCreated } from './api.servic
     <section class="team-card" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
       @if (mode === 'manage') {
         <header class="team-heading">
-          <div><p class="eyebrow">{{ tr('إدارة الوصول', 'ACCESS MANAGEMENT') }}</p><h2>{{ tr('فريق مساحة العمل', 'Workspace team') }}</h2><p>{{ tr('ادعُ أعضاء جدد بصلاحية موظف، وتابع الدعوات أو ألغها.', 'Invite staff members, track pending invitations, or revoke access before acceptance.') }}</p></div>
-          <span class="team-role">{{ tr('المالك فقط', 'Owner only') }}</span>
+          <div><p class="eyebrow">{{ t('access_management') }}</p><h2>{{ t('title') }}</h2><p>{{ t('description') }}</p></div>
+          <span class="team-role">{{ t('owner_only') }}</span>
         </header>
         <form class="invite-form" (ngSubmit)="createInvitation()">
-          <label>{{ tr('البريد الإلكتروني للموظف', 'Staff email address') }}
-            <input type="email" name="inviteEmail" [(ngModel)]="inviteEmail" required maxlength="254" autocomplete="email" [placeholder]="tr('name@example.com', 'name@example.com')">
+          <label>{{ t('staff_email') }}
+            <input type="email" name="inviteEmail" [(ngModel)]="inviteEmail" required maxlength="254" autocomplete="email" [placeholder]="t('email_placeholder')">
           </label>
-          <button class="primary" type="submit" [disabled]="loading || !inviteEmail.trim()">{{ loading ? tr('جاري التنفيذ…', 'Working…') : tr('إنشاء دعوة', 'Create invitation') }}</button>
+          <button class="primary" type="submit" [disabled]="loading || !inviteEmail.trim()">{{ loading ? t('working') : t('create_invitation') }}</button>
         </form>
         @if (createdInviteLink) {
           <div class="invite-created" role="status">
-            <strong>{{ tr('الدعوة جاهزة للمشاركة', 'Invitation ready to share') }}</strong>
-            <p>{{ tr('انسخ الرابط وأرسله للموظف بنفسك. الرابط صالح لمدة 72 ساعة ويُستخدم مرة واحدة.', 'Copy and share this link manually. It expires in 72 hours and can be used once.') }}</p>
-            <div class="copy-row"><input aria-label="Invitation link" readonly [value]="createdInviteLink"><button type="button" class="secondary" (click)="copyInviteLink()">{{ copied ? tr('تم النسخ', 'Copied') : tr('نسخ الرابط', 'Copy link') }}</button></div>
+            <strong>{{ t('invitation_ready') }}</strong>
+            <p>{{ t('share_manually') }}</p>
+            <div class="copy-row"><input [attr.aria-label]="t('invitation_link')" readonly [value]="createdInviteLink"><button type="button" class="secondary" (click)="copyInviteLink()">{{ copied ? t('copied') : t('copy_link') }}</button></div>
           </div>
         }
-        <div class="team-list-heading"><h3>{{ tr('الدعوات', 'Invitations') }}</h3><button type="button" class="secondary" (click)="loadInvitations()" [disabled]="loading">{{ tr('تحديث', 'Refresh') }}</button></div>
+        <div class="team-list-heading"><h3>{{ t('invitations') }}</h3><button type="button" class="secondary" (click)="loadInvitations()" [disabled]="loading">{{ t('refresh') }}</button></div>
         @if (invitations.length) {
           <div class="invitation-list">
             @for (invitation of invitations; track invitation.id) {
               <article class="invitation-row">
-                <div class="invitation-main"><strong>{{ invitation.email }}</strong><small>{{ tr('موظف', 'Staff') }} · {{ formatDate(invitation.expires_at) }}</small></div>
+                <div class="invitation-main"><strong>{{ invitation.email }}</strong><small>{{ t('staff') }} · {{ formatDate(invitation.expires_at) }}</small></div>
                 <span class="status" [class.pending]="invitation.status === 'pending'">{{ statusLabel(invitation.status) }}</span>
-                @if (invitation.status === 'pending') { <button type="button" class="danger-link" (click)="revokeInvitation(invitation)" [disabled]="loading">{{ tr('إلغاء', 'Revoke') }}</button> }
+                @if (invitation.status === 'pending') { <button type="button" class="danger-link" (click)="revokeInvitation(invitation)" [disabled]="loading">{{ t('revoke') }}</button> }
               </article>
             }
           </div>
         } @else {
-          <p class="empty">{{ tr('لا توجد دعوات حتى الآن.', 'No invitations yet.') }}</p>
+          <p class="empty">{{ t('no_invitations') }}</p>
         }
       } @else if (acceptVisible) {
-        <header class="team-heading"><div><p class="eyebrow">{{ tr('الانضمام لمساحة عمل', 'WORKSPACE ACCESS') }}</p><h2>{{ tr('لديك دعوة؟', 'Have an invitation?') }}</h2><p>{{ tr('سجّل الدخول بنفس البريد الإلكتروني الموثق الذي استقبل الدعوة، ثم أدخل رمز الدعوة أو افتح رابطها.', 'Sign in with the same verified email address that received the invitation, then paste the token or open the invitation link.') }}</p></div></header>
+        <header class="team-heading"><div><p class="eyebrow">{{ t('workspace_access') }}</p><h2>{{ t('have_invitation') }}</h2><p>{{ t('accept_instructions') }}</p></div></header>
         <form class="invite-form accept-form" (ngSubmit)="acceptInvitation()">
-          <label>{{ tr('رمز الدعوة', 'Invitation token') }}<input name="inviteToken" [(ngModel)]="inviteToken" required minlength="32" autocomplete="off"></label>
-          <button class="primary" type="submit" [disabled]="loading || inviteToken.trim().length < 32">{{ loading ? tr('جاري الانضمام…', 'Joining…') : tr('قبول الدعوة', 'Accept invitation') }}</button>
+          <label>{{ t('invitation_token') }}<input name="inviteToken" [(ngModel)]="inviteToken" required minlength="32" autocomplete="off"></label>
+          <button class="primary" type="submit" [disabled]="loading || inviteToken.trim().length < 32">{{ loading ? t('joining') : t('accept_invitation') }}</button>
         </form>
       }
       @if (error) { <p class="feedback error" role="alert">{{ error }}</p> }
@@ -77,7 +77,7 @@ export class WorkspaceInvitationsComponent implements OnChanges {
   success = '';
   acceptVisible = false;
 
-  constructor(private readonly api: ApiService) {}
+  constructor(private readonly api: ApiService, private readonly localization: LocalizationService) {}
 
   ngOnChanges(): void {
     if (this.mode === 'manage' && this.businessId) void this.loadInvitations();
@@ -89,13 +89,13 @@ export class WorkspaceInvitationsComponent implements OnChanges {
     }
   }
 
-  tr(ar: string, en: string): string { return this.language === 'ar' ? ar : en; }
+  t(key: string): string { return this.localization.translate('team.' + key); }
 
   async loadInvitations(): Promise<void> {
     if (!this.businessId) return;
     this.loading = true; this.error = '';
     try { this.invitations = await this.api.businessInvitations(this.businessId); }
-    catch (error) { this.error = error instanceof Error ? error.message : this.tr('تعذر تحميل الدعوات.', 'Could not load invitations.'); }
+    catch (error) { this.error = error instanceof Error ? error.message : this.t('load_error'); }
     finally { this.loading = false; }
   }
 
@@ -107,9 +107,9 @@ export class WorkspaceInvitationsComponent implements OnChanges {
       const base = typeof window !== 'undefined' ? window.location.origin + window.location.pathname : '';
       this.createdInviteLink = base ? base + '#invite=' + encodeURIComponent(created.token) : created.token;
       this.inviteEmail = '';
-      this.success = this.tr('تم إنشاء الدعوة. شارك الرابط يدويًا مع الموظف.', 'Invitation created. Share the link manually with the staff member.');
+      this.success = this.t('created_success');
       await this.loadInvitations();
-    } catch (error) { this.error = error instanceof Error ? error.message : this.tr('تعذر إنشاء الدعوة.', 'Could not create invitation.'); }
+    } catch (error) { this.error = error instanceof Error ? error.message : this.t('create_error'); }
     finally { this.loading = false; }
   }
 
@@ -118,8 +118,8 @@ export class WorkspaceInvitationsComponent implements OnChanges {
     try {
       if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(this.createdInviteLink); this.copied = true;
-      } else { this.success = this.tr('حدد الرابط وانسخه يدويًا.', 'Select and copy the link manually.'); }
-    } catch { this.success = this.tr('حدد الرابط وانسخه يدويًا.', 'Select and copy the link manually.'); }
+      } else { this.success = this.t('copy_manual'); }
+    } catch { this.success = this.t('copy_manual'); }
   }
 
   async revokeInvitation(invitation: BusinessInvitation): Promise<void> {
@@ -127,9 +127,9 @@ export class WorkspaceInvitationsComponent implements OnChanges {
     this.loading = true; this.error = ''; this.success = '';
     try {
       await this.api.revokeBusinessInvitation(this.businessId, invitation.id);
-      this.success = this.tr('تم إلغاء الدعوة.', 'Invitation revoked.');
+      this.success = this.t('revoked_success');
       await this.loadInvitations();
-    } catch (error) { this.error = error instanceof Error ? error.message : this.tr('تعذر إلغاء الدعوة.', 'Could not revoke invitation.'); }
+    } catch (error) { this.error = error instanceof Error ? error.message : this.t('revoke_error'); }
     finally { this.loading = false; }
   }
 
@@ -139,27 +139,27 @@ export class WorkspaceInvitationsComponent implements OnChanges {
     try {
       await this.api.acceptBusinessInvitation(this.inviteToken.trim());
       this.inviteToken = ''; this.acceptVisible = false;
-      this.success = this.tr('تم قبول الدعوة. جاري تحديث مساحات العمل…', 'Invitation accepted. Refreshing workspaces…');
+      this.success = this.t('accepted_success');
       if (typeof window !== 'undefined' && window.location.hash.includes('invite=')) {
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
       this.accepted.emit();
-    } catch (error) { this.error = error instanceof Error ? error.message : this.tr('تعذر قبول الدعوة. تأكد من تسجيل الدخول بالبريد الموثق الصحيح.', 'Could not accept invitation. Sign in with the matching verified email.'); }
+    } catch (error) { this.error = error instanceof Error ? error.message : this.t('accept_error'); }
     finally { this.loading = false; }
   }
 
   statusLabel(status: BusinessInvitation['status']): string {
     return ({
-      pending: this.tr('معلقة', 'Pending'),
-      accepted: this.tr('مقبولة', 'Accepted'),
-      revoked: this.tr('ملغاة', 'Revoked'),
-      expired: this.tr('منتهية', 'Expired'),
+      pending: this.t('status_pending'),
+      accepted: this.t('status_accepted'),
+      revoked: this.t('status_revoked'),
+      expired: this.t('status_expired'),
     })[status];
   }
 
   formatDate(value: string): string {
     const date = new Date(value);
     if (!Number.isFinite(date.getTime())) return '—';
-    return new Intl.DateTimeFormat(this.language === 'ar' ? 'ar-EG' : 'en', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+    return this.localization.formatDate(date, { dateStyle: 'medium', timeStyle: 'short' });
   }
 }
