@@ -3060,6 +3060,7 @@ export class AppComponent implements OnInit, OnDestroy {
   "audit": "app.pageTitle.audit",
   "integrity": "app.pageTitle.integrity",
   "release-guide": "app.pageTitle.release-guide",
+  "team": "catalog.team.title",
   "platform-admin": "app.pageTitle.platform-admin"
 };
     return this.t(keys[this.tab]);
