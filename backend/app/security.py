@@ -17,6 +17,8 @@ class AuthenticatedPrincipal:
     """Identity claims returned by a verified authentication adapter."""
 
     subject: str
+    email: str | None = None
+    email_verified: bool = False
 
 
 class AuthorizationError(PermissionError):

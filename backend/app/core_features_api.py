@@ -4,6 +4,9 @@ All routes require a host-configured trusted identity resolver and a database
 session. This module never trusts caller-provided identity claims.
 """
 from datetime import date, datetime, time, timedelta, timezone
+import hashlib
+import re
+import secrets
 from decimal import Decimal
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -16,7 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
 from app.models import (
-    AuditEvent, Business, BusinessMembership, Expense, Invoice, MembershipRole,
+    AuditEvent, Business, BusinessInvitation, BusinessMembership, Expense, Invoice, MembershipRole,
     Payment, PaymentAllocation, SalesReturn,
 )
 from app.security import (
@@ -51,6 +54,16 @@ class BusinessPatch(BaseModel):
 class MembershipRolePatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
     role: MembershipRole
+
+
+class BusinessInvitationCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    email: str = Field(min_length=3, max_length=254)
+
+
+class BusinessInvitationAccept(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    token: str = Field(min_length=32, max_length=128)
 
 
 def _serialize_business(item: Business) -> dict:
@@ -297,6 +310,307 @@ def remove_business_membership(
     except HTTPException:
         session.rollback()
         raise
+    except Exception:
+        session.rollback()
+        raise
+
+
+def _normalize_invitation_email(value: str) -> str:
+    email = value.strip().casefold()
+    if not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", email):
+        raise HTTPException(status_code=422, detail="A valid invitation email is required")
+    return email
+
+
+def _invitation_token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
+
+
+def _utc_datetime(value: datetime) -> datetime:
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
+def _serialize_invitation(item: BusinessInvitation) -> dict:
+    now = datetime.now(timezone.utc)
+    status = item.status
+    if status == "pending" and _utc_datetime(item.expires_at) <= now:
+        status = "expired"
+    return {
+        "id": str(item.id),
+        "email": item.target_email,
+        "role": MembershipRole.STAFF.value,
+        "status": status,
+        "expires_at": _utc_datetime(item.expires_at).isoformat(),
+        "created_at": _utc_datetime(item.created_at).isoformat() if item.created_at else None,
+    }
+
+
+@router.post("/businesses/{business_id}/invitations", status_code=201)
+def create_business_invitation(
+    business_id: UUID,
+    body: BusinessInvitationCreate,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Create a one-time STAFF invitation; this endpoint never sends email."""
+    email = _normalize_invitation_email(body.email)
+    now = datetime.now(timezone.utc)
+    token = secrets.token_urlsafe(32)
+    try:
+        _authorize(session, principal, business_id, owner_only=True)
+        business = session.scalars(
+            select(Business).where(
+                Business.id == business_id, Business.is_active.is_(True)
+            ).with_for_update()
+        ).one_or_none()
+        if business is None:
+            raise HTTPException(status_code=404, detail="Business not found")
+        session.expire_all()
+        _authorize(session, principal, business_id, owner_only=True)
+
+        pending_count = session.scalar(
+            select(func.count()).select_from(BusinessInvitation).where(
+                BusinessInvitation.business_id == business_id,
+                BusinessInvitation.status == "pending",
+                BusinessInvitation.expires_at > now,
+            )
+        ) or 0
+        actor_count = session.scalar(
+            select(func.count()).select_from(BusinessInvitation).where(
+                BusinessInvitation.business_id == business_id,
+                BusinessInvitation.invited_by_subject == principal.subject,
+                BusinessInvitation.created_at >= now - timedelta(hours=1),
+            )
+        ) or 0
+        if pending_count >= 10 or actor_count >= 5:
+            raise HTTPException(status_code=429, detail="Invitation limit reached; try again later")
+
+        duplicate = session.scalars(
+            select(BusinessInvitation).where(
+                BusinessInvitation.business_id == business_id,
+                BusinessInvitation.target_email == email,
+                BusinessInvitation.status == "pending",
+                BusinessInvitation.expires_at > now,
+            )
+        ).first()
+        if duplicate is not None:
+            raise HTTPException(status_code=409, detail="A pending invitation already exists for this email")
+
+        invitation = BusinessInvitation(
+            business_id=business_id,
+            target_email=email,
+            token_hash=_invitation_token_hash(token),
+            invited_by_subject=principal.subject,
+            status="pending",
+            expires_at=now + timedelta(hours=72),
+        )
+        session.add(invitation)
+        session.flush()
+        session.add(AuditEvent(
+            business_id=business_id,
+            actor_subject=principal.subject,
+            action="membership.invitation_created",
+            target_type="business_invitation",
+            target_id=str(invitation.id),
+            change_summary="STAFF invitation created",
+        ))
+        session.commit()
+        session.refresh(invitation)
+        return {**_serialize_invitation(invitation), "token": token}
+    except AuthorizationError as exc:
+        session.rollback()
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except HTTPException:
+        session.rollback()
+        raise
+    except IntegrityError as exc:
+        session.rollback()
+        raise HTTPException(status_code=409, detail="Invitation could not be created") from exc
+    except Exception:
+        session.rollback()
+        raise
+
+
+@router.get("/businesses/{business_id}/invitations")
+def list_business_invitations(
+    business_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """List invitation metadata for workspace owners; never return token material."""
+    try:
+        _authorize(session, principal, business_id, owner_only=True)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    rows = session.scalars(
+        select(BusinessInvitation)
+        .where(BusinessInvitation.business_id == business_id)
+        .order_by(BusinessInvitation.created_at.desc(), BusinessInvitation.id)
+    ).all()
+    return [_serialize_invitation(row) for row in rows]
+
+
+@router.delete("/businesses/{business_id}/invitations/{invitation_id}", status_code=204)
+def revoke_business_invitation(
+    business_id: UUID,
+    invitation_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Revoke a pending invitation; only an active workspace OWNER may do so."""
+    try:
+        _authorize(session, principal, business_id, owner_only=True)
+        business = session.scalars(
+            select(Business).where(
+                Business.id == business_id, Business.is_active.is_(True)
+            ).with_for_update()
+        ).one_or_none()
+        if business is None:
+            raise HTTPException(status_code=404, detail="Business not found")
+        session.expire_all()
+        _authorize(session, principal, business_id, owner_only=True)
+        invitation = session.scalars(
+            select(BusinessInvitation).where(
+                BusinessInvitation.id == invitation_id,
+                BusinessInvitation.business_id == business_id,
+            ).with_for_update()
+        ).one_or_none()
+        if invitation is None:
+            raise HTTPException(status_code=404, detail="Invitation not found")
+        if invitation.status == "pending":
+            if _utc_datetime(invitation.expires_at) <= datetime.now(timezone.utc):
+                invitation.status = "expired"
+            else:
+                invitation.status = "revoked"
+                invitation.revoked_at = datetime.now(timezone.utc)
+            session.add(AuditEvent(
+                business_id=business_id,
+                actor_subject=principal.subject,
+                action="membership.invitation_revoked",
+                target_type="business_invitation",
+                target_id=str(invitation.id),
+                change_summary="STAFF invitation revoked or expired",
+            ))
+        session.commit()
+        return Response(status_code=204)
+    except AuthorizationError as exc:
+        session.rollback()
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    except HTTPException:
+        session.rollback()
+        raise
+    except Exception:
+        session.rollback()
+        raise
+
+
+@router.post("/invitations/accept", status_code=201)
+def accept_business_invitation(
+    body: BusinessInvitationAccept,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Accept a single-use STAFF invite bound to the verified Firebase email."""
+    if not principal.email_verified or not principal.email:
+        raise HTTPException(status_code=403, detail="A verified email address is required")
+    email = _normalize_invitation_email(principal.email)
+    token_hash = _invitation_token_hash(body.token)
+    invitation = session.scalars(
+        select(BusinessInvitation).where(BusinessInvitation.token_hash == token_hash)
+    ).one_or_none()
+    if invitation is None:
+        raise HTTPException(status_code=404, detail="Invitation not found or no longer available")
+
+    now = datetime.now(timezone.utc)
+    try:
+        business = session.scalars(
+            select(Business).where(
+                Business.id == invitation.business_id,
+                Business.is_active.is_(True),
+            ).with_for_update()
+        ).one_or_none()
+        if business is None:
+            raise HTTPException(status_code=404, detail="Invitation not found or no longer available")
+        locked_invitation = session.scalars(
+            select(BusinessInvitation).where(
+                BusinessInvitation.id == invitation.id,
+                BusinessInvitation.business_id == business.id,
+                BusinessInvitation.token_hash == token_hash,
+            ).with_for_update()
+        ).one_or_none()
+        if locked_invitation is None or locked_invitation.status != "pending":
+            raise HTTPException(status_code=410, detail="Invitation is no longer available")
+        if _utc_datetime(locked_invitation.expires_at) <= now:
+            locked_invitation.status = "expired"
+            session.commit()
+            raise HTTPException(status_code=410, detail="Invitation has expired")
+        if locked_invitation.target_email != email:
+            raise HTTPException(status_code=403, detail="Invitation email does not match the verified account")
+
+        session.expire_all()
+        inviter = session.scalars(
+            select(BusinessMembership).where(
+                BusinessMembership.business_id == business.id,
+                BusinessMembership.user_subject == locked_invitation.invited_by_subject,
+                BusinessMembership.role == MembershipRole.OWNER,
+            )
+        ).one_or_none()
+        if inviter is None:
+            locked_invitation.status = "revoked"
+            locked_invitation.revoked_at = now
+            session.add(AuditEvent(
+                business_id=business.id,
+                actor_subject=None,
+                action="membership.invitation_revoked",
+                target_type="business_invitation",
+                target_id=str(locked_invitation.id),
+                change_summary="Invitation invalidated because inviter is no longer an active OWNER",
+            ))
+            session.commit()
+            raise HTTPException(status_code=410, detail="Invitation is no longer available")
+
+        existing = session.scalars(
+            select(BusinessMembership).where(
+                BusinessMembership.business_id == business.id,
+                BusinessMembership.user_subject == principal.subject,
+            )
+        ).one_or_none()
+        if existing is not None:
+            raise HTTPException(status_code=409, detail="Account is already a workspace member")
+
+        membership = BusinessMembership(
+            business_id=business.id,
+            user_subject=principal.subject,
+            role=MembershipRole.STAFF,
+        )
+        locked_invitation.status = "accepted"
+        locked_invitation.accepted_subject = principal.subject
+        locked_invitation.accepted_at = now
+        session.add(membership)
+        session.add(AuditEvent(
+            business_id=business.id,
+            actor_subject=principal.subject,
+            action="membership.invitation_accepted",
+            target_type="business_invitation",
+            target_id=str(locked_invitation.id),
+            change_summary="STAFF invitation accepted",
+        ))
+        session.commit()
+        session.refresh(membership)
+        return {
+            "id": str(membership.id),
+            "business_id": str(membership.business_id),
+            "role": membership.role.value,
+            "created_at": _utc_datetime(membership.created_at).isoformat() if membership.created_at else None,
+        }
+    except HTTPException:
+        session.rollback()
+        raise
+    except IntegrityError as exc:
+        session.rollback()
+        raise HTTPException(status_code=409, detail="Account is already a workspace member") from exc
     except Exception:
         session.rollback()
         raise
