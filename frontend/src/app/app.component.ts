@@ -300,6 +300,26 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
                     </button>
                   }
+                  @if (canAccessTab('customers')) {
+                    <button class="dashboard-action" type="button" (click)="setTab('customers'); customerCreateOpen = true">
+                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
+                      <span class="dashboard-action__copy">
+                        <strong>{{ t('ui.m_1yvcfg6') }}</strong>
+                        <small>{{ t('ui.m_15gmqko') }}</small>
+                      </span>
+                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
+                    </button>
+                  }
+                  @if (canAccessTab('products')) {
+                    <button class="dashboard-action" type="button" (click)="setTab('products'); productCreateOpen = true">
+                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
+                      <span class="dashboard-action__copy">
+                        <strong>{{ t('ui.m_1nbakc8') }}</strong>
+                        <small>{{ t('ui.m_snu8sb') }}</small>
+                      </span>
+                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
+                    </button>
+                  }
                 </section>
                 <section class="notice dashboard-trust-note" role="note"><strong>{{ t('ui.m_lgrza4') }}</strong><span>{{ t('ui.m_1yfmgqi') }}</span></section>
               } @else if (loading) {
@@ -566,7 +586,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @if (tab === 'customers') {
               <section abaCard class="panel">
                 <aba-section-header [title]=" t('ui.m_1lifkl9') " [description]=" t('ui.m_15gmqko') "><span class="count">{{ filteredCustomers.length }} / {{ customers.length }} {{ t('ui.m_15kaq4w') }}</span></aba-section-header>
-<details class="aba-record-create">
+<details class="aba-record-create" [open]="customerCreateOpen" (toggle)="customerCreateOpen = $any($event.target).open">
                   <summary><span>{{ t('ui.m_1yvcfg6') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
                 <form #customerForm="ngForm" class="inline-form" (ngSubmit)="customerForm.valid && createCustomer()">
@@ -643,7 +663,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @if (tab === 'products') {
               <section abaCard class="panel">
                 <aba-section-header [title]=" t('ui.m_137u0ee') " [description]=" t('ui.m_snu8sb') "><span class="count">{{ filteredProducts.length }} / {{ products.length }} {{ t('ui.m_1hpnko') }}</span></aba-section-header>
-<details class="aba-record-create">
+<details class="aba-record-create" [open]="productCreateOpen" (toggle)="productCreateOpen = $any($event.target).open">
                   <summary><span>{{ t('ui.m_1nbakc8') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
                 <form #productForm="ngForm" class="inline-form" (ngSubmit)="productForm.valid && createProduct()">
@@ -1564,6 +1584,8 @@ export class AppComponent implements OnInit, OnDestroy {
   expenseSubmissionUncertain = false;
   businessName = '';
   currencyCode = 'EGP';
+  customerCreateOpen = false;
+  productCreateOpen = false;
   customerName = '';
   customerEmail = '';
   customerPhone = '';
