@@ -228,6 +228,17 @@ def test_duplicate_pending_invitation_is_rejected(invitation_client):
     assert duplicate.status_code == 409
 
 
+
+def test_invitation_cannot_escalate_role_from_staff(invitation_client):
+    client, _, _ = invitation_client
+    business_id = create_workspace(client)
+    response = client.post(
+        f"/api/v1/businesses/{business_id}/invitations",
+        json={"email": "staff@example.com", "role": "owner"},
+    )
+    assert response.status_code == 422
+
+
 def test_invalid_invitation_email_is_rejected(invitation_client):
     client, _, _ = invitation_client
     business_id = create_workspace(client)
