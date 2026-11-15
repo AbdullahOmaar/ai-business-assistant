@@ -51,7 +51,7 @@ test('product workspace provides tenant-scoped list, detail, descriptive edit an
   assert.match(workspace, /this\.api\.updateProduct\(requested\.businessId, productId, value\)/);
   assert.match(workspace, /this\.isCurrent\(this\.listGuard/);
   assert.match(workspace, /this\.isCurrent\(this\.detailGuard/);
-  assert.match(workspace, /this\.isCurrent\(this\.saveGuard/);
+  assert.match(workspace, /this\.isCurrent\(this\.saveGuard/);\n  assert.match(workspace, /current\.userId === requested\.userId/);\n  assert.match(workspace, /current\.role === requested\.role/);\n  assert.match(workspace, /this\.selectedProductId !== productId/);
   assert.match(workspace, /pageSize = 100/);
   assert.match(workspace, /@if \(hasMore\(\) && !error\(\)\)/);
   assert.match(workspace, /\[disabled\]="loading\(\)"/);
