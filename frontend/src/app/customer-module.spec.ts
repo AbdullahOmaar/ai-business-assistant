@@ -29,7 +29,7 @@ test('customer profile presents contact, address, notes and existing invoice/sta
 });
 
 test('customer API client exposes bounded server search, detail and patch for supported fields', () => {
-  assert.match(api, /customers\(businessId: string, offset = 0, limit = 50, search = ''\)/);
+  assert.match(api, /customers\(businessId: string, offset = 0, limit = 100, search = ''\)/);
   assert.match(api, /params\.set\('q', search\.trim\(\)\.slice\(0, 120\)\)/);
   assert.match(api, /customer\(businessId: string, customerId: string\)/);
   assert.match(api, /updateCustomer\(businessId: string, customerId: string/);
