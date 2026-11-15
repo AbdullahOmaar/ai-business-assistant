@@ -40,8 +40,10 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
           [emptyDescription]="t('customerWorkspace.emptyDescription')"
           (rowAction)="handleRowAction($event)"
           (select)="openCustomer($event)" />
-        @if (hasMore() && !loading() && !error()) {
-          <button class="customer-workspace__load-more" type="button" (click)="loadMore()">{{ t('customerWorkspace.loadMore') }}</button>
+        @if (hasMore() && !error()) {
+          <button class="customer-workspace__load-more" type="button" [disabled]="loading()" (click)="loadMore()" [attr.aria-live]="'polite'">
+            {{ loadingMore() ? t('ui.m_1dwk1vm') : t('ui.m_iziq6h') }}
+          </button>
         }
       } @else if (mode() === 'create' || mode() === 'edit') {
         <aba-customer-editor
@@ -97,6 +99,7 @@ export class CustomerWorkspaceComponent {
   readonly customers = signal<Customer[]>([]);
   readonly selectedCustomer = signal<Customer | null>(null);
   readonly loading = signal(false);
+  readonly loadingMore = signal(false);
   readonly detailLoading = signal(false);
   readonly saving = signal(false);
   readonly error = signal('');
@@ -122,6 +125,7 @@ export class CustomerWorkspaceComponent {
         this.offset = 0;
         this.hasMore.set(false);
         this.loading.set(false);
+        this.loadingMore.set(false);
         this.detailLoading.set(false);
         this.saving.set(false);
         this.mode.set('list');
@@ -156,6 +160,7 @@ export class CustomerWorkspaceComponent {
       this.hasMore.set(false);
     }
     this.loading.set(true);
+    this.loadingMore.set(!reset);
     this.error.set('');
     try {
       const records = await this.api.customers(requested.businessId, this.offset, this.pageSize, this.searchQuery);
@@ -169,7 +174,10 @@ export class CustomerWorkspaceComponent {
     } catch {
       if (this.isCurrent(this.listGuard, version, requested)) this.error.set(this.t('customerWorkspace.loadError'));
     } finally {
-      if (this.isCurrent(this.listGuard, version, requested)) this.loading.set(false);
+      if (this.isCurrent(this.listGuard, version, requested)) {
+        this.loading.set(false);
+        this.loadingMore.set(false);
+      }
     }
   }
 
