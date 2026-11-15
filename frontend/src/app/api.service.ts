@@ -464,7 +464,7 @@ export class ApiService {
     if (endDate) params.set('end_date', endDate);
     return this.request<ProfitLossReport>(`/api/v1/businesses/${encodeURIComponent(businessId)}/profit-loss?${params.toString()}`);
   }
-  customers(businessId: string, offset = 0, limit = 50, search = ''): Promise<Customer[]> {
+  customers(businessId: string, offset = 0, limit = 100, search = ''): Promise<Customer[]> {
     const params = new URLSearchParams({ limit: String(Math.min(200, Math.max(1, limit))), offset: String(Math.max(0, offset)) });
     if (search.trim()) params.set('q', search.trim().slice(0, 120));
     return this.request<Customer[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers?${params.toString()}`);
@@ -478,7 +478,7 @@ export class ApiService {
   updateCustomer(businessId: string, customerId: string, body: Partial<Pick<Customer, 'name' | 'email' | 'phone' | 'address' | 'notes'>>): Promise<Customer> {
     return this.request<Customer>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}`, 'PATCH', body);
   }
-  products(businessId: string, offset = 0, limit = 50): Promise<Product[]> {
+  products(businessId: string, offset = 0, limit = 100): Promise<Product[]> {
     const params = new URLSearchParams({
       limit: String(Math.min(200, Math.max(1, limit))),
       offset: String(Math.max(0, offset)),
