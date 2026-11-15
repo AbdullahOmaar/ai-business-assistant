@@ -1791,6 +1791,11 @@
     "emptyTitle": "لا يوجد منتج محدد"
   },
   "purchasingWorkspace": {
+    "approveConfirmationPrompt": "هل تريد اعتماد أمر الشراء؟",
+    "cancelConfirmationPrompt": "هل تريد إلغاء مسودة أمر الشراء؟",
+    "confirmActionButton": "تأكيد",
+    "cancelConfirmationButton": "متابعة التعديل",
+
     "title": "أوامر الشراء",
     "subtitle": "إدارة أوامر الشراء والاستلام ومراجعة سجل الحركة.",
     "newOrder": "أمر شراء جديد",
