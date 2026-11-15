@@ -320,7 +320,7 @@ def test_purchase_order_from_another_business_cannot_be_received():
             json={"lines": [{"line_id": str(foreign_line_id), "quantity": "1.000"}]},
         )
         assert response.status_code == 422, response.text
-        assert response.json()["detail"] == "Purchase order is not available for receiving"
+        assert response.json()["detail"] == "Purchase order not found in this business"
 
         with Session(engine) as session:
             assert session.get(

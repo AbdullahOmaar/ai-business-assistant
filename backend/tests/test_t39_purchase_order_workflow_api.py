@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 from app.main import app
 from app.models import AuditEvent, Business, BusinessMembership, MembershipRole, Product, StockMovement, Supplier
 from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
-from test_t39_purchase_receiving_api import _create_approved_order
+from test_t39_purchase_receiving_api import _create_approved_order, _receipt_headers
 
 
 def _draft_order(engine, client, business_id, number="PO-T39-DRAFT"):
@@ -123,6 +123,7 @@ def test_receipt_history_and_activity_are_read_only_and_tenant_scoped():
         client = TestClient(app)
         order_id, line_ids, product_ids = _create_approved_order(engine, client, business_id, [("3.000", True)], "PO-T39-HISTORY")
         received = client.post(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive",
+                               headers=_receipt_headers(),
                                json={"lines": [{"line_id": str(line_ids[0]), "quantity": "1.000"}]})
         assert received.status_code == 200, received.text
         receipts = client.get(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receipts")

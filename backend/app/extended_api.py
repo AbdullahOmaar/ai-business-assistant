@@ -441,7 +441,10 @@ def receive_purchase_order(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ):
     """Apply one receipt exactly once and replay the original result on safe retries."""
+    request_hash: str | None = None
+
     def op():
+        nonlocal request_hash
         _authorized(session, principal, business_id, owner_only=True)
         po = session.scalars(select(PurchaseOrder).where(
             PurchaseOrder.id == order_id,
@@ -551,7 +554,32 @@ def receive_purchase_order(
         session.flush()
         return response_snapshot
 
-    return _commit(session, op)
+    try:
+        return _commit(session, op)
+    except HTTPException as exc:
+        # A concurrent request with the same key may win the unique insert after
+        # both transactions observed no prior receipt. Re-read after rollback and
+        # replay only when the committed payload hash matches exactly.
+        if exc.status_code != 409 or request_hash is None:
+            raise
+        session.rollback()
+        try:
+            _authorized(session, principal, business_id, owner_only=True)
+        except AuthorizationError as auth_exc:
+            raise HTTPException(status_code=403, detail=str(auth_exc)) from auth_exc
+        previous = session.scalars(select(PurchaseReceiptIdempotency).where(
+            PurchaseReceiptIdempotency.business_id == business_id,
+            PurchaseReceiptIdempotency.purchase_order_id == order_id,
+            PurchaseReceiptIdempotency.idempotency_key == idempotency_key,
+        )).one_or_none()
+        if previous is None:
+            raise
+        if previous.request_hash != request_hash:
+            raise HTTPException(
+                status_code=409,
+                detail="Idempotency-Key was already used with a different receipt payload.",
+            ) from exc
+        return previous.response_snapshot
 
 
 @router.post("/sales-returns", status_code=201)

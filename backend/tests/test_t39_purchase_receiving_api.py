@@ -1,7 +1,7 @@
-"""Focused API and persistence safety regressions for purchase receiving.
+"""Focused API and persistence safety regressions for idempotent purchase receiving.
 
-The approved receipt-idempotency contract is schema-only here; route/service
-replay behavior is implemented by the designated Chat 3/5 owners.
+Every ordinary receive request supplies a canonical Idempotency-Key; the dedicated
+missing/malformed-key case intentionally omits or corrupts that header.
 """
 
 from decimal import Decimal
@@ -179,6 +179,7 @@ def test_owner_can_partially_then_fully_receive_and_audit_each_operation():
 
         partial = client.post(
             f"{base}/purchase-orders/{order_id}/receive",
+            headers=_receipt_headers(),
             json={
                 "lines": [
                     {"line_id": str(line_ids[0]), "quantity": "1.000"},
@@ -222,6 +223,7 @@ def test_owner_can_partially_then_fully_receive_and_audit_each_operation():
 
         completed = client.post(
             f"{base}/purchase-orders/{order_id}/receive",
+            headers=_receipt_headers(),
             json={
                 "lines": [
                     {"line_id": str(line_ids[0]), "quantity": "3.000"},
@@ -300,6 +302,7 @@ def test_staff_cannot_receive_and_denial_has_no_persisted_side_effects():
         before = _receiving_snapshot(engine, business_id, order_id)
         denied = client.post(
             f"{base}/purchase-orders/{order_id}/receive",
+            headers=_receipt_headers(),
             json={"lines": [{"line_id": str(line_ids[0]), "quantity": "1.000"}]},
         )
         assert denied.status_code == 403, denied.text
@@ -360,6 +363,7 @@ def test_foreign_business_order_and_foreign_line_ids_are_denied_without_writes()
         # The caller is an OWNER only in member_business_id, not in the foreign tenant.
         foreign_business_denied = client.post(
             f"/api/v1/businesses/{foreign_business_id}/purchase-orders/{foreign_order_id}/receive",
+            headers=_receipt_headers(),
             json={"lines": [{"line_id": str(foreign_line_id), "quantity": "1.000"}]},
         )
         assert foreign_business_denied.status_code == 403, foreign_business_denied.text
@@ -367,12 +371,14 @@ def test_foreign_business_order_and_foreign_line_ids_are_denied_without_writes()
         # A foreign PO or line ID must not resolve under the caller's own business scope.
         foreign_order_denied = client.post(
             f"/api/v1/businesses/{member_business_id}/purchase-orders/{foreign_order_id}/receive",
+            headers=_receipt_headers(),
             json={"lines": [{"line_id": str(foreign_line_id), "quantity": "1.000"}]},
         )
         assert foreign_order_denied.status_code == 422, foreign_order_denied.text
 
         foreign_line_denied = client.post(
             f"/api/v1/businesses/{member_business_id}/purchase-orders/{own_order_id}/receive",
+            headers=_receipt_headers(),
             json={"lines": [{"line_id": str(foreign_line_id), "quantity": "1.000"}]},
         )
         assert foreign_line_denied.status_code == 422, foreign_line_denied.text
@@ -400,6 +406,7 @@ def test_invalid_later_line_rolls_back_earlier_line_and_all_side_effects():
 
         response = client.post(
             f"{base}/purchase-orders/{order_id}/receive",
+            headers=_receipt_headers(),
             json={
                 "lines": [
                     {"line_id": str(line_ids[0]), "quantity": "1.000"},
@@ -426,6 +433,7 @@ def test_duplicate_line_entries_cannot_cumulatively_overreceive_or_partially_wri
 
         response = client.post(
             f"{base}/purchase-orders/{order_id}/receive",
+            headers=_receipt_headers(),
             json={
                 "lines": [
                     {"line_id": str(line_ids[0]), "quantity": "2.000"},
@@ -458,6 +466,7 @@ def test_invalid_order_states_empty_payload_and_nonpositive_quantities_have_no_w
             before = _receiving_snapshot(engine, business_id, order_id)
             response = client.post(
                 f"{base}/purchase-orders/{order_id}/receive",
+                headers=_receipt_headers(),
                 json={"lines": [{"line_id": str(line_ids[0]), "quantity": "1.000"}]},
             )
             assert response.status_code == 422, response.text
@@ -477,6 +486,7 @@ def test_invalid_order_states_empty_payload_and_nonpositive_quantities_have_no_w
             before = _receiving_snapshot(engine, business_id, order_id)
             response = client.post(
                 f"{base}/purchase-orders/{order_id}/receive",
+                headers=_receipt_headers(),
                 json={"lines": [{"line_id": str(line_ids[0]), "quantity": quantity}]},
             )
             assert response.status_code == 422, response.text
@@ -495,6 +505,7 @@ def test_invalid_order_states_empty_payload_and_nonpositive_quantities_have_no_w
         before = _receiving_snapshot(engine, business_id, order_id)
         response = client.post(
             f"{base}/purchase-orders/{order_id}/receive",
+            headers=_receipt_headers(),
             json={"lines": []},
         )
         assert response.status_code == 422, response.text
@@ -523,6 +534,7 @@ def test_non_stock_tracked_purchase_line_cannot_be_received():
         before = _receiving_snapshot(engine, business_id, order_id)
         response = client.post(
             f"{base}/purchase-orders/{order_id}/receive",
+            headers=_receipt_headers(),
             json={"lines": [{"line_id": str(line_ids[0]), "quantity": "1.000"}]},
         )
         assert response.status_code == 422, response.text
