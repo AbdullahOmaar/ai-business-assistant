@@ -1,6 +1,6 @@
 """Add durable purchase-receipt idempotency identities.
 
-Revision ID: 0007_purchase_receipt_idempotency
+Revision ID: 0007_receipt_idem
 Revises: 0006_business_invitations
 Create Date: 2026-11-15
 
@@ -9,7 +9,7 @@ Draft only: do not apply until Master reconciles the shared migration graph.
 from alembic import op
 import sqlalchemy as sa
 
-revision = "0007_purchase_receipt_idempotency"
+revision = "0007_receipt_idem"
 down_revision = "0006_business_invitations"
 branch_labels = None
 depends_on = None
