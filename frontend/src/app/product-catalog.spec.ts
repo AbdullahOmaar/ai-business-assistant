@@ -7,10 +7,12 @@ const component = expandTranslationCalls(readFileSync(new URL('./product-catalog
 const sortHelper = readFileSync(new URL('./directory-sort.ts', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./product-catalog.component.css', import.meta.url), 'utf8');
 const app = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const workspace = expandTranslationCalls(readFileSync(new URL('./product-workspace.component.ts', import.meta.url), 'utf8'));
 
 test('Products uses a dedicated catalogue presentation, not the shared generic record table', () => {
   assert.match(component, /selector: 'aba-product-catalog'/);
-  assert.match(app, /<aba-product-catalog[\s\S]*?\[products\]="filteredProducts"/);
+  assert.match(app, /<aba-product-workspace/);
+  assert.match(workspace, /<aba-product-catalog[\s\S]*?\[products\]="products\(\)"/);
   assert.doesNotMatch(app, /productTableRows|productTableColumns/);
 });
 
@@ -65,9 +67,11 @@ test('catalogue keeps filters and a clear-filter action available when the selec
   assert.match(component, /Try another type or show all items/);
 });
 
-test('main product directory exposes the existing guarded pagination beyond the first page', () => {
-  assert.match(app, /\(click\)="loadMoreProducts\(\)"/);
-  assert.match(app, /loadMoreProducts\(\): Promise<void>/);
+test('main product directory exposes guarded pagination beyond the first page', () => {
+  assert.match(workspace, /\(click\)="loadMore\(\)"/);
+  assert.match(workspace, /loadMore\(\): void/);
+  assert.match(workspace, /this\.api\.products\(requested\.businessId, this\.offset, this\.pageSize\)/);
   assert.match(app, /return this\.loadMoreInvoiceProducts\(\)/);
   assert.match(app, /fetchPage: \(id, offset\) => this\.api\.products\(id, offset\)/);
 });
+

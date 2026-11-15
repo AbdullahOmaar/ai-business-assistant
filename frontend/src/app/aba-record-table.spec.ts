@@ -8,6 +8,8 @@ const appRaw=readFileSync(new URL('./app.component.ts',import.meta.url),'utf8');
 const app=expandTranslationCalls(appRaw);
 const customerDirectory=readFileSync(new URL('./customer-directory.component.ts',import.meta.url),'utf8');
 const productCatalog=readFileSync(new URL('./product-catalog.component.ts',import.meta.url),'utf8');
+const customerWorkspace=readFileSync(new URL('./customer-workspace.component.ts',import.meta.url),'utf8');
+const productWorkspace=readFileSync(new URL('./product-workspace.component.ts',import.meta.url),'utf8');
 test('shared record table exposes semantic columns and stable row actions',()=>{
   assert.match(component,/<table>/);assert.match(component,/<caption class="aba-record-table__visually-hidden">/);
   assert.match(component,/<th scope="col" \[attr\.aria-sort\]="sortAria\(column\.key\)"/);assert.match(component,/<th scope="row"/);
@@ -27,9 +29,9 @@ test('phone layout renders labeled record cards with touch-sized row actions',()
   assert.match(css,/\.aba-record-table__action\{[^}]*min-height:44px/);
 });
 test('Customers and Products use dedicated presentations while Suppliers and Purchasing retain the shared record contract',()=>{
-  assert.match(app,/<aba-customer-directory[^>]*\[customers\]="filteredCustomers"/);
+  assert.match(app,/<aba-customer-workspace/);assert.match(customerWorkspace,/<aba-customer-directory[\s\S]*?\[customers\]="customers\(\)"/);
   assert.doesNotMatch(app,/customerTableRows|customerTableColumns/);
-  assert.match(app,/<aba-product-catalog[^>]*\[products\]="filteredProducts"/);
+  assert.match(app,/<aba-product-workspace/);assert.match(productWorkspace,/<aba-product-catalog[\s\S]*?\[products\]="products\(\)"/);
   assert.doesNotMatch(app,/productTableRows|productTableColumns/);
   for(const key of ['supplierTableRows','purchaseTableRows'])assert.ok(app.includes('[rows]="'+key+'"'));
   assert.match(app,/business\?\.role==='owner'\s*\?\s*this\.canApprovePurchaseOrder\(order\)\s*\?\s*\[\{id:'approve'/);

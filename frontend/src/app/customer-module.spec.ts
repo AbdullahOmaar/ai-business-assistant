@@ -81,8 +81,9 @@ test('customer and product workspaces are mounted in the authenticated app shell
   assert.match(shell, /ProductWorkspaceComponent/);
   assert.match(shell, /<aba-customer-workspace/);
   assert.match(shell, /<aba-product-workspace/);
-  assert.match(shell, /\\[userId\\]="workspaceUserId"/);
-  assert.match(shell, /\\[role\\]="business\\.role === 'owner' \\? 'owner' : 'staff'"/);
-  assert.match(shell, /this\\.customerWorkspace\\?\\.retry\\(\\)/);
-  assert.match(shell, /this\\.productWorkspace\\?\\.retry\\(\\)/);
+  assert.match(shell, /\[userId\]="workspaceUserId"/);
+  assert.match(shell, /\[role\]="business\.role === 'owner' \? 'owner' : 'staff'"/);
+  assert.match(shell, /this\.customerWorkspace\?\.retry\(\)/);
+  assert.match(shell, /this\.productWorkspace\?\.retry\(\)/);
 });
+

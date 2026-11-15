@@ -622,6 +622,28 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   [locale]="language"
                   (invoicesRequested)="createInvoiceForCustomer($event)"
                   (statementRequested)="openCustomerStatementById($event)" />
+                @if (statementVisible) {
+                  <section abaCard class="panel statement-panel">
+                    <aba-section-header [level]="3" [title]="t('ui.m_152dm1w') + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t('ui.m_ysb7zm')">
+                      <button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('ui.m_1whnkun') }}</button>
+                    </aba-section-header>
+                    <div class="inline-form statement-filters">
+                      <label>{{ t('ui.m_6ousik') }}<input type="date" name="statementFromDate" [(ngModel)]="statementFromDate"></label>
+                      <label>{{ t('ui.m_hltyrq') }}<input type="date" name="statementToDate" [(ngModel)]="statementToDate"></label>
+                      <button class="primary" type="button" (click)="applyCustomerStatementFilters()" [disabled]="statementLoading">{{ t('ui.m_1vs0iyd') }}</button>
+                      <button class="secondary" type="button" (click)="clearCustomerStatementFilters()" [disabled]="statementLoading || (!statementFromDate && !statementToDate)">{{ t('ui.m_1kg6ptq') }}</button>
+                    </div>
+                    @if (statementFromDate || statementToDate) { <p class="muted">{{ t('ui.m_gqq69s') }}</p> }
+                    @if (statementLoading) { <aba-state-message kind="loading" [description]="t('ui.m_1jqptmt')" /> }
+                    @if (statementError) { <aba-state-message kind="error" [description]="statementError" /> }
+                    @if (customerStatement) {
+                      <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t('ui.m_lyblb3') }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
+                      <aba-record-table [ariaLabel]="t('ui.m_152dm1w')" [columns]="customerStatementTableColumns" [rows]="customerStatementTableRows" [emptyTitle]="t('ui.m_3op8q6')" [emptyDescription]="t('ui.m_18o73kt')" />
+                      <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t('ui.m_14wy3hz') }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('ui.m_thb9eg') }}</button></div>
+                      @for (limitation of customerStatement.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
+                    }
+                  </section>
+                }
               </section>
             }
 

@@ -6,10 +6,12 @@ const component = readFileSync(new URL('./customer-directory.component.ts', impo
 const sortHelper = readFileSync(new URL('./directory-sort.ts', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./customer-directory.component.css', import.meta.url), 'utf8');
 const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const workspace = readFileSync(new URL('./customer-workspace.component.ts', import.meta.url), 'utf8');
 
 test('Customers uses a feature-specific directory instead of the shared generic record table', () => {
   assert.match(component, /selector: 'aba-customer-directory'/);
-  assert.match(app, /<aba-customer-directory[\s\S]*?\[customers\]="filteredCustomers"/);
+  assert.match(app, /<aba-customer-workspace/);
+  assert.match(workspace, /<aba-customer-directory[\s\S]*?\[customers\]="customers\(\)"/);
   assert.doesNotMatch(app, /<aba-record-table[^>]*\[ariaLabel\]="t\('جدول العملاء'/);
 });
 
@@ -39,17 +41,21 @@ test('customer directory keeps compact mobile contact rows and visible existing 
 });
 
 test('customer screen preserves workspace search, owner CSV affordance and statement workflow', () => {
-  assert.match(app, /name="customerSearch"[^>]*\[\(ngModel\)\]="customerSearch"/);
-  assert.match(app, /business\?\.role === 'owner'[\s\S]*?exportCurrentList\(\)/);
-  assert.match(app, /loadCustomerStatement\(customer\)/);
+  assert.match(workspace, /customer-workspace__search/);
+  assert.match(workspace, /this\.api\.customers\(requested\.businessId, this\.offset, this\.pageSize, this\.searchQuery\)/);
+  assert.match(app, /business\?\.role === 'owner'[\s\S]*?csv-import-panel/);
+  assert.match(app, /<section abaCard class="panel statement-panel">/);
+  assert.match(app, /openCustomerStatementById\(customerId: string\)/);
   assert.match(app, /showCustomerInvoices\(customer\.id\)/);
   assert.match(app, /customerStatementTableColumns/);
   assert.match(app, /statementOffset \+ customerStatement\.items\.length/);
 });
 
-test('main customer directory exposes the existing guarded pagination beyond the first page', () => {
-  assert.match(app, /\(click\)="loadMoreCustomers\(\)"/);
-  assert.match(app, /loadMoreCustomers\(\): Promise<void>/);
+test('main customer directory exposes guarded pagination beyond the first page', () => {
+  assert.match(workspace, /\(click\)="loadMore\(\)"/);
+  assert.match(workspace, /loadMore\(\): void/);
+  assert.match(workspace, /this\.api\.customers\(requested\.businessId, this\.offset, this\.pageSize, this\.searchQuery\)/);
   assert.match(app, /return this\.loadMoreInvoiceCustomers\(\)/);
   assert.match(app, /fetchPage: \(id, offset\) => this\.api\.customers\(id, offset\)/);
 });
+

@@ -745,13 +745,13 @@ test('product form exposes accessible required, non-negative price and condition
 
 test('customer workspace is mounted with safe invoice and statement host callbacks', () => {
   assert.match(source, /<aba-customer-workspace/);
-  assert.match(source, /\\(invoicesRequested\\)="createInvoiceForCustomer\\(\\$event\\)"/);
-  assert.match(source, /\\(statementRequested\\)="openCustomerStatementById\\(\\$event\\)"/);
-  assert.match(source, /createInvoiceForCustomer\\(customerId: string\\)/);
-  assert.match(source, /openCustomerStatementById\\(customerId: string\\)/);
-  assert.match(customerWorkspaceSource, /this\\.api\\.createCustomer\\(requested\\.businessId, value\\)/);
-  assert.match(customerWorkspaceSource, /this\\.api\\.updateCustomer\\(requested\\.businessId, editingId, value\\)/);
-  assert.match(customerWorkspaceSource, /this\\.isCurrent\\(this\\.saveGuard/);
+  assert.match(source, /\(invoicesRequested\)="createInvoiceForCustomer\(\$event\)"/);
+  assert.match(source, /\(statementRequested\)="openCustomerStatementById\(\$event\)"/);
+  assert.match(source, /createInvoiceForCustomer\(customerId: string\)/);
+  assert.match(source, /openCustomerStatementById\(customerId: string\)/);
+  assert.match(customerWorkspaceSource, /this\.api\.createCustomer\(requested\.businessId, value\)/);
+  assert.match(customerWorkspaceSource, /this\.api\.updateCustomer\(requested\.businessId, editingId, value\)/);
+  assert.match(customerWorkspaceSource, /this\.isCurrent\(this\.saveGuard/);
 });
 
 test('product creation distinguishes saved stock setup from a failed list refresh', () => {
