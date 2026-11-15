@@ -451,6 +451,10 @@ class PurchaseReceiptIdempotency(Base):
             "id", "business_id",
             name="uq_purchase_receipt_idempotency_id_business",
         ),
+        Index(
+            "ix_purchase_receipt_idempotency_order_created",
+            "business_id", "purchase_order_id", "created_at",
+        ),
         CheckConstraint(
             "length(idempotency_key) = 36",
             name="ck_purchase_receipt_idempotency_key_length",
