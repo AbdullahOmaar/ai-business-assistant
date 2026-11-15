@@ -60,7 +60,13 @@ test('customer workspace covers server search, paginated list, detail and create
   assert.match(workspace, /this\.api\.updateCustomer\(requested\.businessId, editingId, value\)/);
   assert.match(workspace, /this\.isCurrent\(this\.listGuard/);
   assert.match(workspace, /this\.isCurrent\(this\.detailGuard/);
-  assert.match(workspace, /this\.isCurrent\(this\.saveGuard/);\n  assert.match(workspace, /current\.userId === requested\.userId/);\n  assert.match(workspace, /current\.role === requested\.role/);\n  assert.match(workspace, /readonly invoicesRequested = output<string>\(\)/);\n  assert.match(workspace, /readonly statementRequested = output<string>\(\)/);\n  assert.match(workspace, /openInvoices\(\): void \{ if \(this\.selectedCustomerId\) this\.invoicesRequested\.emit/);\n  assert.match(workspace, /openStatement\(\): void \{ if \(this\.selectedCustomerId\) this\.statementRequested\.emit/);
+  assert.match(workspace, /this\.isCurrent\(this\.saveGuard/);
+  assert.match(workspace, /current\.userId === requested\.userId/);
+  assert.match(workspace, /current\.role === requested\.role/);
+  assert.match(workspace, /readonly invoicesRequested = output<string>\(\)/);
+  assert.match(workspace, /readonly statementRequested = output<string>\(\)/);
+  assert.match(workspace, /openInvoices\(\): void \{ if \(this\.selectedCustomerId\) this\.invoicesRequested\.emit/);
+  assert.match(workspace, /openStatement\(\): void \{ if \(this\.selectedCustomerId\) this\.statementRequested\.emit/);
   assert.match(workspace, /pageSize = 100/);
   assert.match(workspace, /@if \(hasMore\(\) && !error\(\)\)/);
   assert.match(workspace, /\[disabled\]="loading\(\)"/);
