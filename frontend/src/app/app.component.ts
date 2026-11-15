@@ -635,9 +635,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       <small id="product-name-error" class="field-error" aria-live="polite">{{ t('ui.m_1ymmcl') }}</small>
                     }
                   </label>
-                  <label>{{ t('productEditor.sku') }}<input name="productSku" maxlength="80" autocomplete="off" [(ngModel)]="productSku"></label>
-                  <label>{{ t('productEditor.description') }}<textarea name="productDescription" rows="2" maxlength="1000" [(ngModel)]="productDescription"></textarea></label>
-                  <label>{{ t('productEditor.unit') }}<input name="productUnit" maxlength="32" required [(ngModel)]="productUnit"></label>
+                  <label>{{ t('productEditor.sku') }}<input name="productSku" maxlength="80" autocomplete="off" [placeholder]="t('productEditor.skuPlaceholder')" [(ngModel)]="productSku"></label>
+                  <label>{{ t('productEditor.descriptionLabel') }}<textarea name="productDescription" rows="2" maxlength="1000" [placeholder]="t('productEditor.descriptionPlaceholder')" [(ngModel)]="productDescription"></textarea></label>
+                  <label>{{ t('productEditor.unit') }}<input name="productUnit" maxlength="32" required [placeholder]="t('productEditor.unitPlaceholder')" [(ngModel)]="productUnit"></label>
                   <label>{{ t('ui.m_1iz2xk3') }}<input #productPriceModel="ngModel" [attr.aria-label]="t('ui.m_1iz2xk3')" name="productPrice" type="text" inputmode="decimal" pattern="^[0-9٠-٩۰-۹]+([.٫][0-9٠-٩۰-۹]{1,2})?$" autocomplete="off" [placeholder]="t('ui.m_1iz2xk3')" required [(ngModel)]="productPrice" [attr.aria-invalid]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'product-price-error' : null">
                     @if (productPriceModel.invalid && (productPriceModel.touched || productForm.submitted)) {
                       <small id="product-price-error" class="field-error" aria-live="polite">{{ productPriceModel.errors?.['required'] ? t('ui.m_9pqcpe') : t('ui.m_1hiyjor') }}</small>
