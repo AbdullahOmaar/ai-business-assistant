@@ -14,6 +14,7 @@ const stateMessageSource = expandTranslationCalls(readFileSync(new URL('./shared
 const recordTableSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-record-table.component.ts', import.meta.url), 'utf8'));
 const quickAccessSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8'));
 const workspaceLoadGuardSource = expandTranslationCalls(readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8'));
+const customerWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./customer-workspace.component.ts', import.meta.url), 'utf8'));
 const auditLabelsSource = expandTranslationCalls(readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8'));
 const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
 
@@ -710,7 +711,8 @@ test('payment completion cannot clear the loading state of a newly selected work
 test('invalid authentication, workspace, customer, invoice, payment and expense forms cannot invoke mutations', () => {
   assert.match(source, /<form #authForm="ngForm"/);
   assert.match(source, /<form #workspaceForm="ngForm"/);
-  assert.match(source, /<form #customerForm="ngForm"/);
+  assert.match(source, /<aba-customer-workspace/);
+  assert.match(customerWorkspaceSource, /<form \(submit\)="submit\(\$event\)"/);
   assert.match(source, /<form #expenseForm="ngForm"/);
   const paymentStart = source.indexOf('<form #paymentForm="ngForm"');
   const paymentEnd = source.indexOf('</form>', paymentStart);
@@ -741,19 +743,15 @@ test('product form exposes accessible required, non-negative price and condition
 });
 
 
-test('customer creation preserves confirmed success and prevents stale workspace refreshes', () => {
-  const start = source.indexOf('async createCustomer(): Promise<void>');
-  const end = source.indexOf('async onImportFileSelected(', start);
-  const method = source.slice(start, end);
-  assert.ok(start >= 0 && end > start);
-  assert.match(method, /const businessId = this\.business\.id/);
-  assert.match(method, /this\.api\.createCustomer\(businessId/);
-  assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/);
-  assert.match(method, /Customer saved successfully/);
-  assert.match(method, /The customer was saved, but the list could not refresh/);
-  assert.match(method, /Do not add the customer again/);
-  assert.match(method, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
-  assert.match(source, /<aba-state-message \[kind\]="customerMessageKind" \[description\]="customerMessage" \/>/);
+test('customer workspace is mounted with safe invoice and statement host callbacks', () => {
+  assert.match(source, /<aba-customer-workspace/);
+  assert.match(source, /\\(invoicesRequested\\)="createInvoiceForCustomer\\(\\$event\\)"/);
+  assert.match(source, /\\(statementRequested\\)="openCustomerStatementById\\(\\$event\\)"/);
+  assert.match(source, /createInvoiceForCustomer\\(customerId: string\\)/);
+  assert.match(source, /openCustomerStatementById\\(customerId: string\\)/);
+  assert.match(customerWorkspaceSource, /this\\.api\\.createCustomer\\(requested\\.businessId, value\\)/);
+  assert.match(customerWorkspaceSource, /this\\.api\\.updateCustomer\\(requested\\.businessId, editingId, value\\)/);
+  assert.match(customerWorkspaceSource, /this\\.isCurrent\\(this\\.saveGuard/);
 });
 
 test('product creation distinguishes saved stock setup from a failed list refresh', () => {

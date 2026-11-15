@@ -74,3 +74,15 @@ test('customer workspace covers server search, paginated list, detail and create
   assert.match(workspace, /\(retry\)="retry\(\)"/);
   assert.doesNotMatch(workspace, /\[retry\]="retry"/);
 });
+
+test('customer and product workspaces are mounted in the authenticated app shell', () => {
+  const shell = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+  assert.match(shell, /CustomerWorkspaceComponent/);
+  assert.match(shell, /ProductWorkspaceComponent/);
+  assert.match(shell, /<aba-customer-workspace/);
+  assert.match(shell, /<aba-product-workspace/);
+  assert.match(shell, /\\[userId\\]="workspaceUserId"/);
+  assert.match(shell, /\\[role\\]="business\\.role === 'owner' \\? 'owner' : 'staff'"/);
+  assert.match(shell, /this\\.customerWorkspace\\?\\.retry\\(\\)/);
+  assert.match(shell, /this\\.productWorkspace\\?\\.retry\\(\\)/);
+});
