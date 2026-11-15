@@ -602,6 +602,30 @@ def test_receipt_idempotency_key_is_unique_per_business_purchase_order():
                 ),
             ])
             session.commit()
+
+            foreign_business = Business(name="T39 idempotency foreign tenant", currency_code="EGP")
+            session.add(foreign_business)
+            session.flush()
+            foreign_supplier = Supplier(business_id=foreign_business.id, name="Foreign supplier")
+            foreign_product = Product(
+                business_id=foreign_business.id, name="Foreign stock",
+                unit_price=Decimal("10.00"), is_stock_tracked=True,
+            )
+            session.add_all([foreign_supplier, foreign_product])
+            session.flush()
+            foreign_order = PurchaseOrder(
+                business_id=foreign_business.id, supplier_id=foreign_supplier.id,
+                order_number="PO-T39-IDEMPOTENCY-FOREIGN", status="approved",
+                currency_code="EGP", total=Decimal("2.00"),
+            )
+            session.add(foreign_order)
+            session.flush()
+            session.add(PurchaseReceiptIdempotency(
+                business_id=foreign_business.id, purchase_order_id=foreign_order.id,
+                idempotency_key=key, request_hash="c" * 64,
+                response_snapshot={"order": str(foreign_order.id)},
+            ))
+            session.commit()
     finally:
         _restore_test_identity(*previous)
         engine.dispose()
