@@ -359,7 +359,20 @@ export class PurchasingWorkspaceComponent {
     });
   }
 
-  t(key: string): string { return this.localization.translate('purchasingWorkspace.' + key); }
+  t(key: string): string {
+    const translated = this.localization.translate('purchasingWorkspace.' + key);
+    if (translated.trim()) return translated;
+
+    // Keep the destructive-action confirmation explicit and accessible even if a
+    // partially loaded locale dictionary returns an empty value for these keys.
+    const fallback: Record<string, { ar: string; en: string }> = {
+      confirmApprove: { ar: 'هل تريد اعتماد أمر الشراء؟', en: 'Approve this purchase order?' },
+      confirmCancel: { ar: 'هل تريد إلغاء مسودة أمر الشراء؟', en: 'Cancel this draft purchase order?' },
+      confirm: { ar: 'تأكيد', en: 'Confirm' },
+      cancel: { ar: 'رجوع', en: 'Back' },
+    };
+    return fallback[key]?.[this.localization.currentLanguage] ?? translated;
+  }
   isOwner(): boolean { return this.role() === 'owner'; }
 
   private context(): PurchasingContext & { currencyCode: string } {
