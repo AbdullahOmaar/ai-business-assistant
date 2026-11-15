@@ -8,3 +8,8 @@ This release marker identifies the November integration candidate for the Vercel
 - Database migrations: validate the target environment's Alembic revision before enabling migration-dependent endpoints.
 
 This file is a release marker and does not itself apply database migrations.
+
+
+## Preview refresh — 2026-11-15
+
+The purchasing approval confirmation fallback was corrected after exact-head browser smoke exposed empty confirmation copy. Re-run the full exact-SHA workflow and refresh both Preview deployments before release review.
