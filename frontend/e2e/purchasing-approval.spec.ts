@@ -277,6 +277,21 @@ test('OWNER approves a draft purchase order from the mobile layout without recor
   const harness = await setupWorkspace(page);
   await openPurchases(page);
   await openPurchaseOrderDetails(page);
+  const translationDebug = await page.evaluate(() => {
+    const ng = (window as unknown as { ng?: { getComponent?: (element: Element) => any } }).ng;
+    const host = document.querySelector('aba-purchasing-workspace');
+    const component = host && ng?.getComponent ? ng.getComponent(host) : null;
+    const localization = component?.localization;
+    return {
+      hasAngularDebug: Boolean(ng?.getComponent),
+      currentLanguage: localization?.currentLanguage ?? null,
+      title: component?.t?.('title') ?? null,
+      prompt: component?.t?.('approveConfirmationPrompt') ?? null,
+      confirm: component?.t?.('confirmActionButton') ?? null,
+      rawPrompt: localization?.translations?.instant?.('purchasingWorkspace.approveConfirmationPrompt') ?? null,
+    };
+  });
+  console.log('PURCHASING_TRANSLATION_DEBUG', JSON.stringify(translationDebug));
   await page.setViewportSize({ width: 390, height: 844 });
 
   const details = page.locator('.pw__panel');
