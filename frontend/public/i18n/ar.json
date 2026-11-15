@@ -1740,5 +1740,35 @@
     "invoices": "فواتير العميل",
     "statement": "كشف الحساب",
     "financialNote": "الأرصدة وإجمالي المشتريات تظهر فقط من بيانات مالية معتمدة."
+  },
+  "productEditor": {
+    "createTitle": "إضافة منتج",
+    "editTitle": "تعديل بيانات المنتج",
+    "description": "عدّل بيانات التعريف فقط. السعر وإعدادات المخزون لها صلاحيات منفصلة.",
+    "name": "اسم المنتج",
+    "namePlaceholder": "مثال: منتج جديد",
+    "nameRequired": "اسم المنتج مطلوب",
+    "sku": "رمز SKU",
+    "skuPlaceholder": "اختياري",
+    "unit": "وحدة القياس",
+    "unitPlaceholder": "قطعة، كجم، ساعة",
+    "unitRequired": "وحدة القياس مطلوبة",
+    "descriptionLabel": "الوصف",
+    "descriptionPlaceholder": "وصف مختصر للمنتج أو الخدمة",
+    "cancel": "إلغاء",
+    "save": "حفظ التعديلات",
+    "saving": "جارٍ الحفظ…"
+  },
+  "productProfile": {
+    "eyebrow": "ملف المنتج",
+    "sku": "رمز SKU",
+    "description": "الوصف",
+    "unit": "وحدة القياس",
+    "price": "سعر الوحدة",
+    "stock": "الرصيد الحالي",
+    "stockTracked": "متابعة المخزون",
+    "notTracked": "بدون متابعة مخزون",
+    "edit": "تعديل البيانات",
+    "emptyDescription": "لا يوجد وصف مضاف"
   }
 }
