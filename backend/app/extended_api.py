@@ -449,7 +449,7 @@ def receive_purchase_order(
         po = session.scalars(select(PurchaseOrder).where(
             PurchaseOrder.id == order_id,
             PurchaseOrder.business_id == business_id,
-        ).with_for_update()).one_or_none()
+        ).with_for_update().execution_options(populate_existing=True)).one_or_none()
         if po is None:
             raise WorkflowError("Purchase order not found in this business")
         if not idempotency_key:
@@ -478,7 +478,7 @@ def receive_purchase_order(
             PurchaseReceiptIdempotency.business_id == business_id,
             PurchaseReceiptIdempotency.purchase_order_id == order_id,
             PurchaseReceiptIdempotency.idempotency_key == idempotency_key,
-        ).with_for_update().execution_options(populate_existing=True)).execution_options(populate_existing=True).one_or_none()
+        ).with_for_update().execution_options(populate_existing=True)).one_or_none()
         if previous is not None:
             if previous.request_hash != request_hash:
                 raise HTTPException(status_code=409, detail="Idempotency-Key was already used with a different receipt payload.")
@@ -577,7 +577,7 @@ def receive_purchase_order(
             PurchaseReceiptIdempotency.business_id == business_id,
             PurchaseReceiptIdempotency.purchase_order_id == order_id,
             PurchaseReceiptIdempotency.idempotency_key == idempotency_key,
-        )).one_or_none()
+        ).execution_options(populate_existing=True)).one_or_none()
         if previous is None:
             raise
         if previous.request_hash != request_hash:
