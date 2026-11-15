@@ -157,9 +157,9 @@ type PurchaseAction = 'approve' | 'cancel';
               </div>
               @if (pendingAction()) {
                 <div class="pw__confirm" role="group">
-                  <p>{{ pendingAction() === 'approve' ? t('approveConfirmationPrompt') : t('cancelConfirmationPrompt') }}</p>
-                  <button class="pw__primary" type="button" (click)="confirmAction()" [disabled]="actionLoading()">{{ t('confirmActionButton') }}</button>
-                  <button class="pw__secondary" type="button" (click)="pendingAction.set(null)" [disabled]="actionLoading()">{{ t('cancelConfirmationButton') }}</button>
+                  <p>{{ confirmationPrompt() }}</p>
+                  <button class="pw__primary" type="button" (click)="confirmAction()" [disabled]="actionLoading()">{{ confirmationConfirmLabel() }}</button>
+                  <button class="pw__secondary" type="button" (click)="pendingAction.set(null)" [disabled]="actionLoading()">{{ confirmationCancelLabel() }}</button>
                 </div>
               }
               @if (receiptMode()) {
@@ -317,6 +317,13 @@ export class PurchasingWorkspaceComponent {
   });
   readonly activeSuppliers = computed(() => this.suppliers().filter(supplier => supplier.is_active));
   readonly stockProducts = computed(() => this.products().filter(product => product.is_stock_tracked));
+  readonly confirmationPrompt = computed(() => {
+    const action = this.pendingAction();
+    if (!action) return '';
+    return this.t(action === 'approve' ? 'approveConfirmationPrompt' : 'cancelConfirmationPrompt');
+  });
+  readonly confirmationConfirmLabel = computed(() => this.t('confirmActionButton'));
+  readonly confirmationCancelLabel = computed(() => this.t('cancelConfirmationButton'));
 
   draft = { supplier_id: '', order_number: '', currency_code: '' };
   formLines: PurchaseDraftLine[] = [this.emptyLine()];
