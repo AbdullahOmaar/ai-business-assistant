@@ -37,3 +37,5 @@ Browser trace from exact run 43713544354 identified a test-fixture mismatch: the
 [release-api] Refresh API Preview for guarded purchasing history contract fix.
 
 [release-api] Rebuild API Preview for established purchasing confirmation translations.
+
+[release-api] Rebuild API Preview for confirmation translation fallback.
