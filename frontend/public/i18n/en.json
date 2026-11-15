@@ -1739,7 +1739,10 @@
     "addedOn": "Added on",
     "invoices": "Customer invoices",
     "statement": "View statement",
-    "financialNote": "Balances and purchase totals are shown only when backed by an approved financial source."
+    "financialNote": "Balances and purchase totals are shown only when backed by an approved financial source.",
+    "loading": "Loading customer details…",
+    "emptyTitle": "No customer selected",
+    "emptyDescription": "Choose a customer from the directory to view their details."
   },
   "productEditor": {
     "createTitle": "Add product",
@@ -1770,6 +1773,8 @@
     "stockTracked": "Stock tracked",
     "notTracked": "Not stock tracked",
     "edit": "Edit details",
-    "emptyDescription": "No description added"
+    "emptyDescription": "Choose a product from the catalogue to view its details.",
+    "loading": "Loading product details…",
+    "emptyTitle": "No product selected"
   }
 }
