@@ -121,6 +121,9 @@ export class CustomerWorkspaceComponent {
         this.selectedCustomerId = null;
         this.offset = 0;
         this.hasMore.set(false);
+        this.loading.set(false);
+        this.detailLoading.set(false);
+        this.saving.set(false);
         this.mode.set('list');
         this.error.set('');
         this.detailError.set('');
