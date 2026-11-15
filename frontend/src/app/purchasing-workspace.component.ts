@@ -11,76 +11,13 @@ import {
   type Supplier,
 } from './api.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
+import { LocalizationService } from './localization.service';
 
 type PurchasingContext = { businessId: string; userId: string; role: 'owner' | 'staff' };
 type PurchaseDraftLine = { product_id: string; quantity: string; unit_cost: string };
 type PurchaseAction = 'approve' | 'cancel';
 
-const COPY = {
-  title: { ar: 'أوامر الشراء', en: 'Purchase orders' },
-  subtitle: { ar: 'إدارة أوامر الشراء والاستلام ومراجعة سجل الحركة.', en: 'Manage purchase orders, receipts and their audit history.' },
-  newOrder: { ar: 'أمر شراء جديد', en: 'New purchase order' },
-  search: { ar: 'ابحث برقم الأمر أو المورد أو الحالة', en: 'Search order, supplier or status' },
-  loading: { ar: 'جاري تحميل أوامر الشراء…', en: 'Loading purchase orders…' },
-  emptyTitle: { ar: 'لا توجد أوامر شراء بعد', en: 'No purchase orders yet' },
-  emptyDescription: { ar: 'أنشئ أمر شراء متعدد البنود للبدء.', en: 'Create a multi-line purchase order to get started.' },
-  noMatches: { ar: 'لا توجد نتائج مطابقة للبحث.', en: 'No purchase orders match this search.' },
-  view: { ar: 'عرض التفاصيل', en: 'View details' },
-  create: { ar: 'إنشاء أمر شراء', en: 'Create purchase order' },
-  edit: { ar: 'تعديل المسودة', en: 'Edit draft' },
-  orderNumber: { ar: 'رقم الأمر', en: 'Order number' },
-  supplier: { ar: 'المورد', en: 'Supplier' },
-  currency: { ar: 'العملة', en: 'Currency' },
-  product: { ar: 'المنتج', en: 'Product' },
-  quantity: { ar: 'الكمية', en: 'Quantity' },
-  unitCost: { ar: 'تكلفة الوحدة', en: 'Unit cost' },
-  lines: { ar: 'بنود الأمر', en: 'Order lines' },
-  addLine: { ar: 'إضافة بند', en: 'Add line' },
-  removeLine: { ar: 'حذف البند', en: 'Remove line' },
-  save: { ar: 'حفظ', en: 'Save' },
-  cancel: { ar: 'رجوع', en: 'Back' },
-  back: { ar: 'العودة للأوامر', en: 'Back to orders' },
-  details: { ar: 'تفاصيل الأمر', en: 'Order details' },
-  status: { ar: 'الحالة', en: 'Status' },
-  total: { ar: 'الإجمالي المسجل', en: 'Recorded total' },
-  ordered: { ar: 'المطلوب', en: 'Ordered' },
-  received: { ar: 'المستلم', en: 'Received' },
-  remaining: { ar: 'المتبقي', en: 'Remaining' },
-  approve: { ar: 'اعتماد الأمر', en: 'Approve order' },
-  cancelOrder: { ar: 'إلغاء المسودة', en: 'Cancel draft' },
-  receive: { ar: 'تسجيل استلام', en: 'Record receipt' },
-  confirmApprove: { ar: 'هل تريد اعتماد أمر الشراء؟', en: 'Approve this purchase order?' },
-  confirmCancel: { ar: 'هل تريد إلغاء مسودة أمر الشراء؟', en: 'Cancel this draft purchase order?' },
-  confirm: { ar: 'تأكيد', en: 'Confirm' },
-  receiptQuantity: { ar: 'كمية الاستلام الآن', en: 'Receive quantity now' },
-  submitReceipt: { ar: 'حفظ الاستلام', en: 'Save receipt' },
-  receipts: { ar: 'سجل الاستلام', en: 'Receipt history' },
-  activity: { ar: 'سجل النشاط', en: 'Activity history' },
-  noReceipts: { ar: 'لا توجد حركات استلام مسجلة.', en: 'No receipt movements recorded.' },
-  noActivity: { ar: 'لا توجد أحداث مسجلة لهذا الأمر.', en: 'No activity recorded for this order.' },
-  historyLoading: { ar: 'جاري تحميل السجلات…', en: 'Loading history…' },
-  retry: { ar: 'إعادة المحاولة', en: 'Retry' },
-  created: { ar: 'تم إنشاء أمر الشراء.', en: 'Purchase order created.' },
-  updated: { ar: 'تم تحديث مسودة أمر الشراء.', en: 'Purchase order draft updated.' },
-  approved: { ar: 'تم اعتماد أمر الشراء.', en: 'Purchase order approved.' },
-  cancelled: { ar: 'تم إلغاء المسودة.', en: 'Draft purchase order cancelled.' },
-  receivedSaved: { ar: 'تم تسجيل الاستلام وتحديث المخزون.', en: 'Receipt saved and stock updated.' },
-  invalidOrder: { ar: 'أدخل رقم الأمر والمورد.', en: 'Enter an order number and supplier.' },
-  invalidLines: { ar: 'أضف بندًا واحدًا على الأقل بمنتج مخزني وكمية موجبة وتكلفة غير سالبة.', en: 'Add at least one stock-tracked product with a positive quantity and non-negative unit cost.' },
-  invalidReceipt: { ar: 'راجع كميات الاستلام؛ يجب أن تكون موجبة ولا تتجاوز المتبقي.', en: 'Check receipt quantities; they must be non-negative and cannot exceed the remaining quantity.' },
-  emptyReceipt: { ar: 'أدخل كمية استلام واحدة على الأقل.', en: 'Enter at least one receipt quantity.' },
-  noSuppliers: { ar: 'أضف موردًا نشطًا قبل إنشاء أمر شراء.', en: 'Add an active supplier before creating a purchase order.' },
-  noProducts: { ar: 'لا توجد منتجات مفعّل لها تتبع المخزون.', en: 'No stock-tracked products are available.' },
-  date: { ar: 'التاريخ', en: 'Date' },
-  reason: { ar: 'السبب', en: 'Reason' },
-  by: { ar: 'بواسطة', en: 'By' },
-  lineCount: { ar: 'عدد البنود', en: 'Lines' },
-  statusDraft: { ar: 'مسودة', en: 'Draft' },
-  statusApproved: { ar: 'معتمد', en: 'Approved' },
-  statusPartial: { ar: 'استلام جزئي', en: 'Partially received' },
-  statusReceived: { ar: 'مستلم بالكامل', en: 'Received' },
-  statusCancelled: { ar: 'ملغي', en: 'Cancelled' },
-} as const;
+
 
 @Component({
   selector: 'aba-purchasing-workspace',
@@ -231,6 +168,7 @@ const COPY = {
                   @for (line of order.lines; track line.id) {
                     @if (hasRemaining(line)) {
                       <label>{{ line.product?.name || productName(line.product_id) }} · {{ t('remaining') }} {{ line.remaining_quantity }}
+                        <span>{{ t('receiptQuantity') }}</span>
                         <input [name]="'receipt-' + line.id" type="number" min="0" [max]="line.remaining_quantity" step="0.001" [(ngModel)]="receiptDraft[line.id]" [disabled]="actionLoading()" />
                       </label>
                     }
@@ -335,6 +273,7 @@ const COPY = {
 })
 export class PurchasingWorkspaceComponent {
   private readonly api = inject(ApiService);
+  private readonly localization = inject(LocalizationService);
   private readonly listGuard = new WorkspaceLoadGuard();
   private readonly detailGuard = new WorkspaceLoadGuard();
   private readonly actionGuard = new WorkspaceLoadGuard();
@@ -420,7 +359,7 @@ export class PurchasingWorkspaceComponent {
     });
   }
 
-  t(key: keyof typeof COPY): string { return COPY[key][this.language()]; }
+  t(key: string): string { return this.localization.translate('purchasingWorkspace.' + key); }
   isOwner(): boolean { return this.role() === 'owner'; }
 
   private context(): PurchasingContext & { currencyCode: string } {
@@ -445,7 +384,7 @@ export class PurchasingWorkspaceComponent {
   }
 
   statusLabel(status: string): string {
-    const keys: Record<string, keyof typeof COPY> = {
+    const keys: Record<string, string> = {
       draft: 'statusDraft', approved: 'statusApproved', partially_received: 'statusPartial',
       received: 'statusReceived', cancelled: 'statusCancelled',
     };
@@ -456,7 +395,7 @@ export class PurchasingWorkspaceComponent {
     if (!value) return '—';
     const date = new Date(value);
     if (!Number.isFinite(date.getTime())) return '—';
-    return new Intl.DateTimeFormat(this.language() === 'ar' ? 'ar-EG' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' }).format(date);
+    return this.localization.formatDate(date, { dateStyle: 'medium', timeStyle: 'short' });
   }
 
   activitySummary(event: PurchaseOrderActivity): string {
