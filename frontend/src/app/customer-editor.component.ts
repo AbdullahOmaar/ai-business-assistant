@@ -75,15 +75,17 @@ export class CustomerEditorComponent {
   readonly notes = signal('');
   readonly submitted = signal(false);
 
-  private readonly syncCustomer = effect(() => {
+  constructor() {
+    effect(() => {
     const customer = this.customer();
     this.name.set(customer?.name ?? '');
     this.email.set(customer?.email ?? '');
     this.phone.set(customer?.phone ?? '');
     this.address.set(customer?.address ?? '');
     this.notes.set(customer?.notes ?? '');
-    this.submitted.set(false);
-  });
+      this.submitted.set(false);
+    });
+  }
 
   emailInvalid(): boolean {
     const value = this.email().trim();
