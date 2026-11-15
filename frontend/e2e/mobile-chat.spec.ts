@@ -734,7 +734,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       await expect(routeSkeletons, destination.tab + ' loading skeleton').toHaveCount(0, { timeout: 15_000 });
       await expect.poll(() => pendingWorkspaceRequests.size, { timeout: 15_000 })
         .toBe(0);
-      await expect(page.locator('.main .panel:visible, .main .aba-state-message--empty:visible, .main .aba-state-message--info:visible').first(),
+      await expect(page.locator('.main .panel:visible, .main [aria-label="Purchase order workspace"]:visible, .main .aba-state-message--empty:visible, .main .aba-state-message--info:visible').first(),
         destination.tab + ' rendered content or empty state').toBeVisible();
       await expect(page.locator('[role="alert"]:visible'), destination.tab + ' rendered error state')
         .toHaveCount(0);
