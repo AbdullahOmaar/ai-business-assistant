@@ -736,7 +736,8 @@ test('product form exposes accessible required, non-negative price and condition
   assert.match(form, /name="productUnit" maxlength="32" required/);
   assert.match(form, /id="product-name-error" class="field-error" aria-live="polite"/);
   assert.match(form, /#productPriceModel="ngModel"/);
-  assert.match(form, /type="number" min="0" step="0\.01"/);
+  assert.match(form, /name="productPrice" type="text" inputmode="decimal" pattern=/);
+  assert.match(form, /name="productOpeningQuantity" type="text" inputmode="decimal" pattern=/);
   assert.match(form, /id="product-price-error" class="field-error" aria-live="polite"/);
   assert.match(form, /#productOpeningQuantityModel="ngModel"/);
   assert.match(form, /id="product-opening-quantity-error" class="field-error" aria-live="polite"/);
@@ -765,6 +766,9 @@ test('product creation distinguishes saved stock setup from a failed list refres
   assert.match(method, /description: this\.productDescription\.trim\(\) \|\| undefined/);
   assert.match(method, /unit: this\.productUnit\.trim\(\) \|\| 'unit'/);
   assert.match(method, /unit_price: unitPrice/);
+  assert.match(source, /replace\(\/[٠-٩]\/g/);
+  assert.match(source, /replace\(\/[۰-۹]\/g/);
+  assert.match(source, /replace\(\/٫\/g, '\.'\)/);
   assert.doesNotMatch(method, /Number\(this\.productPrice\)|toFixed\(2\)/);
   assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/);
   assert.match(method, /Product saved successfully/);

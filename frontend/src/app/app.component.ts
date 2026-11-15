@@ -638,7 +638,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <label>{{ t('productEditor.sku') }}<input name="productSku" maxlength="80" autocomplete="off" [(ngModel)]="productSku"></label>
                   <label>{{ t('productEditor.description') }}<textarea name="productDescription" rows="2" maxlength="1000" [(ngModel)]="productDescription"></textarea></label>
                   <label>{{ t('productEditor.unit') }}<input name="productUnit" maxlength="32" required [(ngModel)]="productUnit"></label>
-                  <label>{{ t('ui.m_1iz2xk3') }}<input #productPriceModel="ngModel" [attr.aria-label]="t('ui.m_1iz2xk3')" name="productPrice" type="number" min="0" step="0.01" [placeholder]="t('ui.m_1iz2xk3')" required [(ngModel)]="productPrice" [attr.aria-invalid]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'product-price-error' : null">
+                  <label>{{ t('ui.m_1iz2xk3') }}<input #productPriceModel="ngModel" [attr.aria-label]="t('ui.m_1iz2xk3')" name="productPrice" type="text" inputmode="decimal" pattern="^[0-9٠-٩۰-۹]+([.٫][0-9٠-٩۰-۹]{1,2})?$" autocomplete="off" [placeholder]="t('ui.m_1iz2xk3')" required [(ngModel)]="productPrice" [attr.aria-invalid]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'product-price-error' : null">
                     @if (productPriceModel.invalid && (productPriceModel.touched || productForm.submitted)) {
                       <small id="product-price-error" class="field-error" aria-live="polite">{{ productPriceModel.errors?.['required'] ? t('ui.m_9pqcpe') : t('ui.m_1hiyjor') }}</small>
                     }
@@ -646,7 +646,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> {{ t('ui.m_13pn7xu') }}</label>
                   @if (stockTracked) {
                     @if (business?.role === 'owner') {
-                      <label>{{ t('ui.m_dsef9m') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('ui.m_1tupg8c') : t('ui.m_1rtcb8u') }}</small> }</label>
+                      <label>{{ t('ui.m_dsef9m') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="text" inputmode="decimal" pattern="^[0-9٠-٩۰-۹]+([.٫][0-9٠-٩۰-۹]{1,3})?$" autocomplete="off" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('ui.m_1tupg8c') : t('ui.m_1rtcb8u') }}</small> }</label>
                     } @else {
                       <small class="muted">{{ t('ui.m_1xw7d7y') }}</small>
                     }
@@ -4026,8 +4026,12 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private normalizeProductDecimal(value: string, scale: 2 | 3): string | null {
+    const normalized = String(value ?? '').trim()
+      .replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+      .replace(/[۰-۹]/g, digit => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+      .replace(/٫/g, '.');
     const pattern = scale === 2 ? /^(\d{1,12})(?:\.(\d{1,2}))?$/ : /^(\d{1,12})(?:\.(\d{1,3}))?$/;
-    const match = pattern.exec(String(value ?? '').trim());
+    const match = pattern.exec(normalized);
     if (!match) return null;
     return `${BigInt(match[1]).toString()}.${(match[2] || '').padEnd(scale, '0')}`;
   }

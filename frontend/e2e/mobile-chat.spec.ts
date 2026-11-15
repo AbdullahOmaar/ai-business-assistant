@@ -1531,7 +1531,7 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   await page.getByRole('textbox', { name: /SKU/ }).fill('STF-001');
   await page.getByRole('textbox', { name: /Description/ }).fill('Staff-created zero-stock catalog item');
   await page.getByRole('textbox', { name: /^Unit$/ }).fill('piece');
-  await page.getByRole('spinbutton', { name: /Unit price/ }).fill('2.50');
+  await page.getByRole('textbox', { name: /Unit price/ }).fill('2.50');
   await page.getByRole('button', { name: /Add product/ }).click();
   await expect.poll(() => productCreatePayloads.length).toBe(1);
   expect(productCreatePayloads[0]).toMatchObject({
