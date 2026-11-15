@@ -18,3 +18,8 @@ The purchasing approval confirmation fallback was corrected after exact-head bro
 ## Confirmation copy localization — 2026-11-15
 
 The purchasing approval E2E trace exposed empty confirmation labels. The UI now uses dedicated localized prompt and action-button keys in both Arabic and English. Re-run exact-head CI and refresh Preview deployments before release.
+
+
+## Runtime translation diagnostic — 2026-11-15
+
+The browser smoke still observes empty purchasing confirmation interpolation although the exact served locale JSON contains the required keys. Added a focused E2E diagnostic to inspect the component's LocalizationService/TranslateService values at the exact interaction point. This is test-only instrumentation and must be removed after root-cause correction.
