@@ -1740,5 +1740,35 @@
     "invoices": "Customer invoices",
     "statement": "View statement",
     "financialNote": "Balances and purchase totals are shown only when backed by an approved financial source."
+  },
+  "productEditor": {
+    "createTitle": "Add product",
+    "editTitle": "Edit product details",
+    "description": "Edit descriptive fields only. Price and stock settings have separate permissions.",
+    "name": "Product name",
+    "namePlaceholder": "e.g. New product",
+    "nameRequired": "Product name is required",
+    "sku": "SKU",
+    "skuPlaceholder": "Optional",
+    "unit": "Unit",
+    "unitPlaceholder": "piece, kg, hour",
+    "unitRequired": "Unit is required",
+    "descriptionLabel": "Description",
+    "descriptionPlaceholder": "A short product or service description",
+    "cancel": "Cancel",
+    "save": "Save changes",
+    "saving": "Saving…"
+  },
+  "productProfile": {
+    "eyebrow": "PRODUCT PROFILE",
+    "sku": "SKU",
+    "description": "Description",
+    "unit": "Unit",
+    "price": "Unit price",
+    "stock": "Current stock",
+    "stockTracked": "Stock tracked",
+    "notTracked": "Not stock tracked",
+    "edit": "Edit details",
+    "emptyDescription": "No description added"
   }
 }
