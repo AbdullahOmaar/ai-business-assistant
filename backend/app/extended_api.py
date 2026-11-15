@@ -407,7 +407,7 @@ def approve_purchase_order(business_id: UUID, order_id: UUID,
         po = session.scalars(select(PurchaseOrder).where(
             PurchaseOrder.id == order_id,
             PurchaseOrder.business_id == business_id,
-        ).with_for_update()).one_or_none()
+        ).with_for_update().execution_options(populate_existing=True)).one_or_none()
         if po is None:
             raise WorkflowError("Purchase order not found in this business")
         if po.status != "draft":
@@ -478,7 +478,7 @@ def receive_purchase_order(
             PurchaseReceiptIdempotency.business_id == business_id,
             PurchaseReceiptIdempotency.purchase_order_id == order_id,
             PurchaseReceiptIdempotency.idempotency_key == idempotency_key,
-        ).with_for_update()).one_or_none()
+        ).with_for_update().execution_options(populate_existing=True)).execution_options(populate_existing=True).one_or_none()
         if previous is not None:
             if previous.request_hash != request_hash:
                 raise HTTPException(status_code=409, detail="Idempotency-Key was already used with a different receipt payload.")
@@ -494,7 +494,7 @@ def receive_purchase_order(
             PurchaseOrderLine.id.in_(line_ids),
             PurchaseOrderLine.purchase_order_id == po.id,
             PurchaseOrderLine.business_id == business_id,
-        ).order_by(PurchaseOrderLine.id).with_for_update()).all()
+        ).order_by(PurchaseOrderLine.id).with_for_update().execution_options(populate_existing=True)).all()
         by_line_id = {line.id: line for line in lines}
         if len(by_line_id) != len(requested_by_line):
             raise WorkflowError("Every receipt line must belong to this purchase order and business")
@@ -508,10 +508,22 @@ def receive_purchase_order(
             Product.id.in_(product_ids),
             Product.business_id == business_id,
             Product.is_stock_tracked.is_(True),
-        ).order_by(Product.id).with_for_update()).all()
+        ).order_by(Product.id).with_for_update().execution_options(populate_existing=True)).all()
         by_product_id = {product.id: product for product in products}
         if len(by_product_id) != len(product_ids):
             raise WorkflowError("Every received purchase line must reference a stock-tracked product in this business")
+
+        # Claim the key before stock/audit side effects. The unique database
+        # constraint is the final arbiter for concurrent requests using one key.
+        receipt_claim = PurchaseReceiptIdempotency(
+            business_id=business_id,
+            purchase_order_id=po.id,
+            idempotency_key=idempotency_key,
+            request_hash=request_hash,
+            response_snapshot={},
+        )
+        session.add(receipt_claim)
+        session.flush()
 
         # Lock all lines and products in stable ID order before writing any receipt effects.
         for line in lines:
@@ -544,13 +556,7 @@ def receive_purchase_order(
         ))
         session.flush()
         response_snapshot = _dict(po, ("id", "order_number", "status", "total", "currency_code"))
-        session.add(PurchaseReceiptIdempotency(
-            business_id=business_id,
-            purchase_order_id=po.id,
-            idempotency_key=idempotency_key,
-            request_hash=request_hash,
-            response_snapshot=response_snapshot,
-        ))
+        receipt_claim.response_snapshot = response_snapshot
         session.flush()
         return response_snapshot
 

@@ -4,7 +4,7 @@ Revision ID: 0007_receipt_idem
 Revises: 0006_business_invitations
 Create Date: 2026-11-15
 
-Draft only: do not apply until Master reconciles the shared migration graph.
+Additive T39 receipt-replay table. Owner-authorized for the synthetic pre-release environment after exact migration review, PostgreSQL CI validation, and rollback/recovery planning. Production application remains subject to release gates.
 """
 from alembic import op
 import sqlalchemy as sa

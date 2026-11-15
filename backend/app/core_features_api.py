@@ -538,7 +538,7 @@ def accept_business_invitation(
                 BusinessInvitation.id == invitation.id,
                 BusinessInvitation.business_id == business.id,
                 BusinessInvitation.token_hash == token_hash,
-            ).with_for_update()
+            ).with_for_update().execution_options(populate_existing=True)
         ).one_or_none()
         if locked_invitation is None or locked_invitation.status != "pending":
             raise HTTPException(status_code=410, detail="Invitation is no longer available")

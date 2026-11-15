@@ -749,6 +749,13 @@ def test_concurrent_same_key_receipt_requests_apply_stock_once():
         assert snapshot[1] == ((line_ids[0], Decimal("1.000")),)
         assert len(snapshot[2]) == 1
         assert len(snapshot[3]) == 2  # creation + exactly one receipt audit event
+        with Session(engine) as session:
+            replay_rows = session.scalars(select(PurchaseReceiptIdempotency).where(
+                PurchaseReceiptIdempotency.business_id == business_id,
+                PurchaseReceiptIdempotency.purchase_order_id == order_id,
+                PurchaseReceiptIdempotency.idempotency_key == headers["Idempotency-Key"],
+            )).all()
+        assert len(replay_rows) == 1
     finally:
         if previous is not None:
             _restore_test_identity(*previous)
