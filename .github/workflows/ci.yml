@@ -89,8 +89,16 @@ jobs:
       - name: Verify offline migration SQL generation
         working-directory: backend
         run: |
-          python -m alembic upgrade head --sql > /tmp/alembic-upgrade.sql
-          test -s /tmp/alembic-upgrade.sql
+          python -m alembic upgrade head --sql > test-results/alembic-upgrade.sql
+          test -s test-results/alembic-upgrade.sql
+      - name: Upload generated Alembic SQL for exact review
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-migration-sql
+          path: backend/test-results/alembic-upgrade.sql
+          if-no-files-found: error
+          retention-days: 3
       - name: Audit Python dependencies
         run: pip-audit -r backend/requirements.txt
       - name: Upload backend test results
