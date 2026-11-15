@@ -59,7 +59,7 @@ import { LocalizationService } from './localization.service';
                     <span aria-hidden="true">{{ sortIndicator('phone') }}</span>
                   </button>
                 </th>
-                <th scope="col">{{ locale() === 'ar' ? 'العنوان' : 'Address' }}</th>
+                <th scope="col">{{ t('customerDirectory.address') }}</th>
                 <th scope="col">{{ t('customerDirectory.m_256ab9') }}</th>
               </tr>
             </thead>
@@ -120,7 +120,7 @@ import { LocalizationService } from './localization.service';
                 @if (customer.address || customer.notes) {
                   <div class="customer-directory__details">
                     @if (customer.address) { <span><b>{{ locale() === 'ar' ? 'العنوان' : 'Address' }}:</b> {{ customer.address }}</span> }
-                    @if (customer.notes) { <span><b>{{ locale() === 'ar' ? 'ملاحظة' : 'Note' }}:</b> {{ customer.notes }}</span> }
+                    @if (customer.notes) { <span><b>{{ t('customerDirectory.note') }}:</b> {{ customer.notes }}</span> }
                   </div>
                 }
               </div>
