@@ -4038,6 +4038,8 @@ export class AppComponent implements OnInit, OnDestroy {
 
   async createProduct(): Promise<void> {
     if (!this.business) return;
+    if (!this.productName.trim()) { this.error = this.t('productEditor.nameRequired'); return; }
+    if (!this.productUnit.trim()) { this.error = this.t('productEditor.unitRequired'); return; }
     const unitPrice = this.normalizeProductDecimal(this.productPrice, 2);
     const openingQuantity = this.stockTracked && this.business.role === 'owner'
       ? this.normalizeProductDecimal(this.productOpeningQuantity, 3)

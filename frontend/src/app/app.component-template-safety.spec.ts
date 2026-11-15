@@ -765,7 +765,10 @@ test('product creation distinguishes saved stock setup from a failed list refres
   assert.match(method, /sku: this\.productSku\.trim\(\) \|\| undefined/);
   assert.match(method, /description: this\.productDescription\.trim\(\) \|\| undefined/);
   assert.match(method, /unit: this\.productUnit\.trim\(\) \|\| 'unit'/);
+  assert.match(method, /if \(!this\.productName\.trim\(\)\)/);
+  assert.match(method, /if \(!this\.productUnit\.trim\(\)\)/);
   assert.match(method, /unit_price: unitPrice/);
+  assert.match(method, /opening_quantity: openingQuantity/);
   assert.match(source, /replace\(\/[٠-٩]\/g/);
   assert.match(source, /replace\(\/[۰-۹]\/g/);
   assert.match(source, /replace\(\/٫\/g, '\.'\)/);
