@@ -239,24 +239,32 @@ async function openPurchases(page: Page, expectPurchaseOrder = true): Promise<vo
   }
 }
 
+async function openPurchaseOrderDetails(page: Page): Promise<void> {
+  await page.getByRole('button', { name: 'View details', exact: true }).click();
+  await expect(page.locator('.pw__detail-head')).toBeVisible();
+  await expect(page.locator('.pw__detail-head')).toContainText('PO-2026-001');
+}
+
 test('OWNER approves a draft purchase order from the mobile layout without recording receipt', async ({ page }) => {
   const harness = await setupWorkspace(page);
   await openPurchases(page);
+  await openPurchaseOrderDetails(page);
   await page.setViewportSize({ width: 390, height: 844 });
 
-  await page.getByRole('button', { name: 'Approve: PO-2026-001', exact: true }).click();
-  const dialog = page.getByRole('alertdialog');
-  await expect(dialog).toBeVisible();
-  await expect(dialog).toContainText('North Supplies');
-  await expect(dialog).toContainText('Catalog Product × 2.000');
-  await expect(dialog).toContainText('Unit cost: 100.00 EGP');
-  await expect(dialog).toContainText('200.00 EGP');
-  await expect(dialog).toContainText('does not create supplier bills, payables or payments');
+  const details = page.locator('.pw__panel');
+  await expect(details).toContainText('North Supplies');
+  await expect(details).toContainText('Catalog Product');
+  await expect(details).toContainText('100.00 EGP');
+  await expect(details).toContainText('200.00 EGP');
 
-  await dialog.getByRole('button', { name: 'Approve order', exact: true }).click();
-  await expect(dialog).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Approve: PO-2026-001', exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Receive remaining: PO-2026-001', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Approve order', exact: true }).click();
+  const confirmation = page.locator('.pw__confirm');
+  await expect(confirmation).toBeVisible();
+  await expect(confirmation).toContainText('Approve this purchase order?');
+  await confirmation.getByRole('button', { name: 'Confirm', exact: true }).click();
+
+  await expect(confirmation).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Record receipt', exact: true })).toBeVisible();
 
   expect(harness.getOrderStatus()).toBe('approved');
   expect(harness.apiRequests.filter(item => item.method === 'POST' && item.path === '/api/v1/businesses/business-a/purchase-orders/po-a/approve')).toHaveLength(1);
@@ -264,16 +272,17 @@ test('OWNER approves a draft purchase order from the mobile layout without recor
   expect(harness.uncaughtErrors).toEqual([]);
 });
 
-test('approval failure stays in the confirmation dialog and does not show success', async ({ page }) => {
+test('approval failure stays in the confirmation step and does not show success', async ({ page }) => {
   const harness = await setupWorkspace(page, { approvalStatus: 403 });
   await openPurchases(page);
-  await page.getByRole('button', { name: 'Approve: PO-2026-001', exact: true }).click();
+  await openPurchaseOrderDetails(page);
+  await page.getByRole('button', { name: 'Approve order', exact: true }).click();
 
-  const dialog = page.getByRole('alertdialog');
-  await dialog.getByRole('button', { name: 'Approve order', exact: true }).click();
-  await expect(dialog).toContainText('Approval is restricted to workspace owners.');
-  await expect(dialog.getByRole('button', { name: 'Approve order', exact: true })).toBeDisabled();
-  await expect(dialog).toBeVisible();
+  const confirmation = page.locator('.pw__confirm');
+  await confirmation.getByRole('button', { name: 'Confirm', exact: true }).click();
+  await expect(page.locator('[role="alert"]:visible')).toContainText('Approval is restricted to workspace owners.');
+  await expect(confirmation).toBeVisible();
+  await expect(confirmation.getByRole('button', { name: 'Confirm', exact: true })).toBeEnabled();
   expect(harness.getOrderStatus()).toBe('draft');
   expect(harness.apiRequests.filter(item => item.method === 'POST' && item.path.endsWith('/approve'))).toHaveLength(1);
   expect(harness.uncaughtErrors).toEqual([]);
@@ -282,8 +291,9 @@ test('approval failure stays in the confirmation dialog and does not show succes
 test('STAFF cannot see purchase-order approval action for a draft order', async ({ page }) => {
   const harness = await setupWorkspace(page, { role: 'staff', initialOrderStatus: 'draft' });
   await openPurchases(page);
-  await expect(page.getByRole('button', { name: /^Approve:/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /^Receive remaining:/ })).toHaveCount(0);
+  await openPurchaseOrderDetails(page);
+  await expect(page.getByRole('button', { name: 'Approve order', exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Record receipt', exact: true })).toHaveCount(0);
   expect(harness.apiRequests.some(item => item.method === 'POST' && item.path.endsWith('/approve'))).toBe(false);
   expect(harness.uncaughtErrors).toEqual([]);
 });
@@ -301,12 +311,13 @@ test('STAFF cannot see purchase-order receiving action for an approved order', a
 test('switching workspaces clears a pending purchase approval confirmation', async ({ page }) => {
   const harness = await setupWorkspace(page, { includeSecondBusiness: true });
   await openPurchases(page);
-  await page.getByRole('button', { name: 'Approve: PO-2026-001', exact: true }).click();
-  await expect(page.getByRole('alertdialog')).toBeVisible();
+  await openPurchaseOrderDetails(page);
+  await page.getByRole('button', { name: 'Approve order', exact: true }).click();
+  await expect(page.locator('.pw__confirm')).toBeVisible();
 
   await page.locator('.workspace-bar select').selectOption('business-b', { force: true });
   await expect(page.locator('#workspace-current-name')).toHaveText('Beta Retail');
-  await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  await expect(page.locator('.pw__confirm')).toHaveCount(0);
   await page.getByRole('button', { name: 'Home', exact: true }).click();
   await openPurchases(page, false);
   expect(harness.apiRequests.filter(item => item.method === 'POST' && item.path.endsWith('/approve'))).toHaveLength(0);
