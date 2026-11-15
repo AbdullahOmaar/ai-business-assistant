@@ -221,7 +221,10 @@ jobs:
     name: authenticated-api-smoke
     if: >-
       github.event_name == 'pull_request' &&
-      github.event.pull_request.head.ref == 'feat/invoice-payment-currency-guard-20261109' &&
+      (
+        github.event.pull_request.head.ref == 'feat/invoice-payment-currency-guard-20261109' ||
+        github.event.pull_request.head.ref == 'master/nov-2026-phase-1-ux-foundation'
+      ) &&
       github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     timeout-minutes: 15
@@ -287,7 +290,7 @@ jobs:
           BROWSER_SMOKE: ${{ needs.frontend-browser-smoke.result }}
           BACKEND_CONTAINER: ${{ needs.backend-container.result }}
           API_SMOKE: ${{ needs.authenticated-api-smoke.result }}
-          REQUIRE_API_SMOKE: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/invoice-payment-currency-guard-20261109' && github.event.pull_request.head.repo.full_name == github.repository }}
+          REQUIRE_API_SMOKE: ${{ github.event_name == 'pull_request' && (github.event.pull_request.head.ref == 'feat/invoice-payment-currency-guard-20261109' || github.event.pull_request.head.ref == 'master/nov-2026-phase-1-ux-foundation') && github.event.pull_request.head.repo.full_name == github.repository }}
         run: |
           set -euo pipefail
           for result in "$BACKEND" "$FRONTEND_TESTS" "$FRONTEND_BUILD" "$FRONTEND_AUDIT" "$BROWSER_SMOKE" "$BACKEND_CONTAINER"; do
