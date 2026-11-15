@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import type { Customer } from './api.service';
 
@@ -5,6 +6,7 @@ import type { Customer } from './api.service';
 @Component({
   selector: 'aba-customer-profile',
   standalone: true,
+  imports: [DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="customer-profile" [attr.aria-labelledby]="'customer-profile-name'">
