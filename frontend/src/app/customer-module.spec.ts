@@ -15,6 +15,7 @@ test('customer editor covers all supported contact fields and required-name/emai
   assert.match(editor, /if \(!name \|\| this\.emailInvalid\(\) \|\| this\.busy\(\)\) return/);
   assert.match(editor, /this\.save\.emit\(/);
   assert.match(editor, /this\.customer\(\)/);
+  assert.match(editor, /hasWhitespace/);
   assert.match(editorCss, /@media\(max-width:560px\)/);
   assert.match(editorCss, /min-height:46px/);
   assert.match(editorCss, /forced-colors:active/);
@@ -24,6 +25,8 @@ test('customer profile presents contact, address, notes and existing invoice/sta
   for (const field of ['phone', 'email', 'address', 'notes']) assert.ok(profile.includes('record.' + field));
   assert.match(profile, /invoices\.emit\(\)/);
   assert.match(profile, /statement\.emit\(\)/);
+  assert.match(profile, /loading\(\)/);
+  assert.match(profile, /retry\.emit\(\)/);
   assert.doesNotMatch(profile, /totalPurchases|receivableBalance|creditLimit/);
   assert.ok(profile.includes('customerProfile.financialNote'));
 });
