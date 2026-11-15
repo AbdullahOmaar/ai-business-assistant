@@ -7,6 +7,7 @@ const editorCss = readFileSync(new URL('./customer-editor.component.css', import
 const profile = readFileSync(new URL('./customer-profile.component.ts', import.meta.url), 'utf8');
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const directory = readFileSync(new URL('./customer-directory.component.ts', import.meta.url), 'utf8');
+const workspace = readFileSync(new URL('./customer-workspace.component.ts', import.meta.url), 'utf8');
 const directoryCss = readFileSync(new URL('./customer-directory.component.css', import.meta.url), 'utf8');
 
 test('customer editor covers all supported contact fields and required-name/email validation', () => {
@@ -49,4 +50,18 @@ test('customer directory preserves responsive layouts and exposes saved address 
   assert.match(directory, /retry\.emit\(\)/);
   assert.match(directoryCss, /min-height:44px/);
   assert.match(directoryCss, /forced-colors:active/);
+});
+
+test('customer workspace covers server search, paginated list, detail and create/edit with tenant stale-response guards', () => {
+  assert.match(workspace, /this\.api\.customers\(requested\.businessId, this\.offset, this\.pageSize, this\.searchQuery\)/);
+  assert.match(workspace, /this\.searchQuery = this\.searchDraft\(\)\.trim\(\)\.slice\(0, 120\)/);
+  assert.match(workspace, /this\.api\.customer\(requested\.businessId, customerId\)/);
+  assert.match(workspace, /this\.api\.createCustomer\(requested\.businessId, value\)/);
+  assert.match(workspace, /this\.api\.updateCustomer\(requested\.businessId, editingId, value\)/);
+  assert.match(workspace, /this\.isCurrent\(this\.listGuard/);
+  assert.match(workspace, /this\.isCurrent\(this\.detailGuard/);
+  assert.match(workspace, /this\.isCurrent\(this\.saveGuard/);
+  assert.match(workspace, /pageSize = 100/);
+  assert.match(workspace, /\(retry\)="retry\(\)"/);
+  assert.doesNotMatch(workspace, /\[retry\]="retry"/);
 });
