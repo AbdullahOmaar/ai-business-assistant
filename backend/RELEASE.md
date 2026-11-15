@@ -13,3 +13,8 @@ This file is a release marker and does not itself apply database migrations.
 ## Preview refresh — 2026-11-15
 
 The purchasing approval confirmation fallback was corrected after exact-head browser smoke exposed empty confirmation copy. Re-run the full exact-SHA workflow and refresh both Preview deployments before release review.
+
+
+## Confirmation copy localization — 2026-11-15
+
+The purchasing approval E2E trace exposed empty confirmation labels. The UI now uses dedicated localized prompt and action-button keys in both Arabic and English. Re-run exact-head CI and refresh Preview deployments before release.
