@@ -6,6 +6,8 @@ const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const editor = readFileSync(new URL('./product-editor.component.ts', import.meta.url), 'utf8');
 const profile = readFileSync(new URL('./product-profile.component.ts', import.meta.url), 'utf8');
 const catalog = readFileSync(new URL('./product-catalog.component.ts', import.meta.url), 'utf8');
+const workspace = readFileSync(new URL('./product-workspace.component.ts', import.meta.url), 'utf8');
+const catalogCss = readFileSync(new URL('./product-catalog.component.css', import.meta.url), 'utf8');
 
 test('product API exposes typed list, detail and safe descriptive PATCH fields', () => {
   assert.match(api, /products\(businessId: string, offset = 0, limit = 100\)/);
@@ -32,4 +34,24 @@ test('product profile presents API-backed price and derived stock without exposi
   assert.match(catalog, /error\(\)/);
   assert.match(catalog, /retry\.emit\(\)/);
   assert.match(profile, /retry\.emit\(\)/);
+});
+
+test('product catalogue exposes keyboard-accessible record navigation on desktop and mobile', () => {
+  assert.match(catalog, /select = output<string>\(\)/);
+  assert.equal((catalog.match(/select\.emit\(product\.id\)/g) || []).length, 2);
+  assert.match(catalogCss, /product-catalog__open/);
+  assert.match(catalogCss, /focus-visible/);
+});
+
+test('product workspace provides tenant-scoped list, detail, descriptive edit and pagination', () => {
+  assert.match(workspace, /input\.required<string>\(\)/);
+  assert.match(workspace, /readonly role = input\.required<'owner' \| 'staff'>\(\)/);
+  assert.match(workspace, /this\.api\.products\(requested\.businessId, this\.offset, this\.pageSize\)/);
+  assert.match(workspace, /this\.api\.product\(requested\.businessId, productId\)/);
+  assert.match(workspace, /this\.api\.updateProduct\(requested\.businessId, productId, value\)/);
+  assert.match(workspace, /this\.isCurrent\(this\.listGuard/);
+  assert.match(workspace, /this\.isCurrent\(this\.detailGuard/);
+  assert.match(workspace, /this\.isCurrent\(this\.saveGuard/);
+  assert.match(workspace, /pageSize = 100/);
+  assert.doesNotMatch(workspace, /createProduct|unit_price|opening_quantity|stock_quantity/);
 });
