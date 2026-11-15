@@ -407,7 +407,7 @@ def approve_purchase_order(business_id: UUID, order_id: UUID,
         po = session.scalars(select(PurchaseOrder).where(
             PurchaseOrder.id == order_id,
             PurchaseOrder.business_id == business_id,
-        ).with_for_update().execution_options(populate_existing=True)).one_or_none()
+        ).with_for_update()).one_or_none()
         if po is None:
             raise WorkflowError("Purchase order not found in this business")
         if po.status != "draft":
