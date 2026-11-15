@@ -1569,36 +1569,15 @@ test('AI assistant auto-follow respects the reader position and reduced motion',
 
 
 test('purchase-order approval is owner-only, confirmation-first and tenant-reset safe', () => {
-  const rowsStart = source.indexOf('get purchaseTableRows()');
-  const rowsEnd = source.indexOf('  purchaseOrderProductsSummary(order:PurchaseOrder):string', rowsStart);
-  const rows = source.slice(rowsStart, rowsEnd);
-  assert.ok(rows.includes('this.canApprovePurchaseOrder(order)'));
-  assert.ok(rows.includes("id:'approve'"));
-  assert.ok(rows.includes("this.business?.role==='owner'"));
-
-  const actionStart = source.indexOf('onPurchaseRecordAction(');
-  const actionEnd = source.indexOf('get filteredProducts()', actionStart);
-  const action = source.slice(actionStart, actionEnd);
-  assert.ok(action.includes("if(this.business?.role!=='owner')return;"));
-  assert.ok(action.includes("action.actionId==='approve'"));
-  assert.ok(action.includes('this.requestPurchaseOrderApproval(order,action.anchor)'));
-
-  const resetStart = source.indexOf('private clearWorkspaceData(): void');
-  const resetEnd = source.indexOf('async createWorkspace(): Promise<void>', resetStart);
-  const reset = source.slice(resetStart, resetEnd);
-  assert.ok(reset.includes('this.pendingPurchaseApproval = null;'));
-  assert.ok(reset.includes("this.purchaseApprovalError = '';"));
-
-  const approvalStart = source.indexOf('async confirmPurchaseOrderApproval(): Promise<void>');
-  const approvalEnd = source.indexOf('requestPurchaseOrderReceipt(', approvalStart);
-  const approval = source.slice(approvalStart, approvalEnd);
-  assert.ok(approval.includes('this.api.approvePurchaseOrder(businessId, order.id)'));
-  assert.ok(approval.includes("this.setOperationsSuccess('purchases'"));
-  assert.ok(!approval.includes('receivePurchaseOrder'));
-
+  assert.ok(purchasingWorkspaceSource.includes("canApprove(order: PurchaseOrder): boolean { return this.isOwner() && order.status === 'draft'; }"));
+  assert.ok(purchasingWorkspaceSource.includes("requestAction(action: PurchaseAction): void"));
+  assert.ok(purchasingWorkspaceSource.includes("this.pendingAction.set(action)"));
+  assert.ok(purchasingWorkspaceSource.includes("async confirmAction(): Promise<void>"));
+  assert.ok(purchasingWorkspaceSource.includes("if (!action || !order || !this.isOwner()) return;"));
+  assert.ok(purchasingWorkspaceSource.includes("this.api.approvePurchaseOrder(requested.businessId, order.id)"));
+  assert.ok(purchasingWorkspaceSource.includes("this.isCurrent(this.actionGuard, version, requested)"));
   assert.ok(apiSource.includes("'/purchase-orders/' + encodeURIComponent(orderId) + '/approve'"));
-  assert.ok(source.includes('This approves the draft purchase order only. It does not record receipt or a stock movement.'));
-  assert.ok(source.includes('Approval does not create supplier bills, payables or payments.'));
+  assert.ok(purchasingWorkspaceSource.includes("this.api.receivePurchaseOrder"));
 });
 
 test('installed PWA announces a newly activated service worker and offers an explicit refresh', () => {
