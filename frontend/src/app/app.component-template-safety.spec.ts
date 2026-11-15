@@ -789,8 +789,12 @@ test('positive opening stock is OWNER-only while STAFF can create tracked produc
   const createStart = source.indexOf('async createProduct(): Promise<void>');
   const createEnd = source.indexOf('get invoicePreview()', createStart);
   const createMethod = source.slice(createStart, createEnd);
-  assert.match(createMethod, /opening_quantity: this\.stockTracked && this\.business\.role === 'owner' \? this\.productOpeningQuantity : '0'/,
-    'non-owners and unresolved roles must submit zero opening stock');
+  assert.match(createMethod, /const openingQuantity = this\.stockTracked && this\.business\.role === 'owner'/,
+    'only owners may submit a positive opening quantity');
+  assert.match(createMethod, /opening_quantity: openingQuantity/,
+    'the validated decimal-string quantity must be sent without floating-point conversion');
+  assert.match(createMethod, /unit_price: unitPrice/,
+    'the validated decimal-string unit price must be sent without floating-point conversion');
 
   const resetStart = source.indexOf('private clearWorkspaceData(): void');
   const resetEnd = source.indexOf('\n  }', resetStart);
