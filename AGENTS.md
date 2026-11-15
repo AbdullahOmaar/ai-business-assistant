@@ -1,42 +1,41 @@
-# OWNER DECISION — PRODUCTION IS CURRENT DEVELOPMENT / TEST ENVIRONMENT — effective 2026-11-14
+# OWNER DECISION — PRODUCTION & PREVIEW USE THE CURRENT SYNTHETIC DEVELOPMENT ENVIRONMENT — effective 2026-11-15
 
+**Lifecycle classification:** AIBA is still development / pre-release. The deployed environment technically labelled Production currently contains synthetic, non-real development data. It is not a real customer-production environment. This Owner decision controls over provider labels such as `target=production`, Neon branch names, or the use of a Vercel Preview URL.
 
-<b>Production currently contains synthetic, non-real development data. It is authorized as the active development and QA environment until the Owner explicitly declares that real customer/business data is being used.</b>
+## Standing authorization — no repeated Owner approval
 
-MASTER and assigned agents do not need a separate Owner approval for ordinary, non-destructive production testing or scoped test-data CRUD.
+- MASTER and assigned agents may use the existing Production API, Firebase client project and configured application database for development and QA, including from Vercel Preview.
+- Preview must retain and use the current checked-in `frontend/public/runtime-config.json` by default. It points to the existing API and Firebase client configuration. Do not blank it, show a setup-required screen, reject the known Production API/Firebase identifiers, or block Preview login solely because the provider target is labelled Production.
+- No separate Neon QA database, separate Firebase project, paid QA provisioning, or per-action Owner approval is required solely to open Preview sign-in or test the current synthetic project data.
+- Full application-data CRUD is authorized: create/read/update/delete synthetic users, accounts, businesses/workspaces, customers, products, invoices, expenses, inventory/workflow records and other ordinary application records through supported authenticated application/API flows.
+- Bulk create, update, delete, clean up and reset synthetic application/test records or test workspaces are also authorized without per-action approval while the target remains this current synthetic development environment.
+- MASTER may exercise existing product workflows using synthetic records and test identities, inspect persisted outcomes, and reset/delete synthetic test records as part of normal development. Do not pause to ask the Owner to reconfirm these authorized data operations.
 
+## Controls that remain mandatory
 
-## Authorized without per-action approval
-- Create and use clearly identifiable test accounts, users, tenants and test records on the current Production runtime/database.
-- Perform ordinary create/read/update operations and exercise application workflows, APIs, integrations, permissions, reports and persistence using synthetic test data.
-- Modify scoped synthetic test records and create simulated business/accounting transactions for validation, provided they do not initiate real external money movement, payment, settlement, tax filing or real customer communications.
-- Use the existing Production Firebase/Neon resources and configuration for these tests when technically appropriate; do not provision a separate paid QA resource merely because tests touch Production.
-- MASTER may choose safe test scenarios, execute them, inspect outcomes and clean up specifically identified test artifacts when cleanup is scoped and reversible.
+- Preserve verified authentication, server-side authorization, tenant isolation, request validation, idempotency, audit logging, privacy controls, rate limits and service boundaries. Do not bypass application APIs with arbitrary direct SQL/service mutations.
+- Preserve audit history; do not delete or rewrite audit events to make tests pass. Keep test identities/records clearly identifiable and never log full sensitive payloads.
+- Never expose or copy Firebase service-account JSON, database URLs, provider tokens or other server secrets into frontend assets, logs, prompts, docs or GitHub.
+- This decision authorizes application-data testing only. Schema changes, destructive database migrations, database restore/overwrite operations, changes to authentication/tenant/security controls, new financial semantics (T37 remains DRAFT / NOT APPROVED), real-money movement, external customer messages, tax filing, paid provisioning and provider-security changes remain subject to their existing explicit gates.
+- GitHub CI remains isolated and must use disposable test services. CI and untrusted PR code must never connect to Production or receive Production secrets.
+- Stop using this exception and obtain a new Owner decision before importing real customer/business data or otherwise changing the environment from synthetic development data.
 
-## Boundaries that remain active
-- This decision does not authorize bypassing authentication, tenant isolation, authorization, privacy, audit controls, rate limits or provider security protections.
-- Never expose, copy into logs/prompts/client bundles, or weaken production secrets and credentials.
-- Bulk deletion, database reset/truncate, irreversible or destructive migrations, schema/data-loss operations, or cleanup that could affect non-test records still require a specific scoped Owner decision.
-- Real external payments, transfers of actual funds, settlement/posting with real-world effect, tax filing, real customer messages/notifications, paid provisioning/billing, and provider security changes remain approval-gated.
-- Keep test records clearly labeled and scoped; avoid polluting shared demo data. Record what was created/changed and clean up safely where appropriate.
-- GitHub CI remains isolated and must use disposable test services; this decision does not permit CI jobs or untrusted PR code to connect to Production or receive production secrets.
-- Production data/runtime is treated as synthetic only under this decision. Before onboarding real customers or importing real business data, pause this exception and obtain a new Owner decision defining the production-data safety policy.
+## Preview instruction — do not repeat the obsolete blocker
 
-## Effect on current QA blocker
-A separate Neon QA database or Firebase Preview configuration is not a prerequisite solely for routine QA while the current Production environment is synthetic and the relevant existing Production resources can safely support the test. MASTER should use the existing environment, execute the required tests, and continue the batch. If a specific paid resource, unavailable credential, provider-enforced permission, or unsafe operation is genuinely required, isolate that exact blocker and continue independent work.
+Preview builds must use the current shared development runtime configuration by default. Optional complete Preview overrides may be used when intentionally supplied, but the known Production API and Firebase identifiers are not forbidden for this project. Do not claim that the current dataset contains real customers, do not require a separate Neon/Firebase QA project as a generic prerequisite, and do not ask the Owner to reconfirm this standing authorization. If login is actually blocked, inspect the concrete cause (for example, exact CORS origin or Firebase authorized-domain allowlist), address that specific technical issue through the permitted configuration path, and continue independent work. A generic statement that Preview cannot use Production data is incorrect under this Owner decision.
 
-This decision changes the previous blanket requirement for separate approval before ordinary Production test-data mutation. It does not waive release gates, exact-head CI/review requirements, merge protections, deployment verification, or the standing MASTER long-run execution policy.
+This 2026-11-15 decision supersedes the narrower 2026-11-14 Production-test-data wording and every older repository instruction that requires non-Production data solely for Preview login or routine application-data QA. It does not waive release gates, exact-head CI/review requirements, provider protections, schema/migration controls, or real-world financial/external-effect safeguards.
 
 
 ## Owner-selected November delivery discipline — effective 2026-11-12 (supersedes conflicting rules below)
 
 The Owner requires meaningful product evolution, not a stream of cosmetic edits and tiny PRs.
 
-- **Single continuing branch:** use only `master/nov-2026-phase-1-ux-foundation` for the November product plan. Continue Phases sequentially on this branch. No branch per Phase, task, chat, commit or small fix. Preserve existing branches; `docs/contributing-ci-single-source` is frozen and is not a writing branch.
+- **Single continuing branch:** use only `master/nov-2026-phase-1-runtime-qa` as the current active November writing branch, starting from merged mainline commit `dad7007d338398c7560859bef4a078af69bacb6d`. The previous `master/nov-2026-phase-1-ux-foundation` delivered PR #397 and is frozen/preserved after merge. No branch per Phase, task, chat, commit or small fix. Preserve all historical branches; `docs/contributing-ci-single-source` remains frozen.
 - **PR gate:** do not open a PR for isolated minor/cosmetic work (typography, spacing, color, text, small CSS, trivial bug fix), refactor-only, documentation-only or test-only changes. Batch small related changes on the single active branch. Open one PR only after a substantial coherent product outcome is complete and acceptance evidence is ready, such as an end-to-end business workflow, meaningful module capability, or major measurable Web + Mobile improvement.
 - **Test economy:** do not run unit suites, browser suites, builds or CI for each small edit/checkpoint. Defer routine validation until a substantial outcome is assembled; run the relevant consolidated checks once on the exact candidate SHA. Critical security, authorization, tenant-isolation, data-integrity or production-safety risks may require the smallest focused check immediately. Any exact-head check enforced for a future PR is mandatory and must never be bypassed.
 - **Product focus:** prioritize complete business capabilities and real user journeys. Standalone visual polish is not a delivery outcome unless it blocks usability or is bundled with a substantial improvement. Batch related code/docs/evidence on this branch and keep one primary writer per shared path.
-- **Current disposition:** Draft PRs #388 and #389 were closed without merge on 2026-11-12. Both source branches and commits are preserved. PR closure is not deletion. This 2026-11-12 no-merge disposition is historical; the later 2026-11-14 MASTER delegation governs ordinary product-code merge and deployment after all mandatory gates. Production database mutation and destructive migrations remain separately gated.
+- **Current disposition:** Draft PRs #388 and #389 were closed without merge on 2026-11-12. Both source branches and commits are preserved. PR closure is not deletion. This 2026-11-12 no-merge disposition is historical; the later 2026-11-14 MASTER delegation governs ordinary product-code merge and deployment after all mandatory gates. Schema migrations remain separately gated; synthetic application-data CRUD, including deletion and bulk test-data reset, is authorized by the 2026-11-15 Owner decision.
 
 This Owner decision supersedes older instructions below that allow a branch per Phase, milestone PRs for each important incremental change, or routine per-edit test execution. It does not supersede security/data-integrity controls, exact-head required checks, formal branch protections, the MASTER standing merge/deployment delegation and high-impact exceptions recorded effective 2026-11-14.
 
