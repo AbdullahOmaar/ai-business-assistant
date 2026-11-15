@@ -95,9 +95,9 @@ export class CustomerEditorComponent {
     if (!value) return false;
     const at = value.indexOf('@');
     const dot = value.lastIndexOf('.');
+    const hasWhitespace = value.split('').some(character => character.charCodeAt(0) <= 32);
     return at <= 0 || at !== value.lastIndexOf('@') || dot <= at + 1 ||
-      dot >= value.length - 1 || value.includes(' ') || value.includes('\\t') ||
-      value.includes('\\n') || value.includes('\\r');
+      dot >= value.length - 1 || hasWhitespace;
   }
 
   readValue(event: Event): string {
