@@ -11,6 +11,7 @@ from app.api import router as business_router
 from app.assistant_api import router as assistant_router
 from app.core_features_api import router as core_features_router
 from app.extended_api import router as extended_business_router
+from app.purchasing_api import router as purchasing_router
 from app.database import create_database_engine
 from app.firebase_auth import configure_firebase_auth
 from app.platform_admin_api import router as platform_admin_router
@@ -55,6 +56,7 @@ if allowed_origins:
 app.include_router(business_router)
 app.include_router(core_features_router)
 app.include_router(extended_business_router)
+app.include_router(purchasing_router)
 app.include_router(assistant_router)
 app.include_router(platform_admin_router)
 app.include_router(employee_payroll_router)
