@@ -324,3 +324,63 @@ def list_purchase_order_activity(
         }
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/inventory/movements")
+def list_inventory_movements(
+    business_id: UUID,
+    product_id: UUID | None = None,
+    movement_type: str | None = Query(default=None, min_length=1, max_length=16),
+    reference_type: str | None = Query(default=None, min_length=1, max_length=32),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Read the immutable, tenant-scoped stock movement ledger."""
+    try:
+        _authorize(session, principal, business_id)
+        allowed_types = {"opening", "receipt", "sale", "return", "adjustment"}
+        if movement_type is not None and movement_type not in allowed_types:
+            raise HTTPException(status_code=422, detail="Unsupported stock movement type")
+        statement = (
+            select(StockMovement, Product)
+            .join(
+                Product,
+                (Product.id == StockMovement.product_id)
+                & (Product.business_id == StockMovement.business_id),
+            )
+            .where(StockMovement.business_id == business_id)
+        )
+        if product_id is not None:
+            statement = statement.where(StockMovement.product_id == product_id)
+        if movement_type is not None:
+            statement = statement.where(StockMovement.movement_type == movement_type)
+        if reference_type is not None:
+            statement = statement.where(StockMovement.reference_type == reference_type)
+        rows = session.execute(
+            statement.order_by(StockMovement.created_at.desc(), StockMovement.id.desc())
+            .offset(offset).limit(limit + 1)
+        ).all()
+        page = rows[:limit]
+        return {
+            "items": [
+                {
+                    **_serialize(
+                        movement,
+                        (
+                            "id", "product_id", "movement_type", "quantity_delta",
+                            "reason", "reference_type", "reference_id",
+                            "created_by_subject", "created_at",
+                        ),
+                    ),
+                    "product": _serialize(product, ("id", "name", "sku", "unit")),
+                }
+                for movement, product in page
+            ],
+            "limit": limit,
+            "offset": offset,
+            "has_more": len(rows) > limit,
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
