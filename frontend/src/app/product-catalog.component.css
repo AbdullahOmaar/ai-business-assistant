@@ -17,6 +17,8 @@
 .product-catalog__desktop th button{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:2px 0;border:0;background:transparent;color:inherit;font:inherit;font-weight:inherit;text-align:start;cursor:pointer}
 .product-catalog__desktop th button span{color:var(--aiba-brand,#0f766e)}
 .product-catalog__name{color:var(--aiba-ink,#172033);font-weight:700}
+.product-catalog__open{max-width:100%;min-height:40px;padding:2px 0;border:0;background:transparent;color:inherit;font:inherit;font-weight:inherit;text-align:start;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px;overflow-wrap:anywhere;cursor:pointer}
+.product-catalog__open:hover{text-decoration-color:currentColor}
 .product-catalog__price,.product-catalog__mobile-price{color:var(--aiba-brand-strong,#115e59);font-weight:750;font-variant-numeric:tabular-nums;white-space:nowrap}
 .product-catalog__stock{display:inline-flex;align-items:center;gap:6px;color:var(--aiba-brand-strong,#115e59);font-size:11px;font-weight:650}
 .product-catalog__dot{width:6px;height:6px;flex:0 0 6px;border-radius:50%;background:var(--aiba-brand,#0f766e)}
