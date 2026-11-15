@@ -46,10 +46,8 @@ if (previewRuntimeConfig) {
     `${JSON.stringify(previewRuntimeConfig, null, 2)}\n`,
     'utf8',
   );
-  console.log(
-    previewRuntimeConfig.apiBaseUrl
-      ? 'Preview runtime config: isolated synthetic API/Firebase configured'
-      : 'Preview runtime config: disabled until isolated synthetic API/Firebase is configured',
-  );
+  console.log('Preview runtime config: explicit Preview API/Firebase override written');
+} else if (process.env.VERCEL_ENV === 'preview') {
+  console.log('Preview runtime config: keeping the current Owner-authorized development API/Firebase config');
 }
 
