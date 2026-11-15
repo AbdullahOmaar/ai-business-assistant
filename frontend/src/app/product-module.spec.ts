@@ -53,5 +53,8 @@ test('product workspace provides tenant-scoped list, detail, descriptive edit an
   assert.match(workspace, /this\.isCurrent\(this\.detailGuard/);
   assert.match(workspace, /this\.isCurrent\(this\.saveGuard/);
   assert.match(workspace, /pageSize = 100/);
+  assert.match(workspace, /@if \(hasMore\(\) && !error\(\)\)/);
+  assert.match(workspace, /\[disabled\]="loading\(\)"/);
+  assert.match(workspace, /loadingMore\(\) \? t\('ui\.m_1dwk1vm'\)/);
   assert.doesNotMatch(workspace, /createProduct|unit_price|opening_quantity|stock_quantity/);
 });
