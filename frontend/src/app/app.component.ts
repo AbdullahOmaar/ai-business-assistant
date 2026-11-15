@@ -635,6 +635,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       <small id="product-name-error" class="field-error" aria-live="polite">{{ t('ui.m_1ymmcl') }}</small>
                     }
                   </label>
+                  <label>{{ t('productEditor.sku') }}<input name="productSku" maxlength="80" autocomplete="off" [(ngModel)]="productSku"></label>
+                  <label>{{ t('productEditor.description') }}<textarea name="productDescription" rows="2" maxlength="1000" [(ngModel)]="productDescription"></textarea></label>
+                  <label>{{ t('productEditor.unit') }}<input name="productUnit" maxlength="32" required [(ngModel)]="productUnit"></label>
                   <label>{{ t('ui.m_1iz2xk3') }}<input #productPriceModel="ngModel" [attr.aria-label]="t('ui.m_1iz2xk3')" name="productPrice" type="number" min="0" step="0.01" [placeholder]="t('ui.m_1iz2xk3')" required [(ngModel)]="productPrice" [attr.aria-invalid]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'product-price-error' : null">
                     @if (productPriceModel.invalid && (productPriceModel.touched || productForm.submitted)) {
                       <small id="product-price-error" class="field-error" aria-live="polite">{{ productPriceModel.errors?.['required'] ? t('ui.m_9pqcpe') : t('ui.m_1hiyjor') }}</small>
@@ -1557,6 +1560,9 @@ export class AppComponent implements OnInit, OnDestroy {
   productMessage = '';
   productMessageKind: 'success' | 'warning' = 'success';
   productName = '';
+  productSku = '';
+  productDescription = '';
+  productUnit = 'unit';
   productPrice = '';
   stockTracked = false;
   productOpeningQuantity = '0';
@@ -4019,8 +4025,21 @@ export class AppComponent implements OnInit, OnDestroy {
     return keys[code] ? this.t(keys[code]) : code;
   }
 
+  private normalizeProductDecimal(value: string, scale: 2 | 3): string | null {
+    const pattern = scale === 2 ? /^(\d{1,12})(?:\.(\d{1,2}))?$/ : /^(\d{1,12})(?:\.(\d{1,3}))?$/;
+    const match = pattern.exec(String(value ?? '').trim());
+    if (!match) return null;
+    return `${BigInt(match[1]).toString()}.${(match[2] || '').padEnd(scale, '0')}`;
+  }
+
   async createProduct(): Promise<void> {
     if (!this.business) return;
+    const unitPrice = this.normalizeProductDecimal(this.productPrice, 2);
+    const openingQuantity = this.stockTracked && this.business.role === 'owner'
+      ? this.normalizeProductDecimal(this.productOpeningQuantity, 3)
+      : '0';
+    if (unitPrice === null) { this.error = this.t('ui.m_1hiyjor'); return; }
+    if (openingQuantity === null) { this.error = this.t('ui.m_1rtcb8u'); return; }
     const businessId = this.business.id;
     this.loading = true;
     this.error = '';
@@ -4028,11 +4047,17 @@ export class AppComponent implements OnInit, OnDestroy {
     this.productMessageKind = 'success';
     try {
       await this.api.createProduct(businessId, {
-        name: this.productName, unit_price: Number(this.productPrice).toFixed(2), is_stock_tracked: this.stockTracked,
-        opening_quantity: this.stockTracked && this.business.role === 'owner' ? this.productOpeningQuantity : '0'
+        name: this.productName.trim(),
+        sku: this.productSku.trim() || undefined,
+        description: this.productDescription.trim() || undefined,
+        unit: this.productUnit.trim() || 'unit',
+        unit_price: unitPrice,
+        is_stock_tracked: this.stockTracked,
+        opening_quantity: openingQuantity,
       });
       if (this.business?.id !== businessId) return;
-      this.productName = ''; this.productPrice = ''; this.stockTracked = false; this.productOpeningQuantity = '0';
+      this.productName = ''; this.productSku = ''; this.productDescription = ''; this.productUnit = 'unit';
+      this.productPrice = ''; this.stockTracked = false; this.productOpeningQuantity = '0'; this.productCreateOpen = false;
       this.productMessage = this.t('ui.m_b4kbxp');
       try {
         const products = await this.api.products(businessId);

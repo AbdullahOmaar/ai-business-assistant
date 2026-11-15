@@ -731,6 +731,9 @@ test('product form exposes accessible required, non-negative price and condition
   assert.ok(start >= 0 && end > start);
   assert.match(form, /\(ngSubmit\)="productForm\.valid && createProduct\(\)"/);
   assert.match(form, /#productNameModel="ngModel"/);
+  assert.match(form, /name="productSku" maxlength="80"/);
+  assert.match(form, /name="productDescription"[^>]*maxlength="1000"/);
+  assert.match(form, /name="productUnit" maxlength="32" required/);
   assert.match(form, /id="product-name-error" class="field-error" aria-live="polite"/);
   assert.match(form, /#productPriceModel="ngModel"/);
   assert.match(form, /type="number" min="0" step="0\.01"/);
@@ -758,6 +761,11 @@ test('product creation distinguishes saved stock setup from a failed list refres
   assert.ok(start >= 0 && end > start);
   assert.match(method, /const businessId = this\.business\.id/);
   assert.match(method, /this\.api\.createProduct\(businessId/);
+  assert.match(method, /sku: this\.productSku\.trim\(\) \|\| undefined/);
+  assert.match(method, /description: this\.productDescription\.trim\(\) \|\| undefined/);
+  assert.match(method, /unit: this\.productUnit\.trim\(\) \|\| 'unit'/);
+  assert.match(method, /unit_price: unitPrice/);
+  assert.doesNotMatch(method, /Number\(this\.productPrice\)|toFixed\(2\)/);
   assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/);
   assert.match(method, /Product saved successfully/);
   assert.match(method, /The product was saved, but the list could not refresh/);

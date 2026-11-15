@@ -1528,11 +1528,17 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   await expect(page.getByText(/Only workspace owners can set a positive opening stock quantity/)).toBeVisible();
   await expect(page.locator('input[name="productOpeningQuantity"]')).toHaveCount(0);
   await page.getByRole('textbox', { name: /Product name/ }).fill('Zero-stock product');
+  await page.getByRole('textbox', { name: /SKU/ }).fill('STF-001');
+  await page.getByRole('textbox', { name: /Description/ }).fill('Staff-created zero-stock catalog item');
+  await page.getByRole('textbox', { name: /Unit/ }).fill('piece');
   await page.getByRole('spinbutton', { name: /Unit price/ }).fill('2.50');
   await page.getByRole('button', { name: /Add product/ }).click();
   await expect.poll(() => productCreatePayloads.length).toBe(1);
   expect(productCreatePayloads[0]).toMatchObject({
     name: 'Zero-stock product',
+    sku: 'STF-001',
+    description: 'Staff-created zero-stock catalog item',
+    unit: 'piece',
     unit_price: '2.50',
     is_stock_tracked: true,
     opening_quantity: '0',

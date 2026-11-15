@@ -521,7 +521,10 @@ export class ApiService {
       body,
     );
   }
-  createProduct(businessId: string, body: { name: string; unit_price: string; is_stock_tracked: boolean; opening_quantity?: string }): Promise<Product> {
+  createProduct(businessId: string, body: {
+    name: string; unit_price: string; is_stock_tracked: boolean; opening_quantity?: string;
+    sku?: string; description?: string; unit?: string;
+  }): Promise<Product> {
     return this.request<Product>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products`, 'POST', body);
   }
   operationsHealth(businessId: string): Promise<OperationalHealth> {

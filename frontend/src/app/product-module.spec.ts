@@ -12,6 +12,7 @@ const catalogCss = readFileSync(new URL('./product-catalog.component.css', impor
 test('product API exposes typed list, detail and safe descriptive PATCH fields', () => {
   assert.match(api, /products\(businessId: string, offset = 0, limit = 100\)/);
   assert.match(api, /product\(businessId: string, productId: string\)/);
+  assert.match(api, /createProduct\(businessId: string, body: \{[\s\S]*?sku\?: string; description\?: string; unit\?: string/);
   assert.match(api, /updateProduct\([\s\S]*?Partial<Pick<Product, 'name' \| 'sku' \| 'description' \| 'unit'>>/);
   assert.ok(api.includes('/products/${encodeURIComponent(productId)}'));
 });
