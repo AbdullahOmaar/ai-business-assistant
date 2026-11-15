@@ -68,7 +68,7 @@ import { LocalizationService } from './localization.service';
             <tbody>
               @for (customer of sortedCustomers(); track customer.id) {
                 <tr>
-                  <th scope="row" class="customer-directory__name">{{ customer.name }}</th>
+                  <th scope="row" class="customer-directory__name"><button class="customer-directory__profile-link" type="button" (click)="openProfile(customer.id)">{{ customer.name }}</button></th>
                   <td>
                     @if (customer.email) {
                       <a [href]="'mailto:' + customer.email"><bdi dir="ltr">{{ customer.email }}</bdi></a>
@@ -107,7 +107,7 @@ import { LocalizationService } from './localization.service';
           @for (customer of sortedCustomers(); track customer.id) {
             <li class="customer-directory__mobile-row">
               <div class="customer-directory__identity">
-                <h3>{{ customer.name }}</h3>
+                <h3><button class="customer-directory__profile-link" type="button" (click)="openProfile(customer.id)">{{ customer.name }}</button></h3>
                 <div class="customer-directory__contact">
                   @if (customer.phone) {
                     <a [href]="'tel:' + customer.phone" [attr.aria-label]="(t('customerDirectory.m_1kxahts')) + customer.name"><bdi dir="ltr">{{ customer.phone }}</bdi></a>
@@ -157,6 +157,7 @@ export class CustomerDirectoryComponent {
   readonly emptyTitle = input('');
   readonly emptyDescription = input('');
   readonly rowAction = output<AbaRecordTableActionEvent>();
+  readonly select = output<string>();
 
   private readonly sortField = signal<CustomerSortField>('name');
   private readonly sortDirection = signal<SortDirection>('asc');
@@ -203,6 +204,8 @@ export class CustomerDirectoryComponent {
       : (this.t('customerDirectory.m_mmu2iu'));
     return label + ' ' + customer.name;
   }
+
+  openProfile(customerId: string): void { this.select.emit(customerId); }
 
   emitAction(rowId: string, actionId: string, event: Event): void {
     const anchor = event.currentTarget;
