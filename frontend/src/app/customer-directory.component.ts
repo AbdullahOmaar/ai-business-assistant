@@ -119,7 +119,7 @@ import { LocalizationService } from './localization.service';
                 </div>
                 @if (customer.address || customer.notes) {
                   <div class="customer-directory__details">
-                    @if (customer.address) { <span><b>{{ locale() === 'ar' ? 'العنوان' : 'Address' }}:</b> {{ customer.address }}</span> }
+                    @if (customer.address) { <span><b>{{ t('customerDirectory.address') }}:</b> {{ customer.address }}</span> }
                     @if (customer.notes) { <span><b>{{ t('customerDirectory.note') }}:</b> {{ customer.notes }}</span> }
                   </div>
                 }
