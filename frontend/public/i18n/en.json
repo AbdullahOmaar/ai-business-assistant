@@ -1418,7 +1418,9 @@
     "m_uodwjq": "Email ",
     "m_1ypcn1i": "No contact details",
     "m_1muaaw0": "View invoices for",
-    "m_mmu2iu": "Statement for"
+    "m_mmu2iu": "Statement for",
+    "address": "Address",
+    "note": "Note"
   },
   "productCatalog": {
     "m_47v71n": "Filter item type",
@@ -1704,5 +1706,39 @@
     "status_accepted": "Accepted",
     "status_revoked": "Revoked",
     "status_expired": "Expired"
+  },
+  "customerEditor": {
+    "eyebrow": "CUSTOMERS",
+    "createTitle": "Add new customer",
+    "editTitle": "Edit customer details",
+    "description": "Core contact details — you can update them any time.",
+    "close": "Close",
+    "name": "Customer name",
+    "namePlaceholder": "e.g. Alex Morgan",
+    "nameRequired": "Customer name is required",
+    "phone": "Phone number",
+    "email": "Email address",
+    "emailInvalid": "Enter a valid email address",
+    "address": "Address",
+    "addressPlaceholder": "City, area, street",
+    "notes": "Notes",
+    "notesPlaceholder": "Useful context for your team",
+    "cancel": "Cancel",
+    "save": "Save customer",
+    "saving": "Saving…"
+  },
+  "customerProfile": {
+    "eyebrow": "CUSTOMER PROFILE",
+    "registered": "Customer record",
+    "edit": "Edit details",
+    "phone": "Phone",
+    "email": "Email",
+    "address": "Address",
+    "notes": "Notes",
+    "noNotes": "No notes added",
+    "addedOn": "Added on",
+    "invoices": "Customer invoices",
+    "statement": "View statement",
+    "financialNote": "Balances and purchase totals are shown only when backed by an approved financial source."
   }
 }
