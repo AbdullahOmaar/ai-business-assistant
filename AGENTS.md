@@ -20,6 +20,8 @@
 - GitHub CI remains isolated and must use disposable test services. CI and untrusted PR code must never connect to Production or receive Production secrets.
 - Stop using this exception and obtain a new Owner decision before importing real customer/business data or otherwise changing the environment from synthetic development data.
 
+**Controlled knowledge status:** `docs/project-knowledge/01_AGENT_OPERATING_MODEL.md` and `docs/project-knowledge/03_SECURITY_POLICY_AND_RELEASE_GATES.md` remain DRAFT / CONTROLLED and are intentionally not changed by this PR. Their older environment-specific Preview wording is not the current Owner decision. Until their separate independent review and approval are completed, agents must follow the 2026-11-15 canonical Owner decision in Notion and this top-level AGENTS.md; do not infer Project Sources publication or approval from this PR.
+
 ## Preview instruction — do not repeat the obsolete blocker
 
 Preview builds must use the current shared development runtime configuration by default. Optional complete Preview overrides may be used when intentionally supplied, but the known Production API and Firebase identifiers are not forbidden for this project. Do not claim that the current dataset contains real customers, do not require a separate Neon/Firebase QA project as a generic prerequisite, and do not ask the Owner to reconfirm this standing authorization. If login is actually blocked, inspect the concrete cause (for example, exact CORS origin or Firebase authorized-domain allowlist), address that specific technical issue through the permitted configuration path, and continue independent work. A generic statement that Preview cannot use Production data is incorrect under this Owner decision.
