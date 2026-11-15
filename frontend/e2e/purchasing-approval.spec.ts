@@ -183,6 +183,34 @@ async function setupWorkspace(page: Page, options: SetupOptions = {}) {
       await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify(businessId === 'business-a' ? [purchaseOrder()] : []) });
       return;
     }
+    const orderDetail = resource.match(/^purchase-orders\/([^/]+)$/);
+    if (orderDetail && method === 'GET') {
+      if (businessId !== 'business-a' || orderDetail[1] !== 'po-a') {
+        await route.fulfill({ status: 404, headers: corsHeaders, body: JSON.stringify({ detail: 'Purchase order not found.' }) });
+        return;
+      }
+      const order = purchaseOrder();
+      await route.fulfill({
+        status: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({
+          ...order,
+          business_id: businessId,
+          supplier,
+          lines: order.lines.map(line => ({
+            ...line,
+            product: {
+              id: product.id,
+              name: product.name,
+              sku: product.sku,
+              unit: 'piece',
+              is_active: true,
+            },
+          })),
+        }),
+      });
+      return;
+    }
     const approval = resource.match(/^purchase-orders\/([^/]+)\/approve$/);
     if (approval && method === 'POST') {
       if (businessId !== 'business-a' || approval[1] !== 'po-a') {
