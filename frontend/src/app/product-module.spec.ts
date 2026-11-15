@@ -23,8 +23,9 @@ test('product editor never exposes price or stock mutation and validates require
 });
 
 test('product profile presents API-backed price and derived stock without exposing stock editing', () => {
-  assert.match(profile, /product\(\)\.unit_price/);
-  assert.match(profile, /product\(\)\.stock_quantity/);
-  assert.match(profile, /product\(\)\.is_stock_tracked/);
+  assert.match(profile, /record\.unit_price/);
+  assert.match(profile, /record\.stock_quantity/);
+  assert.match(profile, /record\.is_stock_tracked/);
   assert.doesNotMatch(profile, /quantity_delta|StockMovement|opening_quantity/);
+  assert.match(profile, /retry\.emit\(\)/);
 });
