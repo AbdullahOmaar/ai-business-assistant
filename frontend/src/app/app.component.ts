@@ -15,6 +15,7 @@ import { EmployeePayrollComponent } from './employee-payroll.component';
 import { ReleaseGuideComponent } from './release-guide.component';
 import { CustomerWorkspaceComponent } from './customer-workspace.component';
 import { ProductWorkspaceComponent } from './product-workspace.component';
+import { PurchasingWorkspaceComponent } from './purchasing-workspace.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
 import { filterWorkspaceModules, selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
@@ -42,7 +43,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, PurchasingWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -467,41 +468,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
 
 @if (tab === 'purchases') {
-              <section abaCard class="panel">
-                <aba-section-header id="purchases-section-heading" tabindex="-1" [title]=" t('ui.m_1x15ykz') " [description]=" t('ui.m_roz4sr') "><span class="count">{{ filteredPurchaseOrders.length }} / {{ purchaseOrders.length }}</span></aba-section-header>
-<details class="aba-record-create">
-                  <summary><span>{{ t('ui.m_iqb29f') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
-                  <div class="aba-record-create__body">
-                <form #purchaseForm="ngForm" class="stack" (ngSubmit)="purchaseForm.valid && createPurchaseOrder()">
-                  <label>{{ t('ui.m_19p1zn3') }}<input #purchaseOrderNumberControl="ngModel" name="purchaseOrderNumber" required maxlength="64" [attr.aria-invalid]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'purchase-number-error' : null" [(ngModel)]="purchaseOrderNumber"></label>
-                  <label>{{ t('ui.m_x27ir1') }}<select #purchaseSupplierControl="ngModel" name="purchaseSupplierId" required [attr.aria-invalid]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'purchase-supplier-error' : null" [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('ui.m_el3aam') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
-                  <label>{{ t('ui.m_7fwfk0') }}<select #purchaseProductControl="ngModel" name="purchaseProductId" required [attr.aria-invalid]="purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted) ? 'purchase-product-error' : null" [(ngModel)]="purchaseProductId"><option value="" disabled>{{ t('ui.m_1kwxnkp') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.sku || product.id.slice(0,8) }}</option> }</select></label>
-                  <div class="inline-form"><label>{{ t('ui.m_ocneuo') }}<input #purchaseQuantityControl="ngModel" name="purchaseQuantity" type="number" min="0.001" step="0.001" required [attr.aria-invalid]="purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted) ? 'purchase-quantity-error' : null" [(ngModel)]="purchaseQuantity"></label><label>{{ t('ui.m_19mrznv') }}<input #purchaseUnitCostControl="ngModel" name="purchaseUnitCost" type="number" min="0" step="0.01" required [attr.aria-invalid]="purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted) ? 'purchase-unit-cost-error' : null" [(ngModel)]="purchaseUnitCost"></label></div>
-                  <button class="primary" type="submit" [disabled]="purchasesLoading || !suppliers.length || !products.length">{{ t('ui.m_iqb29f') }}</button>
-                </form>
-                @if ((purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted)) || (purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted)) || (purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted)) || (purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted)) || (purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted))) {
-                  <div class="form-validation" aria-live="polite">
-                    @if (purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted)) { <small id="purchase-number-error" class="field-error">{{ t('ui.m_lv9gfw') }}</small> }
-                    @if (purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted)) { <small id="purchase-supplier-error" class="field-error">{{ t('ui.m_17l7adv') }}</small> }
-                    @if (purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted)) { <small id="purchase-product-error" class="field-error">{{ t('ui.m_lkov6w') }}</small> }
-                    @if (purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted)) { <small id="purchase-quantity-error" class="field-error">{{ t('ui.m_jsv2pg') }}</small> }
-                    @if (purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted)) { <small id="purchase-unit-cost-error" class="field-error">{{ t('ui.m_13qo8kh') }}</small> }
-                  </div>
-                }
-
-                  </div>
-                </details>
-                @if (operationsError && operationsErrorTab === 'purchases') { <aba-state-message kind="error" [description]="operationsError" /> }
-                @if (operationsWarning && operationsMessageTab === 'purchases') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
-                @if (operationsMessageTab === 'purchases' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="purchaseSearch" type="search" [attr.aria-label]="t('ui.m_x2km9j')" [placeholder]="t('ui.m_1bqn1oi')" [(ngModel)]="purchaseSearch"></div>
-                <aba-record-table [ariaLabel]="t('ui.m_1xlq4zq')" [columns]="purchaseTableColumns" [rows]="purchaseTableRows" [loading]="purchasesLoading && !purchaseOrders.length" [loadingDescription]="t('ui.m_1c93aea')" [actionsHeading]="t('ui.m_1dbhmlo')" [emptyTitle]="t('ui.m_1skqw0x')" [emptyDescription]="purchaseSearch.trim() ? t('ui.m_ckscgw') : t('ui.m_1yhbnd3')" (rowAction)="onPurchaseRecordAction($event)" />
-
-              </section>
+              <aba-purchasing-workspace
+                [businessId]="business.id"
+                [userId]="workspaceUserId"
+                [role]="business.role === 'owner' ? 'owner' : 'staff'"
+                [currencyCode]="business.currency_code"
+                [language]="language" />
             }
-
-
-@if (tab === 'recurring') {
+            @if (tab === 'recurring') {
               <section abaCard class="panel">
                 <aba-section-header [title]=" t('ui.m_slegw7') " [description]=" t('ui.m_1e0c20g') "><span class="count">{{ filteredRecurringSchedules.length }} / {{ recurringSchedules.length }}</span></aba-section-header>
                 @if (business?.role === 'owner') {

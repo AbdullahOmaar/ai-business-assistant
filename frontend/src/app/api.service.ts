@@ -133,8 +133,28 @@ export interface NotificationRecord { id: string; kind: string; title: string; b
 export interface Supplier { id: string; name: string; email?: string | null; phone?: string | null; address?: string | null; is_active: boolean; }
 
 export interface PurchaseOrderLine { id: string; product_id: string; quantity: string; unit_cost: string; received_quantity: string; remaining_quantity: string; }
-
+export interface PurchaseOrderInput {
+  supplier_id: string;
+  order_number: string;
+  currency_code: string;
+  lines: Array<{ product_id: string; quantity: string; unit_cost: string }>;
+}
 export interface PurchaseOrder { id: string; supplier_id: string; order_number: string; status: string; currency_code: string; total: string; created_at: string | null; lines: PurchaseOrderLine[]; }
+export interface PurchaseOrderDetail extends Omit<PurchaseOrder, 'lines'> {
+  supplier: Supplier;
+  lines: Array<PurchaseOrderLine & { product: Pick<Product, 'id' | 'name' | 'sku' | 'unit'> | null }>;
+}
+export interface PurchaseOrderReceipt {
+  id: string; product_id: string; movement_type: string; quantity_delta: string;
+  reason: string | null; reference_type: string; reference_id: string;
+  created_by_subject: string; created_at: string | null;
+  product: Pick<Product, 'id' | 'name' | 'sku' | 'unit'> | null;
+}
+export interface PurchaseOrderActivity {
+  id: string; actor_subject: string; action: string; target_type: string; target_id: string;
+  change_summary: string | Record<string, unknown> | null; created_at: string | null;
+}
+export interface PurchaseOrderPage<T> { items: T[]; limit: number; offset: number; }
 
 export interface RecurringInvoiceSchedule { id: string; customer_id: string | null; interval_days: number; timezone: string; next_run_at: string; is_active: boolean; created_at: string | null; }
 
@@ -667,8 +687,38 @@ export class ApiService {
   purchaseOrders(businessId: string): Promise<PurchaseOrder[]> {
     return this.request<PurchaseOrder[]>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders?limit=100');
   }
-  createPurchaseOrder(businessId: string, body: { supplier_id: string; order_number: string; currency_code: string; lines: Array<{ product_id: string; quantity: string; unit_cost: string }> }): Promise<PurchaseOrder> {
+  purchaseOrderDetail(businessId: string, orderId: string): Promise<PurchaseOrderDetail> {
+    return this.request<PurchaseOrderDetail>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId)
+    );
+  }
+  createPurchaseOrder(businessId: string, body: PurchaseOrderInput): Promise<PurchaseOrder> {
     return this.request<PurchaseOrder>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders', 'POST', body);
+  }
+  updatePurchaseOrder(businessId: string, orderId: string, body: PurchaseOrderInput): Promise<PurchaseOrder> {
+    return this.request<PurchaseOrder>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId),
+      'PUT',
+      body,
+    );
+  }
+  cancelPurchaseOrder(businessId: string, orderId: string): Promise<Pick<PurchaseOrder, 'id' | 'order_number' | 'status' | 'currency_code' | 'total'>> {
+    return this.request(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId) + '/cancel',
+      'POST',
+    );
+  }
+  purchaseOrderReceipts(businessId: string, orderId: string, offset = 0, limit = 50): Promise<PurchaseOrderPage<PurchaseOrderReceipt>> {
+    const params = new URLSearchParams({ limit: String(Math.min(200, Math.max(1, limit))), offset: String(Math.max(0, offset)) });
+    return this.request<PurchaseOrderPage<PurchaseOrderReceipt>>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId) + '/receipts?' + params.toString()
+    );
+  }
+  purchaseOrderActivity(businessId: string, orderId: string, offset = 0, limit = 50): Promise<PurchaseOrderPage<PurchaseOrderActivity>> {
+    const params = new URLSearchParams({ limit: String(Math.min(200, Math.max(1, limit))), offset: String(Math.max(0, offset)) });
+    return this.request<PurchaseOrderPage<PurchaseOrderActivity>>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId) + '/activity?' + params.toString()
+    );
   }
   approvePurchaseOrder(businessId: string, orderId: string): Promise<Omit<PurchaseOrder, 'lines'>> {
     return this.request<Omit<PurchaseOrder, 'lines'>>(
