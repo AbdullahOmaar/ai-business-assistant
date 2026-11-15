@@ -1,14 +1,16 @@
-"""Focused API safety regressions for purchase-order receiving.
+"""Focused API and persistence safety regressions for purchase receiving.
 
-These tests exercise the existing receiving contract only. They intentionally do
-not introduce receipt idempotency, financial posting, or schema behavior.
+The approved receipt-idempotency contract is schema-only here; route/service
+replay behavior is implemented by the designated Chat 3/5 owners.
 """
 
 from decimal import Decimal
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
+import pytest
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.main import app
@@ -20,6 +22,7 @@ from app.models import (
     Product,
     PurchaseOrder,
     PurchaseOrderLine,
+    PurchaseReceiptIdempotency,
     StockMovement,
     Supplier,
 )
@@ -522,4 +525,79 @@ def test_non_stock_tracked_purchase_line_cannot_be_received():
         assert _receiving_snapshot(engine, business_id, order_id) == before
     finally:
         _restore_test_identity(*previous)
+        engine.dispose()
+
+
+def test_receipt_idempotency_persists_canonical_request_and_original_response():
+    engine, business_id, _, _ = _sales_return_fixture()
+    try:
+        order_id, _, _ = _create_approved_order(
+            engine, TestClient(app), business_id, [("2.000", True)], "PO-T39-IDEMPOTENCY-STORE"
+        )
+        with Session(engine) as session:
+            row = PurchaseReceiptIdempotency(
+                business_id=business_id,
+                purchase_order_id=order_id,
+                idempotency_key="2b2b2b2b-2b2b-42b2-82b2-2b2b2b2b2b2b",
+                request_hash="a" * 64,
+                response_snapshot={"id": str(order_id), "status": "partially_received"},
+            )
+            session.add(row)
+            session.commit()
+            persisted = session.scalar(
+                select(PurchaseReceiptIdempotency).where(
+                    PurchaseReceiptIdempotency.business_id == business_id,
+                    PurchaseReceiptIdempotency.purchase_order_id == order_id,
+                    PurchaseReceiptIdempotency.idempotency_key == row.idempotency_key,
+                )
+            )
+            assert persisted is not None
+            assert persisted.request_hash == "a" * 64
+            assert persisted.response_snapshot == {
+                "id": str(order_id), "status": "partially_received"
+            }
+    finally:
+        engine.dispose()
+
+
+def test_receipt_idempotency_key_is_unique_per_business_purchase_order():
+    engine, business_id, _, _ = _sales_return_fixture()
+    try:
+        order_a, _, _ = _create_approved_order(
+            engine, TestClient(app), business_id, [("2.000", True)], "PO-T39-IDEMPOTENCY-A"
+        )
+        order_b, _, _ = _create_approved_order(
+            engine, TestClient(app), business_id, [("2.000", True)], "PO-T39-IDEMPOTENCY-B"
+        )
+        key = "3c3c3c3c-3c3c-43c3-83c3-3c3c3c3c3c3c"
+        with Session(engine) as session:
+            session.add_all([
+                PurchaseReceiptIdempotency(
+                    business_id=business_id, purchase_order_id=order_a,
+                    idempotency_key=key, request_hash="b" * 64,
+                    response_snapshot={"order": str(order_a)},
+                ),
+                PurchaseReceiptIdempotency(
+                    business_id=business_id, purchase_order_id=order_a,
+                    idempotency_key=key, request_hash="b" * 64,
+                    response_snapshot={"order": str(order_a)},
+                ),
+            ])
+            with pytest.raises(IntegrityError):
+                session.commit()
+            session.rollback()
+            session.add_all([
+                PurchaseReceiptIdempotency(
+                    business_id=business_id, purchase_order_id=order_a,
+                    idempotency_key=key, request_hash="b" * 64,
+                    response_snapshot={"order": str(order_a)},
+                ),
+                PurchaseReceiptIdempotency(
+                    business_id=business_id, purchase_order_id=order_b,
+                    idempotency_key=key, request_hash="b" * 64,
+                    response_snapshot={"order": str(order_b)},
+                ),
+            ])
+            session.commit()
+    finally:
         engine.dispose()
