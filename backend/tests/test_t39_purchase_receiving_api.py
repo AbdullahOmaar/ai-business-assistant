@@ -5,11 +5,12 @@ missing/malformed-key case intentionally omits or corrupts that header.
 """
 
 from decimal import Decimal
+import os
 from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 import pytest
-from sqlalchemy import select
+from sqlalchemy import create_engine, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -701,20 +702,47 @@ def test_receipt_api_requires_canonical_idempotency_key_without_side_effects():
 
 
 def test_concurrent_same_key_receipt_requests_apply_stock_once():
+    """Exercise row-lock and unique-key replay against the disposable PostgreSQL service."""
     from concurrent.futures import ThreadPoolExecutor
 
-    engine, business_id, _, _ = _sales_return_fixture()
-    client, previous = _configure(engine)
+    if os.getenv("CI_ALLOW_DATABASE_SCHEMA_TESTS") != "true":
+        pytest.skip("requires the isolated PostgreSQL CI service")
+    database_url = os.getenv("TEST_DATABASE_URL", "").strip()
+    if not database_url:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    engine = create_engine(database_url, pool_size=5, max_overflow=5, pool_pre_ping=True)
+    if engine.dialect.name != "postgresql" or not (engine.url.database or "").endswith("_test"):
+        engine.dispose()
+        pytest.skip("concurrency regression requires a disposable PostgreSQL *_test database")
+
+    previous = None
     try:
+        with Session(engine) as session:
+            business = Business(name="T39 concurrent receipt tenant", currency_code="EGP")
+            session.add(business)
+            session.flush()
+            session.add(BusinessMembership(
+                business_id=business.id,
+                user_subject="test-subject",
+                role=MembershipRole.OWNER,
+            ))
+            session.commit()
+            business_id = business.id
+
+        client, previous = _configure(engine)
         order_id, line_ids, _ = _create_approved_order(
-            engine, client, business_id, [("2.000", True)], "PO-T39-IDEMPOTENCY-CONCURRENT"
+            engine, client, business_id, [("2.000", True)],
+            "PO-T39-IDEMPOTENCY-CONCURRENT-" + uuid4().hex[:8],
         )
         url = f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive"
-        key = str(uuid4())
-        headers = _receipt_headers(key)
+        headers = _receipt_headers(str(uuid4()))
         payload = {"lines": [{"line_id": str(line_ids[0]), "quantity": "1.000"}]}
+        clients = [TestClient(app), TestClient(app)]
         with ThreadPoolExecutor(max_workers=2) as pool:
-            responses = list(pool.map(lambda _: client.post(url, headers=headers, json=payload), range(2)))
+            responses = list(pool.map(
+                lambda request_client: request_client.post(url, headers=headers, json=payload),
+                clients,
+            ))
         assert [response.status_code for response in responses] == [200, 200]
         assert responses[0].json() == responses[1].json()
         snapshot = _receiving_snapshot(engine, business_id, order_id)
@@ -722,5 +750,6 @@ def test_concurrent_same_key_receipt_requests_apply_stock_once():
         assert len(snapshot[2]) == 1
         assert len(snapshot[3]) == 2  # creation + exactly one receipt audit event
     finally:
-        _restore_test_identity(*previous)
+        if previous is not None:
+            _restore_test_identity(*previous)
         engine.dispose()
