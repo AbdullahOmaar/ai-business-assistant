@@ -15,6 +15,7 @@ const recordTableSource = expandTranslationCalls(readFileSync(new URL('./shared/
 const quickAccessSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8'));
 const workspaceLoadGuardSource = expandTranslationCalls(readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8'));
 const customerWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./customer-workspace.component.ts', import.meta.url), 'utf8'));
+const customerEditorSource = expandTranslationCalls(readFileSync(new URL('./customer-editor.component.ts', import.meta.url), 'utf8'));
 const auditLabelsSource = expandTranslationCalls(readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8'));
 const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
 
@@ -712,7 +713,9 @@ test('invalid authentication, workspace, customer, invoice, payment and expense 
   assert.match(source, /<form #authForm="ngForm"/);
   assert.match(source, /<form #workspaceForm="ngForm"/);
   assert.match(source, /<aba-customer-workspace/);
-  assert.match(customerWorkspaceSource, /<form \(submit\)="submit\(\$event\)"/);
+  assert.match(customerWorkspaceSource, /<form class="customer-workspace__search"[^>]*\(submit\)="submitSearch\(\$event\)"/);
+  assert.match(customerEditorSource, /<form \(submit\)="submit\(\$event\)"/);
+  assert.match(customerEditorSource, /if \(!name \|\| this\.emailInvalid\(\) \|\| this\.busy\(\)\) return/);
   assert.match(source, /<form #expenseForm="ngForm"/);
   const paymentStart = source.indexOf('<form #paymentForm="ngForm"');
   const paymentEnd = source.indexOf('</form>', paymentStart);
@@ -988,7 +991,10 @@ test('CSV import preview and write controls are owner-only without restricting m
     assert.match(method, /this\.business\?\.role !== 'owner'|this\.business\.role !== 'owner'/,
       startMarker + ' must fail closed for non-owners');
   }
-  assert.match(source, /<form #customerForm="ngForm"[^>]*createCustomer\(\)/);
+  assert.match(customerWorkspaceSource, /<aba-customer-editor/);
+  assert.match(customerWorkspaceSource, /this\.api\.createCustomer\(requested\.businessId, value\)/);
+  assert.match(customerWorkspaceSource, /readonly role = input\.required<'owner' \| 'staff'>\(\)/);
+  assert.match(customerEditorSource, /<form \(submit\)="submit\(\$event\)"/);
   assert.match(source, /<form #productForm="ngForm"[^>]*createProduct\(\)/);
 });
 

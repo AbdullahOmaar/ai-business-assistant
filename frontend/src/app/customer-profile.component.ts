@@ -72,7 +72,7 @@ import { LocalizationService } from './localization.service';
   `],
 })
 export class CustomerProfileComponent {
-  private readonly localization = inject(LocalizationService);
+  readonly localization = inject(LocalizationService);
   t(key: string): string { return this.localization.translate(key); }
   readonly customer = input<Customer | null>(null);
   readonly loading = input(false);

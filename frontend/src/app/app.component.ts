@@ -594,6 +594,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @if (tab === 'customers' && business?.id) {
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ui.m_1lifkl9')" [description]="t('ui.m_15gmqko')" />
+                @if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }
                 @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('ui.m_p4xhry') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
                   <h3>{{ t('ui.m_p4xhry') }}</h3>
                   <p>{{ t('ui.m_1239wd4') }}</p>
@@ -650,6 +651,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @if (tab === 'products' && business?.id) {
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ui.m_137u0ee')" [description]="t('ui.m_snu8sb')" />
+                @if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('تصدير CSV', 'Export CSV') }}</button> }
                 <details class="aba-record-create" [open]="productCreateOpen" (toggle)="productCreateOpen = $any($event.target).open">
                   <summary><span>{{ t('ui.m_1nbakc8') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
