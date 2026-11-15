@@ -21,7 +21,7 @@ test('customer editor covers all supported contact fields and required-name/emai
 });
 
 test('customer profile presents contact, address, notes and existing invoice/statement actions without invented financial totals', () => {
-  for (const field of ['phone', 'email', 'address', 'notes']) assert.ok(profile.includes('customer().' + field));
+  for (const field of ['phone', 'email', 'address', 'notes']) assert.ok(profile.includes('record.' + field));
   assert.match(profile, /invoices\.emit\(\)/);
   assert.match(profile, /statement\.emit\(\)/);
   assert.doesNotMatch(profile, /totalPurchases|receivableBalance|creditLimit/);
@@ -42,6 +42,8 @@ test('customer directory preserves responsive layouts and exposes saved address 
   assert.match(directory, /emitAction\(customer\.id, 'statement'/);
   assert.match(directory, /customer\.address/);
   assert.match(directory, /customer\.notes/);
+  assert.match(directory, /error\(\)/);
+  assert.match(directory, /retry\.emit\(\)/);
   assert.match(directoryCss, /min-height:44px/);
   assert.match(directoryCss, /forced-colors:active/);
 });
