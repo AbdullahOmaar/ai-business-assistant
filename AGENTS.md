@@ -3,20 +3,20 @@
 
 <b>Production currently contains synthetic, non-real development data. It is authorized as the active development and QA environment until the Owner explicitly declares that real customer/business data is being used.</b>
 
-MASTER and assigned agents do not need a separate Owner approval for ordinary, non-destructive production testing or scoped test-data CRUD.
+MASTER and assigned agents do not need separate Owner approval for ordinary Production testing or CRUD. **Owner clarification effective 2026-11-15:** Preview may use the existing development Production Firebase/Neon resources and credentials through protected Preview-scoped provider settings; create/read/update/delete synthetic test records through normal authenticated app/API paths. Safe additive/backward-compatible migrations are allowed after exact migration and rollback review. Do not block login/QA solely because Preview uses the current Production-labelled development database.
 
 
 ## Authorized without per-action approval
 - Create and use clearly identifiable test accounts, users, tenants and test records on the current Production runtime/database.
-- Perform ordinary create/read/update operations and exercise application workflows, APIs, integrations, permissions, reports and persistence using synthetic test data.
+- Perform ordinary create/read/update/delete operations and exercise application workflows, APIs, integrations, permissions, reports and persistence using synthetic test data, including scoped cleanup of test records.
 - Modify scoped synthetic test records and create simulated business/accounting transactions for validation, provided they do not initiate real external money movement, payment, settlement, tax filing or real customer communications.
-- Use the existing Production Firebase/Neon resources and configuration for these tests when technically appropriate; do not provision a separate paid QA resource merely because tests touch Production.
+- Configure the authorized AIBA Preview runtime to use the existing Production Firebase/Neon resources and credentials through Vercel's protected Preview environment settings when needed; do not provision a separate Neon QA DB or paid resource solely for routine QA.
 - MASTER may choose safe test scenarios, execute them, inspect outcomes and clean up specifically identified test artifacts when cleanup is scoped and reversible.
 
 ## Boundaries that remain active
 - This decision does not authorize bypassing authentication, tenant isolation, authorization, privacy, audit controls, rate limits or provider security protections.
 - Never expose, copy into logs/prompts/client bundles, or weaken production secrets and credentials.
-- Bulk deletion, database reset/truncate, irreversible or destructive migrations, schema/data-loss operations, or cleanup that could affect non-test records still require a specific scoped Owner decision.
+- Database-wide reset/truncate/drop, irreversible or destructive migrations, schema/data-loss operations, or cleanup that could affect non-test/non-synthetic records still require a specific scoped Owner decision. Ordinary deletion of synthetic test records through the app/API is authorized.
 - Real external payments, transfers of actual funds, settlement/posting with real-world effect, tax filing, real customer messages/notifications, paid provisioning/billing, and provider security changes remain approval-gated.
 - Keep test records clearly labeled and scoped; avoid polluting shared demo data. Record what was created/changed and clean up safely where appropriate.
 - GitHub CI remains isolated and must use disposable test services; this decision does not permit CI jobs or untrusted PR code to connect to Production or receive production secrets.
@@ -36,7 +36,7 @@ The Owner requires meaningful product evolution, not a stream of cosmetic edits 
 - **PR gate:** do not open a PR for isolated minor/cosmetic work (typography, spacing, color, text, small CSS, trivial bug fix), refactor-only, documentation-only or test-only changes. Batch small related changes on the single active branch. Open one PR only after a substantial coherent product outcome is complete and acceptance evidence is ready, such as an end-to-end business workflow, meaningful module capability, or major measurable Web + Mobile improvement.
 - **Test economy:** do not run unit suites, browser suites, builds or CI for each small edit/checkpoint. Defer routine validation until a substantial outcome is assembled; run the relevant consolidated checks once on the exact candidate SHA. Critical security, authorization, tenant-isolation, data-integrity or production-safety risks may require the smallest focused check immediately. Any exact-head check enforced for a future PR is mandatory and must never be bypassed.
 - **Product focus:** prioritize complete business capabilities and real user journeys. Standalone visual polish is not a delivery outcome unless it blocks usability or is bundled with a substantial improvement. Batch related code/docs/evidence on this branch and keep one primary writer per shared path.
-- **Current disposition:** Draft PRs #388 and #389 were closed without merge on 2026-11-12. Both source branches and commits are preserved. PR closure is not deletion. This 2026-11-12 no-merge disposition is historical; the later 2026-11-14 MASTER delegation governs ordinary product-code merge and deployment after all mandatory gates. Production database mutation and destructive migrations remain separately gated.
+- **Current disposition:** Draft PRs #388 and #389 were closed without merge on 2026-11-12. Both source branches and commits are preserved. PR closure is not deletion. This 2026-11-12 no-merge disposition is historical; the later 2026-11-14 MASTER delegation governs ordinary product-code merge and deployment after all mandatory gates. Ordinary app/API CRUD on synthetic development Production data is authorized by the Owner decision effective 2026-11-15; database-wide destructive operations and data-loss migrations remain separately gated.
 
 This Owner decision supersedes older instructions below that allow a branch per Phase, milestone PRs for each important incremental change, or routine per-edit test execution. It does not supersede security/data-integrity controls, exact-head required checks, formal branch protections, the MASTER standing merge/deployment delegation and high-impact exceptions recorded effective 2026-11-14.
 
@@ -54,7 +54,7 @@ For every AIBA Master/specialist chat, AI agent and assigned project worker, the
 
 Continue to enforce authentication, server-side authorization, business/workspace isolation, validation, idempotency and audit logging. Use normal application/API paths; do not bypass these controls with direct SQL or hidden administrative shortcuts.
 
-This standing authorization does not imply permission to hard-delete accounts or business data, void/cancel/post issued financial records, mutate payment/allocation/settlement history, move real money, send external email/SMS/WhatsApp/notifications, file taxes, change provider security settings, execute destructive migrations, or provision paid services. Those remain separately gated. It does not authorize new financial semantics; T37 remains DRAFT / NOT APPROVED. Use only necessary project data and never expose secrets, credentials, payroll-sensitive content or raw customer data in prompts, documentation, screenshots or logs.
+This standing authorization does not imply permission to delete non-test/real customer or business data, void/cancel/post real issued financial records, mutate real payment/allocation/settlement history, move real money, send external email/SMS/WhatsApp/notifications, file taxes, change provider security settings, execute destructive migrations, or provision paid services. Synthetic test-record deletion through normal authenticated app/API workflows is explicitly authorized. Safe additive/backward-compatible migrations may be applied after exact migration review and rollback/recovery validation; destructive/data-loss migrations remain separately gated. It does not authorize new financial semantics; T37 remains DRAFT / NOT APPROVED. Use only necessary project data and never expose secrets, credentials, payroll-sensitive content or raw customer data in prompts, documentation, screenshots or logs.
 
 The decision is recorded in the canonical [Notion Universal Work Execution Standard](https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44) and [Master Control Center](https://app.notion.com/p/4099320b90fb81499af2d7ffada690c7). Merge/release, migrations and external side effects retain their separate authorization gates.
 
@@ -85,7 +85,7 @@ Do not run broad tests/builds/browser suites/CI after every minor edit or commit
 
 ## Actions outside the standing delegation
 
-Specific Owner approval remains required for irreversible/destructive data deletion, data-loss or destructive migrations, direct live database mutation, financial posting/payment/settlement/allocation mutation, moving real money, new financial semantics (T37 remains DRAFT / NOT APPROVED), real external messages/notifications, tax filing, provider security changes, paid provisioning/billing, or any action requiring credentials/formal approval not available to MASTER. Authentication, server-side authorization, tenant isolation, privacy, auditability and data integrity are never waived.
+Specific Owner approval remains required for irreversible/destructive deletion affecting non-test data, data-loss or destructive migrations, unreviewed direct SQL/live-database mutation outside the authorized app/API and reviewed additive-migration paths, financial posting/payment/settlement/allocation mutation with real-world effect, moving real money, new financial semantics (T37 remains DRAFT / NOT APPROVED), real external messages/notifications, tax filing, provider security changes, paid provisioning/billing, or any action requiring credentials/formal approval not available to MASTER. Authentication, server-side authorization, tenant isolation, privacy, auditability and data integrity are never waived.
 
 ---
 
