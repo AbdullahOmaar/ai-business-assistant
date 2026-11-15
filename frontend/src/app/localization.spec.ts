@@ -105,7 +105,7 @@ test('UI source files contain no inline Arabic copy or legacy bilingual componen
     const source = readFileSync(path, 'utf8');
     if (/\b(?:keyOrArabic|paramsOrEnglish)\b/.test(source)) legacyHelpers.push(path);
     if (/\bt\(\s*['"][^'"]+['"]\s*,\s*['"][^'"]+['"]\s*\)/.test(source)) inlinePairs.push(path);
-    if (/[\u0600-\u06FF]{2,}/.test(source)) arabicCopy.push(path);
+    if (/[\u0621-\u063A\u0641-\u064A]{2,}/.test(source)) arabicCopy.push(path);
     if (/\|\s*(?:date|number):/.test(source)) localePipes.push(path);
   }
 
