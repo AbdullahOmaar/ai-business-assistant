@@ -7,7 +7,7 @@ const editor = readFileSync(new URL('./product-editor.component.ts', import.meta
 const profile = readFileSync(new URL('./product-profile.component.ts', import.meta.url), 'utf8');
 
 test('product API exposes typed list, detail and safe descriptive PATCH fields', () => {
-  assert.match(api, /products\(businessId: string, offset = 0, limit = 50\)/);
+  assert.match(api, /products\(businessId: string, offset = 0, limit = 100\)/);
   assert.match(api, /product\(businessId: string, productId: string\)/);
   assert.match(api, /updateProduct\([\s\S]*?Partial<Pick<Product, 'name' \| 'sku' \| 'description' \| 'unit'>>/);
   assert.match(api, /'\/api\/v1\/businesses\/\$\{encodeURIComponent\(businessId\)\}\/products\/\$\{encodeURIComponent\(productId\)\}'/);
