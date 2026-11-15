@@ -1589,7 +1589,7 @@ test('AI assistant auto-follow respects the reader position and reduced motion',
 
 test('purchase-order approval is owner-only, confirmation-first and tenant-reset safe', () => {
   assert.ok(purchasingWorkspaceSource.includes("canApprove(order: PurchaseOrder): boolean { return this.isOwner() && order.status === 'draft'; }"));
-  assert.ok(purchasingWorkspaceSource.includes("requestAction(action: PurchaseAction): void"));
+  assert.ok(purchasingWorkspaceSource.includes("requestAction(action: PurchaseAction): Promise<void>"));
   assert.ok(purchasingWorkspaceSource.includes("this.pendingAction.set(action)"));
   assert.ok(purchasingWorkspaceSource.includes("async confirmAction(): Promise<void>"));
   assert.ok(purchasingWorkspaceSource.includes("if (!action || !order || !this.isOwner()) return;"));
