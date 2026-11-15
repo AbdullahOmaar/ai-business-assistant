@@ -41,3 +41,10 @@ Browser trace from exact run 43713544354 identified a test-fixture mismatch: the
 [release-api] Rebuild API Preview for confirmation translation fallback.
 
 [release-api] Rebuild API Preview for migration SQL evidence artifact.
+
+
+## Exact migration delta artifact — 2026-11-15
+
+The main Neon database is currently at `0005_employee_payroll`. CI now generates the offline SQL artifact from `0005_employee_payroll:head`, so the uploaded SQL contains only the pending 0006/0007 upgrade path rather than replaying the historical empty-schema chain.
+
+[release-api] Refresh API Preview for exact migration-delta CI evidence.

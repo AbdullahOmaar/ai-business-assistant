@@ -89,7 +89,7 @@ jobs:
       - name: Verify offline migration SQL generation
         working-directory: backend
         run: |
-          python -m alembic upgrade head --sql > test-results/alembic-upgrade.sql
+          python -m alembic upgrade 0005_employee_payroll:head --sql > test-results/alembic-upgrade.sql
           test -s test-results/alembic-upgrade.sql
       - name: Upload generated Alembic SQL for exact review
         if: always()
