@@ -748,7 +748,7 @@ def test_concurrent_same_key_receipt_requests_apply_stock_once():
         snapshot = _receiving_snapshot(engine, business_id, order_id)
         assert snapshot[1] == ((line_ids[0], Decimal("1.000")),)
         assert len(snapshot[2]) == 1
-        assert len(snapshot[3]) == 2  # creation + exactly one receipt audit event
+        assert len(snapshot[3]) == 3  # creation + approval + exactly one receipt audit event
         with Session(engine) as session:
             replay_rows = session.scalars(select(PurchaseReceiptIdempotency).where(
                 PurchaseReceiptIdempotency.business_id == business_id,
