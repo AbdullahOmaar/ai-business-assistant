@@ -81,8 +81,8 @@ def _create_approved_order(engine, client, business_id, line_specs, order_number
             )
             .order_by(PurchaseOrderLine.id)
         ).all()
-        # The API preserves the input order when creating PO lines in this contract.
-        line_ids = [line.id for line in lines]
+        line_ids_by_product = {line.product_id: line.id for line in lines}
+        line_ids = [line_ids_by_product[product_id] for product_id in product_ids]
 
     assert len(line_ids) == len(line_specs)
     return order_id, line_ids, product_ids
