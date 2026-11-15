@@ -1,6 +1,6 @@
 # T39 receipt idempotency — Chat 2 schema handoff
 
-Status: **schema/model implemented; migration draft only; route/service integration NOT implemented here.**
+Status: **schema/model and API receipt idempotency integrated on the November candidate; production migration remains pending exact release rehearsal.**
 
 ## Approved contract
 
@@ -16,12 +16,13 @@ This persistence slice implements Master decision D-039-01 (2026-11-03):
 
 - backend/app/models.py: PurchaseReceiptIdempotency, tenant/business-scoped composite PO FK, unique scope/key, fixed-length key/hash checks, response JSON.
 - backend/migrations/versions/0007_purchase_receipt_idempotency.py: additive Alembic draft from 0006_business_invitations. Do not apply or integrate into the shared migration graph without Master review.
-- backend/tests/test_t39_purchase_receiving_api.py: persistence snapshot and uniqueness/tenant-scope regressions. These tests verify model constraints only; they do not prove API replay behavior.
+- backend/app/extended_api.py: OWNER-authorized receiving validates a canonical `Idempotency-Key`, hashes normalized line quantities, serializes concurrent retries on the purchase-order row, replays the stored response for the same key/hash, and returns 409 when a key is reused with a different payload. Receipt movements, one audit event and the idempotency snapshot commit atomically.
+- frontend/src/app/api.service.ts: generates one UUID per receipt intent, stores it in session storage for safe retry after a lost response, and clears it only after a successful response.
+- backend/tests/test_t39_purchase_receiving_api.py: endpoint replay, changed-payload conflict, malformed/missing key, concurrent same-key and no-duplicate-side-effect regressions, in addition to model constraints.
 
 ## Required owner handoffs
 
-- **Chat 3:** implement atomic lookup/insert and receipt transaction integration in backend/app/operations.py; serialize same-key concurrent requests; guarantee rollback releases the key; add PostgreSQL same-key concurrency and retry tests.
-- **Chat 5:** accept/validate Idempotency-Key in backend/app/extended_api.py; reject missing/malformed keys with 422; replay same key + same hash; return 409 for same key + different hash; preserve tenant/role checks before revealing replay state.
+- **MASTER takeover:** the live API route in backend/app/extended_api.py is the sole registered receipt endpoint; atomic lookup/insert, stable lock ordering, replay/conflict behavior and tenant/role checks are implemented there. The legacy helper in backend/app/operations.py is not the registered route and remains unchanged.
 - **Master:** reconcile the migration graph and branch integration; do not apply this migration to a live database.
 - **Chat 2:** owns this model, additive migration draft and feature-local schema tests. No changes to Chat 3/5/Master-owned paths.
 

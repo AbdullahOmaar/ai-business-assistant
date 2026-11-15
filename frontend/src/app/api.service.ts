@@ -173,6 +173,7 @@ export type InvoiceLineInput =
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
+  private readonly pendingReceiptKeys = new Map<string, { fingerprint: string; key: string }>();
   constructor(private readonly auth: AuthService) {}
 
   async releaseInfo(): Promise<ReleaseInfo> {
@@ -184,7 +185,7 @@ export class ApiService {
     return await response.json() as ReleaseInfo;
   }
 
-  private async request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+  private async request<T>(path: string, method = 'GET', body?: unknown, extraHeaders: Record<string, string> = {}): Promise<T> {
     const config = await this.auth.getRuntimeConfig();
     const base = (config.apiBaseUrl || '').trim().replace(/\/$/, '');
     if (!base || base.includes('YOUR-BACKEND')) {
@@ -201,7 +202,8 @@ export class ApiService {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            ...extraHeaders
           },
           body: body === undefined ? undefined : JSON.stringify(body),
           signal: controller.signal
@@ -674,8 +676,48 @@ export class ApiService {
       'POST'
     );
   }
+  private receiptOperationKey(businessId: string, orderId: string, lines: Array<{ line_id: string; quantity: string }>): string {
+    const storageKey = 'aiba:receipt:' + businessId + ':' + orderId;
+    const fingerprint = JSON.stringify([...lines]
+      .map(line => ({ line_id: line.line_id, quantity: String(line.quantity).trim() }))
+      .sort((left, right) => left.line_id.localeCompare(right.line_id) || left.quantity.localeCompare(right.quantity)));
+    let saved = this.pendingReceiptKeys.get(storageKey);
+    try {
+      const raw = sessionStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { fingerprint?: unknown; key?: unknown };
+        if (typeof parsed.fingerprint === 'string' && typeof parsed.key === 'string') {
+          saved = { fingerprint: parsed.fingerprint, key: parsed.key };
+        }
+      }
+    } catch { /* session storage may be unavailable; keep the in-memory retry key */ }
+    if (saved?.fingerprint === fingerprint) return saved.key;
+
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = [...bytes].map(value => value.toString(16).padStart(2, '0')).join('');
+    const key = hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-' + hex.slice(16, 20) + '-' + hex.slice(20);
+    const next = { fingerprint, key };
+    this.pendingReceiptKeys.set(storageKey, next);
+    try { sessionStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* in-memory retry key remains available */ }
+    return key;
+  }
+
   receivePurchaseOrder(businessId: string, orderId: string, lines: Array<{ line_id: string; quantity: string }>): Promise<PurchaseOrder> {
-    return this.request<PurchaseOrder>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId) + '/receive', 'POST', { lines });
+    const storageKey = 'aiba:receipt:' + businessId + ':' + orderId;
+    const idempotencyKey = this.receiptOperationKey(businessId, orderId, lines);
+    return this.request<PurchaseOrder>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId) + '/receive',
+      'POST',
+      { lines },
+      { 'Idempotency-Key': idempotencyKey },
+    ).then(result => {
+      this.pendingReceiptKeys.delete(storageKey);
+      try { sessionStorage.removeItem(storageKey); } catch { /* session storage may be unavailable */ }
+      return result;
+    });
   }
   recurringSchedules(businessId: string): Promise<RecurringInvoiceSchedule[]> {
     return this.request<RecurringInvoiceSchedule[]>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/recurring-invoices?limit=100');

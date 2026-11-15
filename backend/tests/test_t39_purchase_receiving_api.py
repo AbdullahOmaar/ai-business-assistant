@@ -155,6 +155,10 @@ def _receiving_snapshot(engine, business_id, order_id):
         )
 
 
+def _receipt_headers(key=None):
+    return {"Idempotency-Key": key or str(uuid4())}
+
+
 def _configure(engine):
     previous = _configure_test_identity(engine)
     return TestClient(app), previous
@@ -626,6 +630,85 @@ def test_receipt_idempotency_key_is_unique_per_business_purchase_order():
                 response_snapshot={"order": str(foreign_order.id)},
             ))
             session.commit()
+    finally:
+        _restore_test_identity(*previous)
+        engine.dispose()
+
+
+def test_receipt_api_replays_same_key_and_rejects_changed_payload_without_duplicate_effects():
+    engine, business_id, _, _ = _sales_return_fixture()
+    client, previous = _configure(engine)
+    try:
+        order_id, line_ids, _ = _create_approved_order(
+            engine, client, business_id, [("3.000", True)], "PO-T39-API-IDEMPOTENCY"
+        )
+        key = str(uuid4())
+        url = f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive"
+        payload = {"lines": [{"line_id": str(line_ids[0]), "quantity": "1.000"}]}
+        first = client.post(url, headers=_receipt_headers(key), json=payload)
+        assert first.status_code == 200, first.text
+        after_first = _receiving_snapshot(engine, business_id, order_id)
+
+        replay = client.post(url, headers=_receipt_headers(key), json=payload)
+        assert replay.status_code == 200, replay.text
+        assert replay.json() == first.json()
+        assert _receiving_snapshot(engine, business_id, order_id) == after_first
+
+        conflict = client.post(
+            url,
+            headers=_receipt_headers(key),
+            json={"lines": [{"line_id": str(line_ids[0]), "quantity": "0.500"}]},
+        )
+        assert conflict.status_code == 409, conflict.text
+        assert _receiving_snapshot(engine, business_id, order_id) == after_first
+    finally:
+        _restore_test_identity(*previous)
+        engine.dispose()
+
+
+def test_receipt_api_requires_canonical_idempotency_key_without_side_effects():
+    engine, business_id, _, _ = _sales_return_fixture()
+    client, previous = _configure(engine)
+    try:
+        order_id, line_ids, _ = _create_approved_order(
+            engine, client, business_id, [("2.000", True)], "PO-T39-IDEMPOTENCY-HEADER"
+        )
+        url = f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive"
+        payload = {"lines": [{"line_id": str(line_ids[0]), "quantity": "1.000"}]}
+        before = _receiving_snapshot(engine, business_id, order_id)
+        missing = client.post(url, json=payload)
+        malformed = client.post(url, headers={"Idempotency-Key": "not-a-uuid"}, json=payload)
+        uppercase = client.post(url, headers={"Idempotency-Key": str(uuid4()).upper()}, json=payload)
+        assert missing.status_code == 422
+        assert malformed.status_code == 422
+        assert uppercase.status_code == 422
+        assert _receiving_snapshot(engine, business_id, order_id) == before
+    finally:
+        _restore_test_identity(*previous)
+        engine.dispose()
+
+
+def test_concurrent_same_key_receipt_requests_apply_stock_once():
+    from concurrent.futures import ThreadPoolExecutor
+
+    engine, business_id, _, _ = _sales_return_fixture()
+    client, previous = _configure(engine)
+    try:
+        order_id, line_ids, _ = _create_approved_order(
+            engine, client, business_id, [("2.000", True)], "PO-T39-IDEMPOTENCY-CONCURRENT"
+        )
+        url = f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive"
+        key = str(uuid4())
+        headers = _receipt_headers(key)
+        payload = {"lines": [{"line_id": str(line_ids[0]), "quantity": "1.000"}]}
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            responses = list(pool.map(lambda _: client.post(url, headers=headers, json=payload), range(2)))
+        assert [response.status_code for response in responses] == [200, 200]
+        assert responses[0].json() == responses[1].json()
+        snapshot = _receiving_snapshot(engine, business_id, order_id)
+        assert snapshot[1] == ((line_ids[0], Decimal("1.000")),)
+        assert len(snapshot[2]) == 1
+        assert len(snapshot[3]) == 2  # creation + exactly one receipt audit event
     finally:
         _restore_test_identity(*previous)
         engine.dispose()
