@@ -578,10 +578,13 @@ export class PurchasingWorkspaceComponent {
     const order = this.selectedOrder();
     if (!order || !(action === 'approve' ? this.canApprove(order) : this.canCancel(order))) return;
     this.pendingAction.set(action);
-    const promptKey = action === 'approve' ? 'approveConfirmationPrompt' : 'cancelConfirmationPrompt';
+    // Reuse the established, already-loaded purchasing dictionary keys for this
+    // critical confirmation path; the newly-added aliases were empty in the
+    // browser runtime despite being present in the source JSON.
+    const promptKey = action === 'approve' ? 'confirmApprove' : 'confirmCancel';
     this.confirmationPrompt.set(this.t(promptKey));
-    this.confirmationConfirmLabel.set(this.t('confirmActionButton'));
-    this.confirmationCancelLabel.set(this.t('cancelConfirmationButton'));
+    this.confirmationConfirmLabel.set(this.t('confirm'));
+    this.confirmationCancelLabel.set(this.t('cancel'));
   }
 
   async confirmAction(): Promise<void> {
