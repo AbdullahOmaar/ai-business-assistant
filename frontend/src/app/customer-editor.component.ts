@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, output, signal } from '@angular/core';
 import type { Customer } from './api.service';
+import { LocalizationService } from './localization.service';
 
 export interface CustomerEditorValue {
   name: string;
@@ -18,43 +19,43 @@ export interface CustomerEditorValue {
     <section class="customer-editor" [attr.aria-labelledby]="'customer-editor-title'">
       <header class="customer-editor__header">
         <div>
-          <p class="customer-editor__eyebrow">{{ locale() === 'ar' ? 'العملاء' : 'CUSTOMERS' }}</p>
-          <h2 id="customer-editor-title">{{ customer() ? (locale() === 'ar' ? 'تعديل بيانات العميل' : 'Edit customer') : (locale() === 'ar' ? 'إضافة عميل جديد' : 'Add customer') }}</h2>
-          <p>{{ locale() === 'ar' ? 'بيانات التواصل الأساسية — تقدر تعدلها في أي وقت' : 'Core contact details — you can update them any time.' }}</p>
+          <p class="customer-editor__eyebrow">{{ t('customerEditor.eyebrow') }}</p>
+          <h2 id="customer-editor-title">{{ customer() ? t('customerEditor.editTitle') : t('customerEditor.createTitle') }}</h2>
+          <p>{{ t('customerEditor.description') }}</p>
         </div>
-        <button class="customer-editor__close" type="button" (click)="cancel.emit()" [attr.aria-label]="locale() === 'ar' ? 'إغلاق' : 'Close'">×</button>
+        <button class="customer-editor__close" type="button" (click)="cancel.emit()" [attr.aria-label]="t('customerEditor.close')">×</button>
       </header>
 
       <form (submit)="submit($event)" novalidate>
         <div class="customer-editor__grid">
           <label class="customer-editor__field customer-editor__field--wide">
-            <span>{{ locale() === 'ar' ? 'اسم العميل' : 'Customer name' }} <b aria-hidden="true">*</b></span>
-            <input name="name" autocomplete="name" maxlength="160" required [value]="name()" (input)="name.set(readValue($event))" [attr.aria-invalid]="submitted() && !name().trim() ? 'true' : null" [placeholder]="locale() === 'ar' ? 'مثال: أحمد محمد' : 'e.g. Alex Morgan'">
-            @if (submitted() && !name().trim()) { <small role="alert">{{ locale() === 'ar' ? 'اسم العميل مطلوب' : 'Customer name is required' }}</small> }
+            <span>{{ t('customerEditor.name') }} <b aria-hidden="true">*</b></span>
+            <input name="name" autocomplete="name" maxlength="160" required [value]="name()" (input)="name.set(readValue($event))" [attr.aria-invalid]="submitted() && !name().trim() ? 'true' : null" [placeholder]="t('customerEditor.namePlaceholder')">
+            @if (submitted() && !name().trim()) { <small role="alert">{{ t('customerEditor.nameRequired') }}</small> }
           </label>
           <label class="customer-editor__field">
-            <span>{{ locale() === 'ar' ? 'رقم الموبايل' : 'Phone number' }}</span>
+            <span>{{ t('customerEditor.phone') }}</span>
             <input name="phone" type="tel" autocomplete="tel" maxlength="32" inputmode="tel" [value]="phone()" (input)="phone.set(readValue($event))" dir="auto" placeholder="+20">
           </label>
           <label class="customer-editor__field">
-            <span>{{ locale() === 'ar' ? 'البريد الإلكتروني' : 'Email address' }}</span>
+            <span>{{ t('customerEditor.email') }}</span>
             <input name="email" type="email" autocomplete="email" maxlength="254" [value]="email()" (input)="email.set(readValue($event))" dir="ltr" placeholder="name@example.com" [attr.aria-invalid]="submitted() && emailInvalid() ? 'true' : null">
-            @if (submitted() && emailInvalid()) { <small role="alert">{{ locale() === 'ar' ? 'أدخل بريد إلكتروني صحيح' : 'Enter a valid email address' }}</small> }
+            @if (submitted() && emailInvalid()) { <small role="alert">{{ t('customerEditor.emailInvalid') }}</small> }
           </label>
           <label class="customer-editor__field customer-editor__field--wide">
-            <span>{{ locale() === 'ar' ? 'العنوان' : 'Address' }}</span>
-            <input name="address" autocomplete="street-address" maxlength="500" [value]="address()" (input)="address.set(readValue($event))" [placeholder]="locale() === 'ar' ? 'المدينة، المنطقة، الشارع' : 'City, area, street'">
+            <span>{{ t('customerEditor.address') }}</span>
+            <input name="address" autocomplete="street-address" maxlength="500" [value]="address()" (input)="address.set(readValue($event))" [placeholder]="t('customerEditor.addressPlaceholder')">
           </label>
           <label class="customer-editor__field customer-editor__field--wide">
-            <span>{{ locale() === 'ar' ? 'ملاحظات' : 'Notes' }}</span>
-            <textarea name="notes" rows="3" maxlength="1000" [value]="notes()" (input)="notes.set(readValue($event))" [placeholder]="locale() === 'ar' ? 'ملاحظات تساعدك في التعامل مع العميل' : 'Useful context for your team'"></textarea>
+            <span>{{ t('customerEditor.notes') }}</span>
+            <textarea name="notes" rows="3" maxlength="1000" [value]="notes()" (input)="notes.set(readValue($event))" [placeholder]="t('customerEditor.notesPlaceholder')"></textarea>
             <small>{{ notes().length }}/1000</small>
           </label>
         </div>
         @if (error()) { <p class="customer-editor__error" role="alert">{{ error() }}</p> }
         <footer class="customer-editor__footer">
-          <button class="customer-editor__secondary" type="button" (click)="cancel.emit()" [disabled]="busy()">{{ locale() === 'ar' ? 'إلغاء' : 'Cancel' }}</button>
-          <button class="customer-editor__primary" type="submit" [disabled]="busy()">{{ busy() ? (locale() === 'ar' ? 'جارٍ الحفظ…' : 'Saving…') : (locale() === 'ar' ? 'حفظ البيانات' : 'Save customer') }}</button>
+          <button class="customer-editor__secondary" type="button" (click)="cancel.emit()" [disabled]="busy()">{{ t('customerEditor.cancel') }}</button>
+          <button class="customer-editor__primary" type="submit" [disabled]="busy()">{{ busy() ? t('customerEditor.saving') : t('customerEditor.save') }}</button>
         </footer>
       </form>
     </section>
@@ -62,8 +63,9 @@ export interface CustomerEditorValue {
   styleUrl: './customer-editor.component.css',
 })
 export class CustomerEditorComponent {
+  private readonly localization = inject(LocalizationService);
+  t(key: string): string { return this.localization.translate(key); }
   readonly customer = input<Customer | null>(null);
-  readonly locale = input<'ar' | 'en'>('ar');
   readonly busy = input(false);
   readonly error = input('');
   readonly cancel = output<void>();
