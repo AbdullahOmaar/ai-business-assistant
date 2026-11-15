@@ -769,8 +769,8 @@ test('product creation distinguishes saved stock setup from a failed list refres
   assert.match(method, /if \(!this\.productUnit\.trim\(\)\)/);
   assert.match(method, /unit_price: unitPrice/);
   assert.match(method, /opening_quantity: openingQuantity/);
-  assert.match(source, /replace\(\/[٠-٩]\/g/);
-  assert.match(source, /replace\(\/[۰-۹]\/g/);
+  assert.match(source, /replace\(\/\[٠-٩\]\/g/);
+  assert.match(source, /replace\(\/\[۰-۹\]\/g/);
   assert.match(source, /replace\(\/٫\/g, '\.'\)/);
   assert.doesNotMatch(method, /Number\(this\.productPrice\)|toFixed\(2\)/);
   assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/);
