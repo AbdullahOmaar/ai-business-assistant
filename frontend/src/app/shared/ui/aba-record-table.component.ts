@@ -1,7 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { computed, inject } from '@angular/core';
 import { LocalizationService } from '../../localization.service';
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { AbaStateMessageComponent } from './aba-state-message.component';
 
 export interface AbaRecordTableColumn { key:string; label:string; primary?:boolean; kind?:'text'|'numeric'|'status'; }

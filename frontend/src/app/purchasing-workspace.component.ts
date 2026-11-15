@@ -401,7 +401,7 @@ export class PurchasingWorkspaceComponent {
   activitySummary(event: PurchaseOrderActivity): string {
     if (typeof event.change_summary === 'string') return event.change_summary;
     if (event.change_summary && typeof event.change_summary === 'object') return JSON.stringify(event.change_summary);
-    return event.actor_subject || '—';
+    return '—';
   }
 
   canEdit(order: PurchaseOrder): boolean { return this.isOwner() && order.status === 'draft'; }
