@@ -14,6 +14,8 @@ import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { ReleaseGuideComponent } from './release-guide.component';
 import { CustomerDirectoryComponent } from './customer-directory.component';
+import { CustomerWorkspaceComponent } from './customer-workspace.component';
+import { ProductWorkspaceComponent } from './product-workspace.component';
 import { ProductCatalogComponent } from './product-catalog.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
@@ -42,7 +44,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerDirectoryComponent, ProductCatalogComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerDirectoryComponent, ProductCatalogComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -591,28 +593,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @if (tab === 'team' && business?.id) {
               <aba-workspace-invitations mode="manage" [businessId]="business.id" [language]="language" />
             }
-            @if (tab === 'customers') {
+            @if (tab === 'customers' && business?.id) {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('ui.m_1lifkl9') " [description]=" t('ui.m_15gmqko') "><span class="count">{{ filteredCustomers.length }} / {{ customers.length }} {{ t('ui.m_15kaq4w') }}</span></aba-section-header>
-<details class="aba-record-create" [open]="customerCreateOpen" (toggle)="customerCreateOpen = $any($event.target).open">
-                  <summary><span>{{ t('ui.m_1yvcfg6') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
-                  <div class="aba-record-create__body">
-                <form #customerForm="ngForm" class="inline-form" (ngSubmit)="customerForm.valid && createCustomer()">
-                  <input #customerNameModel="ngModel" [attr.aria-label]="t('ui.m_e80x9i')" name="customerName" [placeholder]="t('ui.m_e80x9i')" required maxlength="160" [(ngModel)]="customerName" [attr.aria-invalid]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'customer-name-error' : null">
-                  @if (customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted)) {
-                    <small id="customer-name-error" class="field-error" aria-live="polite">{{ t('ui.m_1ucyubn') }}</small>
-                  }
-                  <input #customerEmailModel="ngModel" [attr.aria-label]="t('ui.m_1hdfjhy')" name="customerEmail" type="email" maxlength="254" [placeholder]="t('ui.m_u2wvbv')" [(ngModel)]="customerEmail" [attr.aria-invalid]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'customer-email-error' : null">
-                  @if (customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted)) {
-                    <small id="customer-email-error" class="field-error" aria-live="polite">{{ t('ui.m_stzy3f') }}</small>
-                  }
-                  <input [attr.aria-label]="t('ui.m_jf17kv')" name="customerPhone" maxlength="32" [placeholder]="t('ui.m_1fpllb8')" [(ngModel)]="customerPhone">
-                  <button class="primary" type="submit" [disabled]="loading">{{ t('ui.m_zesk98') }}</button>
-                </form>
-
-                  </div>
-                </details>
-                @if (customerMessage) { <aba-state-message [kind]="customerMessageKind" [description]="customerMessage" /> }
+                <aba-section-header [title]="t('ui.m_1lifkl9')" [description]="t('ui.m_15gmqko')" />
                 @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('ui.m_p4xhry') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
                   <h3>{{ t('ui.m_p4xhry') }}</h3>
                   <p>{{ t('ui.m_1239wd4') }}</p>
@@ -634,44 +617,20 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                   @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('ui.m_15zjjtn')" /> }
-                <div class="list-tools aba-record-toolbar"><input name="customerSearch" type="search" [attr.aria-label]="t('ui.m_cbuclg')" [placeholder]="t('ui.m_oe2vue')" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }</div>
-                <aba-customer-directory [ariaLabel]="t('ui.m_5lit5y')" [customers]="filteredCustomers" [locale]="language" [loading]="loading && !customers.length" [loadingDescription]="t('ui.m_14qa8nk')" [emptyTitle]="t('ui.m_v7mhxb')" [emptyDescription]="customerSearch.trim() ? t('ui.m_1lfpojf') : t('ui.m_9nmick')" (rowAction)="onCustomerRecordAction($event)" />
-                @if (customersHasMore || customersLoadingMore) {
-                  <div class="inline-form record-load-more" aria-live="polite">
-                    <span class="muted">{{ customers.length }} {{ t('ui.m_1sao2d6') }}</span>
-                    <button class="secondary" type="button" (click)="loadMoreCustomers()" [disabled]="customersLoadingMore">
-                      {{ customersLoadingMore ? t('ui.m_14qa8nk') : t('ui.m_1m9ykss') }}
-                    </button>
-                  </div>
-                }
-
-                @if (statementVisible) {
-                  <section abaCard class="panel statement-panel">
-                    <aba-section-header [level]="3" [title]="t('ui.m_152dm1w') + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t('ui.m_ysb7zm')"><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('ui.m_1whnkun') }}</button></aba-section-header>
-                    <div class="inline-form statement-filters">
-                      <label>{{ t('ui.m_6ousik') }}<input type="date" name="statementFromDate" [(ngModel)]="statementFromDate"></label>
-                      <label>{{ t('ui.m_hltyrq') }}<input type="date" name="statementToDate" [(ngModel)]="statementToDate"></label>
-                      <button class="primary" type="button" (click)="applyCustomerStatementFilters()" [disabled]="statementLoading">{{ t('ui.m_1vs0iyd') }}</button>
-                      <button class="secondary" type="button" (click)="clearCustomerStatementFilters()" [disabled]="statementLoading || (!statementFromDate && !statementToDate)">{{ t('ui.m_1kg6ptq') }}</button>
-                    </div>
-                    @if (statementFromDate || statementToDate) { <p class="muted">{{ t('ui.m_gqq69s') }}</p> }
-                    @if (statementLoading) { <aba-state-message kind="loading" [description]="t('ui.m_1jqptmt')" /> }
-                    @if (statementError) { <aba-state-message kind="error" [description]="statementError" /> }
-                    @if (customerStatement) {
-                      <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t('ui.m_lyblb3') }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
-                      <aba-record-table [ariaLabel]="t('ui.m_152dm1w')" [columns]="customerStatementTableColumns" [rows]="customerStatementTableRows" [emptyTitle]="t('ui.m_3op8q6')" [emptyDescription]="t('ui.m_18o73kt')" />
-                      <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t('ui.m_14wy3hz') }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('ui.m_thb9eg') }}</button></div>
-                      @for (limitation of customerStatement.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
-                    }
-                  </section>
-                }
-          </section>
+                <aba-customer-workspace
+                  [businessId]="business.id"
+                  [userId]="workspaceUserId"
+                  [role]="business.role === 'owner' ? 'owner' : 'staff'"
+                  [locale]="language"
+                  (invoicesRequested)="createInvoiceForCustomer($event)"
+                  (statementRequested)="openCustomerStatementById($event)" />
+              </section>
             }
 
-            @if (tab === 'products') {
+            @if (tab === 'products' && business?.id) {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('ui.m_137u0ee') " [description]=" t('ui.m_snu8sb') "><span class="count">{{ filteredProducts.length }} / {{ products.length }} {{ t('ui.m_1hpnko') }}</span></aba-section-header>
-<details class="aba-record-create" [open]="productCreateOpen" (toggle)="productCreateOpen = $any($event.target).open">
+                <aba-section-header [title]="t('ui.m_137u0ee')" [description]="t('ui.m_snu8sb')" />
+                <details class="aba-record-create" [open]="productCreateOpen" (toggle)="productCreateOpen = $any($event.target).open">
                   <summary><span>{{ t('ui.m_1nbakc8') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
                 <form #productForm="ngForm" class="inline-form" (ngSubmit)="productForm.valid && createProduct()">
@@ -720,18 +679,13 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                   @if (importMessage) { <aba-state-message [kind]="importMessageKind" [description]="importMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('ui.m_15zjjtn')" /> }
-                <div class="list-tools aba-record-toolbar"><input name="productSearch" type="search" [attr.aria-label]="t('ui.m_1y4yidi')" [placeholder]="t('ui.m_12onvgc')" [(ngModel)]="productSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }</div>
-                <aba-product-catalog [ariaLabel]="t('ui.m_1q9q53d')" [products]="filteredProducts" [locale]="language" [currencyCode]="business?.currency_code || ''" [loading]="loading && !products.length" [loadingDescription]="t('ui.m_dm5wol')" [emptyTitle]="t('ui.m_12dkqai')" [emptyDescription]="productSearch.trim() ? t('ui.m_87y3du') : t('ui.m_nd32m5')" />
-                @if (productsHasMore || productsLoadingMore) {
-                  <div class="inline-form record-load-more" aria-live="polite">
-                    <span class="muted">{{ products.length }} {{ t('ui.m_1s9tcxi') }}</span>
-                    <button class="secondary" type="button" (click)="loadMoreProducts()" [disabled]="productsLoadingMore">
-                      {{ productsLoadingMore ? t('ui.m_dm5wol') : t('ui.m_iziq6h') }}
-                    </button>
-                  </div>
-                }
-
-            </section>
+                <aba-product-workspace
+                  [businessId]="business.id"
+                  [userId]="workspaceUserId"
+                  [role]="business.role === 'owner' ? 'owner' : 'staff'"
+                  [locale]="language"
+                  [currencyCode]="business.currency_code" />
+              </section>
             }
 
             @if (tab === 'invoices') {
@@ -1451,6 +1405,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
   `]
 })
 export class AppComponent implements OnInit, OnDestroy {
+  @ViewChild(CustomerWorkspaceComponent) private customerWorkspace?: CustomerWorkspaceComponent;
+  @ViewChild(ProductWorkspaceComponent) private productWorkspace?: ProductWorkspaceComponent;
+  get workspaceUserId(): string { return this.currentAuthUid ?? ''; }
   readonly appVersion = APP_BUILD_INFO.version;
   readonly uiCommitLabel = APP_BUILD_INFO.commit;
   get buildTimeLabel(): string {
@@ -3518,6 +3475,7 @@ export class AppComponent implements OnInit, OnDestroy {
         if (this.business?.id === businessId) {
           this.purchaseOrders = orders;
           this.setProductPage(products);
+        this.productWorkspace?.retry();
           this.dashboard = dashboard;
         }
       } catch (error) {
@@ -3738,6 +3696,46 @@ export class AppComponent implements OnInit, OnDestroy {
     return Object.entries(this.customerStatement?.balances_by_currency || {}).map(([currency, balance]) => ({ currency, balance }));
   }
 
+  async openCustomerStatementById(customerId: string): Promise<void> {
+    const business = this.business;
+    const userId = this.currentAuthUid;
+    if (!business || !this.signedIn || !userId || !customerId) return;
+    const businessId = business.id;
+    const role = business.role ?? null;
+    const requestVersion = this.statementLoadGuard.begin();
+    const requestContext = { workspaceId: businessId, userId, role, signedIn: this.signedIn, customerId };
+    const isCurrent = (): boolean => isCurrentTenantRequest(
+      this.statementLoadGuard,
+      requestVersion,
+      requestContext,
+      {
+        workspaceId: this.business?.id ?? '',
+        userId: this.currentAuthUid,
+        role: this.business?.role ?? null,
+        signedIn: this.signedIn,
+        customerId,
+      },
+    );
+    this.statementVisible = true;
+    this.statementLoading = true;
+    this.statementError = '';
+    this.customerStatement = null;
+    try {
+      const customer = await this.api.customer(businessId, customerId);
+      if (!isCurrent()) return;
+      this.statementCustomerId = customer.id;
+      this.statementCustomerName = customer.name;
+      this.statementFromDate = '';
+      this.statementToDate = '';
+      this.statementLoading = false;
+      await this.loadCustomerStatementPage(0);
+    } catch (error) {
+      if (!isCurrent()) return;
+      this.statementError = this.message(error);
+      this.statementLoading = false;
+    }
+  }
+
   async loadCustomerStatement(customer: Customer): Promise<void> {
     this.statementCustomerId = customer.id;
     this.statementCustomerName = customer.name;
@@ -3825,6 +3823,7 @@ export class AppComponent implements OnInit, OnDestroy {
         const customers = await this.api.customers(businessId);
         if (this.business?.id !== businessId) return;
         this.setCustomerPage(customers);
+        this.customerWorkspace?.retry();
         if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
       } catch {
         if (this.business?.id === businessId) {
@@ -4070,6 +4069,13 @@ export class AppComponent implements OnInit, OnDestroy {
     const scaledRate = (value * 100n * scale + denominator / 2n) / denominator;
     const cappedRate = scaledRate > 100n * scale ? 100n * scale : scaledRate;
     return `${cappedRate / scale}.${String(cappedRate % scale).padStart(12, '0')}`;
+  }
+
+  createInvoiceForCustomer(customerId: string): void {
+    if (!this.business || !this.signedIn || !this.currentAuthUid || !customerId) return;
+    this.startNewInvoiceDraft();
+    this.invoiceCustomerId = customerId;
+    this.setTab('invoices');
   }
 
   startNewInvoiceDraft(): void {
