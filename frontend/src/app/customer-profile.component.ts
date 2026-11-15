@@ -83,6 +83,6 @@ export class CustomerProfileComponent {
   readonly retry = output<void>();
 
   initials(): string {
-    return this.record.name.trim().split(/\s+/).slice(0, 2).map(part => Array.from(part)[0] ?? '').join('').toLocaleUpperCase();
+    return (this.customer()?.name ?? '').trim().split(/\s+/).slice(0, 2).map(part => Array.from(part)[0] ?? '').join('').toLocaleUpperCase();
   }
 }
