@@ -1791,6 +1791,11 @@
     "emptyTitle": "No product selected"
   },
   "purchasingWorkspace": {
+    "approveConfirmationPrompt": "Approve this purchase order?",
+    "cancelConfirmationPrompt": "Cancel this draft purchase order?",
+    "confirmActionButton": "Confirm",
+    "cancelConfirmationButton": "Keep editing",
+
     "title": "Purchase orders",
     "subtitle": "Manage purchase orders, receipts and their audit history.",
     "newOrder": "New purchase order",
