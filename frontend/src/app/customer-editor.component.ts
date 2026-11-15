@@ -92,7 +92,12 @@ export class CustomerEditorComponent {
 
   emailInvalid(): boolean {
     const value = this.email().trim();
-    return value.length > 0 && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value);
+    if (!value) return false;
+    const at = value.indexOf('@');
+    const dot = value.lastIndexOf('.');
+    return at <= 0 || at !== value.lastIndexOf('@') || dot <= at + 1 ||
+      dot >= value.length - 1 || value.includes(' ') || value.includes('\\t') ||
+      value.includes('\\n') || value.includes('\\r');
   }
 
   readValue(event: Event): string {
