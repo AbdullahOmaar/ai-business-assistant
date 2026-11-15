@@ -646,7 +646,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> {{ t('ui.m_13pn7xu') }}</label>
                   @if (stockTracked) {
                     @if (business?.role === 'owner') {
-                      <label>{{ t('ui.m_dsef9m') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="text" inputmode="decimal" pattern="^[0-9٠-٩۰-۹]+([.٫][0-9٠-٩۰-۹]{1,3})?$" autocomplete="off" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('ui.m_1tupg8c') : t('ui.m_1rtcb8u') }}</small> }</label>
+                      <label>{{ t('ui.m_dsef9m') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="text" inputmode="decimal" pattern="^[0-9٠-٩۰-۹]{1,11}([.٫][0-9٠-٩۰-۹]{1,3})?$" autocomplete="off" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('ui.m_1tupg8c') : t('ui.m_1rtcb8u') }}</small> }</label>
                     } @else {
                       <small class="muted">{{ t('ui.m_1xw7d7y') }}</small>
                     }
@@ -4030,7 +4030,7 @@ export class AppComponent implements OnInit, OnDestroy {
       .replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
       .replace(/[۰-۹]/g, digit => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
       .replace(/٫/g, '.');
-    const pattern = scale === 2 ? /^(\d{1,12})(?:\.(\d{1,2}))?$/ : /^(\d{1,12})(?:\.(\d{1,3}))?$/;
+    const pattern = scale === 2 ? /^(\d{1,12})(?:\.(\d{1,2}))?$/ : /^(\d{1,11})(?:\.(\d{1,3}))?$/;
     const match = pattern.exec(normalized);
     if (!match) return null;
     return `${BigInt(match[1]).toString()}.${(match[2] || '').padEnd(scale, '0')}`;
