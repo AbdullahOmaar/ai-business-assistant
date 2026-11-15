@@ -14,15 +14,13 @@ import { LocalizationService } from './localization.service';
       <aba-state-message kind="loading" [description]="t('customerProfile.loading')" />
     } @else if (error()) {
       <aba-state-message kind="error" [description]="error()" [actionLabel]="t('ui.m_lr6ezy')" (action)="retry.emit()" />
-    } @else if (!customer()) {
-      <aba-state-message kind="empty" [title]="t('customerProfile.emptyTitle')" [description]="t('customerProfile.emptyDescription')" />
-    } @else {
+    } @else if (customer(); as record) {
     <article class="customer-profile" [attr.aria-labelledby]="'customer-profile-name'">
       <header class="customer-profile__hero">
         <div class="customer-profile__avatar" aria-hidden="true">{{ initials() }}</div>
         <div class="customer-profile__identity">
           <p>{{ t('customerProfile.eyebrow') }}</p>
-          <h2 id="customer-profile-name">{{ customer().name }}</h2>
+          <h2 id="customer-profile-name">{{ record.name }}</h2>
           <span>{{ t('customerProfile.registered') }}</span>
         </div>
         <button class="customer-profile__edit" type="button" (click)="edit.emit()">{{ t('customerProfile.edit') }}</button>
@@ -30,26 +28,26 @@ import { LocalizationService } from './localization.service';
       <section class="customer-profile__details" [attr.aria-label]="t('customerProfile.eyebrow')">
         <div class="customer-profile__item">
           <span>{{ t('customerProfile.phone') }}</span>
-          @if (customer().phone) { <a [href]="'tel:' + customer().phone"><bdi dir="ltr">{{ customer().phone }}</bdi></a> }
+          @if (record.phone) { <a [href]="'tel:' + record.phone"><bdi dir="ltr">{{ record.phone }}</bdi></a> }
           @else { <strong>—</strong> }
         </div>
         <div class="customer-profile__item">
           <span>{{ t('customerProfile.email') }}</span>
-          @if (customer().email) { <a [href]="'mailto:' + customer().email"><bdi dir="ltr">{{ customer().email }}</bdi></a> }
+          @if (record.email) { <a [href]="'mailto:' + record.email"><bdi dir="ltr">{{ record.email }}</bdi></a> }
           @else { <strong>—</strong> }
         </div>
         <div class="customer-profile__item customer-profile__item--wide">
           <span>{{ t('customerProfile.address') }}</span>
-          <strong>{{ customer().address || '—' }}</strong>
+          <strong>{{ record.address || '—' }}</strong>
         </div>
         <div class="customer-profile__item customer-profile__item--wide">
           <span>{{ t('customerProfile.notes') }}</span>
-          <p>{{ customer().notes || t('customerProfile.noNotes') }}</p>
+          <p>{{ record.notes || t('customerProfile.noNotes') }}</p>
         </div>
-        @if (customer().created_at) {
+        @if (record.created_at) {
           <div class="customer-profile__item">
             <span>{{ t('customerProfile.addedOn') }}</span>
-            <strong><bdi dir="ltr">{{ localization.formatDate(customer().created_at) }}</bdi></strong>
+            <strong><bdi dir="ltr">{{ localization.formatDate(record.created_at) }}</bdi></strong>
           </div>
         }
       </section>
@@ -59,6 +57,8 @@ import { LocalizationService } from './localization.service';
       </footer>
       <p class="customer-profile__note">{{ t('customerProfile.financialNote') }}</p>
     </article>
+    } @else {
+      <aba-state-message kind="empty" [title]="t('customerProfile.emptyTitle')" [description]="t('customerProfile.emptyDescription')" />
     }
   `,
   styles: [`
@@ -83,6 +83,6 @@ export class CustomerProfileComponent {
   readonly retry = output<void>();
 
   initials(): string {
-    return this.customer().name.trim().split(/\s+/).slice(0, 2).map(part => Array.from(part)[0] ?? '').join('').toLocaleUpperCase();
+    return this.record.name.trim().split(/\s+/).slice(0, 2).map(part => Array.from(part)[0] ?? '').join('').toLocaleUpperCase();
   }
 }
