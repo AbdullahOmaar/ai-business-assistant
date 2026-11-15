@@ -59,6 +59,7 @@ def test_inventory_movement_ledger_is_tenant_scoped_filterable_and_paginated():
             ])
             session.commit()
             first_id = first.id
+            second_id = second.id
             foreign_business_id = foreign_business.id
 
         client = TestClient(app)
@@ -68,7 +69,7 @@ def test_inventory_movement_ledger_is_tenant_scoped_filterable_and_paginated():
         body = page_one.json()
         assert len(body["items"]) == 2
         assert body["has_more"] is True
-        assert all(row["product"]["id"] in {str(first_id), str(second.id)} for row in body["items"])
+        assert all(row["product"]["id"] in {str(first_id), str(second_id)} for row in body["items"])
         assert body["items"][0]["movement_type"] == "adjustment"
 
         page_two = client.get(base, params={"limit": 2, "offset": 2})
