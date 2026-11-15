@@ -20,7 +20,7 @@ export interface BusinessInvitation {
 export interface BusinessInvitationCreated extends BusinessInvitation { token: string; }
 export interface BusinessMembership { id: string; business_id: string; role: 'owner' | 'staff'; created_at: string | null; }
 export interface Customer { id: string; name: string; email?: string | null; phone?: string | null; address?: string | null; notes?: string | null; created_at?: string | null; }
-export interface Product { id: string; name: string; sku?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; }
+export interface Product { id: string; name: string; sku?: string | null; description?: string | null; unit?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; created_at?: string | null; }
 export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; outstanding_amount?: string; issue_date?: string | null; created_at?: string | null; due_date?: string | null; }
 export interface InvoiceDetail extends Invoice {
   notes?: string | null;
@@ -478,9 +478,26 @@ export class ApiService {
   updateCustomer(businessId: string, customerId: string, body: Partial<Pick<Customer, 'name' | 'email' | 'phone' | 'address' | 'notes'>>): Promise<Customer> {
     return this.request<Customer>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}`, 'PATCH', body);
   }
-  products(businessId: string, offset = 0, limit = 100): Promise<Product[]> {
-    const query = offset > 0 ? `?limit=${limit}&offset=${offset}` : `?limit=${limit}`;
-    return this.request<Product[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products${query}`);
+  products(businessId: string, offset = 0, limit = 50): Promise<Product[]> {
+    const params = new URLSearchParams({
+      limit: String(Math.min(200, Math.max(1, limit))),
+      offset: String(Math.max(0, offset)),
+    });
+    return this.request<Product[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products?${params.toString()}`);
+  }
+  product(businessId: string, productId: string): Promise<Product> {
+    return this.request<Product>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products/${encodeURIComponent(productId)}`);
+  }
+  updateProduct(
+    businessId: string,
+    productId: string,
+    body: Partial<Pick<Product, 'name' | 'sku' | 'description' | 'unit'>>,
+  ): Promise<Product> {
+    return this.request<Product>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/products/${encodeURIComponent(productId)}`,
+      'PATCH',
+      body,
+    );
   }
   createProduct(businessId: string, body: { name: string; unit_price: string; is_stock_tracked: boolean; opening_quantity?: string }): Promise<Product> {
     return this.request<Product>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products`, 'POST', body);
