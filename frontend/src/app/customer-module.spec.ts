@@ -1,0 +1,46 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+
+const editor = readFileSync(new URL('./customer-editor.component.ts', import.meta.url), 'utf8');
+const editorCss = readFileSync(new URL('./customer-editor.component.css', import.meta.url), 'utf8');
+const profile = readFileSync(new URL('./customer-profile.component.ts', import.meta.url), 'utf8');
+const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
+const directory = readFileSync(new URL('./customer-directory.component.ts', import.meta.url), 'utf8');
+
+test('customer editor covers all supported contact fields and required-name validation', () => {
+  for (const field of ['name', 'email', 'phone', 'address', 'notes']) assert.match(editor, new RegExp('name="' + field + '"'));
+  assert.match(editor, /maxlength="160"/);
+  assert.match(editor, /maxlength="254"/);
+  assert.match(editor, /maxlength="32"/);
+  assert.match(editor, /maxlength="500"/);
+  assert.match(editor, /maxlength="1000"/);
+  assert.match(editor, /if \(!name \|\| this\.busy\(\)\) return/);
+  assert.match(editor, /this\.save\.emit\(/);
+  assert.match(editorCss, /@media\(max-width:560px\)/);
+  assert.match(editorCss, /min-height:46px/);
+  assert.match(editorCss, /forced-colors:active/);
+});
+
+test('customer profile presents contact, address, notes and existing invoice/statement actions without invented financial totals', () => {
+  for (const field of ['phone', 'email', 'address', 'notes']) assert.match(profile, new RegExp('customer\(\)\.' + field));
+  assert.match(profile, /invoices\.emit\(\)/);
+  assert.match(profile, /statement\.emit\(\)/);
+  assert.doesNotMatch(profile, /totalPurchases|receivableBalance|creditLimit/);
+  assert.match(profile, /approved financial source/);
+});
+
+test('customer API client exposes bounded server search, detail and patch for supported fields', () => {
+  assert.match(api, /customers\(businessId: string, offset = 0, limit = 50, search = ''\)/);
+  assert.match(api, /params\.set\('q', search\.trim\(\)\.slice\(0, 120\)\)/);
+  assert.match(api, /customer\(businessId: string, customerId: string\)/);
+  assert.match(api, /updateCustomer\(businessId: string, customerId: string/);
+  assert.match(api, /'address' \| 'notes'/);
+});
+
+test('customer directory keeps mobile-first and desktop layouts with keyboard-accessible actions', () => {
+  assert.match(directory, /customer-directory__mobile-list/);
+  assert.match(directory, /aria-sort/);
+  assert.match(directory, /emitAction\(customer\.id, 'statement'/);
+  assert.match(directory, /min-height:44px/);
+});
