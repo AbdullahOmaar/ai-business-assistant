@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, input, output, signal } from '@angular/core';
 import type { Customer } from './api.service';
 
 export interface CustomerEditorValue {
@@ -38,7 +38,7 @@ export interface CustomerEditorValue {
           </label>
           <label class="customer-editor__field">
             <span>{{ locale() === 'ar' ? 'البريد الإلكتروني' : 'Email address' }}</span>
-            <input name="email" type="email" autocomplete="email" maxlength="254" [value]="email()" (input)="email.set(readValue($event))" dir="ltr" placeholder="name@example.com">
+            <input name="email" type="email" autocomplete="email" maxlength="254" [value]="email()" (input)="email.set(readValue($event))" dir="ltr" placeholder="name@example.com" [attr.aria-invalid]="submitted() && emailInvalid() ? 'true' : null">\n            @if (submitted() && emailInvalid()) { <small role="alert">{{ locale() === 'ar' ? 'أدخل بريد إلكتروني صحيح' : 'Enter a valid email address' }}</small> }
           </label>
           <label class="customer-editor__field customer-editor__field--wide">
             <span>{{ locale() === 'ar' ? 'العنوان' : 'Address' }}</span>
@@ -75,6 +75,21 @@ export class CustomerEditorComponent {
   readonly notes = signal('');
   readonly submitted = signal(false);
 
+  private readonly syncCustomer = effect(() => {
+    const customer = this.customer();
+    this.name.set(customer?.name ?? '');
+    this.email.set(customer?.email ?? '');
+    this.phone.set(customer?.phone ?? '');
+    this.address.set(customer?.address ?? '');
+    this.notes.set(customer?.notes ?? '');
+    this.submitted.set(false);
+  });
+
+  emailInvalid(): boolean {
+    const value = this.email().trim();
+    return value.length > 0 && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(value);
+  }
+
   readValue(event: Event): string {
     return (event.currentTarget as HTMLInputElement | HTMLTextAreaElement | null)?.value ?? '';
   }
@@ -83,7 +98,7 @@ export class CustomerEditorComponent {
     event.preventDefault();
     this.submitted.set(true);
     const name = this.name().trim();
-    if (!name || this.busy()) return;
+    if (!name || this.emailInvalid() || this.busy()) return;
     const optional = (value: string) => value.trim() || undefined;
     this.save.emit({
       name,
