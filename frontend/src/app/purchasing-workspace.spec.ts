@@ -60,6 +60,12 @@ test('detail and read-only receipt/activity history are tenant fenced and respon
   assert.match(workspace, /prefers-reduced-motion:reduce/);
 });
 
+test('purchasing action confirmations retain accessible localized fallback copy', () => {
+  assert.match(workspace, /confirmApprove: \{ ar: 'هل تريد اعتماد أمر الشراء؟', en: 'Approve this purchase order\?' \}/);
+  assert.match(workspace, /confirmCancel: \{ ar: 'هل تريد إلغاء مسودة أمر الشراء؟', en: 'Cancel this draft purchase order\?' \}/);
+  assert.match(workspace, /if \(translated\.trim\(\)\) return translated/);
+});
+
 test('purchasing workspace is mounted in the authenticated app shell', () => {
   assert.match(shell, /import \{ PurchasingWorkspaceComponent \}/);
   assert.match(shell, /<aba-purchasing-workspace/);
