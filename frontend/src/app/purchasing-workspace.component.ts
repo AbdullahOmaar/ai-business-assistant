@@ -1,7 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { TranslateService } from '@ngx-translate/core';
-import { firstValueFrom } from 'rxjs';
 import {
   ApiService,
   type Product,
@@ -275,7 +273,6 @@ type PurchaseAction = 'approve' | 'cancel';
 })
 export class PurchasingWorkspaceComponent {
   private readonly api = inject(ApiService);
-  private readonly translations = inject(TranslateService);
   private readonly localization = inject(LocalizationService);
   private readonly listGuard = new WorkspaceLoadGuard();
   private readonly detailGuard = new WorkspaceLoadGuard();
@@ -574,28 +571,14 @@ export class PurchasingWorkspaceComponent {
     }
   }
 
-  async requestAction(action: PurchaseAction): Promise<void> {
+  requestAction(action: PurchaseAction): void {
     const order = this.selectedOrder();
     if (!order || !(action === 'approve' ? this.canApprove(order) : this.canCancel(order))) return;
     this.pendingAction.set(action);
-    this.confirmationPrompt.set('');
-    this.confirmationConfirmLabel.set('');
-    this.confirmationCancelLabel.set('');
-
-    try {
-      const promptKey = action === 'approve' ? 'approveConfirmationPrompt' : 'cancelConfirmationPrompt';
-      const [prompt, confirm, cancel] = await Promise.all([
-        firstValueFrom(this.translations.get('purchasingWorkspace.' + promptKey)),
-        firstValueFrom(this.translations.get('purchasingWorkspace.confirmActionButton')),
-        firstValueFrom(this.translations.get('purchasingWorkspace.cancelConfirmationButton')),
-      ]);
-      if (this.pendingAction() !== action) return;
-      this.confirmationPrompt.set(String(prompt));
-      this.confirmationConfirmLabel.set(String(confirm));
-      this.confirmationCancelLabel.set(String(cancel));
-    } catch {
-      if (this.pendingAction() === action) this.detailError.set(this.t('loadError'));
-    }
+    const promptKey = action === 'approve' ? 'approveConfirmationPrompt' : 'cancelConfirmationPrompt';
+    this.confirmationPrompt.set(this.t(promptKey));
+    this.confirmationConfirmLabel.set(this.t('confirmActionButton'));
+    this.confirmationCancelLabel.set(this.t('cancelConfirmationButton'));
   }
 
   async confirmAction(): Promise<void> {
