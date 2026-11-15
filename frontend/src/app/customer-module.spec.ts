@@ -25,7 +25,7 @@ test('customer profile presents contact, address, notes and existing invoice/sta
   assert.match(profile, /invoices\.emit\(\)/);
   assert.match(profile, /statement\.emit\(\)/);
   assert.doesNotMatch(profile, /totalPurchases|receivableBalance|creditLimit/);
-  assert.match(profile, /approved financial source/);
+  assert.match(profile, /customerProfile\\.financialNote/);
 });
 
 test('customer API client exposes bounded server search, detail and patch for supported fields', () => {
