@@ -491,7 +491,7 @@ export class ApiService {
   updateProduct(
     businessId: string,
     productId: string,
-    body: Partial<Pick<Product, 'name' | 'unit_price' | 'sku' | 'description' | 'unit' | 'is_stock_tracked'>>,
+    body: Partial<Pick<Product, 'name' | 'sku' | 'description' | 'unit'>>,
   ): Promise<Product> {
     return this.request<Product>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/products/${encodeURIComponent(productId)}`,
