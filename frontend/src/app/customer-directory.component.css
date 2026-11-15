@@ -58,3 +58,7 @@
 @media(prefers-reduced-motion:reduce){
   .customer-directory__action{transition:none}
 }
+
+.customer-directory__profile-link{padding:0;border:0;background:transparent;color:var(--aiba-brand-strong,#115e59);font:inherit;font-weight:750;text-align:start;cursor:pointer}
+.customer-directory__profile-link:hover{text-decoration:underline}
+.customer-directory__profile-link:focus-visible{outline:3px solid var(--aiba-focus,#2563eb);outline-offset:3px;border-radius:3px}
