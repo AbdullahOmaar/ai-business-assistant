@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, computed, Component, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, computed, Component, input, output, signal } from '@angular/core';
 import type { Product } from './api.service';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 import { inject } from '@angular/core';
@@ -20,6 +20,8 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
     <section class="product-catalog" [attr.aria-label]="ariaLabel()">
       @if (loading()) {
         <aba-state-message kind="loading" [description]="loadingDescription()" />
+      } @else if (error()) {
+        <aba-state-message kind="error" [description]="error()" [actionLabel]="t('ui.m_lr6ezy')" (action)="retry.emit()" />
       } @else {
         <div class="product-catalog__toolbar">
           <div class="product-catalog__filters" role="group" [attr.aria-label]="t('productCatalog.m_47v71n')">
@@ -123,6 +125,8 @@ export class ProductCatalogComponent {
   readonly currencyCode = input('');
   readonly loading = input(false);
   readonly loadingDescription = input('');
+  readonly error = input('');
+  readonly retry = output<void>();
   readonly emptyTitle = input('');
   readonly emptyDescription = input('');
 
