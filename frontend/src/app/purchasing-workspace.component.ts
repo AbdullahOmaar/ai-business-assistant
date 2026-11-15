@@ -32,7 +32,7 @@ type PurchaseAction = 'approve' | 'cancel';
           <h2>{{ t('title') }}</h2>
           <p class="pw__muted">{{ t('subtitle') }}</p>
         </div>
-        @if (isOwner() && mode() === 'list') {
+        @if (mode() === 'list') {
           <button class="pw__primary" type="button" (click)="startCreate()" [disabled]="loading()">{{ t('newOrder') }}</button>
         }
       </header>
@@ -118,7 +118,7 @@ type PurchaseAction = 'approve' | 'cancel';
             }
             @if (formError()) { <p class="pw__notice pw__notice--error" role="alert">{{ formError() }}</p> }
             <div class="pw__actions">
-              <button class="pw__primary" type="submit" [disabled]="saving() || !isOwner()">{{ saving() ? t('loading') : t('save') }}</button>
+              <button class="pw__primary" type="submit" [disabled]="saving()">{{ saving() ? t('loading') : t('save') }}</button>
               <button class="pw__secondary" type="button" (click)="cancelEditor()" [disabled]="saving()">{{ t('cancel') }}</button>
             </div>
           </form>
@@ -495,7 +495,6 @@ export class PurchasingWorkspaceComponent {
   }
 
   startCreate(): void {
-    if (!this.isOwner()) return;
     this.editingOrderId = null;
     this.draft = { supplier_id: '', order_number: '', currency_code: this.currencyCode() };
     this.formLines = [this.emptyLine()];
@@ -513,9 +512,9 @@ export class PurchasingWorkspaceComponent {
     this.mode.set('edit');
   }
 
-  addLine(): void { if (this.isOwner()) this.formLines = [...this.formLines, this.emptyLine()]; }
+  addLine(): void { if (this.mode() === 'create' || this.isOwner()) this.formLines = [...this.formLines, this.emptyLine()]; }
   removeLine(index: number): void {
-    if (this.isOwner() && this.formLines.length > 1) this.formLines = this.formLines.filter((_, i) => i !== index);
+    if ((this.mode() === 'create' || this.isOwner()) && this.formLines.length > 1) this.formLines = this.formLines.filter((_, i) => i !== index);
   }
 
   cancelEditor(): void {
@@ -526,7 +525,8 @@ export class PurchasingWorkspaceComponent {
   }
 
   async saveDraft(): Promise<void> {
-    if (!this.isOwner()) return;
+    if (this.mode() !== 'create' && this.mode() !== 'edit') return;
+    if (this.mode() === 'edit' && !this.isOwner()) return;
     const lines = this.formLines.map(line => ({ product_id: line.product_id, quantity: String(line.quantity).trim(), unit_cost: String(line.unit_cost).trim() }));
     if (!this.draft.order_number.trim() || !this.draft.supplier_id) {
       this.formError.set(this.t('invalidOrder'));

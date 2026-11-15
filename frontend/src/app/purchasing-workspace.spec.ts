@@ -28,7 +28,9 @@ test('purchasing workspace supports multi-line create and draft edit with finite
   assert.match(workspace, /is_stock_tracked/);
 });
 
-test('owner-only lifecycle controls and state transitions are fail-closed in the UI', () => {
+test('members can create drafts while owner-only lifecycle controls remain fail-closed', () => {
+  assert.ok(workspace.includes('startCreate(): void'));
+  assert.ok(workspace.includes('this.api.createPurchaseOrder'));
   assert.match(workspace, /isOwner\(\): boolean/);
   assert.match(workspace, /canEdit\(order: PurchaseOrder\): boolean \{ return this\.isOwner\(\) && order\.status === 'draft'/);
   assert.match(workspace, /canApprove\(order: PurchaseOrder\): boolean \{ return this\.isOwner\(\) && order\.status === 'draft'/);

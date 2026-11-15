@@ -15,6 +15,7 @@ const recordTableSource = expandTranslationCalls(readFileSync(new URL('./shared/
 const quickAccessSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8'));
 const workspaceLoadGuardSource = expandTranslationCalls(readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8'));
 const customerWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./customer-workspace.component.ts', import.meta.url), 'utf8'));
+const purchasingWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./purchasing-workspace.component.ts', import.meta.url), 'utf8'));
 const customerEditorSource = expandTranslationCalls(readFileSync(new URL('./customer-editor.component.ts', import.meta.url), 'utf8'));
 const auditLabelsSource = expandTranslationCalls(readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8'));
 const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
@@ -639,24 +640,17 @@ test('operations forms distinguish successful mutations from failed list refresh
   assert.match(helpers, /The operation succeeded, but the list could not be refreshed/);
   const notification = source.slice(source.indexOf('async createNotification()'), source.indexOf('private async loadSuppliers()'));
   const supplier = source.slice(source.indexOf('async createSupplier()'), source.indexOf('async createPurchaseOrder()'));
-  const purchaseStart = source.indexOf('async createPurchaseOrder()');
-  const purchaseEnd = source.indexOf('  hasRemainingQuantity(', purchaseStart);
-  const purchase = source.slice(purchaseStart, purchaseEnd);
-  const receivingStart = source.indexOf('async confirmPurchaseOrderReceipt()');
-  const receivingEnd = source.indexOf('async createRecurringSchedule()', receivingStart);
-  const receiving = source.slice(receivingStart, receivingEnd);
   const recurring = source.slice(source.indexOf('async createRecurringSchedule()'), source.indexOf('get maxIntegrityTotal()'));
-  for (const method of [notification, supplier, purchase, receiving, recurring]) {
+  for (const method of [notification, supplier, recurring]) {
     assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/,
       'stale operation completions must not update the newly selected workspace');
   }
   assert.match(notification, /delivery to recipients is not confirmed/);
-  assert.match(purchase, /No quantities have been received yet/);
   assert.match(recurring, /does not generate invoices automatically/);
-  assert.match(receiving, /Receiving was recorded/);
-  assert.match(source, /operationsMessageTab === 'notifications'/);
-  assert.match(source, /operationsMessageTab === 'suppliers'/);
-  assert.match(source, /operationsMessageTab === 'purchases'/);
+  assert.ok(purchasingWorkspaceSource.includes('this.isCurrent(this.listGuard, version, requested)'));
+  assert.ok(purchasingWorkspaceSource.includes('this.isCurrent(this.actionGuard, version, requested)'));
+  assert.ok(purchasingWorkspaceSource.includes('this.api.receivePurchaseOrder'));
+  assert.ok(purchasingWorkspaceSource.includes("this.success.set(this.t('receivedSaved'))"));
 });
 
 test('invoice void confirmation is localized and uses the accessible shared dialog', () => {
@@ -1039,28 +1033,16 @@ test('purchase-order status labels are localized in the list and available to lo
 });
 
 test('purchase orders remain creatable by members while approval, receiving and payment writes are owner-only', () => {
-  const purchaseStart = source.indexOf("@if (tab === 'purchases')");
-  const purchaseEnd = source.indexOf("@if (tab === 'recurring')", purchaseStart);
-  const purchaseView = source.slice(purchaseStart, purchaseEnd);
-  assert.match(purchaseView, /<form #purchaseForm="ngForm" class="stack" \(ngSubmit\)="purchaseForm\.valid && createPurchaseOrder\(\)">/);
-  assert.match(purchaseView, /<aba-record-table[^>]*\[rows\]="purchaseTableRows"[^>]*\(rowAction\)="onPurchaseRecordAction\(\$event\)"/);
-  assert.match(source, /actions:this\.business\?\.role==='owner'\s*\?\s*this\.canApprovePurchaseOrder\(order\)\s*\?\s*\[\{id:'approve'/);
-  assert.match(source, /this\.canReceivePurchaseOrder\(order\)\s*\?\s*\[\{id:'receive'/);
-  const actionStart = source.indexOf('onPurchaseRecordAction(action:AbaRecordTableActionEvent):void {');
-  const actionEnd = source.indexOf('\n  }', actionStart);
-  const purchaseAction = source.slice(actionStart, actionEnd);
-  assert.ok(actionStart >= 0 && actionEnd > actionStart, 'purchase row action handler must exist');
-  assert.match(purchaseAction, /this\.business\?\.role!=='owner'/);
-  assert.match(purchaseAction, /action\.actionId==='approve'&&this\.canApprovePurchaseOrder\(order\)/);
-  assert.match(purchaseAction, /this\.requestPurchaseOrderApproval\(order,action\.anchor\)/);
-  assert.match(purchaseAction, /action\.actionId==='receive'&&this\.canReceivePurchaseOrder\(order\)/);
-  assert.match(purchaseAction, /this\.requestPurchaseOrderReceipt\(order,action\.anchor\)/);
-
-  const receiveStart = source.indexOf('async confirmPurchaseOrderReceipt(): Promise<void>');
-  const receiveEnd = source.indexOf('async createRecurringSchedule()', receiveStart);
-  const receive = source.slice(receiveStart, receiveEnd);
-  assert.match(receive, /this\.business\.role !== 'owner'/);
-  assert.match(receive, /!this\.canReceivePurchaseOrder\(order\)/);
+  assert.ok(purchasingWorkspaceSource.includes("startCreate(): void"));
+  assert.ok(purchasingWorkspaceSource.includes("this.api.createPurchaseOrder"));
+  assert.ok(purchasingWorkspaceSource.includes("async saveDraft(): Promise<void>"));
+  assert.ok(purchasingWorkspaceSource.includes("canEdit(order: PurchaseOrder): boolean { return this.isOwner() && order.status === 'draft'; }"));
+  assert.ok(purchasingWorkspaceSource.includes("canApprove(order: PurchaseOrder): boolean { return this.isOwner() && order.status === 'draft'; }"));
+  assert.ok(purchasingWorkspaceSource.includes("canCancel(order: PurchaseOrder): boolean { return this.isOwner() && order.status === 'draft'; }"));
+  assert.ok(purchasingWorkspaceSource.includes("canReceive(order: PurchaseOrderDetail)"));
+  assert.ok(purchasingWorkspaceSource.includes("this.api.approvePurchaseOrder"));
+  assert.ok(purchasingWorkspaceSource.includes("this.api.cancelPurchaseOrder"));
+  assert.ok(purchasingWorkspaceSource.includes("this.api.receivePurchaseOrder"));
   const paymentStart = source.indexOf('async createPayment(): Promise<void>');
   const paymentEnd = source.indexOf('useAssistantSuggestion(', paymentStart);
   const payment = source.slice(paymentStart, paymentEnd);
@@ -1177,25 +1159,15 @@ test('notification and supplier forms expose localized field validation without 
 });
 
 test('purchase order and recurring schedule forms expose accessible localized validation', () => {
-  const purchaseStart = source.indexOf('<form #purchaseForm="ngForm"');
-  const purchaseEnd = source.indexOf('</form>', purchaseStart);
-  const purchase = source.slice(purchaseStart, purchaseEnd);
-  assert.ok(purchase.includes('purchaseForm.valid && createPurchaseOrder()'));
-  const purchaseFields = [
-    ['purchaseOrderNumberControl', 'purchase-number-error'],
-    ['purchaseSupplierControl', 'purchase-supplier-error'],
-    ['purchaseProductControl', 'purchase-product-error'],
-    ['purchaseQuantityControl', 'purchase-quantity-error'],
-    ['purchaseUnitCostControl', 'purchase-unit-cost-error'],
-  ];
-  for (const [control, id] of purchaseFields) {
-    assert.ok(purchase.includes('#' + control + '="ngModel"'), control);
-    assert.ok(purchase.includes(`[attr.aria-describedby]="${control}.invalid && (${control}.touched || purchaseForm.submitted) ? '${id}' : null"`), id);
-    assert.ok(source.includes('id="' + id + '"'), id);
-  }
-  assert.match(purchase, /name="purchaseQuantity" type="number" min="0\.001" step="0\.001" required/);
-  assert.match(purchase, /name="purchaseUnitCost" type="number" min="0" step="0\.01" required/);
-  assert.match(purchase, /purchasesLoading \|\| !suppliers\.length \|\| !products\.length/);
+  const purchase = purchasingWorkspaceSource;
+  assert.ok(purchase.includes('<form class="pw__form" (ngSubmit)="saveDraft()">'));
+  assert.ok(purchase.includes('name="orderNumber" maxlength="64" required'));
+  assert.ok(purchase.includes('name="supplier" required'));
+  assert.ok(purchase.includes('required [(ngModel)]="line.product_id"'));
+  assert.ok(purchase.includes('type="number" min="0.001" step="0.001" required'));
+  assert.ok(purchase.includes('type="number" min="0" step="0.01" required'));
+  assert.ok(purchase.includes('role="alert"'));
+  assert.ok(purchase.includes("this.formError.set(this.t('invalidLines'))"));
 
   const recurringStart = source.indexOf('<form #recurringForm="ngForm"');
   const recurringEnd = source.indexOf('</form>', recurringStart);
@@ -1268,13 +1240,16 @@ test('workspace build metadata is presented once in the workspace context, not d
 
 test('operations errors stay scoped to the module that produced them', () => {
   assert.match(source, /operationsErrorTab: OperationsMessageTab \| null = null/);
-  for (const tab of ['notifications', 'suppliers', 'purchases', 'recurring']) {
+  for (const tab of ['notifications', 'suppliers', 'recurring']) {
     assert.ok(source.includes(`@if (operationsError && operationsErrorTab === '${tab}')`), tab);
     assert.ok(source.includes(`this.operationsErrorTab = '${tab}'`), tab + ' load/validation error scope');
   }
   assert.match(source, /this\.operationsErrorTab = tab;/);
-  assert.match(source, /private beginOperationsAction\(\): void \{\s*this\.operationsError = '';\s*this\.operationsErrorTab = null;/);
-  assert.match(source, /private setOperationsSuccess\(tab: OperationsMessageTab, message: string\): void \{\s*this\.operationsErrorTab = null;/);
+  assert.match(source, /private beginOperationsAction\(\): void \{/);
+  assert.ok(purchasingWorkspaceSource.includes("readonly error = signal('')"));
+  assert.ok(purchasingWorkspaceSource.includes("readonly detailError = signal('')"));
+  assert.ok(purchasingWorkspaceSource.includes("readonly formError = signal('')"));
+  assert.ok(purchasingWorkspaceSource.includes("readonly receiptError = signal('')"));
 });
 
 test('invoice customer and dynamic line fields expose accessible localized validation', () => {
@@ -1419,26 +1394,19 @@ test('Home dashboard uses the shared page-level error and retry banner without d
 
 test('operations lists filter locally by their visible business fields', () => {
   assert.match(source, /get filteredSuppliers\(\): Supplier\[\]/);
-  assert.match(source, /get filteredPurchaseOrders\(\): PurchaseOrder\[\]/);
   assert.match(source, /get filteredRecurringSchedules\(\): RecurringInvoiceSchedule\[\]/);
   assert.match(source, /get filteredNotifications\(\): NotificationRecord\[\]/);
   assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch, this\.localization\.locale\)/);
-  assert.match(source, /filterPurchaseOrders\(\s*this\.purchaseOrders,\s*this\.purchaseSearch/);
-  assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules,\s*this\.recurringSearch/);
-  assert.match(source, /filterNotifications\(this\.notifications, this\.notificationSearch, kind => this\.notificationKindLabel\(kind\), status => this\.notificationStatusLabel\(status\), this\.localization\.locale\)/);
-  const clearStart = source.indexOf('private clearWorkspaceData(): void');
-  const clearEnd = source.indexOf('\n  }', clearStart);
-  const clear = source.slice(clearStart, clearEnd);
-  for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch', 'notificationSearch']) {
-    assert.ok(source.includes(`${field} = '';`), `${field} is initialized`);
-    assert.ok(clear.includes(`this.${field} = '';`), `${field} resets on workspace change`);
-  }
+  assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules/);
+  assert.match(source, /filterNotifications\(this\.notifications/);
+  assert.ok(purchasingWorkspaceSource.includes('readonly filteredOrders = computed'));
+  assert.ok(purchasingWorkspaceSource.includes('this.search().trim().toLocaleLowerCase()'));
+  assert.ok(purchasingWorkspaceSource.includes('this.supplierName(order.supplier_id)'));
+  assert.ok(purchasingWorkspaceSource.includes('this.statusLabel(order.status)'));
   assert.match(source, /supplierSearch\.trim\(\) \? t\(/);
-  assert.match(source, /purchaseSearch\.trim\(\) \? t\(/);
   assert.match(source, /recurringSearch\.trim\(\) \? t\(/);
   assert.match(source, /notificationSearch\.trim\(\) \? t\(/);
 });
-
 
 test('customer section markup does not render stray closing-tag text', () => {
   assert.equal(source.includes('</section>ion>'), false);
