@@ -35,3 +35,5 @@ The browser smoke still observes empty purchasing confirmation interpolation alt
 Browser trace from exact run 43713544354 identified a test-fixture mismatch: the API returns paginated receipt/activity payloads ({ items, limit, offset }), while the Playwright mock's generic GET fallback returned an array. Corrected the E2E mock and added assertions that both history endpoints are requested. The UI now fails into its recoverable history error state for malformed payloads instead of throwing during template rendering.
 
 [release-api] Refresh API Preview for guarded purchasing history contract fix.
+
+[release-api] Rebuild API Preview for established purchasing confirmation translations.
