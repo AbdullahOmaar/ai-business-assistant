@@ -502,9 +502,17 @@ def test_non_stock_tracked_purchase_line_cannot_be_received():
     client, previous = _configure(engine)
     base = f"/api/v1/businesses/{business_id}"
     try:
-        order_id, line_ids, _ = _create_approved_order(
-            engine, client, business_id, [("2.000", False)], "PO-T39-NON-STOCK"
+        order_id, line_ids, product_ids = _create_approved_order(
+            engine, client, business_id, [("2.000", True)], "PO-T39-NON-STOCK"
         )
+        # The PO API itself only admits stock-tracked products. Simulate a legacy
+        # or subsequently changed catalog row without changing the PO schema.
+        with Session(engine) as session:
+            product = session.get(Product, product_ids[0])
+            assert product is not None
+            product.is_stock_tracked = False
+            session.commit()
+
         before = _receiving_snapshot(engine, business_id, order_id)
         response = client.post(
             f"{base}/purchase-orders/{order_id}/receive",
