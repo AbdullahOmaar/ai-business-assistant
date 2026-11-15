@@ -1727,6 +1727,18 @@
     "save": "Save customer",
     "saving": "Saving…"
   },
+    "customerWorkspace": {
+    "searchPlaceholder": "Search by name, email or phone",
+    "search": "Search",
+    "newCustomer": "New customer",
+    "directory": "Customer directory",
+    "emptyDescription": "Add your first customer or try a different search.",
+    "loadMore": "Load more customers",
+    "back": "Back to customers",
+    "loadError": "Could not load customers. Please try again.",
+    "profileError": "Could not load customer details. Please try again.",
+    "saveError": "Could not save customer details. Check the fields and try again."
+  },
   "customerProfile": {
     "eyebrow": "CUSTOMER PROFILE",
     "registered": "Customer record",
