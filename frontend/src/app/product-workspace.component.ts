@@ -29,8 +29,8 @@ type ProductWorkspaceContext = { businessId: string; userId: string; role: 'owne
           [emptyTitle]="t('productProfile.emptyTitle')"
           [emptyDescription]="t('productProfile.emptyDescription')"
           (select)="openProduct($event)" />
-        @if (hasMore() && !loading() && !error()) {
-          <button class="product-workspace__load-more" type="button" (click)="loadMore()">
+        @if (hasMore() && !error()) {
+          <button class="product-workspace__load-more" type="button" [disabled]="loading()" (click)="loadMore()" [attr.aria-live]="'polite'">
             {{ loadingMore() ? t('ui.m_1dwk1vm') : t('ui.m_iziq6h') }}
           </button>
         }
