@@ -1757,7 +1757,8 @@
     "descriptionPlaceholder": "وصف مختصر للمنتج أو الخدمة",
     "cancel": "إلغاء",
     "save": "حفظ التعديلات",
-    "saving": "جارٍ الحفظ…"
+    "saving": "جارٍ الحفظ…",
+    "eyebrow": "المنتجات والخدمات"
   },
   "productProfile": {
     "eyebrow": "ملف المنتج",
