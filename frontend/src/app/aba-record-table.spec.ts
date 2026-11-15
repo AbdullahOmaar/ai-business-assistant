@@ -48,7 +48,8 @@ test('record table labels and loading states follow the selected app locale',()=
   assert.ok(app.includes('Loading customers') || app.includes('Loading suppliers'));
   assert.ok(purchasingWorkspace.includes("t('loading')"));
   assert.ok(purchasingWorkspace.includes("this.localization.translate('purchasingWorkspace.' + key)"));
-  assert.match(appRaw, /actionsHeading.*t\('الإجراءات',\s*'Actions'\)/);
+  assert.match(component, /resolvedActionsHeading/);
+  assert.match(component, /this\.localization\.translate\('ui\.actions'\)/);
   assert.match(customerDirectory, /t\('customerDirectory\.m_/);
   assert.match(productCatalog, /t\('productCatalog\.m_/);
   assert.match(appRaw, /t\('ui\.m_/);
