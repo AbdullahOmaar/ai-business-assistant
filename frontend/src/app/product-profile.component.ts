@@ -14,20 +14,20 @@ import { AbaStateMessageComponent } from './shared/ui/aba-state-message.componen
       <aba-state-message kind="loading" [description]="t('productProfile.loading')" />
     } @else if (error()) {
       <aba-state-message kind="error" [description]="error()" [actionLabel]="t('ui.m_lr6ezy')" (action)="retry.emit()" />
-    } @else if (!product()) {
-      <aba-state-message kind="empty" [title]="t('productProfile.emptyTitle')" [description]="t('productProfile.emptyDescription')" />
-    } @else {
+    } @else if (product(); as record) {
     <article class="product-profile" aria-labelledby="product-profile-name">
-      <header><div class="product-profile__mark" aria-hidden="true">▦</div><div class="product-profile__identity"><p>{{ t('productProfile.eyebrow') }}</p><h2 id="product-profile-name">{{ product().name }}</h2></div><button type="button" (click)="edit.emit()">{{ t('productProfile.edit') }}</button></header>
+      <header><div class="product-profile__mark" aria-hidden="true">▦</div><div class="product-profile__identity"><p>{{ t('productProfile.eyebrow') }}</p><h2 id="product-profile-name">{{ record.name }}</h2></div><button type="button" (click)="edit.emit()">{{ t('productProfile.edit') }}</button></header>
       <section class="product-profile__grid">
-        <div><span>{{ t('productProfile.sku') }}</span><strong><bdi dir="ltr">{{ product().sku || '—' }}</bdi></strong></div>
-        <div><span>{{ t('productProfile.unit') }}</span><strong>{{ product().unit || '—' }}</strong></div>
-        <div class="product-profile__wide"><span>{{ t('productProfile.description') }}</span><p>{{ product().description || t('productProfile.emptyDescription') }}</p></div>
-        <div><span>{{ t('productProfile.price') }}</span><strong class="product-profile__price"><bdi dir="ltr">{{ product().unit_price }} {{ product().currency_code || currencyCode() }}</bdi></strong></div>
-        <div><span>{{ t('productProfile.stock') }}</span><strong>{{ product().is_stock_tracked ? product().stock_quantity ?? '0' : t('productProfile.notTracked') }}</strong></div>
+        <div><span>{{ t('productProfile.sku') }}</span><strong><bdi dir="ltr">{{ record.sku || '—' }}</bdi></strong></div>
+        <div><span>{{ t('productProfile.unit') }}</span><strong>{{ record.unit || '—' }}</strong></div>
+        <div class="product-profile__wide"><span>{{ t('productProfile.description') }}</span><p>{{ record.description || t('productProfile.emptyDescription') }}</p></div>
+        <div><span>{{ t('productProfile.price') }}</span><strong class="product-profile__price"><bdi dir="ltr">{{ record.unit_price }} {{ record.currency_code || currencyCode() }}</bdi></strong></div>
+        <div><span>{{ t('productProfile.stock') }}</span><strong>{{ record.is_stock_tracked ? record.stock_quantity ?? '0' : t('productProfile.notTracked') }}</strong></div>
       </section>
-      <p class="product-profile__note">{{ product().is_stock_tracked ? t('productProfile.stockTracked') : t('productProfile.notTracked') }}</p>
+      <p class="product-profile__note">{{ record.is_stock_tracked ? t('productProfile.stockTracked') : t('productProfile.notTracked') }}</p>
     </article>
+    } @else {
+      <aba-state-message kind="empty" [title]="t('productProfile.emptyTitle')" [description]="t('productProfile.emptyDescription')" />
     }
   `,
   styles: [`
