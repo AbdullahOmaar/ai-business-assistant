@@ -5,6 +5,7 @@ import test from 'node:test';
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const editor = readFileSync(new URL('./product-editor.component.ts', import.meta.url), 'utf8');
 const profile = readFileSync(new URL('./product-profile.component.ts', import.meta.url), 'utf8');
+const catalog = readFileSync(new URL('./product-catalog.component.ts', import.meta.url), 'utf8');
 
 test('product API exposes typed list, detail and safe descriptive PATCH fields', () => {
   assert.match(api, /products\(businessId: string, offset = 0, limit = 100\)/);
@@ -27,5 +28,8 @@ test('product profile presents API-backed price and derived stock without exposi
   assert.match(profile, /record\.stock_quantity/);
   assert.match(profile, /record\.is_stock_tracked/);
   assert.doesNotMatch(profile, /quantity_delta|StockMovement|opening_quantity/);
+  assert.match(profile, /loading\(\)/);
+  assert.match(catalog, /error\(\)/);
+  assert.match(catalog, /retry\.emit\(\)/);
   assert.match(profile, /retry\.emit\(\)/);
 });
