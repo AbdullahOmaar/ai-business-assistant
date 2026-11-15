@@ -1,5 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { TranslateService } from '@ngx-translate/core';
+import { firstValueFrom } from 'rxjs';
 import {
   ApiService,
   type Product,
@@ -273,6 +275,7 @@ type PurchaseAction = 'approve' | 'cancel';
 })
 export class PurchasingWorkspaceComponent {
   private readonly api = inject(ApiService);
+  private readonly translations = inject(TranslateService);
   private readonly localization = inject(LocalizationService);
   private readonly listGuard = new WorkspaceLoadGuard();
   private readonly detailGuard = new WorkspaceLoadGuard();
@@ -317,13 +320,9 @@ export class PurchasingWorkspaceComponent {
   });
   readonly activeSuppliers = computed(() => this.suppliers().filter(supplier => supplier.is_active));
   readonly stockProducts = computed(() => this.products().filter(product => product.is_stock_tracked));
-  readonly confirmationPrompt = computed(() => {
-    const action = this.pendingAction();
-    if (!action) return '';
-    return this.t(action === 'approve' ? 'approveConfirmationPrompt' : 'cancelConfirmationPrompt');
-  });
-  readonly confirmationConfirmLabel = computed(() => this.t('confirmActionButton'));
-  readonly confirmationCancelLabel = computed(() => this.t('cancelConfirmationButton'));
+  readonly confirmationPrompt = signal('');
+  readonly confirmationConfirmLabel = signal('');
+  readonly confirmationCancelLabel = signal('');
 
   draft = { supplier_id: '', order_number: '', currency_code: '' };
   formLines: PurchaseDraftLine[] = [this.emptyLine()];
@@ -575,10 +574,28 @@ export class PurchasingWorkspaceComponent {
     }
   }
 
-  requestAction(action: PurchaseAction): void {
+  async requestAction(action: PurchaseAction): Promise<void> {
     const order = this.selectedOrder();
     if (!order || !(action === 'approve' ? this.canApprove(order) : this.canCancel(order))) return;
     this.pendingAction.set(action);
+    this.confirmationPrompt.set('');
+    this.confirmationConfirmLabel.set('');
+    this.confirmationCancelLabel.set('');
+
+    try {
+      const promptKey = action === 'approve' ? 'approveConfirmationPrompt' : 'cancelConfirmationPrompt';
+      const [prompt, confirm, cancel] = await Promise.all([
+        firstValueFrom(this.translations.get('purchasingWorkspace.' + promptKey)),
+        firstValueFrom(this.translations.get('purchasingWorkspace.confirmActionButton')),
+        firstValueFrom(this.translations.get('purchasingWorkspace.cancelConfirmationButton')),
+      ]);
+      if (this.pendingAction() !== action) return;
+      this.confirmationPrompt.set(String(prompt));
+      this.confirmationConfirmLabel.set(String(confirm));
+      this.confirmationCancelLabel.set(String(cancel));
+    } catch {
+      if (this.pendingAction() === action) this.detailError.set(this.t('loadError'));
+    }
   }
 
   async confirmAction(): Promise<void> {
