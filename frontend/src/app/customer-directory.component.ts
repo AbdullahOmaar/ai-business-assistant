@@ -21,6 +21,8 @@ import { LocalizationService } from './localization.service';
     <section class="customer-directory" [attr.aria-label]="ariaLabel()">
       @if (loading()) {
         <aba-state-message kind="loading" [description]="loadingDescription()" />
+      } @else if (error()) {
+        <aba-state-message kind="error" [description]="error()" [actionLabel]="t('ui.m_lr6ezy')" (action)="retry.emit()" />
       } @else if (customers().length) {
         <div class="customer-directory__mobile-sort">
           <label for="customer-directory-sort">
@@ -150,6 +152,8 @@ export class CustomerDirectoryComponent {
   readonly locale = input<'ar' | 'en'>('ar');
   readonly loading = input(false);
   readonly loadingDescription = input('');
+  readonly error = input('');
+  readonly retry = output<void>();
   readonly emptyTitle = input('');
   readonly emptyDescription = input('');
   readonly rowAction = output<AbaRecordTableActionEvent>();
