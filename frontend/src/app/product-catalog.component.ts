@@ -63,7 +63,7 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
             <tbody>
               @for (product of visibleProducts(); track product.id) {
                 <tr>
-                  <th scope="row" class="product-catalog__name">{{ product.name }}</th>
+                  <th scope="row" class="product-catalog__name"><button class="product-catalog__open" type="button" (click)="select.emit(product.id)">{{ product.name }}</button></th>
                   <td><bdi dir="ltr">{{ product.sku || '—' }}</bdi></td>
                   <td class="product-catalog__price"><bdi dir="ltr">{{ product.unit_price }} {{ product.currency_code || currencyCode() }}</bdi></td>
                   <td>
@@ -84,7 +84,7 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
           @for (product of visibleProducts(); track product.id) {
             <li class="product-catalog__mobile-row">
               <div class="product-catalog__main">
-                <h3>{{ product.name }}</h3>
+                <h3><button class="product-catalog__open" type="button" (click)="select.emit(product.id)">{{ product.name }}</button></h3>
                 <strong class="product-catalog__mobile-price"><bdi dir="ltr">{{ product.unit_price }} {{ product.currency_code || currencyCode() }}</bdi></strong>
               </div>
               <div class="product-catalog__meta">
@@ -127,6 +127,7 @@ export class ProductCatalogComponent {
   readonly loadingDescription = input('');
   readonly error = input('');
   readonly retry = output<void>();
+  readonly select = output<string>();
   readonly emptyTitle = input('');
   readonly emptyDescription = input('');
 
