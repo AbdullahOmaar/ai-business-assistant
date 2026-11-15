@@ -1,13 +1,22 @@
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import type { Customer } from './api.service';
+import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 import { LocalizationService } from './localization.service';
 
 /** Read-only customer identity and contact surface; financial values are intentionally excluded. */
 @Component({
   selector: 'aba-customer-profile',
   standalone: true,
+  imports: [AbaStateMessageComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
+    @if (loading()) {
+      <aba-state-message kind="loading" [description]="t('customerProfile.loading')" />
+    } @else if (error()) {
+      <aba-state-message kind="error" [description]="error()" [actionLabel]="t('ui.m_lr6ezy')" (action)="retry.emit()" />
+    } @else if (!customer()) {
+      <aba-state-message kind="empty" [title]="t('customerProfile.emptyTitle')" [description]="t('customerProfile.emptyDescription')" />
+    } @else {
     <article class="customer-profile" [attr.aria-labelledby]="'customer-profile-name'">
       <header class="customer-profile__hero">
         <div class="customer-profile__avatar" aria-hidden="true">{{ initials() }}</div>
@@ -50,6 +59,7 @@ import { LocalizationService } from './localization.service';
       </footer>
       <p class="customer-profile__note">{{ t('customerProfile.financialNote') }}</p>
     </article>
+    }
   `,
   styles: [`
     :host{display:block;min-width:0}.customer-profile{display:grid;gap:18px;min-width:0;padding:clamp(16px,3vw,24px);border:1px solid var(--aiba-line,#e2e8f0);border-radius:18px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);box-shadow:0 12px 34px rgb(15 23 42 / 5%)}
@@ -64,10 +74,13 @@ import { LocalizationService } from './localization.service';
 export class CustomerProfileComponent {
   private readonly localization = inject(LocalizationService);
   t(key: string): string { return this.localization.translate(key); }
-  readonly customer = input.required<Customer>();
+  readonly customer = input<Customer | null>(null);
+  readonly loading = input(false);
+  readonly error = input('');
   readonly edit = output<void>();
   readonly invoices = output<void>();
   readonly statement = output<void>();
+  readonly retry = output<void>();
 
   initials(): string {
     return this.customer().name.trim().split(/\s+/).slice(0, 2).map(part => Array.from(part)[0] ?? '').join('').toLocaleUpperCase();
