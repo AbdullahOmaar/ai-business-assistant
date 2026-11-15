@@ -530,9 +530,10 @@ def test_non_stock_tracked_purchase_line_cannot_be_received():
 
 def test_receipt_idempotency_persists_canonical_request_and_original_response():
     engine, business_id, _, _ = _sales_return_fixture()
+    client, previous = _configure(engine)
     try:
         order_id, _, _ = _create_approved_order(
-            engine, TestClient(app), business_id, [("2.000", True)], "PO-T39-IDEMPOTENCY-STORE"
+            engine, client, business_id, [("2.000", True)], "PO-T39-IDEMPOTENCY-STORE"
         )
         with Session(engine) as session:
             row = PurchaseReceiptIdempotency(
@@ -557,17 +558,19 @@ def test_receipt_idempotency_persists_canonical_request_and_original_response():
                 "id": str(order_id), "status": "partially_received"
             }
     finally:
+        _restore_test_identity(*previous)
         engine.dispose()
 
 
 def test_receipt_idempotency_key_is_unique_per_business_purchase_order():
     engine, business_id, _, _ = _sales_return_fixture()
+    client, previous = _configure(engine)
     try:
         order_a, _, _ = _create_approved_order(
-            engine, TestClient(app), business_id, [("2.000", True)], "PO-T39-IDEMPOTENCY-A"
+            engine, client, business_id, [("2.000", True)], "PO-T39-IDEMPOTENCY-A"
         )
         order_b, _, _ = _create_approved_order(
-            engine, TestClient(app), business_id, [("2.000", True)], "PO-T39-IDEMPOTENCY-B"
+            engine, client, business_id, [("2.000", True)], "PO-T39-IDEMPOTENCY-B"
         )
         key = "3c3c3c3c-3c3c-43c3-83c3-3c3c3c3c3c3c"
         with Session(engine) as session:
@@ -600,4 +603,5 @@ def test_receipt_idempotency_key_is_unique_per_business_purchase_order():
             ])
             session.commit()
     finally:
+        _restore_test_identity(*previous)
         engine.dispose()
