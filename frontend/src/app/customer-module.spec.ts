@@ -62,6 +62,9 @@ test('customer workspace covers server search, paginated list, detail and create
   assert.match(workspace, /this\.isCurrent\(this\.detailGuard/);
   assert.match(workspace, /this\.isCurrent\(this\.saveGuard/);
   assert.match(workspace, /pageSize = 100/);
+  assert.match(workspace, /@if \\(hasMore\\(\\) && !error\\(\\)\\)/);
+  assert.match(workspace, /\\[disabled\\]="loading\\(\\)"/);
+  assert.match(workspace, /loadingMore\\(\\) \\? t\\('ui\\.m_1dwk1vm'\\)/);
   assert.match(workspace, /\(retry\)="retry\(\)"/);
   assert.doesNotMatch(workspace, /\[retry\]="retry"/);
 });
