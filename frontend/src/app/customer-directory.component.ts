@@ -59,6 +59,7 @@ import { LocalizationService } from './localization.service';
                     <span aria-hidden="true">{{ sortIndicator('phone') }}</span>
                   </button>
                 </th>
+                <th scope="col">{{ locale() === 'ar' ? 'العنوان' : 'Address' }}</th>
                 <th scope="col">{{ t('customerDirectory.m_256ab9') }}</th>
               </tr>
             </thead>
@@ -79,6 +80,10 @@ import { LocalizationService } from './localization.service';
                     } @else {
                       <span class="customer-directory__muted">{{ t('customerDirectory.m_2wkjj4') }}</span>
                     }
+                  </td>
+                  <td>
+                    @if (customer.address) { <span>{{ customer.address }}</span> }
+                    @else { <span class="customer-directory__muted">—</span> }
                   </td>
                   <td>
                     <div class="customer-directory__actions">
@@ -112,6 +117,12 @@ import { LocalizationService } from './localization.service';
                     <span class="customer-directory__muted">{{ t('customerDirectory.m_1ypcn1i') }}</span>
                   }
                 </div>
+                @if (customer.address || customer.notes) {
+                  <div class="customer-directory__details">
+                    @if (customer.address) { <span><b>{{ locale() === 'ar' ? 'العنوان' : 'Address' }}:</b> {{ customer.address }}</span> }
+                    @if (customer.notes) { <span><b>{{ locale() === 'ar' ? 'ملاحظة' : 'Note' }}:</b> {{ customer.notes }}</span> }
+                  </div>
+                }
               </div>
               <div class="customer-directory__actions">
                 <button class="customer-directory__action" type="button" (click)="emitAction(customer.id, 'invoices', $event)" [attr.aria-label]="actionAriaLabel(customer, 'invoices')">
