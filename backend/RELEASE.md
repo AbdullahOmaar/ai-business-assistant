@@ -26,3 +26,5 @@ The browser smoke still observes empty purchasing confirmation interpolation alt
 
 
 [release-api] Rebuild API Preview for purchasing confirmation localization fix.
+
+[release-api] Rebuild API Preview for authenticated release smoke workflow coverage.
