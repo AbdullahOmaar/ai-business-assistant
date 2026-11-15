@@ -1,55 +1,54 @@
-import { DatePipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import type { Customer } from './api.service';
+import { LocalizationService } from './localization.service';
 
 /** Read-only customer identity and contact surface; financial values are intentionally excluded. */
 @Component({
   selector: 'aba-customer-profile',
   standalone: true,
-  imports: [DatePipe],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <article class="customer-profile" [attr.aria-labelledby]="'customer-profile-name'">
       <header class="customer-profile__hero">
         <div class="customer-profile__avatar" aria-hidden="true">{{ initials() }}</div>
         <div class="customer-profile__identity">
-          <p>{{ locale() === 'ar' ? 'ملف العميل' : 'CUSTOMER PROFILE' }}</p>
+          <p>{{ t('customerProfile.eyebrow') }}</p>
           <h2 id="customer-profile-name">{{ customer().name }}</h2>
-          <span>{{ locale() === 'ar' ? 'عميل مسجل' : 'Customer record' }}</span>
+          <span>{{ t('customerProfile.registered') }}</span>
         </div>
-        <button class="customer-profile__edit" type="button" (click)="edit.emit()">{{ locale() === 'ar' ? 'تعديل البيانات' : 'Edit details' }}</button>
+        <button class="customer-profile__edit" type="button" (click)="edit.emit()">{{ t('customerProfile.edit') }}</button>
       </header>
-      <section class="customer-profile__details" [attr.aria-label]="locale() === 'ar' ? 'بيانات التواصل' : 'Contact details'">
+      <section class="customer-profile__details" [attr.aria-label]="t('customerProfile.eyebrow')">
         <div class="customer-profile__item">
-          <span>{{ locale() === 'ar' ? 'رقم الموبايل' : 'Phone' }}</span>
+          <span>{{ t('customerProfile.phone') }}</span>
           @if (customer().phone) { <a [href]="'tel:' + customer().phone"><bdi dir="ltr">{{ customer().phone }}</bdi></a> }
           @else { <strong>—</strong> }
         </div>
         <div class="customer-profile__item">
-          <span>{{ locale() === 'ar' ? 'البريد الإلكتروني' : 'Email' }}</span>
+          <span>{{ t('customerProfile.email') }}</span>
           @if (customer().email) { <a [href]="'mailto:' + customer().email"><bdi dir="ltr">{{ customer().email }}</bdi></a> }
           @else { <strong>—</strong> }
         </div>
         <div class="customer-profile__item customer-profile__item--wide">
-          <span>{{ locale() === 'ar' ? 'العنوان' : 'Address' }}</span>
+          <span>{{ t('customerProfile.address') }}</span>
           <strong>{{ customer().address || '—' }}</strong>
         </div>
         <div class="customer-profile__item customer-profile__item--wide">
-          <span>{{ locale() === 'ar' ? 'ملاحظات' : 'Notes' }}</span>
-          <p>{{ customer().notes || (locale() === 'ar' ? 'لا توجد ملاحظات مضافة' : 'No notes added') }}</p>
+          <span>{{ t('customerProfile.notes') }}</span>
+          <p>{{ customer().notes || t('customerProfile.noNotes') }}</p>
         </div>
         @if (customer().created_at) {
           <div class="customer-profile__item">
-            <span>{{ locale() === 'ar' ? 'تاريخ الإضافة' : 'Added on' }}</span>
-            <strong><bdi dir="ltr">{{ customer().created_at | date:'mediumDate' }}</bdi></strong>
+            <span>{{ t('customerProfile.addedOn') }}</span>
+            <strong><bdi dir="ltr">{{ localization.formatDate(customer().created_at) }}</bdi></strong>
           </div>
         }
       </section>
       <footer class="customer-profile__actions">
-        <button type="button" class="customer-profile__secondary" (click)="invoices.emit()">{{ locale() === 'ar' ? 'فواتير العميل' : 'Customer invoices' }}</button>
-        <button type="button" class="customer-profile__primary" (click)="statement.emit()">{{ locale() === 'ar' ? 'كشف الحساب' : 'View statement' }}</button>
+        <button type="button" class="customer-profile__secondary" (click)="invoices.emit()">{{ t('customerProfile.invoices') }}</button>
+        <button type="button" class="customer-profile__primary" (click)="statement.emit()">{{ t('customerProfile.statement') }}</button>
       </footer>
-      <p class="customer-profile__note">{{ locale() === 'ar' ? 'الأرصدة وإجمالي المشتريات تظهر فقط من بيانات مالية معتمدة.' : 'Balances and purchase totals are shown only when backed by an approved financial source.' }}</p>
+      <p class="customer-profile__note">{{ t('customerProfile.financialNote') }}</p>
     </article>
   `,
   styles: [`
@@ -63,8 +62,9 @@ import type { Customer } from './api.service';
   `],
 })
 export class CustomerProfileComponent {
+  private readonly localization = inject(LocalizationService);
+  t(key: string): string { return this.localization.translate(key); }
   readonly customer = input.required<Customer>();
-  readonly locale = input<'ar' | 'en'>('ar');
   readonly edit = output<void>();
   readonly invoices = output<void>();
   readonly statement = output<void>();
