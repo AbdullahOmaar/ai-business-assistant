@@ -38,7 +38,8 @@ export interface CustomerEditorValue {
           </label>
           <label class="customer-editor__field">
             <span>{{ locale() === 'ar' ? 'البريد الإلكتروني' : 'Email address' }}</span>
-            <input name="email" type="email" autocomplete="email" maxlength="254" [value]="email()" (input)="email.set(readValue($event))" dir="ltr" placeholder="name@example.com" [attr.aria-invalid]="submitted() && emailInvalid() ? 'true' : null">\n            @if (submitted() && emailInvalid()) { <small role="alert">{{ locale() === 'ar' ? 'أدخل بريد إلكتروني صحيح' : 'Enter a valid email address' }}</small> }
+            <input name="email" type="email" autocomplete="email" maxlength="254" [value]="email()" (input)="email.set(readValue($event))" dir="ltr" placeholder="name@example.com" [attr.aria-invalid]="submitted() && emailInvalid() ? 'true' : null">
+            @if (submitted() && emailInvalid()) { <small role="alert">{{ locale() === 'ar' ? 'أدخل بريد إلكتروني صحيح' : 'Enter a valid email address' }}</small> }
           </label>
           <label class="customer-editor__field customer-editor__field--wide">
             <span>{{ locale() === 'ar' ? 'العنوان' : 'Address' }}</span>
