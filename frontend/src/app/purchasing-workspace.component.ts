@@ -157,9 +157,9 @@ type PurchaseAction = 'approve' | 'cancel';
               </div>
               @if (pendingAction()) {
                 <div class="pw__confirm" role="group">
-                  <p>{{ pendingAction() === 'approve' ? t('confirmApprove') : t('confirmCancel') }}</p>
-                  <button class="pw__primary" type="button" (click)="confirmAction()" [disabled]="actionLoading()">{{ t('confirm') }}</button>
-                  <button class="pw__secondary" type="button" (click)="pendingAction.set(null)" [disabled]="actionLoading()">{{ t('cancel') }}</button>
+                  <p>{{ pendingAction() === 'approve' ? t('approveConfirmationPrompt') : t('cancelConfirmationPrompt') }}</p>
+                  <button class="pw__primary" type="button" (click)="confirmAction()" [disabled]="actionLoading()">{{ t('confirmActionButton') }}</button>
+                  <button class="pw__secondary" type="button" (click)="pendingAction.set(null)" [disabled]="actionLoading()">{{ t('cancelConfirmationButton') }}</button>
                 </div>
               }
               @if (receiptMode()) {
@@ -359,20 +359,7 @@ export class PurchasingWorkspaceComponent {
     });
   }
 
-  t(key: string): string {
-    const translated = this.localization.translate('purchasingWorkspace.' + key);
-    if (translated.trim()) return translated;
-
-    // Keep the destructive-action confirmation explicit and accessible even if a
-    // partially loaded locale dictionary returns an empty value for these keys.
-    const fallback: Record<string, { ar: string; en: string }> = {
-      confirmApprove: { ar: 'هل تريد اعتماد أمر الشراء؟', en: 'Approve this purchase order?' },
-      confirmCancel: { ar: 'هل تريد إلغاء مسودة أمر الشراء؟', en: 'Cancel this draft purchase order?' },
-      confirm: { ar: 'تأكيد', en: 'Confirm' },
-      cancel: { ar: 'رجوع', en: 'Back' },
-    };
-    return fallback[key]?.[this.localization.currentLanguage] ?? translated;
-  }
+  t(key: string): string { return this.localization.translate('purchasingWorkspace.' + key); }
   isOwner(): boolean { return this.role() === 'owner'; }
 
   private context(): PurchasingContext & { currencyCode: string } {
