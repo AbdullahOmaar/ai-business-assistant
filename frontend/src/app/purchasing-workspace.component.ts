@@ -471,6 +471,9 @@ export class PurchasingWorkspaceComponent {
         this.api.purchaseOrderActivity(requested.businessId, orderId),
       ]);
       if (!this.isCurrent(this.detailGuard, version, requested)) return;
+      if (!Array.isArray(receipts?.items) || !Array.isArray(activity?.items)) {
+        throw new Error(this.t('loadError'));
+      }
       this.receipts.set(receipts.items);
       this.activities.set(activity.items);
     } catch (error) {

@@ -60,6 +60,11 @@ test('detail and read-only receipt/activity history are tenant fenced and respon
   assert.match(workspace, /prefers-reduced-motion:reduce/);
 });
 
+test('history responses are validated before templates read paginated item lengths', () => {
+  assert.ok(workspace.includes("if (!Array.isArray(receipts?.items) || !Array.isArray(activity?.items))"));
+  assert.ok(workspace.includes("throw new Error(this.t('loadError'));"));
+});
+
 test('purchasing action confirmations use dedicated localized prompt and button keys', () => {
   assert.match(workspace, /approveConfirmationPrompt/);
   assert.match(workspace, /cancelConfirmationPrompt/);

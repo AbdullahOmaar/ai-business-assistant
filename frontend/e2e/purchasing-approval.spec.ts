@@ -211,6 +211,19 @@ async function setupWorkspace(page: Page, options: SetupOptions = {}) {
       });
       return;
     }
+    const orderHistory = resource.match(/^purchase-orders\/([^/]+)\/(receipts|activity)$/);
+    if (orderHistory && method === 'GET') {
+      if (businessId !== 'business-a' || orderHistory[1] !== 'po-a') {
+        await route.fulfill({ status: 404, headers: corsHeaders, body: JSON.stringify({ detail: 'Purchase order not found.' }) });
+        return;
+      }
+      await route.fulfill({
+        status: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({ items: [], limit: 50, offset: 0 }),
+      });
+      return;
+    }
     const approval = resource.match(/^purchase-orders\/([^/]+)\/approve$/);
     if (approval && method === 'POST') {
       if (businessId !== 'business-a' || approval[1] !== 'po-a') {
@@ -284,6 +297,9 @@ test('OWNER approves a draft purchase order from the mobile layout without recor
   await expect(details).toContainText('Catalog Product');
   await expect(details).toContainText('100.00 EGP');
   await expect(details).toContainText('200.00 EGP');
+
+  expect(harness.apiRequests.filter(item => item.method === 'GET' && item.path.endsWith('/receipts'))).toHaveLength(1);
+  expect(harness.apiRequests.filter(item => item.method === 'GET' && item.path.endsWith('/activity'))).toHaveLength(1);
 
   await page.getByRole('button', { name: 'Approve order', exact: true }).click();
   const confirmation = page.locator('.pw__confirm');
