@@ -1092,7 +1092,7 @@
   },
   "release": {
     "changes": {
-      "m_aba150_customers": "Adds customer management, customer details and statements, with search and pagination.",
+      "m_aba150_customers": "Version 1.5.0: adds customer management, customer details and statements, with search and pagination.",
       "m_aba150_products": "Adds a product catalog, profiles and editing with role-controlled stock operations.",
       "m_aba150_purchasing": "Adds purchase-order workflows, partial receiving, receipt history and idempotent receiving.",
       "m_aba150_security": "Hardens staff invitations, workspace isolation, transaction integrity and audit history.",
