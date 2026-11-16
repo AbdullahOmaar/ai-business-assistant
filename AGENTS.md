@@ -239,7 +239,7 @@ Stop and ask for human input only when necessary for a material product decision
 
 ## CI, merge, and deployment
 - **Primary CI provider:** GitHub Actions using standard GitHub-hosted `ubuntu-latest` runners. The repository is Public, so standard hosted runner usage is free; do not provision self-hosted or paid larger runners.
-- `.github/workflows/ci.yml` is the single authoritative workflow and must run backend-accounting, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke, backend-container, and fail-closed all-checks-passed on the exact workflow SHA.
+- `.github/workflows/ci.yml` is the single authoritative workflow. The Owner's 2026-11-17 decision removes the Chromium browser-smoke job from CI entirely; it is not a merge gate or required check. The workflow must run backend-accounting, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, backend-container, branch-scoped authenticated-api-smoke where applicable, and fail-closed all-checks-passed on the exact workflow SHA.
 - Use read-only workflow permissions and no repository secrets for PR test/build/security jobs. Fork PR code must never receive secrets. PostgreSQL validation uses only the disposable service container; never connect CI to production.
 - Pin third-party GitHub Actions to verified full commit SHAs and include the upstream release version in a comment. Before updating a pin, inspect the official release notes and rerun the full exact-SHA workflow.
 - GitHub Actions is the sole active CI provider. The default-branch ruleset requires `all-checks-passed` from GitHub Actions with strict up-to-date enforcement. CircleCI's GitHub webhook is disabled and no project schedules exist.
