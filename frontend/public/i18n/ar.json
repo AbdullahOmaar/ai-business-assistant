@@ -1800,7 +1800,6 @@
     "cancelConfirmationPrompt": "هل تريد إلغاء مسودة أمر الشراء؟",
     "confirmActionButton": "تأكيد",
     "cancelConfirmationButton": "متابعة التعديل",
-
     "title": "أوامر الشراء",
     "subtitle": "إدارة أوامر الشراء والاستلام ومراجعة سجل الحركة.",
     "newOrder": "أمر شراء جديد",
@@ -1861,5 +1860,12 @@
     "statusPartial": "استلام جزئي",
     "statusReceived": "مستلم بالكامل",
     "statusCancelled": "ملغي"
+  },
+  "demo": {
+    "login": {
+      "button": "دخول التجربة",
+      "loading": "جارٍ تجهيز مساحة التجربة…",
+      "note": "بيانات تجريبية مشتركة — أضف وعدّل وجرب بحرية"
+    }
   }
 }
