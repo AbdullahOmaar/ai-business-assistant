@@ -4,8 +4,8 @@ title: Project Charter & Source Map
 version: 1.0.14
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-17T00:00:00Z
-review_due: 2026-12-17
+last_verified_at: 2026-11-16T23:08:00Z
+review_due: 2027-02-15
 knowledge_class: STABLE
 applicable_scope: AI Business Assistant — Production V1
 canonical_sources:
