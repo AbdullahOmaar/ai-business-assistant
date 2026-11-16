@@ -7,7 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.main import app
-from app.models import AuditEvent, Business, BusinessMembership, MembershipRole, Product, StockMovement, Supplier
+from app.models import AuditEvent, Business, BusinessMembership, MembershipRole, Product, PurchaseOrder, PurchaseOrderLine, StockMovement, Supplier
 from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
 from test_t39_purchase_receiving_api import _create_approved_order, _receipt_headers
 
@@ -103,14 +103,44 @@ def test_staff_cannot_edit_cancel_or_read_owner_only_purchase_order_history():
             ))
             membership.role = MembershipRole.STAFF
             session.commit()
+
+        def persisted_state():
+            with Session(engine) as session:
+                order = session.get(PurchaseOrder, order_id)
+                lines = session.scalars(select(PurchaseOrderLine).where(
+                    PurchaseOrderLine.business_id == business_id,
+                    PurchaseOrderLine.purchase_order_id == order_id,
+                ).order_by(PurchaseOrderLine.id)).all()
+                movements = session.scalars(select(StockMovement.id).where(
+                    StockMovement.business_id == business_id,
+                ).order_by(StockMovement.id)).all()
+                audit_ids = session.scalars(select(AuditEvent.id).where(
+                    AuditEvent.business_id == business_id,
+                ).order_by(AuditEvent.id)).all()
+                return (
+                    (order.status, order.order_number, str(order.total)),
+                    tuple((str(line.id), str(line.product_id), str(line.quantity),
+                           str(line.unit_cost), str(line.received_quantity)) for line in lines),
+                    tuple(str(item) for item in movements),
+                    tuple(str(item) for item in audit_ids),
+                )
+
         payload = {"supplier_id": str(supplier_id), "order_number": "PO-T39-STAFF-EDIT",
                    "currency_code": "EGP", "lines": [{"product_id": "00000000-0000-0000-0000-000000000001",
                    "quantity": "1.000", "unit_cost": "1.00"}]}
-        assert client.put(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}", json=payload).status_code == 403
-        assert client.post(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/cancel").status_code == 403
-        assert client.get(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receipts").status_code == 403
-        assert client.get(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/activity").status_code == 403
+        before = persisted_state()
+        denied_requests = [
+            client.put(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}", json=payload),
+            client.post(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/cancel"),
+            client.get(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receipts"),
+            client.get(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/activity"),
+        ]
+        for response in denied_requests:
+            assert response.status_code == 403, response.text
+            assert persisted_state() == before
+
         assert client.get(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}").status_code == 200
+        assert persisted_state() == before
     finally:
         _restore_test_identity(*previous)
         engine.dispose()
