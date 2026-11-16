@@ -165,7 +165,8 @@ test('API requests abort when the backend stalls instead of blocking workspace s
   assert.match(apiSource, /15_000/);
   assert.match(apiSource, /signal: controller\.signal/);
   assert.match(apiSource, /The request timed out/);
-  const timeoutStart = apiSource.indexOf('const timeoutId = setTimeout');
+  const requestStart = apiSource.indexOf('private async request<T>');
+  const timeoutStart = apiSource.indexOf('const timeoutId = setTimeout', requestStart);
   const responseRead = apiSource.indexOf('return await response.json() as T;', timeoutStart);
   const timeoutClear = apiSource.indexOf('clearTimeout(timeoutId)', timeoutStart);
   assert.ok(timeoutStart >= 0 && responseRead > timeoutStart && timeoutClear > responseRead,
