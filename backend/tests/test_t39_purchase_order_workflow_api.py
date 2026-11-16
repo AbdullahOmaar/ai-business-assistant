@@ -130,12 +130,13 @@ def test_staff_cannot_edit_cancel_or_read_owner_only_purchase_order_history():
                    "quantity": "1.000", "unit_cost": "1.00"}]}
         before = persisted_state()
         denied_requests = [
-            client.put(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}", json=payload),
-            client.post(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/cancel"),
-            client.get(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receipts"),
-            client.get(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/activity"),
+            lambda: client.put(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}", json=payload),
+            lambda: client.post(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/cancel"),
+            lambda: client.get(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receipts"),
+            lambda: client.get(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/activity"),
         ]
-        for response in denied_requests:
+        for request in denied_requests:
+            response = request()
             assert response.status_code == 403, response.text
             assert persisted_state() == before
 
