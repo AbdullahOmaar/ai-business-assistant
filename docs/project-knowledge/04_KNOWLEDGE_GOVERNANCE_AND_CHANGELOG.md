@@ -4,7 +4,7 @@ title: Knowledge Governance & Changelog
 version: 1.0.14
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-17
+last_verified_at: 2026-11-17T00:00:00Z
 review_due: 2026-12-17
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
@@ -21,7 +21,7 @@ superseded_by: none
 
 # Knowledge Governance & Changelog
 
-> **Approval state:** DRAFT candidate version 1.0.13. The underlying development-stage write authorization is effective in canonical Notion from 2026-11-11; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. **Review policy:** The effective AIBA policy requires documented full maintainer/Project Master self-review but does not require a separate project-level independent reviewer solely for controlled knowledge updates. Formal GitHub approvals actually enforced by repository protection remain mandatory; action-specific independent security/privacy verification remains required where an applicable high-impact policy explicitly says so. Owner adoption/publication approval, when required, remains separate from maintainer review. This package remains DRAFT pending reconciliation review, any required adoption/publication decision and exact Project Sources readback.
+> **Approval state:** DRAFT candidate version 1.0.14. The Owner's standing synthetic-development authorization is effective in canonical Notion; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. **Review policy:** The effective AIBA policy requires documented full maintainer/Project Master self-review but does not require a separate project-level independent reviewer solely for controlled knowledge updates. Formal GitHub approvals actually enforced by repository protection remain mandatory; action-specific independent security/privacy verification remains required where an applicable high-impact policy explicitly says so. Owner adoption/publication approval, when required, remains separate from maintainer review. This package remains DRAFT pending reconciliation review, any required adoption/publication decision and exact Project Sources readback.
 
 ## 1. Package manifest
 
