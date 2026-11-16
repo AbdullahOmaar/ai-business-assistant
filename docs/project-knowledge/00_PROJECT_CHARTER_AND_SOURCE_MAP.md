@@ -1,11 +1,11 @@
 ---
 document_id: ABA-KNOW-00
 title: Project Charter & Source Map
-version: 1.0.13
+version: 1.0.14
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-13T04:19:05Z
-review_due: 2027-02-09
+last_verified_at: 2026-11-17
+review_due: 2026-12-17
 knowledge_class: STABLE
 applicable_scope: AI Business Assistant — Production V1
 canonical_sources:
@@ -65,7 +65,7 @@ The Notion Production V1 Charter owns exact release scope, module acceptance and
 - This knowledge package does not add product features or redefine release scope.
 - The accepted V0 architecture is web-first. A second client such as Flutter is deferred unless validated demand and an approved decision change that boundary.
 - Financial semantics, tax, COGS, AP, FX, GL, payroll statutory/effective-date rules and posting behavior must follow a current, explicit, versioned approval. The current Notion handover records a T37 authority conflict and treats T37 as Draft / NOT APPROVED until reconciled; dependent changes remain fail-closed.
-- This package records the Owner's bounded development-stage authorization for account/workspace creation, use of project data needed for assigned work, and invoice create/edit through normal authenticated application/API workflows, including on a deployment technically labelled Production. It does not authorize hard deletion, payment/settlement/void/post operations, destructive migrations, external transactions/messages, paid provisioning, merge or release; those remain separately gated.
+- This package records the Owner's standing authorization for full synthetic application-data CRUD, including bulk cleanup/reset, through supported authenticated application/API workflows in the current pre-release environment. Authentication, server-side authorization, tenant isolation, validation, idempotency, privacy and audit history remain mandatory. Direct DB/service bypass, audit-log tampering, destructive/data-loss schema changes, real money movement, real external effects, tax filing, paid provisioning, provider-security changes and T37 financial semantics remain gated. Safe additive/backward-compatible migrations require exact SQL review, disposable PostgreSQL CI validation and rollback/recovery planning.
 
 ## 5. Glossary
 
