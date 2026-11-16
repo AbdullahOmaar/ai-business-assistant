@@ -1,28 +1,28 @@
 ---
 document_id: ABA-KNOW-03
 title: Security Policy & Release Gates
-version: 1.0.12
+version: 1.0.13
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-13T04:19:05Z
-review_due: 2026-12-11
+last_verified_at: 2026-11-17
+review_due: 2026-12-17
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant engineering, data handling and release operations
 canonical_sources:
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/28c5cde61b912ba0243cd2bd023f765e66d8f5e6/AGENTS.md
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/master/nov-2026-phase-1-ux-foundation/AGENTS.md
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/28c5cde61b912ba0243cd2bd023f765e66d8f5e6/CONTRIBUTING.md
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/28c5cde61b912ba0243cd2bd023f765e66d8f5e6/docs/PRODUCTION_DEPLOYMENT.md
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
-related_github_sha: 28c5cde61b912ba0243cd2bd023f765e66d8f5e6
+related_github_sha: d9878e6ea0955ff97b2f8bf827854392878f15ed
 supersedes: none
 superseded_by: none
 ---
 
 # Security Policy & Release Gates
 
-> **Approval state:** DRAFT candidate version 1.0.12; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. These guardrails summarize existing repository and Notion policies. They do not grant permissions or authorize a release.
+> **Approval state:** DRAFT candidate version 1.0.13; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. These guardrails summarize existing repository and Notion policies. They do not grant permissions or authorize a release.
 
 ## 1. Least privilege and authorization
 
@@ -33,13 +33,13 @@ superseded_by: none
 - Test denial paths for both the expected response and no unintended database/audit side effects.
 - Platform administration is separate from ordinary workspace Owner/Staff permissions.
 
-## 1.1 Owner-authorized development-stage write scope
+## 1.1 Owner-authorized synthetic development environment
 
-The Owner confirms AIBA is still in development / pre-release and not yet a real customer-production business environment, even where provider target metadata is Production. The lifecycle label does not change Vercel/Neon configuration.
+AIBA remains in development / pre-release. The Owner has confirmed that the current environment labelled Production contains synthetic, non-real development data. Provider target labels do not change this lifecycle classification. Preview may use the existing Firebase/API/database configuration; a separate Firebase project, Neon QA database or paid QA resource is not required solely for sign-in or routine acceptance.
 
-Standing permission for every AIBA worker/agent: create application/user and workspace/business accounts; read/use existing project data needed for assigned development/QA; and create/edit account and draft/editable invoice records through normal authenticated application/API flows in the currently running environment, including an environment technically labelled Production. No additional per-operation Owner approval is required for these named operations.
+MASTER and assigned agents have standing authorization for full synthetic application-data CRUD through supported authenticated application/API workflows, including create/read/update/delete and bulk cleanup/reset of test users/accounts, workspaces/memberships and ordinary business records. Use clearly identifiable test data and preserve verified identity, server-side authorization, tenant isolation, validation, idempotency, privacy and audit history. Keep CI and untrusted PR code isolated from these resources and secrets.
 
-All existing safeguards remain: verified identity, server-side authorization, tenant isolation, request validation, idempotency and audit logging. No direct SQL/service bypass. This is not authorization for hard deletion, void/cancel/post, payment/allocation/settlement-history mutation, real-money movement, external communications, tax filing, destructive migration, paid resources, provider-security changes, merge or release. Those remain separately gated. It does not approve new financial semantics; T37 remains DRAFT / NOT APPROVED. Use only necessary project data and keep secrets/personal data out of prompts, docs, logs and screenshots. See the [canonical Notion Owner decision](https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44).
+This does not authorize direct SQL/service bypass, audit-log tampering, destructive schema changes, database-wide restore/reset/drop/truncate, changes that weaken authentication/tenant/security controls, real external communications, actual money movement/payment/settlement, tax filing, paid provisioning or provider-security changes. Safe additive/backward-compatible migrations required for development may be applied to this synthetic environment only after exact migration/generated-SQL review, disposable PostgreSQL CI validation and rollback/recovery planning. T37 remains DRAFT / NOT APPROVED; no new financial semantics are authorized. See the canonical [Product & Agent Operating decision](https://app.notion.com/p/4089320b90fb81ddb93de5116f9f0097) and [Universal Work Execution Standard](https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44).
 
 ## 2. Tenant isolation and privacy
 
@@ -67,27 +67,27 @@ Use authorized secret stores and rotate exposed credentials through the approved
 - Do not change financial schema/posting semantics without formal approval.
 - Preserve transactions, idempotency, audit trails and append-only/correction workflows.
 - Never treat an approved payroll record as paid; the recorded payout transition and external payment confirmation are distinct concepts under the approved policy.
-- The Owner authorizes use of existing AIBA project data for assigned development/QA and account/invoice workflows. Continue to use disposable or isolated restored databases for schema/migration validation; do not use the deployed application database as a migration-test target.
+- Validate candidate schema changes against disposable PostgreSQL in CI. After exact SQL review and rollback/recovery planning, a safe additive/backward-compatible migration may be applied to the current synthetic development database through the approved provider migration workflow; do not use direct SQL or bypass the migration runner.
 
 ## 5. Database and migration safety
 
-Before any consequential migration:
-1. Identify the exact target environment and current schema revision.
-2. Review migration SQL and data/locking implications.
-3. Rehearse against a disposable database or authorized isolated restored clone.
-4. Obtain backup and successful restore evidence.
-5. Document rollback/recovery steps and expected impact.
-6. Obtain explicit owner authorization before production execution.
+Before applying a migration:
+1. Identify the exact target environment, database/branch and current schema revision.
+2. Review the exact migration source and generated SQL, including data, locking, compatibility and downgrade/recovery implications.
+3. Validate the candidate against disposable PostgreSQL in CI; CI must never connect to the shared runtime or receive its secrets.
+4. Confirm a usable recovery point and document rollback/recovery steps and expected impact.
+5. Confirm the change is additive and backward-compatible with no destructive/data-loss operation.
+6. Apply only through the approved provider migration workflow and verify the resulting schema revision.
 
-This document does not authorize destructive migrations, direct database changes, snapshot/restore operations or arbitrary production data corrections. The Owner's separately recorded development-stage authorization is limited to account/workspace creation, use of project data for assigned development/QA, and account/draft-invoice create/edit through normal authenticated app/API workflows; it does not waive the safeguards and separate gates stated above.
+A safe additive/backward-compatible migration required for development may be applied to the current synthetic pre-release database after these gates; a separate paid QA database or repeated Owner approval is not required solely for this authorized workflow. This does not authorize direct SQL/service bypass, destructive migrations, database-wide restore/overwrite, arbitrary data corrections or changes to authentication/tenant/security controls. Any migration affecting real customer data, destructive/data-loss action or other Owner-reserved high-impact operation requires its separate action-specific approval and release controls.
 
 ## 6. Branch, review and merge gates
 
 - Inspect the exact branch, base/head SHA, changed files and mergeability.
 - Required checks must be green on the exact PR head; checks on another SHA or empty/unavailable checks are NOT PASS.
-- A documented maintainer/Project Master full self-review on the exact candidate SHA is required for all changes. Controlled/security/architecture changes and knowledge publication must also satisfy the applicable independent non-author review and authorized-approval gate in active project instructions. The Owner's 2026-11-10 Notion decision waives that review; keep the package DRAFT / CONFLICTED until the policy is reconciled. Any formal approval actually enforced by GitHub branch protection must be satisfied on the exact PR head; comments are not approvals where formal approval is required.
+- A documented full maintainer/Project Master self-review on the exact candidate SHA is required for every PR and controlled knowledge update. Current AIBA policy does not require a separate project-level independent reviewer solely for routine PRs or controlled/security/architecture knowledge updates. Any formal GitHub approval actually enforced by repository protection remains mandatory on the exact PR head. Independent security/privacy verification remains required only where a specific high-impact policy or external obligation explicitly requires it. Owner adoption/publication approval, when required, remains separate from maintainer review.
 - Resolve material review findings and inspect the final diff for secrets, unrelated changes, authorization gaps and data-integrity risk.
-- Merge only with explicit owner authorization and all repository gates satisfied.
+- MASTER may decide and perform an ordinary merge under the standing Owner delegation when the PR is non-Draft/READY, exact-head required checks pass, the full maintainer self-review is current, blocking review threads are resolved, base/divergence is reconciled and all provider-enforced protections are satisfied. No separate per-PR Owner approval is required; never bypass a formal provider gate.
 - Never bypass branch protection, provider-enforced required reviews, CI or security gates. Do not add a project-level independent-reviewer requirement. Formal GitHub approvals actually enforced remain mandatory.
 - A Draft PR, mergeable flag, passing local subset or successful preview is not merge authorization.
 
@@ -107,12 +107,12 @@ This document does not authorize destructive migrations, direct database changes
 
 ## 8. Production deployment gates
 
-Production deployment is a separate owner-authorized release action. Before triggering:
+Ordinary application deployment follows merge and is covered by the standing MASTER delegation once the release preflight and all applicable gates pass; no separate per-release Owner approval is required. Production deployment remains separate from merge and must be tied to the exact merged main SHA. Before triggering:
 - Verify the exact merged main SHA and affected application version(s).
 - Verify all required CI/security/build gates on the exact candidate.
 - Confirm release markers and platform build/ignore rules.
 - Confirm database schema/migration and backup/restore requirements.
-- Confirm only affected Vercel projects are targeted.
+- Confirm deployment coupling, rollback/recovery and only the affected Vercel projects are targeted.
 
 After an authorized deployment:
 - Verify deployment READY state, production alias and deployed SHA/version.
