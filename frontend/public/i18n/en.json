@@ -1800,7 +1800,6 @@
     "cancelConfirmationPrompt": "Cancel this draft purchase order?",
     "confirmActionButton": "Confirm",
     "cancelConfirmationButton": "Keep editing",
-
     "title": "Purchase orders",
     "subtitle": "Manage purchase orders, receipts and their audit history.",
     "newOrder": "New purchase order",
@@ -1861,5 +1860,12 @@
     "statusPartial": "Partially received",
     "statusReceived": "Received",
     "statusCancelled": "Cancelled"
+  },
+  "demo": {
+    "login": {
+      "button": "Enter demo workspace",
+      "loading": "Preparing your demo workspace…",
+      "note": "Shared synthetic data — create, edit and explore freely"
+    }
   }
 }
