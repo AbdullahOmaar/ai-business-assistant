@@ -205,6 +205,42 @@ export class ApiService {
     return await response.json() as ReleaseInfo;
   }
 
+  async createDemoSession(): Promise<{ custom_token: string }> {
+    const config = await this.auth.getRuntimeConfig();
+    const base = (config.apiBaseUrl || '').trim().replace(/\/$/, '');
+    if (!base || base.includes('YOUR-BACKEND')) throw new Error('The backend URL is not configured.');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
+    try {
+      const response = await fetch(base + '/api/v1/demo/session', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        let message = 'Demo sign-in is temporarily unavailable.';
+        try {
+          const payload = await response.json();
+          if (typeof payload.detail === 'string') message = payload.detail;
+        } catch { /* Keep the safe fallback for non-JSON provider responses. */ }
+        throw new ApiRequestError(message, response.status);
+      }
+      const payload = await response.json() as { custom_token?: unknown };
+      if (typeof payload.custom_token !== 'string' || !payload.custom_token.trim()) {
+        throw new Error('Demo sign-in returned an invalid session.');
+      }
+      return { custom_token: payload.custom_token };
+    } catch (error) {
+      if ((error as { name?: string } | null)?.name === 'AbortError') {
+        throw new Error('Demo sign-in timed out. Check your connection and retry.');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
   private async request<T>(path: string, method = 'GET', body?: unknown, extraHeaders: Record<string, string> = {}): Promise<T> {
     const config = await this.auth.getRuntimeConfig();
     const base = (config.apiBaseUrl || '').trim().replace(/\/$/, '');
