@@ -4,7 +4,7 @@ title: Security Policy & Release Gates
 version: 1.0.14
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-17
+last_verified_at: 2026-11-17T00:00:00Z
 review_due: 2026-12-17
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant engineering, data handling and release operations
@@ -22,7 +22,7 @@ superseded_by: none
 
 # Security Policy & Release Gates
 
-> **Approval state:** DRAFT candidate version 1.0.13; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. These guardrails summarize existing repository and Notion policies. They do not grant permissions or authorize a release.
+> **Approval state:** DRAFT candidate version 1.0.14; this five-document package is not approved for Project Sources publication. The Owner's standing synthetic-development authorization is effective in canonical Notion and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. These guardrails summarize existing repository and Notion policies. They do not grant permissions or authorize a release.
 
 ## 1. Least privilege and authorization
 
