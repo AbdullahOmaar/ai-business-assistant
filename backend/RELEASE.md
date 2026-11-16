@@ -48,3 +48,14 @@ Browser trace from exact run 43713544354 identified a test-fixture mismatch: the
 The main Neon database is currently at `0005_employee_payroll`. CI now generates the offline SQL artifact from `0005_employee_payroll:head`, so the uploaded SQL contains only the pending 0006/0007 upgrade path rather than replaying the historical empty-schema chain.
 
 [release-api] Refresh API Preview for exact migration-delta CI evidence.
+
+
+## Coordinated 1.5.0 release candidate — 2026-11-16
+
+- Backend package and FastAPI runtime version are aligned at `1.5.0`.
+- Neon main database `ai_business_assistant` is verified at Alembic `0007_receipt_idem`.
+- Approved migrations 0006/0007 were applied through the Neon provider migration workflow on 2026-11-16. The `business_invitations` and `purchase_receipt_idempotency` tables and their 8 indexes were verified.
+- This release marker is for the API deployment pipeline only. It does not run or repeat database migrations; application startup does not auto-run Alembic.
+- Production remains on the previous release until PR #398 is merged under repository protections and the approved release process completes.
+
+[release-api] Build the coordinated API 1.5.0 candidate from the exact reviewed PR head.
