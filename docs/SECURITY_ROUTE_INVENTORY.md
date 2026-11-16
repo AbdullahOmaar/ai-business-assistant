@@ -259,3 +259,40 @@ All endpoints require OWNER membership in the requested business; employee/payro
 - The existing route uniqueness test independently checks that no HTTP method/path pair is registered more than once, protecting the canonical supplier-create route from duplicate registration.
 - The same suite now seeds a STAFF member and verifies STAFF can read the tenant's supplier, purchase-order and recurring-invoice lists while receiving only that tenant's IDs; full business-scoped row snapshots (including AuditEvent) remain unchanged after each read.
 - **Status: IMPLEMENTED, NOT YET VERIFIED.** No local pytest runner is connected and no CI pipeline was triggered; project QA policy prohibits CI triggers/retries. Do not treat this test as PASS until an authorized exact-head test execution is available.
+
+
+## November integration candidate route delta — 2026-11-16
+
+**Exact source:** `master/nov-2026-phase-1-ux-foundation` at `481984600eae4c6951c4136368725e09f91cf4c7`. This is a source inventory, not a claim of live authenticated acceptance.
+
+A source scan of every router registered by `backend/app/main.py` found **89 route decorators and 89 unique method/path pairs** across `api.py` (10), `platform_admin_api.py` (11), `employee_payroll_api.py` (8), `core_features_api.py` (13), `extended_api.py` (37), `purchasing_api.py` (6), `assistant_api.py` (1), and `main.py` (3). The earlier 79/79 inventory is the 2026-10-31 baseline; the 10 additional paths below are now registered in the November candidate.
+
+### Workspace invitation routes — `core_features_api.py`
+
+| Method | Path | Access expectation |
+|---|---|---|
+| POST | `/api/v1/businesses/{business_id}/invitations` | OWNER only; creates a pending invitation scoped to the business |
+| GET | `/api/v1/businesses/{business_id}/invitations` | OWNER only; list responses omit raw invitation tokens |
+| DELETE | `/api/v1/businesses/{business_id}/invitations/{invitation_id}` | OWNER only; revoke only an invitation belonging to the business |
+| POST | `/api/v1/invitations/accept` | Trusted authenticated principal plus invitation token; verify pending/expiry and matching identity email; acceptance is concurrency-safe |
+
+### Purchase-order detail and inventory read routes — `purchasing_api.py`
+
+All routes require a trusted principal and active membership for the path business. Resource reads are scoped by both business ID and resource ID.
+
+| Method | Path | Access expectation |
+|---|---|---|
+| GET | `/api/v1/businesses/{business_id}/purchase-orders/{order_id}` | Active membership; order, supplier, lines and products all scoped to the same business |
+| PUT | `/api/v1/businesses/{business_id}/purchase-orders/{order_id}` | OWNER only; draft-only replacement; same-business supplier/product references |
+| POST | `/api/v1/businesses/{business_id}/purchase-orders/{order_id}/cancel` | OWNER only; draft-only cancellation |
+| GET | `/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receipts` | OWNER only; read-only receipt history scoped to the business/order |
+| GET | `/api/v1/businesses/{business_id}/purchase-orders/{order_id}/activity` | OWNER only; read-only activity/audit history scoped to the business/order |
+| GET | `/api/v1/businesses/{business_id}/inventory/movements` | Active membership; movement rows scoped to the requested business |
+
+### Current security regression evidence
+
+- Exact-head Actions run [43898226966](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/43898226966) passed on `481984600eae4c6951c4136368725e09f91cf4c7`, including `backend-accounting`, PostgreSQL candidate migration application, `authenticated-api-smoke`, and `all-checks-passed`.
+- `backend/tests/test_assistant_security.py` exercises two distinct workspaces/principals. A foreign-tenant `/assistant/chat` request returns 403 with a test provider key configured, makes zero provider calls, and leaves every mapped table row count and the `AuditEvent` count unchanged.
+- Existing regression suites continue to cover sensitive STAFF denial, foreign resource IDs, purchase approval/receipt and invitation concurrency. Passing CI does not establish the live Preview route × role × tenant matrix.
+- **Still incomplete:** live authenticated OWNER-positive / allowed-STAFF / denied-STAFF / non-member / foreign-tenant acceptance across all route families, with persisted row and audit snapshots for each denied mutation. Vercel Preview SSO currently redirects the read-only browser to Vercel login; do not disable SSO. Keep T03 PARTIALLY COMPLETE until these dynamic checks are evidenced.
+- No production/runtime authorization policy changed in this documentation update. T37 remains DRAFT / NOT APPROVED; do not infer approval for AP, tax, FX, COGS, GL, payroll statutory or payout semantics.
