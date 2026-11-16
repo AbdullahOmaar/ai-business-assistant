@@ -10,6 +10,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy import (
     Boolean,
+    JSON,
     CheckConstraint,
     DateTime,
     Enum as SqlEnum,
@@ -420,6 +421,58 @@ class PurchaseOrder(Base):
     status: Mapped[str] = mapped_column(String(24), nullable=False, default="draft")
     currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
     total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class PurchaseReceiptIdempotency(Base):
+    """Durable replay identity for one intentional purchase receipt operation.
+
+    The unique key is scoped to a business and purchase order. The canonical
+    request hash prevents accidental reuse of a key for a different payload;
+    the response snapshot lets the route replay the original result without
+    creating additional stock movements or audit events.
+    """
+
+    __tablename__ = "purchase_receipt_idempotency"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["purchase_order_id", "business_id"],
+            ["purchase_orders.id", "purchase_orders.business_id"],
+            name="fk_purchase_receipt_idempotency_order_business",
+            ondelete="RESTRICT",
+        ),
+        UniqueConstraint(
+            "business_id", "purchase_order_id", "idempotency_key",
+            name="uq_purchase_receipt_idempotency_scope_key",
+        ),
+        UniqueConstraint(
+            "id", "business_id",
+            name="uq_purchase_receipt_idempotency_id_business",
+        ),
+        Index(
+            "ix_purchase_receipt_idempotency_order_created",
+            "business_id", "purchase_order_id", "created_at",
+        ),
+        CheckConstraint(
+            "length(idempotency_key) = 36",
+            name="ck_purchase_receipt_idempotency_key_length",
+        ),
+        CheckConstraint(
+            "length(request_hash) = 64",
+            name="ck_purchase_receipt_idempotency_hash_length",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="RESTRICT"), nullable=False
+    )
+    purchase_order_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    idempotency_key: Mapped[str] = mapped_column(String(36), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    response_snapshot: Mapped[dict] = mapped_column(JSON, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

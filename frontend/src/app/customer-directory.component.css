@@ -5,10 +5,11 @@
 .customer-directory table{width:100%;min-width:0;table-layout:fixed;border-collapse:separate;border-spacing:0;font-size:13px;text-align:start}
 .customer-directory th{background:var(--aiba-surface-tint,#f6fafb);color:var(--aiba-muted,#5f6e83);font-size:12px;font-weight:700;line-height:1.35;text-align:start}
 .customer-directory th,.customer-directory td{padding:10px 12px;border-block-end:1px solid var(--aiba-line,#e2e8f0);vertical-align:middle;overflow-wrap:anywhere}
-.customer-directory th:nth-child(1){width:25%}
-.customer-directory th:nth-child(2){width:29%}
-.customer-directory th:nth-child(3){width:20%}
-.customer-directory th:nth-child(4){width:26%}
+.customer-directory th:nth-child(1){width:20%}
+.customer-directory th:nth-child(2){width:22%}
+.customer-directory th:nth-child(3){width:17%}
+.customer-directory th:nth-child(4){width:19%}
+.customer-directory th:nth-child(5){width:22%}
 .customer-directory tbody tr:last-child th,.customer-directory tbody tr:last-child td{border-block-end:0}
 .customer-directory tbody tr:hover{background:var(--aiba-surface-tint,#f6fafb)}
 .customer-directory__desktop th button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:3px 0;border:0;background:transparent;color:inherit;font:inherit;font-weight:inherit;text-align:start;cursor:pointer}
@@ -33,6 +34,7 @@
   .customer-directory__mobile-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:10px;min-width:0;padding:10px 11px;border:1px solid var(--aiba-line,#e2e8f0);border-radius:11px;background:var(--aiba-surface,#fff)}
   .customer-directory__identity{display:grid;gap:4px;min-width:0}
   .customer-directory__identity h3{margin:0;color:var(--aiba-ink,#172033);font-size:14px;font-weight:720;line-height:1.35;overflow-wrap:anywhere}
+   .customer-directory__details{display:grid;gap:3px;min-width:0;color:var(--aiba-muted,#5f6e83);font-size:11px;line-height:1.45;overflow-wrap:anywhere}.customer-directory__details b{color:var(--aiba-ink-soft,#344256)}
   .customer-directory__contact{display:flex;flex-wrap:wrap;align-items:center;gap:3px 10px;min-width:0;color:var(--aiba-muted,#5f6e83);font-size:12px;line-height:1.4}
   .customer-directory__contact a{min-width:0;max-width:100%;color:var(--aiba-ink-soft,#344256);text-decoration:none;overflow-wrap:anywhere}
   .customer-directory__actions{justify-content:flex-end;gap:5px}
@@ -56,3 +58,7 @@
 @media(prefers-reduced-motion:reduce){
   .customer-directory__action{transition:none}
 }
+
+.customer-directory__profile-link{padding:0;border:0;background:transparent;color:var(--aiba-brand-strong,#115e59);font:inherit;font-weight:750;text-align:start;cursor:pointer}
+.customer-directory__profile-link:hover{text-decoration:underline}
+.customer-directory__profile-link:focus-visible{outline:3px solid var(--aiba-focus,#2563eb);outline-offset:3px;border-radius:3px}

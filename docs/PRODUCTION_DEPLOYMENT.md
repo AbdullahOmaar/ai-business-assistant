@@ -15,7 +15,7 @@ Set these as platform secrets/configuration (never commit real values):
 - `OPENAI_API_KEY`: optional. AI chat returns 503 until configured; keep this key backend-only.
 - `OPENAI_MODEL`: optional; defaults to `gpt-4.1-mini`.
 
-Run database migrations only as an explicitly approved release step after validating the target database and migration plan. Never point this command at production merely to test it. Before an existing production database is migrated, take a backup and verify that it can be restored to an isolated database; review the migration SQL and confirm the current production revision/schema. Test the upgrade against a disposable PostgreSQL database or restored non-production clone first. Do not migrate an existing production database from scratch or assume it is empty.
+For AIBA's current pre-release environment, the Owner's 2026-11-15 decision permits MASTER to apply safe additive/backward-compatible migrations after reviewing the exact migration diff and generated SQL, validating the upgrade against disposable PostgreSQL CI, and recording a rollback/recovery plan. No separate per-migration approval is required for this synthetic development environment. Destructive/data-loss migrations, database restore/overwrite, and unreviewed direct database mutation remain approval-gated. Before importing real customer/business data, obtain a new Owner decision. For any other real-customer production environment, confirm the applicable backup, restore and approval requirements before migration.
 
 ```bash
 cd backend
@@ -38,7 +38,7 @@ The Web Vercel project root is `frontend`. The repository-owned `frontend/vercel
 
 Run the current repository-required validation defined in [AGENTS.md](../AGENTS.md) before promoting a candidate. A successful Vercel build confirms compilation and generated deployment metadata only; it does not replace CI or exact-SHA release evidence.
 
-Preview builds are fail-closed by `scripts/write-build-info.mjs`: when `VERCEL_ENV=preview`, it replaces the checked-in production runtime config with an empty setup-required config unless all isolated Preview values are supplied. Configure these Vercel Preview environment variables only after a synthetic API and Firebase project exist: `ABA_PREVIEW_API_BASE_URL`, `ABA_PREVIEW_FIREBASE_API_KEY`, `ABA_PREVIEW_FIREBASE_AUTH_DOMAIN`, `ABA_PREVIEW_FIREBASE_PROJECT_ID`, and `ABA_PREVIEW_FIREBASE_APP_ID`. A partial set or the known Production API/Firebase identifiers fails the build. Production and local builds retain the existing runtime config. Do not sign in or mutate data from a Preview until the synthetic runtime is configured and verified.
+Preview builds keep the checked-in current development runtime config by default. Under the Owner decision effective 2026-11-15, the currently deployed provider-Production API/Firebase project contains synthetic pre-release data and is authorized for Preview sign-in and authenticated QA. `scripts/write-build-info.mjs` must not replace that config with an empty setup-required config or reject the current Production identifiers. A complete set of optional `ABA_PREVIEW_*` variables may intentionally override the defaults; partial overrides fail the build rather than mixing values. Preview uses the existing API endpoint and Firebase web-client settings; backend database URLs and Firebase service-account credentials remain server-side only. Use synthetic test identities and application records. If sign-in fails, check the exact Preview origin against the backend CORS allowlist and Firebase authorized-domain list; do not use a separate paid Neon/Firebase QA project as a generic prerequisite. GitHub CI remains isolated from Production.
 
 ## Frontend runtime configuration
 
@@ -51,11 +51,12 @@ Enable the Firebase Email/Password sign-in provider in the Firebase Console if t
 
 ## Production release cadence and approval
 
-- Treat production deployment as a release event, not a per-commit or per-task action.
-- Batch related work and deploy only when an approved feature bundle or critical fix is ready. Trigger at most one deployment per affected Vercel project for the release; do not redeploy an unchanged project.
-- Merge authorization and production-deployment authorization are separate. Confirm the required release authorization before triggering Vercel.
-- Before deployment, verify the exact merged `main` SHA, release markers for affected projects, project Ignore Build Step behavior, and the production database recovery/rollback plan where applicable.
+- Treat deployment as a release event, not a per-commit action; batch related work and deploy only affected projects.
+- MASTER may merge eligible non-Draft/READY PRs and deploy ordinary product releases under the standing delegation in `AGENTS.md`, after exact-head checks, full diff review, blocking-thread resolution, repository protections, deployment-coupling review and rollback planning. No separate per-task or per-PR Owner approval is required.
+- Before deployment, verify the exact merged `main` SHA, affected Vercel projects, Ignore Build Step behavior, migration compatibility, and the recovery/rollback plan where applicable.
 - After deployment, verify the intended deployment SHA, production alias, API `/health`, `/readyz`, `/version` where applicable, and safe feature-specific smoke checks. A READY build or HTTP 200 alone is not complete release evidence.
+
+Reserved Owner approvals remain mandatory for destructive/data-loss operations, live financial effects, new financial semantics, real external messages, tax filing, provider security changes and paid provisioning.
 
 ## Repository CI and merge requirements
 
@@ -66,7 +67,7 @@ Follow the current [AGENTS.md CI, merge and deployment requirements](../AGENTS.m
 1. Verify the current repository-required exact-SHA validation and merge gates in [AGENTS.md](../AGENTS.md) are satisfied for the approved release commit. Do not reuse evidence from a different SHA.
 2. Confirm the production database's current Alembic revision and schema without modifying data.
 3. Take a production backup and prove it can be restored into an isolated non-production database; record recovery evidence.
-4. Review migration SQL and run the migration against a disposable PostgreSQL database or restored non-production clone. Only run production migrations after explicit owner approval and the approved backup/rollback plan.
+4. Review migration SQL and run the migration against disposable PostgreSQL CI services or a restored non-production clone. MASTER may apply safe additive/backward-compatible migrations in the current synthetic pre-release environment after exact diff/SQL review and a rollback/recovery plan; destructive/data-loss changes remain approval-gated.
 5. Confirm Firebase token verification rejects missing, expired, revoked, and wrong-project tokens in a controlled staging environment.
 6. Test that a user cannot list, read, or mutate another workspace by changing `business_id`, resource IDs, or allocation references.
 7. Configure exact CORS origins and confirm the frontend can sign in and make authenticated API calls.
@@ -183,16 +184,16 @@ Use a clear state: **NOT READY**, **READY TO MERGE**, or **READY TO MERGE + DEPL
 - Avoid polling unrelated projects or repeating unchanged health/runtime queries. Poll only the affected deployment until terminal state, then perform one complete verification pass.
 - Treat ignored/canceled deployment due to a configured Ignore Build Step as “not deployed / intentionally skipped”, not as a build failure. Confirm the intended project was or was not affected.
 
-### 4. Owner decision — ask once, at the right time
+### 4. MASTER release decision — standing delegation
 
-Before asking for merge approval, send one concise decision packet with:
+Before a merge/deployment decision, MASTER records one concise evidence packet containing:
 1. PR and exact head SHA.
-2. Required checks/reviews and their current result.
-3. Merge impact, including whether merge automatically deploys to production and which project(s).
-4. Explicit production/migration/data side effects (or none).
-5. The exact authorization requested.
+2. Required exact-head checks and substantive outcomes, including SKIPPED/NOT RUN.
+3. Current diff review and blocking-thread state.
+4. Merge/deployment coupling, affected projects, migration/data side effects, and rollback plan.
+5. The post-deployment smoke criteria and evidence owner.
 
-If merge auto-deploys, disclose this **before merge** and obtain the owner authorization required for that coupled action in advance. If deployment is separate/manual, keep merge and production deployment approvals separate. Never infer either approval from a generic “looks good”, green CI, or mergeability.
+This packet is an execution record, not a request for per-task or per-PR Owner approval. MASTER may proceed when all repository-enforced protections and release gates pass. Stop for the reserved Owner approvals listed in `AGENTS.md`; never infer permission for those actions and never bypass branch protections.
 
 ### 5. Merge, deploy and verify
 
@@ -206,6 +207,6 @@ After authorization and all gates:
 
 ### 6. Role contract
 
-This procedure is mandatory for Master, Chat 1–5, QA, integration contributors and external AI agents. The task owner prepares the packet; the accountable maintainer/Project Master validates the evidence and records the full diff self-review; QA contributors may add test evidence; only the authorized owner grants reserved approvals. Review requirements for controlled/security/architecture changes and Project Knowledge publication follow `AGENTS.md` and `docs/project-knowledge/04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`; maintainer self-review does not replace any applicable independent non-author review or authorized approval. Formal GitHub branch-protection approvals remain mandatory and must never be bypassed.
+This procedure is mandatory for Master, Chat 1–5, QA, integration contributors and external AI agents. The task owner prepares the packet; the accountable maintainer/Project Master validates the evidence and records the full diff self-review; QA contributors may add test evidence; only the authorized owner grants reserved approvals. Review requirements for controlled/security/architecture changes and Project Knowledge publication follow `AGENTS.md` and `docs/project-knowledge/04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`; maintainer self-review does not replace any applicable independent non-author review or authorized approval. Formal provider-enforced branch protections must be honored and never bypassed. Do not infer a separate approval-count requirement unless it is observable in the current ruleset.
 
-**Non-negotiable:** this fast path is an orchestration optimization, not a gate reduction. It never waives exact-SHA checks, provider-enforced review/protection, the approved CI transition policy and exact-SHA requirements, owner merge/deployment authorization, security/privacy controls, migration approval, backup/restore evidence, or production verification.
+**Non-negotiable:** this fast path is an orchestration optimization, not a gate reduction. It never waives exact-SHA checks, provider-enforced review/protection, the approved CI transition policy and exact-SHA requirements, standing MASTER delegation and reserved Owner approvals, security/privacy controls, migration approval, backup/restore evidence, or production verification.

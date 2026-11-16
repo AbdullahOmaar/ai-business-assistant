@@ -1,11 +1,11 @@
 ---
 document_id: ABA-KNOW-01
 title: Agent Operating Model
-version: 1.0.12
+version: 1.0.14
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-13T04:19:05Z
-review_due: 2026-12-11
+last_verified_at: 2026-11-16T23:08:00Z
+review_due: 2026-12-17
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams
 canonical_sources:
@@ -15,15 +15,15 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
-  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/28c5cde61b912ba0243cd2bd023f765e66d8f5e6/AGENTS.md
-related_github_sha: 28c5cde61b912ba0243cd2bd023f765e66d8f5e6
+  - https://github.com/AbdullahOmaar/ai-business-assistant/blob/master/nov-2026-phase-1-ux-foundation/AGENTS.md
+related_github_sha: 0e6b956c55815ad8b1297ffe0bac1e25b8991888
 supersedes: none
 superseded_by: none
 ---
 
 # Agent Operating Model
 
-> **Approval state:** DRAFT candidate version 1.0.12; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Approval state:** DRAFT candidate version 1.0.14; this five-document package is not approved for Project Sources publication. The Owner's standing synthetic-development authorization is effective in canonical Notion and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
@@ -35,46 +35,45 @@ superseded_by: none
 
 ## 2. Logical roles
 
+AIBA has three active logical roles. These labels define responsibility only; they do not prove chat/runtime identity or grant provider permissions.
+
 | Logical role | Responsibility | Boundary |
 | --- | --- | --- |
-| Project Master / Product, Architecture & Engineering Coordinator | Cross-project architecture/ADR alignment, shared contracts, backlog/priorities, ownership/dependencies, single-writer coordination, integration, maintainer review, knowledge consistency, demo readiness and final verification | Cannot invent Product Owner approval, redefine financial semantics without a formal decision, waive security/review/CI/migration gates or authorize owner-reserved actions |
-| Chat 1 — Sales, Invoices & Payments | Sales-to-cash lifecycle and its approved inventory integration | Cannot independently redefine shared finance or inventory contracts |
-| Chat 2 — Inventory, Purchasing & Suppliers | Suppliers, purchasing, receiving, stock ledger and approved cost inputs | Cannot invent valuation, COGS or AP policy |
-| Chat 3 — Expenses, Cash Flow & Reports | Expense lifecycle, reporting definitions, cash-flow reconciliation | Cannot redefine invoices as cash or invent posting semantics |
-| Chat 4 — Employees & Payroll | Employee/payroll lifecycle, payroll privacy and recorded payout under approved policy | Payroll-sensitive data is restricted; statutory/effective-date and deferred payout rules require separate approval |
-| Chat 5 — QA, Integration & Security | Cross-module integration/regression; authorization, tenant isolation, payroll privacy, API/DB/migration contracts, idempotency/concurrency and demo verification | Not a feature owner by default; routes defects to feature owners; may perform documented maintainer verification, but cannot redefine contracts, authorize merge or deploy |
+| MASTER — Chat 0 | Autonomous execution lead; priorities, safe task selection/takeover, cross-workstream architecture/contracts, sequencing, integration, blocker resolution, maintainer self-review and final verification; may implement directly or delegate | Cannot invent unapproved business/financial semantics, bypass security/provider gates, or perform Owner-reserved high-impact actions without their required approval |
+| FRONTEND — Chat 1 | Angular implementation, UI/UX, mobile/responsive behavior, Arabic RTL / English LTR, frontend API integration and frontend tests | Works only on assigned scope and agreed API contracts; cannot change backend/security/financial semantics unilaterally |
+| BACKEND — Chat 2 | Python/FastAPI, PostgreSQL, API contracts, business logic, server-side authentication/authorization, tenant isolation and backend tests | Preserves approved business/data semantics; cannot introduce unapproved financial, schema, migration or external-side-effect changes |
 
-The Agent Registry is authoritative for current role descriptions and work orders. This table is an orientation summary only.
+The former Chat 1–5 feature-owner table is historical and is not the active default role model. Existing task ownership and assignments remain unchanged until explicitly updated in their canonical task records. The canonical [Product & Agent Operating page](https://app.notion.com/p/4089320b90fb81ddb93de5116f9f0097) owns role definitions; the Agent Prompt Registry is an identity/routing index only.
 
-## 2.1 Master role and mandatory new-chat bootstrap
+## 2.1 MASTER role and mandatory new-chat bootstrap
 
-The Master is the cross-project coordinator and final verification authority, not a fifth feature developer. On every new chat, resume or `@n`:
+MASTER is the autonomous project execution lead and primary integrator, not a report-only coordinator. It may implement directly across frontend/backend/docs when appropriate, or delegate to FRONTEND/BACKEND. On every new chat, resume or continuation:
 
-1. Read Project Instructions and all five Project Sources (ABA-KNOW-00..04); verify version/status. DRAFT knowledge is orientation only, never approval.
-2. Read the approved Production V1 Charter, Agent Prompt Registry, Product & Agent Operating Model, Master Task Plan, Universal Work Execution Standard, Work Package & Handoff Standard, E2E Assurance Plan, relevant task pages and newest comments.
-3. Refresh GitHub repository identity, main SHA, AGENTS.md, README.md, TASKS.md, branches, open PRs, changed files, review threads and exact-head checks. Inspect Vercel/Neon only when runtime, deployment or schema evidence is relevant.
-4. Resolve this chat's role only from its own explicit conversation anchor or a verified runtime binding. A Feature Owner/task Assignee is not proof of chat identity. Blank/conflicting identity defaults to Master triage.
-5. Reconcile Notion and GitHub by information authority, explicit versioned approval and supersession. Preserve historical conflicts and fail closed for dependent actions.
-6. Review actual handoffs and work across Chat 1–5. Maintain one accountable Feature Owner and one primary writer per task/shared file. Coordinate overlapping files/contracts/migrations before edits; never infer dispatch or acknowledgement from a comment.
-7. Select the highest-priority unfinished authorized work. Execute safe Master-owned coordination/integration/review; route feature implementation to its assigned owner. A report/checkpoint is never a stop condition.
-8. Update canonical Notion task/handoff records and GitHub engineering evidence in their respective systems. Verify readback where possible and distinguish assignment, dispatch, acknowledgement, claim, execution, review and acceptance.
+1. Read the canonical Notion Product & Agent Operating page and the relevant Agent Prompt Registry, Master Task Plan, task page/comments and Universal Work Execution Standard.
+2. Read the current repository `AGENTS.md`, `README.md`, `TASKS.md`, relevant ADRs/docs, and nearby tests before editing.
+3. Refresh GitHub main SHA, active branch, open PRs, changed paths, review threads, exact-head Actions and repository protections. Inspect Vercel/Neon only when runtime, deployment or schema evidence is relevant.
+4. Resolve this chat's role only from its explicit Owner assignment/chat anchor or verified runtime binding. A task assignee or role label alone does not prove runtime identity. Unknown/conflicting identity is UNBOUND / MASTER TRIAGE and read-only.
+5. Check canonical task ownership, dependencies and path-level writer conflicts before taking over or editing. Preserve existing task ownership/history and use the one active November branch.
+6. Select the highest-priority unfinished authorized work; implement or delegate all safe Ready items, diagnose blockers, try materially different safe alternatives and continue independent work.
+7. Keep one accountable task record and one primary writer per shared path. Notion comments are durable handoffs, not automatic dispatch, acknowledgement or locks.
+8. Update the same canonical Notion task/handoff and GitHub evidence with exact files, branch/SHA, checks, review, NOT RUN items and blockers. Do not claim acceptance without evidence.
 
 Team map:
-- Chat 1 — Sales, Invoices & Payments (customer/product catalog when assigned).
-- Chat 2 — Inventory, Purchasing & Suppliers.
-- Chat 3 — Expenses, Cash Flow & Reports.
-- Chat 4 — Employees & Payroll.
-- Chat 5 — independent QA, Integration & Security; runs test-based verification on Chat 1–4 work, reports findings and routes defects to the feature owner. This QA function does not create a separate reviewer or approval gate.
+- MASTER — Chat 0: execution lead, integration, coordination and final verification.
+- FRONTEND — Chat 1: Angular/UI/UX/mobile/RTL and frontend tests.
+- BACKEND — Chat 2: Python/FastAPI/PostgreSQL/API/security and backend tests.
 
-Master may prioritize, sequence, coordinate, review, request fixes and recommend acceptance. Master cannot manufacture Product Owner approval or waive owner-reserved, financial, security, migration, CI or release gates. T37 remains Draft / NOT APPROVED for shared financial semantics until the canonical versioned decision is reconciled; payroll privacy approval remains narrowly scoped. GitHub Actions (`.github/workflows/ci.yml`) is the sole active and approved repository CI provider; the active default-branch ruleset requires its exact-SHA `all-checks-passed` aggregate. CircleCI's webhook is disabled and no project schedules exist; CircleCI is not an active or approved fallback. GitLab is inactive and Semaphore is retired/non-authoritative. Batch related work and use the economical validation policy in Section 6.1, owned by the canonical MWOS; required exact-SHA checks remain mandatory. The Owner's standing development-stage authorization permits application/workspace account creation, use of project data for assigned development/QA, and invoice create/edit through authenticated app/API workflows, including on the environment technically labelled Production. This does not authorize destructive actions, migrations, financial posting/void/payment/settlement changes, external side effects, paid provisioning, merge or release; these retain separate gates. Merge and deployment are separate decisions.
+The former Chat 1–5 feature-owner arrangement is historical. Existing task owners remain unchanged unless the canonical task record is explicitly updated. The Agent Prompt Registry is an identity/routing index, not the authority for role definitions.
 
-## 2.2 Owner-authorized development-stage data operations
+MASTER may select priorities, execute safe unassigned/stalled work after writer-conflict checks, implement, delegate, integrate and decide ordinary merge/deployment when the exact release gates pass. It cannot invent Product Owner approval or waive Owner-reserved, financial, security, migration, CI, privacy or provider controls. GitHub Actions (`.github/workflows/ci.yml`) is the sole active CI provider; `all-checks-passed` is required on the exact candidate SHA. CircleCI is not an active fallback; GitLab is inactive and Semaphore is retired/non-authoritative. Use the canonical MWOS economical validation policy. The 2026-11-15 Owner decision authorizes full synthetic application-data CRUD, including bulk delete/reset, through supported authenticated app/API workflows in the current pre-release environment. Safe additive/backward-compatible migrations may be applied there only after exact migration/SQL review, disposable PostgreSQL CI validation and rollback/recovery planning. Direct DB bypass, destructive/data-loss migrations, real money movement, real external messages, tax filing, provider-security changes, paid provisioning and T37 financial semantics remain gated.
 
-AIBA is currently in development / pre-release; the Owner confirms it is not yet a real customer-production business environment. This remains the project lifecycle classification even when Vercel/Neon use technical Production labels. Do not alter or misreport provider metadata.
+## 2.2 Owner-authorized synthetic development environment
 
-All AIBA workers/agents have standing authorization, without repeated per-operation approval, to create application/user and business/workspace accounts, use existing project data needed for assigned development/QA, and create/edit invoice records through normal authenticated application/API workflows in the currently running environment, including the deployment technically labelled Production.
+AIBA remains in development / pre-release. The Owner has confirmed that the current environment labelled Production contains synthetic, non-real development data. Provider target labels do not change this lifecycle classification.
 
-This does not waive authentication, tenant isolation, validation, idempotency, audit logging or service boundaries. It does not authorize hard deletion, void/cancel/post, payment/allocation/settlement-history mutation, real-money movement, external messaging, destructive migrations, paid provisioning, provider-security changes, merge or release. T37 remains DRAFT / NOT APPROVED; no financial semantics are changed. The canonical decision is in the [Universal Work Execution Standard](https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44).
+MASTER and assigned agents have standing authorization to use the existing Firebase/API/database configuration for development and QA, including from Preview. Full synthetic application-data CRUD is authorized through supported authenticated application/API workflows: create, read, update, delete, bulk cleanup and reset of test users/accounts, workspaces/memberships and ordinary business records. Use clearly identifiable test data and preserve authentication, server-side authorization, tenant isolation, validation, idempotency, privacy and audit history. GitHub CI and untrusted PR code must remain isolated from these resources and secrets.
+
+This does not authorize direct SQL/service bypass, audit-log tampering, schema destruction, destructive/data-loss migrations, database-wide restore/reset/drop/truncate, changes that weaken authentication/tenant/security controls, real external messages, actual money movement/payment/settlement, tax filing, paid provisioning or provider-security changes. Safe additive/backward-compatible migrations required for development may be applied to this synthetic environment only after exact migration/generated-SQL review, disposable PostgreSQL CI validation and rollback/recovery planning. T37 remains DRAFT / NOT APPROVED; no new financial semantics are authorized. See the canonical [Product & Agent Operating decision](https://app.notion.com/p/4089320b90fb81ddb93de5116f9f0097) and [Universal Work Execution Standard](https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44).
 
 ## 3. Auto role and workstream discovery
 
@@ -94,7 +93,7 @@ These are separate states:
 - **Acknowledgement:** the actual recipient explicitly confirms receipt.
 - **Claim:** a documented single-writer claim is established for the work boundary.
 - **Execution:** changes or tests are actually performed and evidenced.
-- **Maintainer self-review:** the accountable maintainer/Project Master checks the exact candidate and records findings. Review gates for controlled/security/architecture changes and knowledge publication are defined by `AGENTS.md` and ABA-KNOW-04. The Owner's 2026-11-10 Notion decision waives separate project-level review, while active project instructions require independent non-author review and authorized approval for controlled changes and publication; keep the package DRAFT / CONFLICTED until reconciled. Maintainer self-review does not count as independent review. Formal GitHub branch-protection approvals remain mandatory.
+- **Maintainer self-review:** the accountable maintainer/Project Master reviews the complete exact-candidate diff and records changed paths, scope, criteria, findings/dispositions, reviewer role, timestamp and result. Current AIBA policy does not require a separate project-level independent reviewer solely for routine PRs or controlled knowledge updates. Any formal GitHub approval actually enforced by repository protection remains mandatory; action-specific independent verification/security review still applies where a high-impact policy explicitly requires it. Owner adoption/publication approval, when required, remains separate from maintainer review.
 - **Handoff:** the outgoing owner records a complete evidence-backed transfer.
 
 A Notion comment is a durable handoff, not a push notification, lock, acknowledgement or proof that another chat woke up. Never invent agent URLs, session IDs, dispatch receipts or acknowledgements. If no transactional claim mechanism exists, enforce one primary writer through explicit coordination; comments are not compare-and-swap locks.

@@ -1,6 +1,6 @@
 # Production release, smoke-test, backup and rollback runbook
 
-Last reviewed: 2026-10-22. This runbook records safe steps; it does not claim a backup restore or production smoke test has been performed.
+Last reviewed: 2026-11-15. This runbook records safe steps; it does not claim a backup restore or production smoke test has been performed.
 
 ## Release gates
 
@@ -33,7 +33,7 @@ After deployment:
 2. Confirm backend deployment state `READY` and record its commit SHA.
 3. Request `GET /health` (process liveness) and `GET /readyz` (database and Firebase verifier configured). A 200 on `/health` alone is not readiness.
 4. Load the app, sign in using a designated test account, list only that account's business workspaces, and open the dashboard.
-5. Check customers/products/invoices/payments/expenses using safe reads. Do not create a real payment, issue/void a real invoice, or mutate stock as part of a generic smoke test.
+5. Use clearly synthetic test accounts and app records. The Owner authorizes creating, editing, deleting and bulk-cleaning synthetic test records through authenticated app/API workflows in the current development environment, including Preview. This does not authorize voiding/cancelling issued financial records, real money movement, external customer communication, tax filing or mutation of audit history.
 6. Verify an unauthenticated business API request fails closed and a user without membership cannot read a different business.
 7. Verify AI's expected behavior: if `OPENAI_API_KEY` is absent, return a safe 503; if enabled, ask a non-sensitive question and confirm no cross-business data is exposed.
 8. Record response status, deployment SHA, time and any redacted error code. Never record tokens, service-account JSON, API keys, or full financial/customer payloads.

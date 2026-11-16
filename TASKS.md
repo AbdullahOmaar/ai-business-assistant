@@ -9,6 +9,20 @@
 
 ---
 
+## November Phase 1 — Workspace URL routing — 2026-11-15
+
+- **Branch:** `master/nov-2026-phase-1-ux-foundation`.
+- **Outcome:** add stable, shareable URLs for all 20 existing workspace tab identifiers without changing business-module contracts.
+- **Implementation:** `/workspace` resolves to Overview; `/workspace/{tab}` resolves to the selected destination. Interactive tab changes push browser history, Back/Forward restores the matching tab, and query/hash context is preserved. Initial deep links are applied only after authentication and workspace membership load.
+- **Access behavior:** direct URLs reuse the existing `canAccessTab` policy; owner-only/team and Platform Admin destinations fail closed to Overview when unavailable. Non-Platform-Admin workspace destinations require an active business context. Backend authorization remains authoritative.
+- **Refresh behavior:** `frontend/vercel.json` rewrites workspace paths to the Angular shell; the existing service worker's navigation fallback continues to return only the cached public shell offline.
+- **Files:** `frontend/src/app/core/navigation/workspace-route.ts`, `frontend/src/app/workspace-route.spec.ts`, `frontend/src/app/app.component.ts`, `frontend/vercel.json`.
+- **Focused validation:** six route-map tests passed in a local Node 22 `--experimental-strip-types` run using the committed helper/test logic. This is not an exact repository CI result.
+- **NOT RUN:** exact-head GitHub Actions workflow, full Angular unit suite, production build, Playwright browser smoke, physical Android/PWA, and authenticated OWNER/STAFF/two-tenant journeys. The only status returned for the candidate SHA was a Semaphore push failure; Semaphore is non-authoritative under `AGENTS.md` and is not treated as a product-test failure or PASS.
+- **Disposition:** implementation committed; keep Phase 1 routing acceptance **IN PROGRESS** until exact-head GitHub Actions and rendered browser navigation checks pass. No API, auth-provider, database, schema, migration, financial or production-data changes.
+
+---
+
 ## November Phase 1 — HR mobile workspaces — 2026-11-12
 
 - **Branch:** `master/nov-2026-phase-1-ux-foundation` (continue on the one Owner-selected November branch).

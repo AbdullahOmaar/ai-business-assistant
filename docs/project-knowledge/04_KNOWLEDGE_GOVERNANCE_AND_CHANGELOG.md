@@ -1,11 +1,11 @@
 ---
 document_id: ABA-KNOW-04
 title: Knowledge Governance & Changelog
-version: 1.0.12
+version: 1.0.14
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-13T04:19:05Z
-review_due: 2026-12-11
+last_verified_at: 2026-11-16T23:08:00Z
+review_due: 2026-12-17
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Shared Project Knowledge Package
 canonical_sources:
@@ -21,7 +21,7 @@ superseded_by: none
 
 # Knowledge Governance & Changelog
 
-> **Approval state:** DRAFT candidate version 1.0.12. The underlying development-stage write authorization is effective in canonical Notion from 2026-11-11; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. **Review-policy conflict:** the canonical MWOS Owner decision effective 2026-11-10 waives separate project-level review for controlled knowledge updates, while active project instructions require independent non-author review and authorized approval for controlled/security/architecture changes and knowledge publication. Keep this package DRAFT / CONFLICTED until the Owner/Master reconciles the policy; maintainer self-review is not independent. Formal GitHub branch-protection requirements remain mandatory.
+> **Approval state:** DRAFT candidate version 1.0.14. The Owner's standing synthetic-development authorization is effective in canonical Notion; this GitHub package update is pending exact-head validation, maintainer review and normal PR integration. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. **Review policy:** The effective AIBA policy requires documented full maintainer/Project Master self-review but does not require a separate project-level independent reviewer solely for controlled knowledge updates. Formal GitHub approvals actually enforced by repository protection remain mandatory; action-specific independent security/privacy verification remains required where an applicable high-impact policy explicitly says so. Owner adoption/publication approval, when required, remains separate from maintainer review. This package remains DRAFT pending reconciliation review, any required adoption/publication decision and exact Project Sources readback.
 
 ## 1. Package manifest
 
@@ -121,7 +121,7 @@ At every Workstream Closeout:
 The following is a concise draft for the ChatGPT Project Instructions field. It must be checked against the actual UI character limit, saved by an authorized user and read back before it is considered active:
 
 ```text
-For every new or resumed AI Business Assistant chat, read all five Project Sources files first. Treat them as stable/controlled context, not live status. Discover this chat's role only from its own context or a verified runtime binding; blank or conflicting identity defaults to Master triage. Before work, read the canonical Notion Registry, Operating Model, Master Task Plan, assigned task and latest handoff/comments. Verify live GitHub AGENTS.md, README.md, TASKS.md, main SHA, relevant branches/PRs/diffs and exact-head checks. Use Vercel/Neon for deployment/runtime/schema evidence. Resolve conflicts by source authority, explicit approval and supersession—not last edit time. Mark inaccessible or stale facts UNKNOWN/STALE and fail closed for sensitive actions. Execute all safe authorized work through tests, fixes, review, docs and evidence; a report is a checkpoint, not completion. Block only dependent criteria and continue independent work. Never invent identity, dispatch, acknowledgement, test results or deployment. No merge, production write/migration or deployment without required explicit authorization and gates. Update knowledge only after verified durable change, documented maintainer self-review and approved publication.
+For every new or resumed AI Business Assistant chat, read the canonical Notion Product & Agent Operating policy, Agent Prompt Registry, Master Task Plan, assigned task and latest handoff/comments. Read current GitHub AGENTS.md, README.md, TASKS.md, relevant source/docs, active branch/PR/diff and exact-head Actions. Use Vercel/Neon for deployment/runtime/schema evidence. Resolve conflicts by source authority, explicit approval and supersession—not last edit time. Mark inaccessible or stale facts UNKNOWN/STALE and fail closed for sensitive actions. Active logical roles are MASTER / Chat 0, FRONTEND / Chat 1 and BACKEND / Chat 2; role labels alone do not prove runtime identity. MASTER is autonomous and may implement, delegate, integrate and take over safe stalled/unassigned work after checking writer conflicts. Execute every safe Ready item through fixes, validation, review, docs and evidence; a report is a checkpoint, not completion. Block only dependent criteria and continue independent work. Never invent identity, dispatch, acknowledgement, test results or deployment. MASTER may merge eligible non-Draft READY PRs and perform ordinary deployments under standing Owner delegation only after exact-head checks, full maintainer self-review, resolved blocking threads, provider protections and release/rollback/recovery gates pass. Owner-reserved high-impact actions remain gated. Update knowledge only after verified durable change, documented maintainer self-review and any required Owner adoption/publication decision plus exact Project Sources readback.
 ```
 
 ## 8. Validation and integrity checks
@@ -154,7 +154,7 @@ Follow the Owner's economical validation decision in the canonical [MWOS — Mod
 ## 9. Review schedule and ownership
 
 - Accountable owner: Project Master / Repository Owner (logical role).
-- Review owner: the accountable maintainer/Project Master records full self-review on the exact candidate SHA. Independent non-author review and authorized approval are required for controlled/security/architecture changes and knowledge publication under active project instructions. The canonical MWOS Owner decision effective 2026-11-10 waives this reviewer requirement; the conflict remains unresolved, so the affected knowledge package stays DRAFT / CONFLICTED and is not publishable. Formal GitHub branch-protection approvals remain mandatory and must never be bypassed.
+- Review owner: the accountable maintainer/Project Master records full self-review on the exact candidate SHA. Current AIBA policy does not require a separate project-level independent reviewer solely for controlled knowledge updates. Formal GitHub approvals actually enforced by repository protection remain mandatory; action-specific independent security/privacy verification and Owner adoption/publication approval remain required where applicable.
 - Stable documents: review every 90 days or on relevant scope/identity/source-authority event.
 - Controlled documents: review every 30 days or immediately on relevant policy/ADR/security/release change.
 - The review schedule is a proposed maintenance default until explicitly approved by the owner.
@@ -192,11 +192,18 @@ For every scenario, record the fixture/input, canonical source references, packa
 
 ## 11. Changelog
 
+### 1.0.14 — 2026-11-17 — DRAFT
+- Reconciled the AIBA logical roles to MASTER / Chat 0, FRONTEND / Chat 1 and BACKEND / Chat 2; legacy Chat 1–5 feature-owner tables are historical and do not change existing task assignments.
+- Aligned the source map, architecture and knowledge-governance summaries with the effective synthetic-data, maintainer self-review, ordinary merge/deployment delegation and exact-provider-gate policies.
+- Preserved DRAFT status. No Owner-reserved adoption decision, Project Sources publication/readback, production deployment or release is claimed.
+- All five package files advance together to version 1.0.14; exact-candidate validation and maintainer review remain pending.
+
+
 ### 1.0.12 — 2026-11-12 — DRAFT / CONFLICTED
 - Fixed exact-head GitHub Actions run 43120797275 on predecessor candidate 92dfc75117cd1909b700a4a1daa02197f1464169: the project-knowledge validator rejected all five `last_verified_at` values because they included fractional seconds. The timestamp contract requires second-precision UTC ISO-8601; all five metadata values are aligned accordingly.
 - Removed duplicated "no separate reviewer" assertions from contributor, PR-template, deployment and architecture/security knowledge guidance. These documents now point to the canonical review/governance policy and preserve the unresolved conflict between the 2026-11-10 Notion Owner waiver and active project instructions requiring independent non-author review plus authorized approval for controlled/security/architecture changes and knowledge publication.
 - The package remains DRAFT / CONFLICTED pending Owner/Master policy reconciliation; no Project Sources publication/readback or APPROVED state is claimed.
-- All five repository knowledge files advance together to version 1.0.12 with one second-precision UTC verification timestamp. `related_github_sha` remains the verified main source baseline.
+- All five repository knowledge files advance together to version 1.0.13 with one second-precision UTC verification timestamp. `related_github_sha` remains the verified main source baseline.
 - Documentation-only change. No application source, CI workflow, API, database/schema/migration, financial semantics, production data or deployment behavior changed.
 
 ### 1.0.11 — 2026-11-12 — DRAFT / CONFLICTED

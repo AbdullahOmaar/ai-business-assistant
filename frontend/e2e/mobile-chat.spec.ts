@@ -734,7 +734,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       await expect(routeSkeletons, destination.tab + ' loading skeleton').toHaveCount(0, { timeout: 15_000 });
       await expect.poll(() => pendingWorkspaceRequests.size, { timeout: 15_000 })
         .toBe(0);
-      await expect(page.locator('.main .panel:visible, .main .aba-state-message--empty:visible, .main .aba-state-message--info:visible').first(),
+      await expect(page.locator('.main .panel:visible, .main [aria-label="Purchase order workspace"]:visible, .main .aba-state-message--empty:visible, .main .aba-state-message--info:visible').first(),
         destination.tab + ' rendered content or empty state').toBeVisible();
       await expect(page.locator('[role="alert"]:visible'), destination.tab + ' rendered error state')
         .toHaveCount(0);
@@ -1528,11 +1528,17 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   await expect(page.getByText(/Only workspace owners can set a positive opening stock quantity/)).toBeVisible();
   await expect(page.locator('input[name="productOpeningQuantity"]')).toHaveCount(0);
   await page.getByRole('textbox', { name: /Product name/ }).fill('Zero-stock product');
-  await page.getByRole('spinbutton', { name: /Unit price/ }).fill('2.50');
+  await page.getByRole('textbox', { name: /SKU/ }).fill('STF-001');
+  await page.getByRole('textbox', { name: /Description/ }).fill('Staff-created zero-stock catalog item');
+  await page.getByRole('textbox', { name: /^Unit$/ }).fill('piece');
+  await page.getByRole('textbox', { name: /Unit price/ }).fill('2.50');
   await page.getByRole('button', { name: /Add product/ }).click();
   await expect.poll(() => productCreatePayloads.length).toBe(1);
   expect(productCreatePayloads[0]).toMatchObject({
     name: 'Zero-stock product',
+    sku: 'STF-001',
+    description: 'Staff-created zero-stock catalog item',
+    unit: 'piece',
     unit_price: '2.50',
     is_stock_tracked: true,
     opening_quantity: '0',

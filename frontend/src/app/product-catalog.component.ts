@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, computed, Component, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, computed, Component, input, output, signal } from '@angular/core';
 import type { Product } from './api.service';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 import { inject } from '@angular/core';
@@ -20,6 +20,8 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
     <section class="product-catalog" [attr.aria-label]="ariaLabel()">
       @if (loading()) {
         <aba-state-message kind="loading" [description]="loadingDescription()" />
+      } @else if (error()) {
+        <aba-state-message kind="error" [description]="error()" [actionLabel]="t('ui.m_lr6ezy')" (action)="retry.emit()" />
       } @else {
         <div class="product-catalog__toolbar">
           <div class="product-catalog__filters" role="group" [attr.aria-label]="t('productCatalog.m_47v71n')">
@@ -61,7 +63,7 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
             <tbody>
               @for (product of visibleProducts(); track product.id) {
                 <tr>
-                  <th scope="row" class="product-catalog__name">{{ product.name }}</th>
+                  <th scope="row" class="product-catalog__name"><button class="product-catalog__open" type="button" (click)="select.emit(product.id)">{{ product.name }}</button></th>
                   <td><bdi dir="ltr">{{ product.sku || '—' }}</bdi></td>
                   <td class="product-catalog__price"><bdi dir="ltr">{{ product.unit_price }} {{ product.currency_code || currencyCode() }}</bdi></td>
                   <td>
@@ -82,7 +84,7 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
           @for (product of visibleProducts(); track product.id) {
             <li class="product-catalog__mobile-row">
               <div class="product-catalog__main">
-                <h3>{{ product.name }}</h3>
+                <h3><button class="product-catalog__open" type="button" (click)="select.emit(product.id)">{{ product.name }}</button></h3>
                 <strong class="product-catalog__mobile-price"><bdi dir="ltr">{{ product.unit_price }} {{ product.currency_code || currencyCode() }}</bdi></strong>
               </div>
               <div class="product-catalog__meta">
@@ -123,6 +125,9 @@ export class ProductCatalogComponent {
   readonly currencyCode = input('');
   readonly loading = input(false);
   readonly loadingDescription = input('');
+  readonly error = input('');
+  readonly retry = output<void>();
+  readonly select = output<string>();
   readonly emptyTitle = input('');
   readonly emptyDescription = input('');
 

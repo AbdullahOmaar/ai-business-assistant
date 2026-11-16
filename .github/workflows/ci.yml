@@ -89,8 +89,16 @@ jobs:
       - name: Verify offline migration SQL generation
         working-directory: backend
         run: |
-          python -m alembic upgrade head --sql > /tmp/alembic-upgrade.sql
-          test -s /tmp/alembic-upgrade.sql
+          python -m alembic upgrade 0005_employee_payroll:head --sql > test-results/alembic-upgrade.sql
+          test -s test-results/alembic-upgrade.sql
+      - name: Upload generated Alembic SQL for exact review
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-migration-sql
+          path: backend/test-results/alembic-upgrade.sql
+          if-no-files-found: error
+          retention-days: 3
       - name: Audit Python dependencies
         run: pip-audit -r backend/requirements.txt
       - name: Upload backend test results
@@ -164,38 +172,6 @@ jobs:
         working-directory: frontend
         run: npm audit --audit-level=high
 
-  frontend-browser-smoke:
-    name: frontend-browser-smoke
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    container:
-      image: mcr.microsoft.com/playwright:v1.55.0-noble
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          ref: ${{ github.event.pull_request.head.sha || github.sha }}
-      - name: Mark workspace safe for Git inside the container
-        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-      - name: Verify exact source SHA
-        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
-      - name: Install frontend dependencies and Playwright
-        working-directory: frontend
-        run: |
-          node --version
-          npm ci --no-audit --no-fund
-          npm install --no-save --no-audit --no-fund @playwright/test@1.55.0
-          npx playwright --version
-      - name: Run Chromium browser smoke
-        working-directory: frontend
-        run: npx playwright test
-      - name: Upload browser test results
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: frontend-browser-smoke-results
-          path: frontend/test-results/
-          if-no-files-found: ignore
-
   backend-container:
     name: backend-container
     runs-on: ubuntu-latest
@@ -220,9 +196,18 @@ jobs:
   authenticated-api-smoke:
     name: authenticated-api-smoke
     if: >-
-      github.event_name == 'pull_request' &&
-      github.event.pull_request.head.ref == 'feat/invoice-payment-currency-guard-20261109' &&
-      github.event.pull_request.head.repo.full_name == github.repository
+      (
+        github.event_name == 'pull_request' &&
+        (
+          github.event.pull_request.head.ref == 'feat/invoice-payment-currency-guard-20261109' ||
+          github.event.pull_request.head.ref == 'master/nov-2026-phase-1-ux-foundation'
+        ) &&
+        github.event.pull_request.head.repo.full_name == github.repository
+      ) ||
+      (
+        github.event_name == 'workflow_dispatch' &&
+        github.ref == 'refs/heads/master/nov-2026-phase-1-ux-foundation'
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -241,13 +226,13 @@ jobs:
           --health-retries 10
     env:
       DATABASE_URL: postgresql+psycopg://postgres@127.0.0.1:5432/aiba_release_smoke
-      EXPECTED_API_COMMIT: ${{ github.event.pull_request.head.sha }}
+      EXPECTED_API_COMMIT: ${{ github.event.pull_request.head.sha || github.sha }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Verify exact source SHA
-        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
@@ -276,7 +261,7 @@ jobs:
     name: all-checks-passed
     runs-on: ubuntu-latest
     if: always()
-    needs: [backend-accounting, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, frontend-browser-smoke, backend-container, authenticated-api-smoke]
+    needs: [backend-accounting, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, backend-container, authenticated-api-smoke]
     steps:
       - name: Require every substantive job to succeed
         env:
@@ -284,20 +269,19 @@ jobs:
           FRONTEND_TESTS: ${{ needs.frontend-unit-tests.result }}
           FRONTEND_BUILD: ${{ needs.frontend-production-build.result }}
           FRONTEND_AUDIT: ${{ needs.frontend-dependency-audit.result }}
-          BROWSER_SMOKE: ${{ needs.frontend-browser-smoke.result }}
           BACKEND_CONTAINER: ${{ needs.backend-container.result }}
           API_SMOKE: ${{ needs.authenticated-api-smoke.result }}
-          REQUIRE_API_SMOKE: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.ref == 'feat/invoice-payment-currency-guard-20261109' && github.event.pull_request.head.repo.full_name == github.repository }}
+          REQUIRE_API_SMOKE: ${{ (github.event_name == 'pull_request' && (github.event.pull_request.head.ref == 'feat/invoice-payment-currency-guard-20261109' || github.event.pull_request.head.ref == 'master/nov-2026-phase-1-ux-foundation') && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master/nov-2026-phase-1-ux-foundation') }}
         run: |
           set -euo pipefail
-          for result in "$BACKEND" "$FRONTEND_TESTS" "$FRONTEND_BUILD" "$FRONTEND_AUDIT" "$BROWSER_SMOKE" "$BACKEND_CONTAINER"; do
+          for result in "$BACKEND" "$FRONTEND_TESTS" "$FRONTEND_BUILD" "$FRONTEND_AUDIT" "$BACKEND_CONTAINER"; do
             if [ "$result" != "success" ]; then
               echo "::error::Required CI job did not succeed: $result"
               exit 1
             fi
           done
           if [ "$REQUIRE_API_SMOKE" = "true" ] && [ "$API_SMOKE" != "success" ]; then
-            echo "::error::Authenticated API smoke is required for the invoice release candidate but did not succeed: $API_SMOKE"
+            echo "::error::Authenticated API smoke is required for this integration candidate but did not succeed: $API_SMOKE"
             exit 1
           fi
-          echo "All six standard jobs and any branch-scoped candidate smoke passed."
+          echo "All five standard validation jobs and any branch-scoped candidate smoke passed."

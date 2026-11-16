@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import os
 from uuid import UUID
 
 import pytest
@@ -8,7 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.models import AuditEvent, Base, BusinessInvitation, BusinessMembership, MembershipRole
+from app.models import AuditEvent, Base, Business, BusinessInvitation, BusinessMembership, MembershipRole
 from app.security import AuthenticatedPrincipal
 
 
@@ -263,3 +264,81 @@ def test_invitation_limits_prevent_unbounded_owner_creation(invitation_client):
         json={"email": "staff6@example.com"},
     )
     assert limited.status_code == 429
+
+
+def test_concurrent_invitation_acceptance_is_single_use_in_postgres():
+    """Two verified accounts racing one invitation must yield one STAFF membership."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    if os.getenv("CI_ALLOW_DATABASE_SCHEMA_TESTS") != "true":
+        pytest.skip("requires the isolated PostgreSQL CI service")
+    database_url = os.getenv("TEST_DATABASE_URL", "").strip()
+    if not database_url:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    engine = create_engine(database_url, pool_size=5, max_overflow=5, pool_pre_ping=True)
+    if engine.dialect.name != "postgresql" or not (engine.url.database or "").endswith("_test"):
+        engine.dispose()
+        pytest.skip("concurrency regression requires a disposable PostgreSQL *_test database")
+
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("workspace-owner")
+    try:
+        owner_client = TestClient(app)
+        business_id = create_workspace(owner_client)
+        invitation = create_invitation(owner_client, business_id)
+
+        def resolve_verified_staff(request):
+            subject = request.headers.get("X-Test-Identity", "").strip()
+            return AuthenticatedPrincipal(
+                f"firebase:test-project:{subject}",
+                email="staff@example.com",
+                email_verified=True,
+            )
+
+        app.state.principal_resolver = resolve_verified_staff
+        clients = [("staff-one", TestClient(app)), ("staff-two", TestClient(app))]
+
+        def accept(item):
+            subject, client = item
+            response = client.post(
+                "/api/v1/invitations/accept",
+                headers={"X-Test-Identity": subject},
+                json={"token": invitation["token"]},
+            )
+            return subject, response
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            results = list(pool.map(accept, clients))
+        accepted = [(subject, response) for subject, response in results if response.status_code == 201]
+        rejected = [response for _, response in results if response.status_code == 410]
+        assert len(accepted) == 1
+        assert len(rejected) == 1
+
+        with Session(engine) as session:
+            members = session.scalars(select(BusinessMembership).where(
+                BusinessMembership.business_id == UUID(business_id),
+                BusinessMembership.role == MembershipRole.STAFF,
+            )).all()
+            stored = session.get(BusinessInvitation, UUID(invitation["id"]))
+            accepted_events = session.scalars(select(AuditEvent).where(
+                AuditEvent.business_id == UUID(business_id),
+                AuditEvent.action == "membership.invitation_accepted",
+            )).all()
+        assert len(members) == 1
+        assert stored.status == "accepted"
+        assert stored.accepted_subject == f"firebase:test-project:{accepted[0][0]}"
+        assert len(accepted_events) == 1
+    finally:
+        if previous_factory is None:
+            if hasattr(app.state, "session_factory"):
+                del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            if hasattr(app.state, "principal_resolver"):
+                del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        engine.dispose()

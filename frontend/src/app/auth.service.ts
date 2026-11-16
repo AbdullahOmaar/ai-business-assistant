@@ -116,6 +116,15 @@ export class AuthService {
     return credential.user;
   }
 
+  async signInWithCustomToken(customToken: string): Promise<User> {
+    if (!customToken.trim()) throw new Error('Demo sign-in token is missing.');
+    await this.initialize();
+    const { auth } = await this.loadFirebaseModules();
+    const credential = await auth.signInWithCustomToken(this.auth!, customToken);
+    this.updateUser(credential.user);
+    return credential.user;
+  }
+
   async signUp(email: string, password: string): Promise<User> {
     await this.initialize();
     const { auth } = await this.loadFirebaseModules();

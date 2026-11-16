@@ -943,7 +943,8 @@ def test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scop
         order = listed_orders.json()[0]
         assert order["id"] == order_id
         assert order["lines"][0]["remaining_quantity"] == "2.000"
-        received = client.post(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive", json={
+        received = client.post(f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive",
+                                headers={"Idempotency-Key": str(uuid4())}, json={
             "lines": [{"line_id": order["lines"][0]["id"], "quantity": "1.000"}],
         })
         assert received.status_code == 200, received.text
@@ -1771,6 +1772,7 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
         before_foreign_receive = all_business_rows()
         foreign_receive = client.post(
             f"{base_a}/purchase-orders/{resources_b['order_id']}/receive",
+            headers={"Idempotency-Key": str(uuid4())},
             json={
                 "lines": [{
                     "line_id": str(foreign_line_id),
@@ -1779,7 +1781,7 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
             },
         )
         assert foreign_receive.status_code == 422, foreign_receive.text
-        assert foreign_receive.json()["detail"] == "Purchase order is not available for receiving"
+        assert foreign_receive.json()["detail"] == "Purchase order not found in this business"
         assert all_business_rows() == before_foreign_receive, (
             "Foreign purchase-order receiving changed persisted tenant rows or AuditEvent"
         )

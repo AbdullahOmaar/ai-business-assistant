@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
+import { LocalizationService } from '../../localization.service';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { AbaStateMessageComponent } from './aba-state-message.component';
 
 export interface AbaRecordTableColumn { key:string; label:string; primary?:boolean; kind?:'text'|'numeric'|'status'; }
@@ -21,7 +22,7 @@ export interface AbaRecordTableActionEvent { rowId:string; actionId:string; anch
             <caption class="aba-record-table__visually-hidden">{{ariaLabel()}}</caption>
             <thead><tr>
               @for(column of columns();track column.key){<th scope="col" [attr.aria-sort]="sortAria(column.key)"><button class="aba-record-table__sort-button" type="button" (click)="toggleSort(column)" [attr.aria-label]="column.label" [attr.aria-pressed]="isSortActive(column.key)"><span>{{column.label}}</span><span class="aba-record-table__sort-indicator" aria-hidden="true">{{sortIndicator(column.key)}}</span></button></th>}
-              @if(hasActions){<th scope="col">{{actionsHeading()}}</th>}
+              @if(hasActions){<th scope="col">{{resolvedActionsHeading()}}</th>}
             </tr></thead>
             <tbody>
               @for(row of sortedRows;track row.id){
@@ -68,7 +69,9 @@ export class AbaRecordTableComponent {
   readonly loadingDescription=input('Loading records…');
   readonly emptyTitle=input('No records');
   readonly emptyDescription=input('There are no records to display.');
-  readonly actionsHeading=input('Actions');
+  readonly actionsHeading=input('');
+  private readonly localization=inject(LocalizationService);
+  readonly resolvedActionsHeading=computed(()=>this.actionsHeading()||this.localization.translate('ui.actions'));
   readonly rowAction=output<AbaRecordTableActionEvent>();
   private activeSortKey = '';
   private sortDirection: 'asc' | 'desc' = 'asc';

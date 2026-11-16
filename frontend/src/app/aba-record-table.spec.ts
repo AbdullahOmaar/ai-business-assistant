@@ -8,6 +8,9 @@ const appRaw=readFileSync(new URL('./app.component.ts',import.meta.url),'utf8');
 const app=expandTranslationCalls(appRaw);
 const customerDirectory=readFileSync(new URL('./customer-directory.component.ts',import.meta.url),'utf8');
 const productCatalog=readFileSync(new URL('./product-catalog.component.ts',import.meta.url),'utf8');
+const customerWorkspace=readFileSync(new URL('./customer-workspace.component.ts',import.meta.url),'utf8');
+const productWorkspace=readFileSync(new URL('./product-workspace.component.ts',import.meta.url),'utf8');
+const purchasingWorkspace=readFileSync(new URL('./purchasing-workspace.component.ts',import.meta.url),'utf8');
 test('shared record table exposes semantic columns and stable row actions',()=>{
   assert.match(component,/<table>/);assert.match(component,/<caption class="aba-record-table__visually-hidden">/);
   assert.match(component,/<th scope="col" \[attr\.aria-sort\]="sortAria\(column\.key\)"/);assert.match(component,/<th scope="row"/);
@@ -26,30 +29,33 @@ test('phone layout renders labeled record cards with touch-sized row actions',()
   assert.match(css,/\.aba-record-table table\{display:block;min-width:0/);
   assert.match(css,/\.aba-record-table__action\{[^}]*min-height:44px/);
 });
-test('Customers and Products use dedicated presentations while Suppliers and Purchasing retain the shared record contract',()=>{
-  assert.match(app,/<aba-customer-directory[^>]*\[customers\]="filteredCustomers"/);
+test('Customers, Products and Purchasing use dedicated workspaces while Suppliers retain the shared record contract',()=>{
+  assert.match(app,/<aba-customer-workspace/);assert.match(customerWorkspace,/<aba-customer-directory[\s\S]*?\[customers\]="customers\(\)"/);
   assert.doesNotMatch(app,/customerTableRows|customerTableColumns/);
-  assert.match(app,/<aba-product-catalog[^>]*\[products\]="filteredProducts"/);
+  assert.match(app,/<aba-product-workspace/);assert.match(productWorkspace,/<aba-product-catalog[\s\S]*?\[products\]="products\(\)"/);
   assert.doesNotMatch(app,/productTableRows|productTableColumns/);
-  for(const key of ['supplierTableRows','purchaseTableRows'])assert.ok(app.includes('[rows]="'+key+'"'));
-  assert.match(app,/business\?\.role==='owner'\s*\?\s*this\.canApprovePurchaseOrder\(order\)\s*\?\s*\[\{id:'approve'/);
-  assert.match(app,/this\.canReceivePurchaseOrder\(order\)\s*\?\s*\[\{id:'receive'/);
-  assert.match(app,/this\.requestPurchaseOrderApproval\(order,action\.anchor\)/);
-  assert.match(app,/this\.requestPurchaseOrderReceipt\(order,action\.anchor\)/);
+  assert.ok(app.includes('[rows]="supplierTableRows"'));
+  assert.match(app,/<aba-purchasing-workspace/);
+  assert.ok(purchasingWorkspace.includes('this.api.purchaseOrders'));
+  assert.ok(purchasingWorkspace.includes('this.api.purchaseOrderDetail'));
+  assert.ok(purchasingWorkspace.includes('this.api.purchaseOrderReceipts'));
+  assert.ok(purchasingWorkspace.includes('this.api.purchaseOrderActivity'));
+  assert.ok(purchasingWorkspace.includes('this.api.approvePurchaseOrder'));
+  assert.ok(purchasingWorkspace.includes('this.api.receivePurchaseOrder'));
 });
 
 test('record table labels and loading states follow the selected app locale',()=>{
   assert.ok(app.includes('Loading customers') || app.includes('Loading suppliers'));
-  assert.ok(app.includes('Loading purchase orders'));
-  assert.match(app, /actionsHeading.*t\('الإجراءات',\s*'Actions'\)/);
+  assert.ok(purchasingWorkspace.includes("t('loading')"));
+  assert.ok(purchasingWorkspace.includes("this.localization.translate('purchasingWorkspace.' + key)"));
+  assert.match(component, /resolvedActionsHeading/);
+  assert.match(component, /this\.localization\.translate\('ui\.actions'\)/);
   assert.match(customerDirectory, /t\('customerDirectory\.m_/);
   assert.match(productCatalog, /t\('productCatalog\.m_/);
   assert.match(appRaw, /t\('ui\.m_/);
-  assert.match(appRaw, /purchaseOrder/);
   assert.match(customerDirectory, /customerDirectory\.m_/);
   assert.match(productCatalog, /productCatalog\.m_/);
 });
-
 
 test('record dates remain localized after moving legacy lists into tables', () => {
   for (const fragment of [

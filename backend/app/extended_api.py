@@ -4,6 +4,8 @@ No endpoint accepts an identity from request data. All business routes fail clos
 unless the host has configured a trusted principal resolver and database session.
 """
 import csv
+import hashlib
+import json
 import io
 import os
 import re
@@ -12,7 +14,7 @@ from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Response
+from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy import func, or_, select, text
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
@@ -22,7 +24,7 @@ from app.dependencies import get_principal, get_session
 from app.data_exchange import CsvValidationError, parse_import_csv
 from app.models import (
     AuditEvent, Business, BusinessSetting, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
-    Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule,
+    Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, PurchaseReceiptIdempotency, RecurringInvoiceSchedule,
     SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
 from app.core_features_api import _day_bounds
@@ -430,52 +432,160 @@ def approve_purchase_order(business_id: UUID, order_id: UUID,
 
 
 @router.post("/purchase-orders/{order_id}/receive")
-def receive_purchase_order(business_id: UUID, order_id: UUID, body: ReceivePurchaseInput,
-                           session: Session = Depends(get_session),
-                           principal: AuthenticatedPrincipal = Depends(get_principal)):
+def receive_purchase_order(
+    business_id: UUID,
+    order_id: UUID,
+    body: ReceivePurchaseInput,
+    idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Apply one receipt exactly once and replay the original result on safe retries."""
+    request_hash: str | None = None
+
     def op():
+        nonlocal request_hash
         _authorized(session, principal, business_id, owner_only=True)
         po = session.scalars(select(PurchaseOrder).where(
-            PurchaseOrder.id == order_id, PurchaseOrder.business_id == business_id,
-        ).with_for_update()).one_or_none()
-        if po is None or po.status not in {"approved", "partially_received"}:
-            raise WorkflowError("Purchase order is not available for receiving")
-        if not body.lines:
-            raise WorkflowError("At least one received quantity is required")
+            PurchaseOrder.id == order_id,
+            PurchaseOrder.business_id == business_id,
+        ).with_for_update().execution_options(populate_existing=True)).one_or_none()
+        if po is None:
+            raise WorkflowError("Purchase order not found in this business")
+        if not idempotency_key:
+            raise HTTPException(status_code=422, detail="A canonical UUID Idempotency-Key header is required.")
+        try:
+            parsed_key = UUID(idempotency_key)
+        except (ValueError, TypeError, AttributeError) as exc:
+            raise HTTPException(status_code=422, detail="Idempotency-Key must be a canonical UUID.") from exc
+        if str(parsed_key) != idempotency_key:
+            raise HTTPException(status_code=422, detail="Idempotency-Key must be a lowercase canonical UUID.")
+
+        requested_by_line: dict[UUID, Decimal] = {}
         for item in body.lines:
-            if item.quantity <= ZERO:
-                raise WorkflowError("Received quantity must be positive")
-            line = session.scalars(select(PurchaseOrderLine).where(
-                PurchaseOrderLine.id == item.line_id,
-                PurchaseOrderLine.purchase_order_id == po.id,
-                PurchaseOrderLine.business_id == business_id,
-            ).with_for_update()).one_or_none()
-            if line is None or line.received_quantity + item.quantity > line.quantity:
-                raise WorkflowError("Received quantity exceeds ordered quantity or line is invalid")
-            product = session.scalars(select(Product).where(
-                Product.id == line.product_id, Product.business_id == business_id,
-                Product.is_stock_tracked.is_(True),
-            ).with_for_update()).one_or_none()
-            if product is None:
-                raise WorkflowError("Stock-tracked product not found")
-            line.received_quantity += item.quantity
-            session.add(StockMovement(
-                business_id=business_id, product_id=product.id, movement_type="receipt",
-                quantity_delta=item.quantity, reason=f"Purchase order {po.order_number}",
-                reference_type="purchase_order", reference_id=po.id,
-                created_by_subject=principal.subject,
-            ))
+            requested_by_line[item.line_id] = requested_by_line.get(item.line_id, ZERO) + item.quantity
+        canonical_payload = {
+            "lines": [
+                {"line_id": str(line_id), "quantity": format(quantity.normalize(), "f")}
+                for line_id, quantity in sorted(requested_by_line.items(), key=lambda pair: str(pair[0]))
+            ]
+        }
+        request_hash = hashlib.sha256(
+            json.dumps(canonical_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+
+        previous = session.scalars(select(PurchaseReceiptIdempotency).where(
+            PurchaseReceiptIdempotency.business_id == business_id,
+            PurchaseReceiptIdempotency.purchase_order_id == order_id,
+            PurchaseReceiptIdempotency.idempotency_key == idempotency_key,
+        ).with_for_update().execution_options(populate_existing=True)).one_or_none()
+        if previous is not None:
+            if previous.request_hash != request_hash:
+                raise HTTPException(status_code=409, detail="Idempotency-Key was already used with a different receipt payload.")
+            return previous.response_snapshot
+
+        if po.status not in {"approved", "partially_received"}:
+            raise WorkflowError("Purchase order is not available for receiving")
+        if not requested_by_line:
+            raise WorkflowError("At least one received quantity is required")
+
+        line_ids = list(requested_by_line)
         lines = session.scalars(select(PurchaseOrderLine).where(
+            PurchaseOrderLine.id.in_(line_ids),
             PurchaseOrderLine.purchase_order_id == po.id,
             PurchaseOrderLine.business_id == business_id,
-        )).all()
-        po.status = "received" if all(x.received_quantity == x.quantity for x in lines) else "partially_received"
-        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
-            action="purchase_order.received", target_type="purchase_order", target_id=str(po.id)))
+        ).order_by(PurchaseOrderLine.id).with_for_update().execution_options(populate_existing=True)).all()
+        by_line_id = {line.id: line for line in lines}
+        if len(by_line_id) != len(requested_by_line):
+            raise WorkflowError("Every receipt line must belong to this purchase order and business")
+        for line_id, quantity in requested_by_line.items():
+            line = by_line_id[line_id]
+            if quantity <= ZERO or line.received_quantity + quantity > line.quantity:
+                raise WorkflowError("Received quantity must be positive and cannot exceed ordered quantity")
+
+        product_ids = sorted({line.product_id for line in lines}, key=str)
+        products = session.scalars(select(Product).where(
+            Product.id.in_(product_ids),
+            Product.business_id == business_id,
+            Product.is_stock_tracked.is_(True),
+        ).order_by(Product.id).with_for_update().execution_options(populate_existing=True)).all()
+        by_product_id = {product.id: product for product in products}
+        if len(by_product_id) != len(product_ids):
+            raise WorkflowError("Every received purchase line must reference a stock-tracked product in this business")
+
+        # Claim the key before stock/audit side effects. The unique database
+        # constraint is the final arbiter for concurrent requests using one key.
+        receipt_claim = PurchaseReceiptIdempotency(
+            business_id=business_id,
+            purchase_order_id=po.id,
+            idempotency_key=idempotency_key,
+            request_hash=request_hash,
+            response_snapshot={},
+        )
+        session.add(receipt_claim)
         session.flush()
-        return po
-    po = _commit(session, op)
-    return _dict(po, ("id", "order_number", "status", "total", "currency_code"))
+
+        # Lock all lines and products in stable ID order before writing any receipt effects.
+        for line in lines:
+            quantity = requested_by_line[line.id]
+            product = by_product_id[line.product_id]
+            line.received_quantity += quantity
+            session.add(StockMovement(
+                business_id=business_id,
+                product_id=product.id,
+                movement_type="receipt",
+                quantity_delta=quantity,
+                reason=f"Purchase order {po.order_number}",
+                reference_type="purchase_order",
+                reference_id=po.id,
+                created_by_subject=principal.subject,
+            ))
+
+        all_lines = session.scalars(select(PurchaseOrderLine).where(
+            PurchaseOrderLine.purchase_order_id == po.id,
+            PurchaseOrderLine.business_id == business_id,
+        ).order_by(PurchaseOrderLine.id)).all()
+        po.status = "received" if all(line.received_quantity == line.quantity for line in all_lines) else "partially_received"
+        session.add(AuditEvent(
+            business_id=business_id,
+            actor_subject=principal.subject,
+            action="purchase_order.received",
+            target_type="purchase_order",
+            target_id=str(po.id),
+            change_summary=f"Receipt {idempotency_key} applied; {po.status}",
+        ))
+        session.flush()
+        response_snapshot = _dict(po, ("id", "order_number", "status", "total", "currency_code"))
+        receipt_claim.response_snapshot = response_snapshot
+        session.flush()
+        return response_snapshot
+
+    try:
+        return _commit(session, op)
+    except HTTPException as exc:
+        # A concurrent request with the same key may win the unique insert after
+        # both transactions observed no prior receipt. Re-read after rollback and
+        # replay only when the committed payload hash matches exactly.
+        if exc.status_code != 409 or request_hash is None:
+            raise
+        session.rollback()
+        try:
+            _authorized(session, principal, business_id, owner_only=True)
+        except AuthorizationError as auth_exc:
+            raise HTTPException(status_code=403, detail=str(auth_exc)) from auth_exc
+        previous = session.scalars(select(PurchaseReceiptIdempotency).where(
+            PurchaseReceiptIdempotency.business_id == business_id,
+            PurchaseReceiptIdempotency.purchase_order_id == order_id,
+            PurchaseReceiptIdempotency.idempotency_key == idempotency_key,
+        ).execution_options(populate_existing=True)).one_or_none()
+        if previous is None:
+            raise
+        if previous.request_hash != request_hash:
+            raise HTTPException(
+                status_code=409,
+                detail="Idempotency-Key was already used with a different receipt payload.",
+            ) from exc
+        return previous.response_snapshot
 
 
 @router.post("/sales-returns", status_code=201)

@@ -14,6 +14,9 @@ const stateMessageSource = expandTranslationCalls(readFileSync(new URL('./shared
 const recordTableSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-record-table.component.ts', import.meta.url), 'utf8'));
 const quickAccessSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8'));
 const workspaceLoadGuardSource = expandTranslationCalls(readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8'));
+const customerWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./customer-workspace.component.ts', import.meta.url), 'utf8'));
+const purchasingWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./purchasing-workspace.component.ts', import.meta.url), 'utf8'));
+const customerEditorSource = expandTranslationCalls(readFileSync(new URL('./customer-editor.component.ts', import.meta.url), 'utf8'));
 const auditLabelsSource = expandTranslationCalls(readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8'));
 const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
 
@@ -162,7 +165,8 @@ test('API requests abort when the backend stalls instead of blocking workspace s
   assert.match(apiSource, /15_000/);
   assert.match(apiSource, /signal: controller\.signal/);
   assert.match(apiSource, /The request timed out/);
-  const timeoutStart = apiSource.indexOf('const timeoutId = setTimeout');
+  const requestStart = apiSource.indexOf('private async request<T>');
+  const timeoutStart = apiSource.indexOf('const timeoutId = setTimeout', requestStart);
   const responseRead = apiSource.indexOf('return await response.json() as T;', timeoutStart);
   const timeoutClear = apiSource.indexOf('clearTimeout(timeoutId)', timeoutStart);
   assert.ok(timeoutStart >= 0 && responseRead > timeoutStart && timeoutClear > responseRead,
@@ -637,24 +641,17 @@ test('operations forms distinguish successful mutations from failed list refresh
   assert.match(helpers, /The operation succeeded, but the list could not be refreshed/);
   const notification = source.slice(source.indexOf('async createNotification()'), source.indexOf('private async loadSuppliers()'));
   const supplier = source.slice(source.indexOf('async createSupplier()'), source.indexOf('async createPurchaseOrder()'));
-  const purchaseStart = source.indexOf('async createPurchaseOrder()');
-  const purchaseEnd = source.indexOf('  hasRemainingQuantity(', purchaseStart);
-  const purchase = source.slice(purchaseStart, purchaseEnd);
-  const receivingStart = source.indexOf('async confirmPurchaseOrderReceipt()');
-  const receivingEnd = source.indexOf('async createRecurringSchedule()', receivingStart);
-  const receiving = source.slice(receivingStart, receivingEnd);
   const recurring = source.slice(source.indexOf('async createRecurringSchedule()'), source.indexOf('get maxIntegrityTotal()'));
-  for (const method of [notification, supplier, purchase, receiving, recurring]) {
+  for (const method of [notification, supplier, recurring]) {
     assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/,
       'stale operation completions must not update the newly selected workspace');
   }
   assert.match(notification, /delivery to recipients is not confirmed/);
-  assert.match(purchase, /No quantities have been received yet/);
   assert.match(recurring, /does not generate invoices automatically/);
-  assert.match(receiving, /Receiving was recorded/);
-  assert.match(source, /operationsMessageTab === 'notifications'/);
-  assert.match(source, /operationsMessageTab === 'suppliers'/);
-  assert.match(source, /operationsMessageTab === 'purchases'/);
+  assert.ok(purchasingWorkspaceSource.includes('this.isCurrent(this.listGuard, version, requested)'));
+  assert.ok(purchasingWorkspaceSource.includes('this.isCurrent(this.actionGuard, version, requested)'));
+  assert.ok(purchasingWorkspaceSource.includes('this.api.receivePurchaseOrder'));
+  assert.ok(purchasingWorkspaceSource.includes("this.success.set(this.t('receivedSaved'))"));
 });
 
 test('invoice void confirmation is localized and uses the accessible shared dialog', () => {
@@ -710,7 +707,10 @@ test('payment completion cannot clear the loading state of a newly selected work
 test('invalid authentication, workspace, customer, invoice, payment and expense forms cannot invoke mutations', () => {
   assert.match(source, /<form #authForm="ngForm"/);
   assert.match(source, /<form #workspaceForm="ngForm"/);
-  assert.match(source, /<form #customerForm="ngForm"/);
+  assert.match(source, /<aba-customer-workspace/);
+  assert.match(customerWorkspaceSource, /<form class="customer-workspace__search"[^>]*\(submit\)="submitSearch\(\$event\)"/);
+  assert.match(customerEditorSource, /<form \(submit\)="submit\(\$event\)"/);
+  assert.match(customerEditorSource, /if \(!name \|\| this\.emailInvalid\(\) \|\| this\.busy\(\)\) return/);
   assert.match(source, /<form #expenseForm="ngForm"/);
   const paymentStart = source.indexOf('<form #paymentForm="ngForm"');
   const paymentEnd = source.indexOf('</form>', paymentStart);
@@ -732,28 +732,28 @@ test('product form exposes accessible required, non-negative price and condition
   assert.ok(start >= 0 && end > start);
   assert.match(form, /\(ngSubmit\)="productForm\.valid && createProduct\(\)"/);
   assert.match(form, /#productNameModel="ngModel"/);
+  assert.match(form, /name="productSku" maxlength="80"/);
+  assert.match(form, /name="productDescription"[^>]*maxlength="1000"/);
+  assert.match(form, /name="productUnit" maxlength="32" required/);
   assert.match(form, /id="product-name-error" class="field-error" aria-live="polite"/);
   assert.match(form, /#productPriceModel="ngModel"/);
-  assert.match(form, /type="number" min="0" step="0\.01"/);
+  assert.match(form, /name="productPrice" type="text" inputmode="decimal" pattern=/);
+  assert.match(form, /name="productOpeningQuantity" type="text" inputmode="decimal" pattern=/);
   assert.match(form, /id="product-price-error" class="field-error" aria-live="polite"/);
   assert.match(form, /#productOpeningQuantityModel="ngModel"/);
   assert.match(form, /id="product-opening-quantity-error" class="field-error" aria-live="polite"/);
 });
 
 
-test('customer creation preserves confirmed success and prevents stale workspace refreshes', () => {
-  const start = source.indexOf('async createCustomer(): Promise<void>');
-  const end = source.indexOf('async onImportFileSelected(', start);
-  const method = source.slice(start, end);
-  assert.ok(start >= 0 && end > start);
-  assert.match(method, /const businessId = this\.business\.id/);
-  assert.match(method, /this\.api\.createCustomer\(businessId/);
-  assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/);
-  assert.match(method, /Customer saved successfully/);
-  assert.match(method, /The customer was saved, but the list could not refresh/);
-  assert.match(method, /Do not add the customer again/);
-  assert.match(method, /finally \{\s*if \(this\.business\?\.id === businessId\) this\.loading = false;/);
-  assert.match(source, /<aba-state-message \[kind\]="customerMessageKind" \[description\]="customerMessage" \/>/);
+test('customer workspace is mounted with safe invoice and statement host callbacks', () => {
+  assert.match(source, /<aba-customer-workspace/);
+  assert.match(source, /\(invoicesRequested\)="createInvoiceForCustomer\(\$event\)"/);
+  assert.match(source, /\(statementRequested\)="openCustomerStatementById\(\$event\)"/);
+  assert.match(source, /createInvoiceForCustomer\(customerId: string\)/);
+  assert.match(source, /openCustomerStatementById\(customerId: string\)/);
+  assert.match(customerWorkspaceSource, /this\.api\.createCustomer\(requested\.businessId, value\)/);
+  assert.match(customerWorkspaceSource, /this\.api\.updateCustomer\(requested\.businessId, editingId, value\)/);
+  assert.match(customerWorkspaceSource, /this\.isCurrent\(this\.saveGuard/);
 });
 
 test('product creation distinguishes saved stock setup from a failed list refresh', () => {
@@ -763,6 +763,17 @@ test('product creation distinguishes saved stock setup from a failed list refres
   assert.ok(start >= 0 && end > start);
   assert.match(method, /const businessId = this\.business\.id/);
   assert.match(method, /this\.api\.createProduct\(businessId/);
+  assert.match(method, /sku: this\.productSku\.trim\(\) \|\| undefined/);
+  assert.match(method, /description: this\.productDescription\.trim\(\) \|\| undefined/);
+  assert.match(method, /unit: this\.productUnit\.trim\(\) \|\| 'unit'/);
+  assert.match(method, /if \(!this\.productName\.trim\(\)\)/);
+  assert.match(method, /if \(!this\.productUnit\.trim\(\)\)/);
+  assert.match(method, /unit_price: unitPrice/);
+  assert.match(method, /opening_quantity: openingQuantity/);
+  assert.match(source, /replace\(\/\[٠-٩\]\/g/);
+  assert.match(source, /replace\(\/\[۰-۹\]\/g/);
+  assert.match(source, /replace\(\/٫\/g, '\.'\)/);
+  assert.doesNotMatch(method, /Number\(this\.productPrice\)|toFixed\(2\)/);
   assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/);
   assert.match(method, /Product saved successfully/);
   assert.match(method, /The product was saved, but the list could not refresh/);
@@ -786,8 +797,12 @@ test('positive opening stock is OWNER-only while STAFF can create tracked produc
   const createStart = source.indexOf('async createProduct(): Promise<void>');
   const createEnd = source.indexOf('get invoicePreview()', createStart);
   const createMethod = source.slice(createStart, createEnd);
-  assert.match(createMethod, /opening_quantity: this\.stockTracked && this\.business\.role === 'owner' \? this\.productOpeningQuantity : '0'/,
-    'non-owners and unresolved roles must submit zero opening stock');
+  assert.match(createMethod, /const openingQuantity = this\.stockTracked && this\.business\.role === 'owner'/,
+    'only owners may submit a positive opening quantity');
+  assert.match(createMethod, /opening_quantity: openingQuantity/,
+    'the validated decimal-string quantity must be sent without floating-point conversion');
+  assert.match(createMethod, /unit_price: unitPrice/,
+    'the validated decimal-string unit price must be sent without floating-point conversion');
 
   const resetStart = source.indexOf('private clearWorkspaceData(): void');
   const resetEnd = source.indexOf('\n  }', resetStart);
@@ -990,7 +1005,10 @@ test('CSV import preview and write controls are owner-only without restricting m
     assert.match(method, /this\.business\?\.role !== 'owner'|this\.business\.role !== 'owner'/,
       startMarker + ' must fail closed for non-owners');
   }
-  assert.match(source, /<form #customerForm="ngForm"[^>]*createCustomer\(\)/);
+  assert.match(customerWorkspaceSource, /<aba-customer-editor/);
+  assert.match(customerWorkspaceSource, /this\.api\.createCustomer\(requested\.businessId, value\)/);
+  assert.match(customerWorkspaceSource, /readonly role = input\.required<'owner' \| 'staff'>\(\)/);
+  assert.match(customerEditorSource, /<form \(submit\)="submit\(\$event\)"/);
   assert.match(source, /<form #productForm="ngForm"[^>]*createProduct\(\)/);
 });
 
@@ -1035,28 +1053,16 @@ test('purchase-order status labels are localized in the list and available to lo
 });
 
 test('purchase orders remain creatable by members while approval, receiving and payment writes are owner-only', () => {
-  const purchaseStart = source.indexOf("@if (tab === 'purchases')");
-  const purchaseEnd = source.indexOf("@if (tab === 'recurring')", purchaseStart);
-  const purchaseView = source.slice(purchaseStart, purchaseEnd);
-  assert.match(purchaseView, /<form #purchaseForm="ngForm" class="stack" \(ngSubmit\)="purchaseForm\.valid && createPurchaseOrder\(\)">/);
-  assert.match(purchaseView, /<aba-record-table[^>]*\[rows\]="purchaseTableRows"[^>]*\(rowAction\)="onPurchaseRecordAction\(\$event\)"/);
-  assert.match(source, /actions:this\.business\?\.role==='owner'\s*\?\s*this\.canApprovePurchaseOrder\(order\)\s*\?\s*\[\{id:'approve'/);
-  assert.match(source, /this\.canReceivePurchaseOrder\(order\)\s*\?\s*\[\{id:'receive'/);
-  const actionStart = source.indexOf('onPurchaseRecordAction(action:AbaRecordTableActionEvent):void {');
-  const actionEnd = source.indexOf('\n  }', actionStart);
-  const purchaseAction = source.slice(actionStart, actionEnd);
-  assert.ok(actionStart >= 0 && actionEnd > actionStart, 'purchase row action handler must exist');
-  assert.match(purchaseAction, /this\.business\?\.role!=='owner'/);
-  assert.match(purchaseAction, /action\.actionId==='approve'&&this\.canApprovePurchaseOrder\(order\)/);
-  assert.match(purchaseAction, /this\.requestPurchaseOrderApproval\(order,action\.anchor\)/);
-  assert.match(purchaseAction, /action\.actionId==='receive'&&this\.canReceivePurchaseOrder\(order\)/);
-  assert.match(purchaseAction, /this\.requestPurchaseOrderReceipt\(order,action\.anchor\)/);
-
-  const receiveStart = source.indexOf('async confirmPurchaseOrderReceipt(): Promise<void>');
-  const receiveEnd = source.indexOf('async createRecurringSchedule()', receiveStart);
-  const receive = source.slice(receiveStart, receiveEnd);
-  assert.match(receive, /this\.business\.role !== 'owner'/);
-  assert.match(receive, /!this\.canReceivePurchaseOrder\(order\)/);
+  assert.ok(purchasingWorkspaceSource.includes("startCreate(): void"));
+  assert.ok(purchasingWorkspaceSource.includes("this.api.createPurchaseOrder"));
+  assert.ok(purchasingWorkspaceSource.includes("async saveDraft(): Promise<void>"));
+  assert.ok(purchasingWorkspaceSource.includes("canEdit(order: PurchaseOrder): boolean { return this.isOwner() && order.status === 'draft'; }"));
+  assert.ok(purchasingWorkspaceSource.includes("canApprove(order: PurchaseOrder): boolean { return this.isOwner() && order.status === 'draft'; }"));
+  assert.ok(purchasingWorkspaceSource.includes("canCancel(order: PurchaseOrder): boolean { return this.isOwner() && order.status === 'draft'; }"));
+  assert.ok(purchasingWorkspaceSource.includes("canReceive(order: PurchaseOrderDetail)"));
+  assert.ok(purchasingWorkspaceSource.includes("this.api.approvePurchaseOrder"));
+  assert.ok(purchasingWorkspaceSource.includes("this.api.cancelPurchaseOrder"));
+  assert.ok(purchasingWorkspaceSource.includes("this.api.receivePurchaseOrder"));
   const paymentStart = source.indexOf('async createPayment(): Promise<void>');
   const paymentEnd = source.indexOf('useAssistantSuggestion(', paymentStart);
   const payment = source.slice(paymentStart, paymentEnd);
@@ -1173,25 +1179,15 @@ test('notification and supplier forms expose localized field validation without 
 });
 
 test('purchase order and recurring schedule forms expose accessible localized validation', () => {
-  const purchaseStart = source.indexOf('<form #purchaseForm="ngForm"');
-  const purchaseEnd = source.indexOf('</form>', purchaseStart);
-  const purchase = source.slice(purchaseStart, purchaseEnd);
-  assert.ok(purchase.includes('purchaseForm.valid && createPurchaseOrder()'));
-  const purchaseFields = [
-    ['purchaseOrderNumberControl', 'purchase-number-error'],
-    ['purchaseSupplierControl', 'purchase-supplier-error'],
-    ['purchaseProductControl', 'purchase-product-error'],
-    ['purchaseQuantityControl', 'purchase-quantity-error'],
-    ['purchaseUnitCostControl', 'purchase-unit-cost-error'],
-  ];
-  for (const [control, id] of purchaseFields) {
-    assert.ok(purchase.includes('#' + control + '="ngModel"'), control);
-    assert.ok(purchase.includes(`[attr.aria-describedby]="${control}.invalid && (${control}.touched || purchaseForm.submitted) ? '${id}' : null"`), id);
-    assert.ok(source.includes('id="' + id + '"'), id);
-  }
-  assert.match(purchase, /name="purchaseQuantity" type="number" min="0\.001" step="0\.001" required/);
-  assert.match(purchase, /name="purchaseUnitCost" type="number" min="0" step="0\.01" required/);
-  assert.match(purchase, /purchasesLoading \|\| !suppliers\.length \|\| !products\.length/);
+  const purchase = purchasingWorkspaceSource;
+  assert.ok(purchase.includes('<form class="pw__form" (ngSubmit)="saveDraft()">'));
+  assert.ok(purchase.includes('name="orderNumber" maxlength="64" required'));
+  assert.ok(purchase.includes('name="supplier" required'));
+  assert.ok(purchase.includes('required [(ngModel)]="line.product_id"'));
+  assert.ok(purchase.includes('type="number" min="0.001" step="0.001" required'));
+  assert.ok(purchase.includes('type="number" min="0" step="0.01" required'));
+  assert.ok(purchase.includes('role="alert"'));
+  assert.ok(purchase.includes("this.formError.set(this.t('invalidLines'))"));
 
   const recurringStart = source.indexOf('<form #recurringForm="ngForm"');
   const recurringEnd = source.indexOf('</form>', recurringStart);
@@ -1264,13 +1260,16 @@ test('workspace build metadata is presented once in the workspace context, not d
 
 test('operations errors stay scoped to the module that produced them', () => {
   assert.match(source, /operationsErrorTab: OperationsMessageTab \| null = null/);
-  for (const tab of ['notifications', 'suppliers', 'purchases', 'recurring']) {
+  for (const tab of ['notifications', 'suppliers', 'recurring']) {
     assert.ok(source.includes(`@if (operationsError && operationsErrorTab === '${tab}')`), tab);
     assert.ok(source.includes(`this.operationsErrorTab = '${tab}'`), tab + ' load/validation error scope');
   }
   assert.match(source, /this\.operationsErrorTab = tab;/);
-  assert.match(source, /private beginOperationsAction\(\): void \{\s*this\.operationsError = '';\s*this\.operationsErrorTab = null;/);
-  assert.match(source, /private setOperationsSuccess\(tab: OperationsMessageTab, message: string\): void \{\s*this\.operationsErrorTab = null;/);
+  assert.match(source, /private beginOperationsAction\(\): void \{/);
+  assert.ok(purchasingWorkspaceSource.includes("readonly error = signal('')"));
+  assert.ok(purchasingWorkspaceSource.includes("readonly detailError = signal('')"));
+  assert.ok(purchasingWorkspaceSource.includes("readonly formError = signal('')"));
+  assert.ok(purchasingWorkspaceSource.includes("readonly receiptError = signal('')"));
 });
 
 test('invoice customer and dynamic line fields expose accessible localized validation', () => {
@@ -1415,26 +1414,19 @@ test('Home dashboard uses the shared page-level error and retry banner without d
 
 test('operations lists filter locally by their visible business fields', () => {
   assert.match(source, /get filteredSuppliers\(\): Supplier\[\]/);
-  assert.match(source, /get filteredPurchaseOrders\(\): PurchaseOrder\[\]/);
   assert.match(source, /get filteredRecurringSchedules\(\): RecurringInvoiceSchedule\[\]/);
   assert.match(source, /get filteredNotifications\(\): NotificationRecord\[\]/);
   assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch, this\.localization\.locale\)/);
-  assert.match(source, /filterPurchaseOrders\(\s*this\.purchaseOrders,\s*this\.purchaseSearch/);
-  assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules,\s*this\.recurringSearch/);
-  assert.match(source, /filterNotifications\(this\.notifications, this\.notificationSearch, kind => this\.notificationKindLabel\(kind\), status => this\.notificationStatusLabel\(status\), this\.localization\.locale\)/);
-  const clearStart = source.indexOf('private clearWorkspaceData(): void');
-  const clearEnd = source.indexOf('\n  }', clearStart);
-  const clear = source.slice(clearStart, clearEnd);
-  for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch', 'notificationSearch']) {
-    assert.ok(source.includes(`${field} = '';`), `${field} is initialized`);
-    assert.ok(clear.includes(`this.${field} = '';`), `${field} resets on workspace change`);
-  }
+  assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules/);
+  assert.match(source, /filterNotifications\(this\.notifications/);
+  assert.ok(purchasingWorkspaceSource.includes('readonly filteredOrders = computed'));
+  assert.ok(purchasingWorkspaceSource.includes('this.search().trim().toLocaleLowerCase()'));
+  assert.ok(purchasingWorkspaceSource.includes('this.supplierName(order.supplier_id)'));
+  assert.ok(purchasingWorkspaceSource.includes('this.statusLabel(order.status)'));
   assert.match(source, /supplierSearch\.trim\(\) \? t\(/);
-  assert.match(source, /purchaseSearch\.trim\(\) \? t\(/);
   assert.match(source, /recurringSearch\.trim\(\) \? t\(/);
   assert.match(source, /notificationSearch\.trim\(\) \? t\(/);
 });
-
 
 test('customer section markup does not render stray closing-tag text', () => {
   assert.equal(source.includes('</section>ion>'), false);
@@ -1597,36 +1589,15 @@ test('AI assistant auto-follow respects the reader position and reduced motion',
 
 
 test('purchase-order approval is owner-only, confirmation-first and tenant-reset safe', () => {
-  const rowsStart = source.indexOf('get purchaseTableRows()');
-  const rowsEnd = source.indexOf('  purchaseOrderProductsSummary(order:PurchaseOrder):string', rowsStart);
-  const rows = source.slice(rowsStart, rowsEnd);
-  assert.ok(rows.includes('this.canApprovePurchaseOrder(order)'));
-  assert.ok(rows.includes("id:'approve'"));
-  assert.ok(rows.includes("this.business?.role==='owner'"));
-
-  const actionStart = source.indexOf('onPurchaseRecordAction(');
-  const actionEnd = source.indexOf('get filteredProducts()', actionStart);
-  const action = source.slice(actionStart, actionEnd);
-  assert.ok(action.includes("if(this.business?.role!=='owner')return;"));
-  assert.ok(action.includes("action.actionId==='approve'"));
-  assert.ok(action.includes('this.requestPurchaseOrderApproval(order,action.anchor)'));
-
-  const resetStart = source.indexOf('private clearWorkspaceData(): void');
-  const resetEnd = source.indexOf('async createWorkspace(): Promise<void>', resetStart);
-  const reset = source.slice(resetStart, resetEnd);
-  assert.ok(reset.includes('this.pendingPurchaseApproval = null;'));
-  assert.ok(reset.includes("this.purchaseApprovalError = '';"));
-
-  const approvalStart = source.indexOf('async confirmPurchaseOrderApproval(): Promise<void>');
-  const approvalEnd = source.indexOf('requestPurchaseOrderReceipt(', approvalStart);
-  const approval = source.slice(approvalStart, approvalEnd);
-  assert.ok(approval.includes('this.api.approvePurchaseOrder(businessId, order.id)'));
-  assert.ok(approval.includes("this.setOperationsSuccess('purchases'"));
-  assert.ok(!approval.includes('receivePurchaseOrder'));
-
+  assert.ok(purchasingWorkspaceSource.includes("canApprove(order: PurchaseOrder): boolean { return this.isOwner() && order.status === 'draft'; }"));
+  assert.ok(purchasingWorkspaceSource.includes("requestAction(action: PurchaseAction): void"));
+  assert.ok(purchasingWorkspaceSource.includes("this.pendingAction.set(action)"));
+  assert.ok(purchasingWorkspaceSource.includes("async confirmAction(): Promise<void>"));
+  assert.ok(purchasingWorkspaceSource.includes("if (!action || !order || !this.isOwner()) return;"));
+  assert.ok(purchasingWorkspaceSource.includes("this.api.approvePurchaseOrder(requested.businessId, order.id)"));
+  assert.ok(purchasingWorkspaceSource.includes("this.isCurrent(this.actionGuard, version, requested)"));
   assert.ok(apiSource.includes("'/purchase-orders/' + encodeURIComponent(orderId) + '/approve'"));
-  assert.ok(source.includes('This approves the draft purchase order only. It does not record receipt or a stock movement.'));
-  assert.ok(source.includes('Approval does not create supplier bills, payables or payments.'));
+  assert.ok(purchasingWorkspaceSource.includes("this.api.receivePurchaseOrder"));
 });
 
 test('installed PWA announces a newly activated service worker and offers an explicit refresh', () => {

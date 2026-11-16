@@ -21,6 +21,8 @@ import { LocalizationService } from './localization.service';
     <section class="customer-directory" [attr.aria-label]="ariaLabel()">
       @if (loading()) {
         <aba-state-message kind="loading" [description]="loadingDescription()" />
+      } @else if (error()) {
+        <aba-state-message kind="error" [description]="error()" [actionLabel]="t('ui.m_lr6ezy')" (action)="retry.emit()" />
       } @else if (customers().length) {
         <div class="customer-directory__mobile-sort">
           <label for="customer-directory-sort">
@@ -59,13 +61,14 @@ import { LocalizationService } from './localization.service';
                     <span aria-hidden="true">{{ sortIndicator('phone') }}</span>
                   </button>
                 </th>
+                <th scope="col">{{ t('customerDirectory.address') }}</th>
                 <th scope="col">{{ t('customerDirectory.m_256ab9') }}</th>
               </tr>
             </thead>
             <tbody>
               @for (customer of sortedCustomers(); track customer.id) {
                 <tr>
-                  <th scope="row" class="customer-directory__name">{{ customer.name }}</th>
+                  <th scope="row" class="customer-directory__name"><button class="customer-directory__profile-link" type="button" (click)="openProfile(customer.id)">{{ customer.name }}</button></th>
                   <td>
                     @if (customer.email) {
                       <a [href]="'mailto:' + customer.email"><bdi dir="ltr">{{ customer.email }}</bdi></a>
@@ -79,6 +82,10 @@ import { LocalizationService } from './localization.service';
                     } @else {
                       <span class="customer-directory__muted">{{ t('customerDirectory.m_2wkjj4') }}</span>
                     }
+                  </td>
+                  <td>
+                    @if (customer.address) { <span>{{ customer.address }}</span> }
+                    @else { <span class="customer-directory__muted">—</span> }
                   </td>
                   <td>
                     <div class="customer-directory__actions">
@@ -100,7 +107,7 @@ import { LocalizationService } from './localization.service';
           @for (customer of sortedCustomers(); track customer.id) {
             <li class="customer-directory__mobile-row">
               <div class="customer-directory__identity">
-                <h3>{{ customer.name }}</h3>
+                <h3><button class="customer-directory__profile-link" type="button" (click)="openProfile(customer.id)">{{ customer.name }}</button></h3>
                 <div class="customer-directory__contact">
                   @if (customer.phone) {
                     <a [href]="'tel:' + customer.phone" [attr.aria-label]="(t('customerDirectory.m_1kxahts')) + customer.name"><bdi dir="ltr">{{ customer.phone }}</bdi></a>
@@ -112,6 +119,12 @@ import { LocalizationService } from './localization.service';
                     <span class="customer-directory__muted">{{ t('customerDirectory.m_1ypcn1i') }}</span>
                   }
                 </div>
+                @if (customer.address || customer.notes) {
+                  <div class="customer-directory__details">
+                    @if (customer.address) { <span><b>{{ t('customerDirectory.address') }}:</b> {{ customer.address }}</span> }
+                    @if (customer.notes) { <span><b>{{ t('customerDirectory.note') }}:</b> {{ customer.notes }}</span> }
+                  </div>
+                }
               </div>
               <div class="customer-directory__actions">
                 <button class="customer-directory__action" type="button" (click)="emitAction(customer.id, 'invoices', $event)" [attr.aria-label]="actionAriaLabel(customer, 'invoices')">
@@ -139,9 +152,12 @@ export class CustomerDirectoryComponent {
   readonly locale = input<'ar' | 'en'>('ar');
   readonly loading = input(false);
   readonly loadingDescription = input('');
+  readonly error = input('');
+  readonly retry = output<void>();
   readonly emptyTitle = input('');
   readonly emptyDescription = input('');
   readonly rowAction = output<AbaRecordTableActionEvent>();
+  readonly select = output<string>();
 
   private readonly sortField = signal<CustomerSortField>('name');
   private readonly sortDirection = signal<SortDirection>('asc');
@@ -188,6 +204,8 @@ export class CustomerDirectoryComponent {
       : (this.t('customerDirectory.m_mmu2iu'));
     return label + ' ' + customer.name;
   }
+
+  openProfile(customerId: string): void { this.select.emit(customerId); }
 
   emitAction(rowId: string, actionId: string, event: Event): void {
     const anchor = event.currentTarget;

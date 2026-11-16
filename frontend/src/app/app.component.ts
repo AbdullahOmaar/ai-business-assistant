@@ -13,9 +13,11 @@ import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, f
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { ReleaseGuideComponent } from './release-guide.component';
-import { CustomerDirectoryComponent } from './customer-directory.component';
-import { ProductCatalogComponent } from './product-catalog.component';
+import { CustomerWorkspaceComponent } from './customer-workspace.component';
+import { ProductWorkspaceComponent } from './product-workspace.component';
+import { PurchasingWorkspaceComponent } from './purchasing-workspace.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
+import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
 import { filterWorkspaceModules, selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
 import { AbaConfirmDialogComponent } from './shared/ui/aba-confirm-dialog.component';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
@@ -41,7 +43,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerDirectoryComponent, ProductCatalogComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, PurchasingWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -105,6 +107,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             </label>
             <button class="primary" type="submit" [disabled]="loading">{{ loading ? t('ui.m_jxz3f3') : (signingUp ? t('ui.m_1hggna5') : t('ui.m_h8edye')) }}</button>
           </form>
+          @if (!signingUp) {
+            <button class="demo-login-button" type="button" (click)="submitDemoLogin()" [disabled]="loading">
+              <span class="demo-login-icon" aria-hidden="true">✦</span>
+              <span>{{ loading ? t('demo.login.loading') : t('demo.login.button') }}</span>
+              <span class="demo-login-arrow" aria-hidden="true">←</span>
+            </button>
+            <p class="demo-login-note">{{ t('demo.login.note') }}</p>
+          }
           <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? t('ui.m_1uh3cl9') : t('ui.m_1fdki9f') }}</button>
           @if (error) { <aba-state-message kind="error" [description]="error" /> }
           @if (!isInstalled) {
@@ -466,41 +476,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
 
 @if (tab === 'purchases') {
-              <section abaCard class="panel">
-                <aba-section-header id="purchases-section-heading" tabindex="-1" [title]=" t('ui.m_1x15ykz') " [description]=" t('ui.m_roz4sr') "><span class="count">{{ filteredPurchaseOrders.length }} / {{ purchaseOrders.length }}</span></aba-section-header>
-<details class="aba-record-create">
-                  <summary><span>{{ t('ui.m_iqb29f') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
-                  <div class="aba-record-create__body">
-                <form #purchaseForm="ngForm" class="stack" (ngSubmit)="purchaseForm.valid && createPurchaseOrder()">
-                  <label>{{ t('ui.m_19p1zn3') }}<input #purchaseOrderNumberControl="ngModel" name="purchaseOrderNumber" required maxlength="64" [attr.aria-invalid]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted) ? 'purchase-number-error' : null" [(ngModel)]="purchaseOrderNumber"></label>
-                  <label>{{ t('ui.m_x27ir1') }}<select #purchaseSupplierControl="ngModel" name="purchaseSupplierId" required [attr.aria-invalid]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted) ? 'purchase-supplier-error' : null" [(ngModel)]="purchaseSupplierId"><option value="" disabled>{{ t('ui.m_el3aam') }}</option>@for (supplier of suppliers; track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }</select></label>
-                  <label>{{ t('ui.m_7fwfk0') }}<select #purchaseProductControl="ngModel" name="purchaseProductId" required [attr.aria-invalid]="purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted) ? 'purchase-product-error' : null" [(ngModel)]="purchaseProductId"><option value="" disabled>{{ t('ui.m_1kwxnkp') }}</option>@for (product of products; track product.id) { <option [value]="product.id">{{ product.name }} · {{ product.sku || product.id.slice(0,8) }}</option> }</select></label>
-                  <div class="inline-form"><label>{{ t('ui.m_ocneuo') }}<input #purchaseQuantityControl="ngModel" name="purchaseQuantity" type="number" min="0.001" step="0.001" required [attr.aria-invalid]="purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted) ? 'purchase-quantity-error' : null" [(ngModel)]="purchaseQuantity"></label><label>{{ t('ui.m_19mrznv') }}<input #purchaseUnitCostControl="ngModel" name="purchaseUnitCost" type="number" min="0" step="0.01" required [attr.aria-invalid]="purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted) ? 'true' : null" [attr.aria-describedby]="purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted) ? 'purchase-unit-cost-error' : null" [(ngModel)]="purchaseUnitCost"></label></div>
-                  <button class="primary" type="submit" [disabled]="purchasesLoading || !suppliers.length || !products.length">{{ t('ui.m_iqb29f') }}</button>
-                </form>
-                @if ((purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted)) || (purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted)) || (purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted)) || (purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted)) || (purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted))) {
-                  <div class="form-validation" aria-live="polite">
-                    @if (purchaseOrderNumberControl.invalid && (purchaseOrderNumberControl.touched || purchaseForm.submitted)) { <small id="purchase-number-error" class="field-error">{{ t('ui.m_lv9gfw') }}</small> }
-                    @if (purchaseSupplierControl.invalid && (purchaseSupplierControl.touched || purchaseForm.submitted)) { <small id="purchase-supplier-error" class="field-error">{{ t('ui.m_17l7adv') }}</small> }
-                    @if (purchaseProductControl.invalid && (purchaseProductControl.touched || purchaseForm.submitted)) { <small id="purchase-product-error" class="field-error">{{ t('ui.m_lkov6w') }}</small> }
-                    @if (purchaseQuantityControl.invalid && (purchaseQuantityControl.touched || purchaseForm.submitted)) { <small id="purchase-quantity-error" class="field-error">{{ t('ui.m_jsv2pg') }}</small> }
-                    @if (purchaseUnitCostControl.invalid && (purchaseUnitCostControl.touched || purchaseForm.submitted)) { <small id="purchase-unit-cost-error" class="field-error">{{ t('ui.m_13qo8kh') }}</small> }
-                  </div>
-                }
-
-                  </div>
-                </details>
-                @if (operationsError && operationsErrorTab === 'purchases') { <aba-state-message kind="error" [description]="operationsError" /> }
-                @if (operationsWarning && operationsMessageTab === 'purchases') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
-                @if (operationsMessageTab === 'purchases' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="purchaseSearch" type="search" [attr.aria-label]="t('ui.m_x2km9j')" [placeholder]="t('ui.m_1bqn1oi')" [(ngModel)]="purchaseSearch"></div>
-                <aba-record-table [ariaLabel]="t('ui.m_1xlq4zq')" [columns]="purchaseTableColumns" [rows]="purchaseTableRows" [loading]="purchasesLoading && !purchaseOrders.length" [loadingDescription]="t('ui.m_1c93aea')" [actionsHeading]="t('ui.m_1dbhmlo')" [emptyTitle]="t('ui.m_1skqw0x')" [emptyDescription]="purchaseSearch.trim() ? t('ui.m_ckscgw') : t('ui.m_1yhbnd3')" (rowAction)="onPurchaseRecordAction($event)" />
-
-              </section>
+              <aba-purchasing-workspace
+                [businessId]="business.id"
+                [userId]="workspaceUserId"
+                [role]="business.role === 'owner' ? 'owner' : 'staff'"
+                [currencyCode]="business.currency_code"
+                [language]="language" />
             }
-
-
-@if (tab === 'recurring') {
+            @if (tab === 'recurring') {
               <section abaCard class="panel">
                 <aba-section-header [title]=" t('ui.m_slegw7') " [description]=" t('ui.m_1e0c20g') "><span class="count">{{ filteredRecurringSchedules.length }} / {{ recurringSchedules.length }}</span></aba-section-header>
                 @if (business?.role === 'owner') {
@@ -588,30 +571,12 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
 
             @if (tab === 'team' && business?.id) {
-              <aba-workspace-invitations mode="manage" [businessId]="business.id" [language]="language" />
+              <aba-workspace-invitations mode="manage" [businessId]="business?.id || ''" [language]="language" />
             }
-            @if (tab === 'customers') {
+            @if (tab === 'customers' && business?.id) {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('ui.m_1lifkl9') " [description]=" t('ui.m_15gmqko') "><span class="count">{{ filteredCustomers.length }} / {{ customers.length }} {{ t('ui.m_15kaq4w') }}</span></aba-section-header>
-<details class="aba-record-create" [open]="customerCreateOpen" (toggle)="customerCreateOpen = $any($event.target).open">
-                  <summary><span>{{ t('ui.m_1yvcfg6') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
-                  <div class="aba-record-create__body">
-                <form #customerForm="ngForm" class="inline-form" (ngSubmit)="customerForm.valid && createCustomer()">
-                  <input #customerNameModel="ngModel" [attr.aria-label]="t('ui.m_e80x9i')" name="customerName" [placeholder]="t('ui.m_e80x9i')" required maxlength="160" [(ngModel)]="customerName" [attr.aria-invalid]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted) ? 'customer-name-error' : null">
-                  @if (customerNameModel.invalid && (customerNameModel.touched || customerForm.submitted)) {
-                    <small id="customer-name-error" class="field-error" aria-live="polite">{{ t('ui.m_1ucyubn') }}</small>
-                  }
-                  <input #customerEmailModel="ngModel" [attr.aria-label]="t('ui.m_1hdfjhy')" name="customerEmail" type="email" maxlength="254" [placeholder]="t('ui.m_u2wvbv')" [(ngModel)]="customerEmail" [attr.aria-invalid]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'true' : null" [attr.aria-describedby]="customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted) ? 'customer-email-error' : null">
-                  @if (customerEmailModel.invalid && (customerEmailModel.touched || customerForm.submitted)) {
-                    <small id="customer-email-error" class="field-error" aria-live="polite">{{ t('ui.m_stzy3f') }}</small>
-                  }
-                  <input [attr.aria-label]="t('ui.m_jf17kv')" name="customerPhone" maxlength="32" [placeholder]="t('ui.m_1fpllb8')" [(ngModel)]="customerPhone">
-                  <button class="primary" type="submit" [disabled]="loading">{{ t('ui.m_zesk98') }}</button>
-                </form>
-
-                  </div>
-                </details>
-                @if (customerMessage) { <aba-state-message [kind]="customerMessageKind" [description]="customerMessage" /> }
+                <aba-section-header [title]="t('ui.m_1lifkl9')" [description]="t('ui.m_15gmqko')" />
+                @if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }
                 @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('ui.m_p4xhry') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
                   <h3>{{ t('ui.m_p4xhry') }}</h3>
                   <p>{{ t('ui.m_1239wd4') }}</p>
@@ -633,20 +598,18 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                   @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('ui.m_15zjjtn')" /> }
-                <div class="list-tools aba-record-toolbar"><input name="customerSearch" type="search" [attr.aria-label]="t('ui.m_cbuclg')" [placeholder]="t('ui.m_oe2vue')" [(ngModel)]="customerSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }</div>
-                <aba-customer-directory [ariaLabel]="t('ui.m_5lit5y')" [customers]="filteredCustomers" [locale]="language" [loading]="loading && !customers.length" [loadingDescription]="t('ui.m_14qa8nk')" [emptyTitle]="t('ui.m_v7mhxb')" [emptyDescription]="customerSearch.trim() ? t('ui.m_1lfpojf') : t('ui.m_9nmick')" (rowAction)="onCustomerRecordAction($event)" />
-                @if (customersHasMore || customersLoadingMore) {
-                  <div class="inline-form record-load-more" aria-live="polite">
-                    <span class="muted">{{ customers.length }} {{ t('ui.m_1sao2d6') }}</span>
-                    <button class="secondary" type="button" (click)="loadMoreCustomers()" [disabled]="customersLoadingMore">
-                      {{ customersLoadingMore ? t('ui.m_14qa8nk') : t('ui.m_1m9ykss') }}
-                    </button>
-                  </div>
-                }
-
+                <aba-customer-workspace
+                  [businessId]="business.id"
+                  [userId]="workspaceUserId"
+                  [role]="business.role === 'owner' ? 'owner' : 'staff'"
+                  [locale]="language"
+                  (invoicesRequested)="createInvoiceForCustomer($event)"
+                  (statementRequested)="openCustomerStatementById($event)" />
                 @if (statementVisible) {
                   <section abaCard class="panel statement-panel">
-                    <aba-section-header [level]="3" [title]="t('ui.m_152dm1w') + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t('ui.m_ysb7zm')"><button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('ui.m_1whnkun') }}</button></aba-section-header>
+                    <aba-section-header [level]="3" [title]="t('ui.m_152dm1w') + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t('ui.m_ysb7zm')">
+                      <button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('ui.m_1whnkun') }}</button>
+                    </aba-section-header>
                     <div class="inline-form statement-filters">
                       <label>{{ t('ui.m_6ousik') }}<input type="date" name="statementFromDate" [(ngModel)]="statementFromDate"></label>
                       <label>{{ t('ui.m_hltyrq') }}<input type="date" name="statementToDate" [(ngModel)]="statementToDate"></label>
@@ -664,13 +627,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     }
                   </section>
                 }
-          </section>
+              </section>
             }
 
-            @if (tab === 'products') {
+            @if (tab === 'products' && business?.id) {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('ui.m_137u0ee') " [description]=" t('ui.m_snu8sb') "><span class="count">{{ filteredProducts.length }} / {{ products.length }} {{ t('ui.m_1hpnko') }}</span></aba-section-header>
-<details class="aba-record-create" [open]="productCreateOpen" (toggle)="productCreateOpen = $any($event.target).open">
+                <aba-section-header [title]="t('ui.m_137u0ee')" [description]="t('ui.m_snu8sb')" />
+                @if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }
+                <details class="aba-record-create" [open]="productCreateOpen" (toggle)="productCreateOpen = $any($event.target).open">
                   <summary><span>{{ t('ui.m_1nbakc8') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
                 <form #productForm="ngForm" class="inline-form" (ngSubmit)="productForm.valid && createProduct()">
@@ -679,7 +643,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       <small id="product-name-error" class="field-error" aria-live="polite">{{ t('ui.m_1ymmcl') }}</small>
                     }
                   </label>
-                  <label>{{ t('ui.m_1iz2xk3') }}<input #productPriceModel="ngModel" [attr.aria-label]="t('ui.m_1iz2xk3')" name="productPrice" type="number" min="0" step="0.01" [placeholder]="t('ui.m_1iz2xk3')" required [(ngModel)]="productPrice" [attr.aria-invalid]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'product-price-error' : null">
+                  <label>{{ t('productEditor.sku') }}<input name="productSku" maxlength="80" autocomplete="off" [placeholder]="t('productEditor.skuPlaceholder')" [(ngModel)]="productSku"></label>
+                  <label>{{ t('productEditor.descriptionLabel') }}<textarea name="productDescription" rows="2" maxlength="1000" [placeholder]="t('productEditor.descriptionPlaceholder')" [(ngModel)]="productDescription"></textarea></label>
+                  <label>{{ t('productEditor.unit') }}<input name="productUnit" maxlength="32" required [placeholder]="t('productEditor.unitPlaceholder')" [(ngModel)]="productUnit"></label>
+                  <label>{{ t('ui.m_1iz2xk3') }}<input #productPriceModel="ngModel" [attr.aria-label]="t('ui.m_1iz2xk3')" name="productPrice" type="text" inputmode="decimal" pattern="^[0-9٠-٩۰-۹]+([.٫][0-9٠-٩۰-۹]{1,2})?$" autocomplete="off" [placeholder]="t('ui.m_1iz2xk3')" required [(ngModel)]="productPrice" [attr.aria-invalid]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productPriceModel.invalid && (productPriceModel.touched || productForm.submitted) ? 'product-price-error' : null">
                     @if (productPriceModel.invalid && (productPriceModel.touched || productForm.submitted)) {
                       <small id="product-price-error" class="field-error" aria-live="polite">{{ productPriceModel.errors?.['required'] ? t('ui.m_9pqcpe') : t('ui.m_1hiyjor') }}</small>
                     }
@@ -687,7 +654,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <label class="check"><input name="stockTracked" type="checkbox" [(ngModel)]="stockTracked"> {{ t('ui.m_13pn7xu') }}</label>
                   @if (stockTracked) {
                     @if (business?.role === 'owner') {
-                      <label>{{ t('ui.m_dsef9m') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="number" min="0" step="0.001" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('ui.m_1tupg8c') : t('ui.m_1rtcb8u') }}</small> }</label>
+                      <label>{{ t('ui.m_dsef9m') }}<input #productOpeningQuantityModel="ngModel" name="productOpeningQuantity" type="text" inputmode="decimal" pattern="^[0-9٠-٩۰-۹]{1,11}([.٫][0-9٠-٩۰-۹]{1,3})?$" autocomplete="off" [(ngModel)]="productOpeningQuantity" required [attr.aria-invalid]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted) ? 'product-opening-quantity-error' : null">@if (productOpeningQuantityModel.invalid && (productOpeningQuantityModel.touched || productForm.submitted)) { <small id="product-opening-quantity-error" class="field-error" aria-live="polite">{{ productOpeningQuantityModel.errors?.['required'] ? t('ui.m_1tupg8c') : t('ui.m_1rtcb8u') }}</small> }</label>
                     } @else {
                       <small class="muted">{{ t('ui.m_1xw7d7y') }}</small>
                     }
@@ -719,18 +686,13 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                   @if (importMessage) { <aba-state-message [kind]="importMessageKind" [description]="importMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('ui.m_15zjjtn')" /> }
-                <div class="list-tools aba-record-toolbar"><input name="productSearch" type="search" [attr.aria-label]="t('ui.m_1y4yidi')" [placeholder]="t('ui.m_12onvgc')" [(ngModel)]="productSearch">@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }</div>
-                <aba-product-catalog [ariaLabel]="t('ui.m_1q9q53d')" [products]="filteredProducts" [locale]="language" [currencyCode]="business?.currency_code || ''" [loading]="loading && !products.length" [loadingDescription]="t('ui.m_dm5wol')" [emptyTitle]="t('ui.m_12dkqai')" [emptyDescription]="productSearch.trim() ? t('ui.m_87y3du') : t('ui.m_nd32m5')" />
-                @if (productsHasMore || productsLoadingMore) {
-                  <div class="inline-form record-load-more" aria-live="polite">
-                    <span class="muted">{{ products.length }} {{ t('ui.m_1s9tcxi') }}</span>
-                    <button class="secondary" type="button" (click)="loadMoreProducts()" [disabled]="productsLoadingMore">
-                      {{ productsLoadingMore ? t('ui.m_dm5wol') : t('ui.m_iziq6h') }}
-                    </button>
-                  </div>
-                }
-
-            </section>
+                <aba-product-workspace
+                  [businessId]="business.id"
+                  [userId]="workspaceUserId"
+                  [role]="business.role === 'owner' ? 'owner' : 'staff'"
+                  [locale]="language"
+                  [currencyCode]="business?.currency_code || ''" />
+              </section>
             }
 
             @if (tab === 'invoices') {
@@ -1161,7 +1123,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
     .brand{display:flex;align-items:center;gap:10px;color:var(--aba-color-text-inverse,#fff);text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}.brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}.brand-mark.small{width:34px;height:34px;border-radius:11px;margin:0;font-size:16px}.light{font-weight:400;color:var(--aba-color-nav-muted,#9ca3af);margin-inline-start:4px}.eyebrow{font-size:10px;letter-spacing:1.6px;font-weight:800;color:var(--aba-color-text-tertiary,#6b7280);margin:0 0 8px}.nav-label{font-size:10px;color:var(--aba-color-nav-muted,#9ca3af);letter-spacing:1.5px;padding:0 10px}.workspace-release-meta{display:grid;gap:5px;padding:0 10px;margin:-4px 0 10px;min-width:0}.workspace-release-meta .version-pill{align-self:start;max-width:100%;font-size:10px;white-space:normal;line-height:1.4}.workspace-release-meta small{font-size:10px;color:var(--aba-color-nav-muted,#9ca3af);line-height:1.5;overflow-wrap:anywhere}.nav-item{display:flex;align-items:center;gap:12px;border:0;background:transparent;color:var(--aba-color-nav-text,#cbd5e1);text-align:start;padding:12px;border-radius:10px;margin:3px 0;font-size:14px;transition:background .18s ease,color .18s ease}.nav-item:hover{background:var(--aba-color-nav-surface-raised,#1e293b);color:var(--aba-color-text-inverse,#fff)}.nav-item.active{background:linear-gradient(100deg,var(--aba-color-nav-active-start,#164e63),var(--aba-color-nav-active-end,#1d4ed8));color:var(--aba-color-text-inverse,#fff);border-inline-start:3px solid var(--aba-color-nav-accent,#5eead4)}.nav-icon{display:inline-grid;place-items:center;flex:0 0 28px;width:28px;height:28px;border-radius:9px;font-size:17px;font-weight:800;background:var(--aba-color-nav-surface-raised,#1e293b)}.overview-icon{color:#67e8f9;background:#164e63}.invoices-icon{color:#fcd34d;background:#713f12}.products-icon{color:#86efac;background:#14532d}.customers-icon{color:#c4b5fd;background:#4c1d95}.assistant-icon{color:#f9a8d4;background:#831843}.payments-icon{color:#67e8f9;background:#164e63}.expense-icon{color:#fdba74;background:#7c2d12}.nav-item.active .nav-icon{background:#ffffff24;color:var(--aba-color-text-inverse,#fff)}.sidebar-bottom{margin-top:auto;border-top:1px solid #293548;padding:18px 8px 0;font-size:11px}.sidebar-bottom small{display:block;color:var(--aba-color-nav-muted,#9ca3af);margin-block-start:8px;margin-inline-start:15px;line-height:1.5}.status-dot{display:inline-block;width:7px;height:7px;background:#34d399;border-radius:50%;margin-inline-end:8px}
     .main{margin-inline-end:var(--aba-layout-sidebar,245px);padding:30px clamp(18px,4vw,54px) 20px;max-width:var(--aba-layout-content-max,1550px)}.topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:24px}.topbar h1{font-size:25px;letter-spacing:-.8px;margin:0}.mobile-page-heading{display:none}.user-area{display:flex;align-items:center;gap:12px;font-size:12px;color:var(--aba-color-text-muted,#4b5563)}.secondary,.primary{border-radius:9px;padding:10px 13px;font-weight:700;font-size:12px;border:1px solid #d1d5db;background:var(--aba-color-surface,#fff);color:#374151}.primary{background:var(--aba-color-primary,#0f766e);border-color:var(--aba-color-primary,#0f766e);color:var(--aba-color-text-inverse,#fff)}.primary:hover{background:#115e59}.workspace-bar{display:grid;grid-template-columns:minmax(0,1fr) auto minmax(180px,260px);justify-content:stretch;align-items:center;gap:14px;padding:14px 17px;background:var(--aba-color-surface,#fff);border:1px solid var(--aba-color-border,#e5e7eb);border-radius:var(--aba-radius-card,13px);margin-bottom:18px;min-width:0}.workspace-bar strong{display:block;font-size:14px}.workspace-bar select{max-width:260px}.dashboard-period{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px 18px;margin:0 0 14px;padding:13px 16px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:var(--aba-radius-card,14px);background:var(--aba-color-surface-subtle,#f8fafc)}.dashboard-period__heading{display:grid;gap:3px;min-width:0}.dashboard-period__title{margin:0;color:var(--aba-color-text-primary,#172033);font-size:14px;line-height:1.4;font-weight:var(--aba-font-weight-bold,700);overflow-wrap:anywhere}.dashboard-period__heading strong{font-size:13px;line-height:1.4;color:var(--aba-color-text-primary,#172033)}.dashboard-period__details{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;min-width:0;color:var(--aba-color-text-secondary,#64748b);font-size:12px;line-height:1.5}.dashboard-period__details span{overflow-wrap:anywhere}.dashboard-period__details bdi{font-variant-numeric:tabular-nums;color:var(--aba-color-text-primary,#172033)}.dashboard-period--skeleton{min-height:66px}.dashboard-period-skeleton__details{display:flex;flex-wrap:wrap;align-items:center;gap:8px 16px;min-width:0}.dashboard-period-skeleton__details span{display:block;width:clamp(110px,24vw,190px);height:9px;border-radius:999px;background:var(--aba-color-border-subtle,#eef2f7)}.dashboard-period-skeleton__details span:last-child{width:clamp(90px,18vw,145px)}.metric-skeleton{display:grid;align-content:start;gap:12px;min-width:0;min-height:145px;padding:16px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:var(--aba-radius-card,14px);background:var(--aba-color-surface,#fff)}.metric-skeleton span{display:block;height:10px;max-width:100%;border-radius:999px;background:var(--aba-color-border-subtle,#e2e8f0)}.metric-skeleton span:first-child{width:44%}.metric-skeleton span:nth-child(2){width:72%;height:24px;border-radius:8px;background:var(--aba-color-surface-muted,#eef2f7)}.metric-skeleton span:last-child{width:58%}
     .metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:0}.metric-grid aba-metric-card small{font-size:12px;line-height:1.55}.metric{padding:17px;min-height:125px;background:var(--aba-color-surface,#fff);border:1px solid #e5eaf1;border-radius:14px}.metric>span{display:block;color:var(--aba-color-text-tertiary,#6b7280);font-size:11px;margin-bottom:13px}.metric strong{display:block;font-size:19px;letter-spacing:-.5px;overflow-wrap:anywhere}.metric small{display:block;font-size:10px;color:var(--aba-color-nav-muted,#9ca3af);margin-top:6px}.notice{display:flex;gap:12px;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:12px;padding:14px;margin-top:15px;color:#065f46;font-size:11px;line-height:1.6}.notice strong{white-space:nowrap}.home-shortcut-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0;margin-top:15px}.home-shortcut-link{display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;min-width:0;min-height:44px;padding:8px 12px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:var(--aba-radius-control,10px);background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font-size:var(--aba-font-size-base,14px);line-height:var(--aba-line-height-normal,1.5);font-weight:700;text-align:start;cursor:pointer;transition:border-color var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease),background var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease)}.home-shortcut-link:hover:not(:disabled){border-color:var(--aba-color-primary-border,#99f6e4);background:var(--aba-color-surface-hover,#f1f5f9)}.home-shortcut-link:focus-visible{outline:var(--aba-focus-ring-width,3px) solid var(--aba-color-focus-ring,#2563eb);outline-offset:var(--aba-focus-ring-offset,2px)}.home-shortcut-link__icon{display:grid;flex:0 0 26px;width:26px;height:26px;place-items:center;border-radius:8px;background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary,#0f766e);font-size:14px}.home-shortcut-link__label{min-width:0;overflow-wrap:anywhere}.module-launcher{margin-top:18px}.module-directory{margin-top:18px}.dashboard-trust-note{background:var(--aba-color-surface-subtle,#f8fafc);border-color:var(--aba-color-border,#e5eaf1);color:var(--aba-color-text-secondary,#64748b);font-size:12px;line-height:1.65}.dashboard-trust-note strong{color:var(--aba-color-text-primary,#172033)}.module-directory-disclosure{display:grid;gap:12px}.module-directory-summary{display:flex;align-items:center;gap:12px;min-width:0;min-height:44px;cursor:pointer;list-style:none}.module-directory-summary::-webkit-details-marker{display:none}.module-directory-summary__copy{display:grid;flex:1;gap:3px;min-width:0}.module-directory-summary__title{margin:0;color:var(--aba-color-text-primary,#172033);font-size:14px;line-height:1.45;overflow-wrap:anywhere}.module-directory-summary__copy small{color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.5;overflow-wrap:anywhere}.module-directory-toggle{display:grid;flex:0 0 32px;width:32px;height:32px;place-items:center;border-radius:9px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#64748b);font-size:18px;transition:transform var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease)}.module-directory-disclosure[open] .module-directory-toggle{transform:rotate(45deg)}.module-directory-search{display:block;min-width:0}.module-directory-search input{box-sizing:border-box;width:100%;min-height:44px;border:1px solid var(--aba-color-border,#e5e7eb);border-radius:10px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font-size:14px}.module-directory-empty{margin:0;padding:14px;border:1px dashed var(--aba-color-border,#e5e7eb);border-radius:10px;color:var(--aba-color-text-secondary,#64748b);font-size:12px;line-height:1.6}.module-directory-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px;margin-top:0}
-    .panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:var(--aba-color-text-tertiary,#6b7280);line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:var(--aba-color-text-tertiary,#6b7280);margin:0}.count{font-size:10px;font-weight:700;color:var(--aba-color-primary,#0f766e);background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:var(--aba-color-surface-subtle,#f8fafc);border:1px solid #edf0f5;border-radius:11px}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.expense-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:var(--aba-color-surface,#fff);padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.expense-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#ffedd5;color:#c2410c;font-size:20px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px;margin-top:5px;overflow-wrap:anywhere}.footnote{font-size:10px;line-height:1.6;color:var(--aba-color-nav-muted,#9ca3af);margin:15px 0 0} .assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px;gap:16px;align-items:start}.assistant-suggestions{min-width:0;margin:0;padding:16px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:16px;background:var(--aba-color-surface,#fff);box-shadow:0 8px 24px #0f172a08}.assistant-suggestions>p{font-size:12px;font-weight:800;color:var(--aba-color-text-muted,#334155);margin:0 0 10px}.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.suggestion-card{display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;column-gap:9px;row-gap:2px;text-align:start;padding:9px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:11px;background:var(--aba-color-surface-subtle,#f8fafc);color:#1e293b;transition:background .16s ease,border-color .16s ease}.suggestion-card:hover:not(:disabled){background:#eff6ff;border-color:#2563eb}.suggestion-card:disabled{opacity:.55;cursor:not-allowed}.suggestion-icon{grid-row:span 2;display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:#dbeafe;color:#1d4ed8;font-size:15px}.suggestion-card strong{font-size:11px}.suggestion-card small{font-size:10px;color:var(--aba-color-text-secondary,#64748b);line-height:1.35}.chat-panel{min-width:0}.chat-header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.chat-new-button{min-height:36px;padding:7px 11px;border:1px solid var(--aba-color-border,#d1d5db);border-radius:9px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#1f2937);font-size:11px;font-weight:700}.chat-new-button:hover:not(:disabled){background:var(--aba-color-surface-subtle,#f8fafc);border-color:var(--aba-color-primary,#0f766e)}.chat-log{min-height:280px;max-height:55vh}@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}.assistant-suggestions{grid-row:2}.assistant-workspace:not(.has-chat) .assistant-suggestions{grid-row:1}.assistant-workspace:not(.has-chat) .chat-panel{grid-row:2}.suggestion-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}.suggestion-grid{scroll-snap-type:x proximity;overscroll-behavior-inline:contain;scrollbar-width:thin}.suggestion-card{flex:0 0 175px;min-height:82px;scroll-snap-align:start}}@media(max-width:480px){.assistant-suggestions{padding:12px}.suggestion-card{flex-basis:158px;min-height:82px;padding:8px}.chat-log{min-height:220px;max-height:48vh}.chat-message{max-width:96%}.chat-header-actions{gap:6px}.chat-new-button{min-height:40px}.chat-form{grid-template-columns:minmax(0,1fr) 84px;gap:8px}.chat-form .primary{padding-inline:8px}.chat-composer-meta{align-items:flex-start}.chat-composer-meta small{font-size:9px}}.chat-log{min-height:280px;max-height:55vh;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-inline-end:auto;margin-inline-start:0;background:#e0f2fe}.chat-message-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--aba-color-text-tertiary,#6b7280);font-weight:800}.chat-copy-button{min-height:32px;min-width:44px;padding:5px 8px;border:1px solid var(--aba-color-border-subtle,#dbe2ea);border-radius:8px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-secondary,#475569);font-size:10px;font-weight:700}.chat-copy-button:hover{border-color:var(--aba-color-primary,#0f766e);color:var(--aba-color-primary,#0f766e)}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:var(--aba-color-primary,#0f766e);font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-inline-end:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical;min-height:48px;max-height:180px;line-height:1.5}.chat-form .primary{min-width:84px;min-height:48px}.chat-composer-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px;color:var(--aba-color-text-tertiary,#64748b)}.chat-composer-meta small{font-size:10px;line-height:1.5}.chat-composer-meta small:last-child{flex:0 0 auto;font-variant-numeric:tabular-nums}.chat-form textarea{font-size:16px}.chat-copy-button span{display:inline-block}@media(max-width:480px){.chat-message p{font-size:14px;line-height:1.75;overflow-wrap:anywhere}.source-list{font-size:11px}.suggestion-card strong{font-size:12px}.suggestion-card small{font-size:11px}.chat-composer-meta small{font-size:10px}}.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}.install-help-inline{position:static;z-index:auto;width:min(520px,100%);max-width:100%;margin:0 0 14px auto;box-shadow:none}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:var(--aba-color-surface,#fff);border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:var(--aba-color-text-tertiary,#6b7280);line-height:1.7}.setup-steps{background:var(--aba-color-surface-subtle,#f8fafc);border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:var(--aba-color-primary,#0f766e);font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}.splash-build-time{display:block;margin:-8px 0 18px;color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.6;text-align:center}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px}footer span{color:var(--aba-color-nav-muted,#9ca3af)}
+    .panel h2{font-size:20px;margin:0 0 8px}.muted{font-size:12px;color:var(--aba-color-text-tertiary,#6b7280);line-height:1.7}.section-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}.section-head h2{font-size:18px;margin:0 0 6px}.section-head p{font-size:11px;color:var(--aba-color-text-tertiary,#6b7280);margin:0}.count{font-size:10px;font-weight:700;color:var(--aba-color-primary,#0f766e);background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}.inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:var(--aba-color-surface-subtle,#f8fafc);border:1px solid #edf0f5;border-radius:11px}.payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}.expense-form{grid-template-columns:repeat(3,minmax(0,1fr))}.danger{color:#b91c1c;border-color:#fecaca}.stack{display:grid;gap:14px;margin-top:20px}.stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}.input, input,select,textarea{min-width:0;border:1px solid #d1d5db;border-radius:9px;background:var(--aba-color-surface,#fff);padding:11px 12px;font-size:12px;color:#111827}.check{display:flex;align-items:center;gap:7px;font-size:11px;white-space:nowrap}.check input{min-width:auto}.list{margin-top:14px}.list-row{display:flex;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid #edf0f5}.list-row:last-child{border-bottom:0}.payment-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#cffafe;color:#0e7490;font-size:17px;font-weight:800}.expense-mark{display:grid;place-items:center;flex:0 0 34px;width:34px;height:34px;border-radius:11px;background:#ffedd5;color:#c2410c;font-size:20px;font-weight:800}.avatar,.product-mark,.invoice-mark{width:36px;height:36px;border-radius:11px;background:#eff6ff;color:#1d4ed8;display:grid;place-items:center;font-weight:800;font-size:13px;flex-shrink:0}.product-mark{background:#ecfdf5;color:#047857;font-size:20px}.invoice-mark{background:#f5f3ff;color:#6d28d9}.grow{flex:1;min-width:0}.list-row strong{font-size:12px;overflow-wrap:anywhere}.list-row small{display:block;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px;margin-top:5px;overflow-wrap:anywhere}.footnote{font-size:10px;line-height:1.6;color:var(--aba-color-nav-muted,#9ca3af);margin:15px 0 0} .assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px;gap:16px;align-items:start}.assistant-suggestions{min-width:0;margin:0;padding:16px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:16px;background:var(--aba-color-surface,#fff);box-shadow:0 8px 24px #0f172a08}.assistant-suggestions>p{font-size:12px;font-weight:800;color:var(--aba-color-text-muted,#334155);margin:0 0 10px}.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:8px}.suggestion-card{display:grid;grid-template-columns:28px minmax(0,1fr);align-items:center;column-gap:9px;row-gap:2px;text-align:start;padding:9px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:11px;background:var(--aba-color-surface-subtle,#f8fafc);color:#1e293b;transition:background .16s ease,border-color .16s ease}.suggestion-card:hover:not(:disabled){background:#eff6ff;border-color:#2563eb}.suggestion-card:disabled{opacity:.55;cursor:not-allowed}.suggestion-icon{grid-row:span 2;display:grid;place-items:center;width:28px;height:28px;border-radius:9px;background:#dbeafe;color:#1d4ed8;font-size:15px}.suggestion-card strong{font-size:11px}.suggestion-card small{font-size:10px;color:var(--aba-color-text-secondary,#64748b);line-height:1.35}.chat-panel{min-width:0}.chat-header-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.chat-new-button{min-height:36px;padding:7px 11px;border:1px solid var(--aba-color-border,#d1d5db);border-radius:9px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#1f2937);font-size:11px;font-weight:700}.chat-new-button:hover:not(:disabled){background:var(--aba-color-surface-subtle,#f8fafc);border-color:var(--aba-color-primary,#0f766e)}.chat-log{min-height:280px;max-height:55vh}@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}.assistant-suggestions{grid-row:2}.assistant-workspace:not(.has-chat) .assistant-suggestions{grid-row:1}.assistant-workspace:not(.has-chat) .chat-panel{grid-row:2}.suggestion-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}.suggestion-grid{scroll-snap-type:x proximity;overscroll-behavior-inline:contain;scrollbar-width:thin}.suggestion-card{flex:0 0 175px;min-height:82px;scroll-snap-align:start}}@media(max-width:480px){.assistant-suggestions{padding:12px}.suggestion-card{flex-basis:158px;min-height:82px;padding:8px}.chat-log{min-height:220px;max-height:48vh}.chat-message{max-width:96%}.chat-header-actions{gap:6px}.chat-new-button{min-height:40px}.chat-form{grid-template-columns:minmax(0,1fr) 84px;gap:8px}.chat-form .primary{padding-inline:8px}.chat-composer-meta{align-items:flex-start}.chat-composer-meta small{font-size:9px}}.chat-log{min-height:280px;max-height:55vh;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}.chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}.chat-message.user-message{margin-inline-end:auto;margin-inline-start:0;background:#e0f2fe}.chat-message-head{display:flex;align-items:center;justify-content:space-between;gap:10px}.chat-message span{font-size:9px;text-transform:uppercase;letter-spacing:1px;color:var(--aba-color-text-tertiary,#6b7280);font-weight:800}.chat-copy-button{min-height:32px;min-width:44px;padding:5px 8px;border:1px solid var(--aba-color-border-subtle,#dbe2ea);border-radius:8px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-secondary,#475569);font-size:10px;font-weight:700}.chat-copy-button:hover{border-color:var(--aba-color-primary,#0f766e);color:var(--aba-color-primary,#0f766e)}.chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}.source-list{display:block;color:var(--aba-color-primary,#0f766e);font-size:10px;line-height:1.7;margin-top:8px}.source-list span{display:inline-block;margin-inline-end:9px}.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}.chat-form textarea{resize:vertical;min-height:48px;max-height:180px;line-height:1.5}.chat-form .primary{min-width:84px;min-height:48px}.chat-composer-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px;color:var(--aba-color-text-tertiary,#64748b)}.chat-composer-meta small{font-size:10px;line-height:1.5}.chat-composer-meta small:last-child{flex:0 0 auto;font-variant-numeric:tabular-nums}.chat-form textarea{font-size:16px}.chat-copy-button span{display:inline-block}@media(max-width:480px){.chat-message p{font-size:14px;line-height:1.75;overflow-wrap:anywhere}.source-list{font-size:11px}.suggestion-card strong{font-size:12px}.suggestion-card small{font-size:11px}.chat-composer-meta small{font-size:10px}}.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}.install-help-inline{position:static;z-index:auto;width:min(520px,100%);max-width:100%;margin:0 0 14px auto;box-shadow:none}.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:var(--aba-color-surface,#fff);border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}.setup-card h1,.auth-card h1{font-size:28px;letter-spacing:-.8px;margin:8px 0}.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:var(--aba-color-text-tertiary,#6b7280);line-height:1.7}.setup-steps{background:var(--aba-color-surface-subtle,#f8fafc);border-radius:12px;padding:14px;margin-top:20px}.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}.setup-steps code{font-size:10px;overflow-wrap:anywhere}.text-button{border:0;background:transparent;color:var(--aba-color-primary,#0f766e);font-size:11px;font-weight:700;padding:15px 0 0}.auth-card .primary{margin-top:3px}.demo-login-button{width:100%;min-height:54px;margin-top:16px;padding:0 16px;display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid #0f766e;border-radius:14px;background:linear-gradient(115deg,#0f766e,#155e75 58%,#1d4ed8);color:#fff;font:inherit;font-size:14px;font-weight:800;box-shadow:0 10px 24px #0f766e24;transition:transform .18s ease,box-shadow .18s ease,opacity .18s ease}.demo-login-button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 14px 28px #0f766e35}.demo-login-button:focus-visible{outline:3px solid #5eead4;outline-offset:3px}.demo-login-button:disabled{opacity:.65;cursor:wait}.demo-login-icon{font-size:19px}.demo-login-arrow{margin-inline-start:auto;font-size:18px}.demo-login-note{margin:7px 0 0!important;text-align:center;font-size:10px!important;color:var(--aba-color-text-tertiary,#64748b)!important}.splash-build-time{display:block;margin:-8px 0 18px;color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.6;text-align:center}footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px}footer span{color:var(--aba-color-nav-muted,#9ca3af)}
     .mobile-version-strip{display:none}
     .section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .list-tools{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}.list-tools input{flex:1;min-width:150px}.list-tools select{min-width:130px}
@@ -1450,6 +1412,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
   `]
 })
 export class AppComponent implements OnInit, OnDestroy {
+  @ViewChild(CustomerWorkspaceComponent) private customerWorkspace?: CustomerWorkspaceComponent;
+  @ViewChild(ProductWorkspaceComponent) private productWorkspace?: ProductWorkspaceComponent;
+  get workspaceUserId(): string { return this.currentAuthUid ?? ''; }
   readonly appVersion = APP_BUILD_INFO.version;
   readonly uiCommitLabel = APP_BUILD_INFO.commit;
   get buildTimeLabel(): string {
@@ -1478,6 +1443,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private businessListRequestVersion = 0;
   private authTransitionVersion = 0;
   private pendingAuthSnapshot: AuthUserSnapshot | null | undefined;
+  private applyingBrowserRoute = false;
+  private initialRouteApplied = false;
   tab: Tab = 'overview';
   auditEvents: AuditEvent[] = [];
   auditTotal = 0;
@@ -1601,6 +1568,9 @@ export class AppComponent implements OnInit, OnDestroy {
   productMessage = '';
   productMessageKind: 'success' | 'warning' = 'success';
   productName = '';
+  productSku = '';
+  productDescription = '';
+  productUnit = 'unit';
   productPrice = '';
   stockTracked = false;
   productOpeningQuantity = '0';
@@ -2098,6 +2068,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
     this.currentAuthUid = nextUid;
     this.currentAuthEmail = nextEmail;
+    this.initialRouteApplied = false;
     const transitionVersion = ++this.authTransitionVersion;
     this.businessListRequestVersion++;
     this.businesses = [];
@@ -2135,6 +2106,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private resetSignedOutState(): void {
     this.businessListRequestVersion++;
+    this.initialRouteApplied = false;
     this.signedIn = false;
     this.userEmail = '';
     this.platformAdminAvailable = false;
@@ -2168,7 +2140,7 @@ export class AppComponent implements OnInit, OnDestroy {
       if (requestUid !== this.currentAuthUid) return;
       // A missing backend endpoint, unconfigured allowlist, or a 403 keeps admin navigation hidden.
       this.platformAdminAvailable = false;
-      if (this.tab === 'platform-admin') this.tab = 'overview';
+      if (this.tab === 'platform-admin') this.setTab('overview');
     }
   }
 
@@ -2180,6 +2152,29 @@ export class AppComponent implements OnInit, OnDestroy {
       const user = this.signingUp
         ? await this.auth.signUp(this.email, this.password)
         : await this.auth.signIn(this.email, this.password);
+      this.currentAuthUid = user.uid;
+      this.currentAuthEmail = user.email ?? null;
+      this.signedIn = true;
+      this.userEmail = user.email || this.t('common.signedInUser');
+      await this.checkPlatformAdminAccess();
+      await this.loadBusinesses();
+    } catch (error) {
+      this.error = this.message(error, 'auth');
+    } finally {
+      this.authFlowInProgress = false;
+      this.loading = false;
+      this.applyPendingAuthSnapshot();
+    }
+  }
+
+  async submitDemoLogin(): Promise<void> {
+    if (this.loading || this.signingUp) return;
+    this.authFlowInProgress = true;
+    this.loading = true;
+    this.error = '';
+    try {
+      const session = await this.api.createDemoSession();
+      const user = await this.auth.signInWithCustomToken(session.custom_token);
       this.currentAuthUid = user.uid;
       this.currentAuthEmail = user.email ?? null;
       this.signedIn = true;
@@ -2243,6 +2238,7 @@ export class AppComponent implements OnInit, OnDestroy {
         this.business = null;
         this.selectedBusinessId = '';
         this.clearWorkspaceData();
+        this.applyInitialWorkspaceRoute();
         // Keep the global control plane accessible to admins without workspace memberships.
         // If the platform capability was revoked, do not retain its previously selected tab.
         if (this.platformAdminAvailable) this.setTab('platform-admin');
@@ -2253,10 +2249,13 @@ export class AppComponent implements OnInit, OnDestroy {
       const workspaceAccessChanged = this.business?.id !== chosen.id || this.business?.role !== chosen.role;
       this.selectedBusinessId = chosen.id;
       this.business = chosen;
-      // A membership or platform-role refresh can invalidate the currently selected tab.
-      // Reuse the same navigation guard as interactive tab changes before reloading data.
+      // Reuse the same access policy for direct URLs and interactive navigation.
       if (!this.canAccessTab(this.tab)) this.setTab('overview');
+      // Clear stale tenant data before applying a pending deep link. On first auth
+      // resolution, keep the requested URL intact so it can be authorized below.
       if (workspaceAccessChanged) this.clearWorkspaceData();
+      if (workspaceAccessChanged && this.initialRouteApplied) this.syncWorkspaceUrl('overview', true);
+      this.applyInitialWorkspaceRoute();
       await this.loadWorkspaceData();
     } catch (error) {
       if (requestVersion !== this.businessListRequestVersion ||
@@ -2264,6 +2263,8 @@ export class AppComponent implements OnInit, OnDestroy {
       this.business = null;
       this.selectedBusinessId = '';
       this.clearWorkspaceData();
+      if (this.initialRouteApplied) this.syncWorkspaceUrl('overview', true);
+      else this.initialRouteApplied = false;
       this.error = this.message(error);
     } finally {
       if (requestVersion === this.businessListRequestVersion) this.loading = false;
@@ -2465,6 +2466,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.business = created;
       this.selectedBusinessId = created.id;
       this.clearWorkspaceData();
+      this.syncWorkspaceUrl('overview', true);
       this.businessName = '';
       await this.loadWorkspaceData();
     } catch (error) {
@@ -2488,6 +2490,7 @@ export class AppComponent implements OnInit, OnDestroy {
     // A destination visible to the previous workspace role may be restricted here.
     if (!this.canAccessTab(this.tab)) this.tab = 'overview';
     this.clearWorkspaceData();
+    this.syncWorkspaceUrl('overview', true);
     this.error = '';
     await this.loadWorkspaceData();
   }
@@ -2564,6 +2567,7 @@ export class AppComponent implements OnInit, OnDestroy {
     } catch (error) {
       if (this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) {
         this.clearWorkspaceData();
+        this.syncWorkspaceUrl('overview', true);
         this.error = this.message(error);
         // clearWorkspaceData invalidates the request generation, so this failure path
         // must release the loading state itself instead of relying on the guarded finally.
@@ -2823,6 +2827,43 @@ export class AppComponent implements OnInit, OnDestroy {
   toggleMobileMore(): void {
     if (this.mobileMoreOpen) this.mobileMoreSearch = '';
     this.mobileMoreOpen = !this.mobileMoreOpen;
+  }
+
+  @HostListener('window:popstate')
+  onBrowserHistoryChange(): void {
+    if (!this.signedIn || !this.initialized) return;
+    this.applyBrowserWorkspaceRoute();
+  }
+
+  private applyInitialWorkspaceRoute(): void {
+    if (this.initialRouteApplied) return;
+    this.initialRouteApplied = true;
+    this.applyBrowserWorkspaceRoute();
+  }
+
+  private applyBrowserWorkspaceRoute(): void {
+    const resolution = resolveWorkspacePath(
+      window.location.pathname,
+      tab => tab === 'overview' || (this.canAccessTab(tab) && (tab === 'platform-admin' || Boolean(this.business))),
+    );
+    this.applyingBrowserRoute = true;
+    try {
+      this.setTab(resolution.tab);
+    } finally {
+      this.applyingBrowserRoute = false;
+    }
+    const nextUrl = workspaceUrlFor(resolution.tab, window.location.search, window.location.hash);
+    if (resolution.status !== 'matched' || window.location.pathname !== resolution.path) {
+      window.history.replaceState(window.history.state, '', nextUrl);
+    }
+  }
+
+  private syncWorkspaceUrl(tab: Tab, replace = false): void {
+    if (this.applyingBrowserRoute) return;
+    const nextUrl = workspaceUrlFor(tab, window.location.search, window.location.hash);
+    if (window.location.pathname === workspacePathFor(tab)) return;
+    if (replace) window.history.replaceState(window.history.state, '', nextUrl);
+    else window.history.pushState(window.history.state, '', nextUrl);
   }
 
   @HostListener('document:keydown.escape')
@@ -3617,6 +3658,7 @@ export class AppComponent implements OnInit, OnDestroy {
   setTab(tab: Tab): void {
     if (!this.canAccessTab(tab)) {
       this.tab = 'overview';
+      this.syncWorkspaceUrl('overview', true);
       this.mobileMoreOpen = false;
       return;
     }
@@ -3626,6 +3668,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.operationsWarning = '';
     }
     this.tab = tab;
+    this.syncWorkspaceUrl(tab);
     this.error = tab === 'overview' && this.homeDashboardError ? this.homeDashboardError : '';
     this.mobileMoreOpen = false;
     if (tab === 'reports') void this.loadProfitLoss();
@@ -3683,6 +3726,46 @@ export class AppComponent implements OnInit, OnDestroy {
   })); }
   get statementBalanceEntries(): Array<{ currency: string; balance: string }> {
     return Object.entries(this.customerStatement?.balances_by_currency || {}).map(([currency, balance]) => ({ currency, balance }));
+  }
+
+  async openCustomerStatementById(customerId: string): Promise<void> {
+    const business = this.business;
+    const userId = this.currentAuthUid;
+    if (!business || !this.signedIn || !userId || !customerId) return;
+    const businessId = business.id;
+    const role = business.role ?? null;
+    const requestVersion = this.statementLoadGuard.begin();
+    const requestContext = { workspaceId: businessId, userId, role, signedIn: this.signedIn, customerId };
+    const isCurrent = (): boolean => isCurrentTenantRequest(
+      this.statementLoadGuard,
+      requestVersion,
+      requestContext,
+      {
+        workspaceId: this.business?.id ?? '',
+        userId: this.currentAuthUid,
+        role: this.business?.role ?? null,
+        signedIn: this.signedIn,
+        customerId,
+      },
+    );
+    this.statementVisible = true;
+    this.statementLoading = true;
+    this.statementError = '';
+    this.customerStatement = null;
+    try {
+      const customer = await this.api.customer(businessId, customerId);
+      if (!isCurrent()) return;
+      this.statementCustomerId = customer.id;
+      this.statementCustomerName = customer.name;
+      this.statementFromDate = '';
+      this.statementToDate = '';
+      this.statementLoading = false;
+      await this.loadCustomerStatementPage(0);
+    } catch (error) {
+      if (!isCurrent()) return;
+      this.statementError = this.message(error);
+      this.statementLoading = false;
+    }
   }
 
   async loadCustomerStatement(customer: Customer): Promise<void> {
@@ -3857,6 +3940,7 @@ export class AppComponent implements OnInit, OnDestroy {
         const products = await this.api.products(businessId);
         if (this.business?.id !== businessId) return;
         this.setProductPage(products);
+        this.productWorkspace?.retry();
         if (this.products.length) this.invoiceProductId = this.products[0].id;
       } catch {
         if (this.business?.id === businessId) {
@@ -3943,6 +4027,7 @@ export class AppComponent implements OnInit, OnDestroy {
         const customers = await this.api.customers(businessId);
         if (this.business?.id !== businessId) return;
         this.setCustomerPage(customers);
+        this.customerWorkspace?.retry();
         if (!this.invoiceCustomerId && this.customers.length) {
           this.invoiceCustomerId = this.customers[0].id;
         }
@@ -3971,8 +4056,27 @@ export class AppComponent implements OnInit, OnDestroy {
     return keys[code] ? this.t(keys[code]) : code;
   }
 
+  private normalizeProductDecimal(value: string, scale: 2 | 3): string | null {
+    const normalized = String(value ?? '').trim()
+      .replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+      .replace(/[۰-۹]/g, digit => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+      .replace(/٫/g, '.');
+    const pattern = scale === 2 ? /^(\d{1,12})(?:\.(\d{1,2}))?$/ : /^(\d{1,11})(?:\.(\d{1,3}))?$/;
+    const match = pattern.exec(normalized);
+    if (!match) return null;
+    return `${BigInt(match[1]).toString()}.${(match[2] || '').padEnd(scale, '0')}`;
+  }
+
   async createProduct(): Promise<void> {
     if (!this.business) return;
+    if (!this.productName.trim()) { this.error = this.t('productEditor.nameRequired'); return; }
+    if (!this.productUnit.trim()) { this.error = this.t('productEditor.unitRequired'); return; }
+    const unitPrice = this.normalizeProductDecimal(this.productPrice, 2);
+    const openingQuantity = this.stockTracked && this.business.role === 'owner'
+      ? this.normalizeProductDecimal(this.productOpeningQuantity, 3)
+      : '0';
+    if (unitPrice === null) { this.error = this.t('ui.m_1hiyjor'); return; }
+    if (openingQuantity === null) { this.error = this.t('ui.m_1rtcb8u'); return; }
     const businessId = this.business.id;
     this.loading = true;
     this.error = '';
@@ -3980,16 +4084,23 @@ export class AppComponent implements OnInit, OnDestroy {
     this.productMessageKind = 'success';
     try {
       await this.api.createProduct(businessId, {
-        name: this.productName, unit_price: Number(this.productPrice).toFixed(2), is_stock_tracked: this.stockTracked,
-        opening_quantity: this.stockTracked && this.business.role === 'owner' ? this.productOpeningQuantity : '0'
+        name: this.productName.trim(),
+        sku: this.productSku.trim() || undefined,
+        description: this.productDescription.trim() || undefined,
+        unit: this.productUnit.trim() || 'unit',
+        unit_price: unitPrice,
+        is_stock_tracked: this.stockTracked,
+        opening_quantity: openingQuantity,
       });
       if (this.business?.id !== businessId) return;
-      this.productName = ''; this.productPrice = ''; this.stockTracked = false; this.productOpeningQuantity = '0';
+      this.productName = ''; this.productSku = ''; this.productDescription = ''; this.productUnit = 'unit';
+      this.productPrice = ''; this.stockTracked = false; this.productOpeningQuantity = '0'; this.productCreateOpen = false;
       this.productMessage = this.t('ui.m_b4kbxp');
       try {
         const products = await this.api.products(businessId);
         if (this.business?.id !== businessId) return;
         this.setProductPage(products);
+        this.productWorkspace?.retry();
         if (this.products.length) this.invoiceProductId = this.products[0].id;
       } catch {
         if (this.business?.id === businessId) {
@@ -4017,6 +4128,13 @@ export class AppComponent implements OnInit, OnDestroy {
     const scaledRate = (value * 100n * scale + denominator / 2n) / denominator;
     const cappedRate = scaledRate > 100n * scale ? 100n * scale : scaledRate;
     return `${cappedRate / scale}.${String(cappedRate % scale).padStart(12, '0')}`;
+  }
+
+  createInvoiceForCustomer(customerId: string): void {
+    if (!this.business || !this.signedIn || !this.currentAuthUid || !customerId) return;
+    this.startNewInvoiceDraft();
+    this.invoiceCustomerId = customerId;
+    this.setTab('invoices');
   }
 
   startNewInvoiceDraft(): void {

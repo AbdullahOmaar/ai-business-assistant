@@ -19,8 +19,8 @@ export interface BusinessInvitation {
 }
 export interface BusinessInvitationCreated extends BusinessInvitation { token: string; }
 export interface BusinessMembership { id: string; business_id: string; role: 'owner' | 'staff'; created_at: string | null; }
-export interface Customer { id: string; name: string; email?: string | null; phone?: string | null; }
-export interface Product { id: string; name: string; sku?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; }
+export interface Customer { id: string; name: string; email?: string | null; phone?: string | null; address?: string | null; notes?: string | null; created_at?: string | null; }
+export interface Product { id: string; name: string; sku?: string | null; description?: string | null; unit?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; created_at?: string | null; }
 export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; outstanding_amount?: string; issue_date?: string | null; created_at?: string | null; due_date?: string | null; }
 export interface InvoiceDetail extends Invoice {
   notes?: string | null;
@@ -133,8 +133,28 @@ export interface NotificationRecord { id: string; kind: string; title: string; b
 export interface Supplier { id: string; name: string; email?: string | null; phone?: string | null; address?: string | null; is_active: boolean; }
 
 export interface PurchaseOrderLine { id: string; product_id: string; quantity: string; unit_cost: string; received_quantity: string; remaining_quantity: string; }
-
+export interface PurchaseOrderInput {
+  supplier_id: string;
+  order_number: string;
+  currency_code: string;
+  lines: Array<{ product_id: string; quantity: string; unit_cost: string }>;
+}
 export interface PurchaseOrder { id: string; supplier_id: string; order_number: string; status: string; currency_code: string; total: string; created_at: string | null; lines: PurchaseOrderLine[]; }
+export interface PurchaseOrderDetail extends Omit<PurchaseOrder, 'lines'> {
+  supplier: Supplier;
+  lines: Array<PurchaseOrderLine & { product: Pick<Product, 'id' | 'name' | 'sku' | 'unit'> | null }>;
+}
+export interface PurchaseOrderReceipt {
+  id: string; product_id: string; movement_type: string; quantity_delta: string;
+  reason: string | null; reference_type: string; reference_id: string;
+  created_by_subject: string; created_at: string | null;
+  product: Pick<Product, 'id' | 'name' | 'sku' | 'unit'> | null;
+}
+export interface PurchaseOrderActivity {
+  id: string; actor_subject: string; action: string; target_type: string; target_id: string;
+  change_summary: string | Record<string, unknown> | null; created_at: string | null;
+}
+export interface PurchaseOrderPage<T> { items: T[]; limit: number; offset: number; }
 
 export interface RecurringInvoiceSchedule { id: string; customer_id: string | null; interval_days: number; timezone: string; next_run_at: string; is_active: boolean; created_at: string | null; }
 
@@ -173,6 +193,7 @@ export type InvoiceLineInput =
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
+  private readonly pendingReceiptKeys = new Map<string, { fingerprint: string; key: string }>();
   constructor(private readonly auth: AuthService) {}
 
   async releaseInfo(): Promise<ReleaseInfo> {
@@ -184,7 +205,43 @@ export class ApiService {
     return await response.json() as ReleaseInfo;
   }
 
-  private async request<T>(path: string, method = 'GET', body?: unknown): Promise<T> {
+  async createDemoSession(): Promise<{ custom_token: string }> {
+    const config = await this.auth.getRuntimeConfig();
+    const base = (config.apiBaseUrl || '').trim().replace(/\/$/, '');
+    if (!base || base.includes('YOUR-BACKEND')) throw new Error('The backend URL is not configured.');
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
+    try {
+      const response = await fetch(base + '/api/v1/demo/session', {
+        method: 'POST',
+        headers: { 'Accept': 'application/json' },
+        cache: 'no-store',
+        signal: controller.signal,
+      });
+      if (!response.ok) {
+        let message = 'Demo sign-in is temporarily unavailable.';
+        try {
+          const payload = await response.json();
+          if (typeof payload.detail === 'string') message = payload.detail;
+        } catch { /* Keep the safe fallback for non-JSON provider responses. */ }
+        throw new ApiRequestError(message, response.status);
+      }
+      const payload = await response.json() as { custom_token?: unknown };
+      if (typeof payload.custom_token !== 'string' || !payload.custom_token.trim()) {
+        throw new Error('Demo sign-in returned an invalid session.');
+      }
+      return { custom_token: payload.custom_token };
+    } catch (error) {
+      if ((error as { name?: string } | null)?.name === 'AbortError') {
+        throw new Error('Demo sign-in timed out. Check your connection and retry.');
+      }
+      throw error;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
+  private async request<T>(path: string, method = 'GET', body?: unknown, extraHeaders: Record<string, string> = {}): Promise<T> {
     const config = await this.auth.getRuntimeConfig();
     const base = (config.apiBaseUrl || '').trim().replace(/\/$/, '');
     if (!base || base.includes('YOUR-BACKEND')) {
@@ -201,7 +258,8 @@ export class ApiService {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json',
-            'Accept': 'application/json'
+            'Accept': 'application/json',
+            ...extraHeaders
           },
           body: body === undefined ? undefined : JSON.stringify(body),
           signal: controller.signal
@@ -464,18 +522,45 @@ export class ApiService {
     if (endDate) params.set('end_date', endDate);
     return this.request<ProfitLossReport>(`/api/v1/businesses/${encodeURIComponent(businessId)}/profit-loss?${params.toString()}`);
   }
-  customers(businessId: string, offset = 0, limit = 100): Promise<Customer[]> {
-    const query = offset > 0 ? `?limit=${limit}&offset=${offset}` : `?limit=${limit}`;
-    return this.request<Customer[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers${query}`);
+  customers(businessId: string, offset = 0, limit = 100, search = ''): Promise<Customer[]> {
+    const params = new URLSearchParams({ limit: String(Math.min(200, Math.max(1, limit))), offset: String(Math.max(0, offset)) });
+    if (search.trim()) params.set('q', search.trim().slice(0, 120));
+    return this.request<Customer[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers?${params.toString()}`);
   }
-  createCustomer(businessId: string, body: { name: string; email?: string; phone?: string }): Promise<Customer> {
+  customer(businessId: string, customerId: string): Promise<Customer> {
+    return this.request<Customer>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}`);
+  }
+  createCustomer(businessId: string, body: { name: string; email?: string; phone?: string; address?: string; notes?: string }): Promise<Customer> {
     return this.request<Customer>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers`, 'POST', body);
   }
-  products(businessId: string, offset = 0, limit = 100): Promise<Product[]> {
-    const query = offset > 0 ? `?limit=${limit}&offset=${offset}` : `?limit=${limit}`;
-    return this.request<Product[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products${query}`);
+  updateCustomer(businessId: string, customerId: string, body: Partial<Pick<Customer, 'name' | 'email' | 'phone' | 'address' | 'notes'>>): Promise<Customer> {
+    return this.request<Customer>(`/api/v1/businesses/${encodeURIComponent(businessId)}/customers/${encodeURIComponent(customerId)}`, 'PATCH', body);
   }
-  createProduct(businessId: string, body: { name: string; unit_price: string; is_stock_tracked: boolean; opening_quantity?: string }): Promise<Product> {
+  products(businessId: string, offset = 0, limit = 100): Promise<Product[]> {
+    const params = new URLSearchParams({
+      limit: String(Math.min(200, Math.max(1, limit))),
+      offset: String(Math.max(0, offset)),
+    });
+    return this.request<Product[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products?${params.toString()}`);
+  }
+  product(businessId: string, productId: string): Promise<Product> {
+    return this.request<Product>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products/${encodeURIComponent(productId)}`);
+  }
+  updateProduct(
+    businessId: string,
+    productId: string,
+    body: Partial<Pick<Product, 'name' | 'sku' | 'description' | 'unit'>>,
+  ): Promise<Product> {
+    return this.request<Product>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/products/${encodeURIComponent(productId)}`,
+      'PATCH',
+      body,
+    );
+  }
+  createProduct(businessId: string, body: {
+    name: string; unit_price: string; is_stock_tracked: boolean; opening_quantity?: string;
+    sku?: string; description?: string; unit?: string;
+  }): Promise<Product> {
     return this.request<Product>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products`, 'POST', body);
   }
   operationsHealth(businessId: string): Promise<OperationalHealth> {
@@ -641,8 +726,38 @@ export class ApiService {
   purchaseOrders(businessId: string): Promise<PurchaseOrder[]> {
     return this.request<PurchaseOrder[]>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders?limit=100');
   }
-  createPurchaseOrder(businessId: string, body: { supplier_id: string; order_number: string; currency_code: string; lines: Array<{ product_id: string; quantity: string; unit_cost: string }> }): Promise<PurchaseOrder> {
+  purchaseOrderDetail(businessId: string, orderId: string): Promise<PurchaseOrderDetail> {
+    return this.request<PurchaseOrderDetail>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId)
+    );
+  }
+  createPurchaseOrder(businessId: string, body: PurchaseOrderInput): Promise<PurchaseOrder> {
     return this.request<PurchaseOrder>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders', 'POST', body);
+  }
+  updatePurchaseOrder(businessId: string, orderId: string, body: PurchaseOrderInput): Promise<PurchaseOrder> {
+    return this.request<PurchaseOrder>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId),
+      'PUT',
+      body,
+    );
+  }
+  cancelPurchaseOrder(businessId: string, orderId: string): Promise<Pick<PurchaseOrder, 'id' | 'order_number' | 'status' | 'currency_code' | 'total'>> {
+    return this.request(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId) + '/cancel',
+      'POST',
+    );
+  }
+  purchaseOrderReceipts(businessId: string, orderId: string, offset = 0, limit = 50): Promise<PurchaseOrderPage<PurchaseOrderReceipt>> {
+    const params = new URLSearchParams({ limit: String(Math.min(200, Math.max(1, limit))), offset: String(Math.max(0, offset)) });
+    return this.request<PurchaseOrderPage<PurchaseOrderReceipt>>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId) + '/receipts?' + params.toString()
+    );
+  }
+  purchaseOrderActivity(businessId: string, orderId: string, offset = 0, limit = 50): Promise<PurchaseOrderPage<PurchaseOrderActivity>> {
+    const params = new URLSearchParams({ limit: String(Math.min(200, Math.max(1, limit))), offset: String(Math.max(0, offset)) });
+    return this.request<PurchaseOrderPage<PurchaseOrderActivity>>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId) + '/activity?' + params.toString()
+    );
   }
   approvePurchaseOrder(businessId: string, orderId: string): Promise<Omit<PurchaseOrder, 'lines'>> {
     return this.request<Omit<PurchaseOrder, 'lines'>>(
@@ -650,8 +765,48 @@ export class ApiService {
       'POST'
     );
   }
+  private receiptOperationKey(businessId: string, orderId: string, lines: Array<{ line_id: string; quantity: string }>): string {
+    const storageKey = 'aiba:receipt:' + businessId + ':' + orderId;
+    const fingerprint = JSON.stringify([...lines]
+      .map(line => ({ line_id: line.line_id, quantity: String(line.quantity).trim() }))
+      .sort((left, right) => left.line_id.localeCompare(right.line_id) || left.quantity.localeCompare(right.quantity)));
+    let saved = this.pendingReceiptKeys.get(storageKey);
+    try {
+      const raw = sessionStorage.getItem(storageKey);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { fingerprint?: unknown; key?: unknown };
+        if (typeof parsed.fingerprint === 'string' && typeof parsed.key === 'string') {
+          saved = { fingerprint: parsed.fingerprint, key: parsed.key };
+        }
+      }
+    } catch { /* session storage may be unavailable; keep the in-memory retry key */ }
+    if (saved?.fingerprint === fingerprint) return saved.key;
+
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = [...bytes].map(value => value.toString(16).padStart(2, '0')).join('');
+    const key = hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-' + hex.slice(16, 20) + '-' + hex.slice(20);
+    const next = { fingerprint, key };
+    this.pendingReceiptKeys.set(storageKey, next);
+    try { sessionStorage.setItem(storageKey, JSON.stringify(next)); } catch { /* in-memory retry key remains available */ }
+    return key;
+  }
+
   receivePurchaseOrder(businessId: string, orderId: string, lines: Array<{ line_id: string; quantity: string }>): Promise<PurchaseOrder> {
-    return this.request<PurchaseOrder>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId) + '/receive', 'POST', { lines });
+    const storageKey = 'aiba:receipt:' + businessId + ':' + orderId;
+    const idempotencyKey = this.receiptOperationKey(businessId, orderId, lines);
+    return this.request<PurchaseOrder>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId) + '/receive',
+      'POST',
+      { lines },
+      { 'Idempotency-Key': idempotencyKey },
+    ).then(result => {
+      this.pendingReceiptKeys.delete(storageKey);
+      try { sessionStorage.removeItem(storageKey); } catch { /* session storage may be unavailable */ }
+      return result;
+    });
   }
   recurringSchedules(businessId: string): Promise<RecurringInvoiceSchedule[]> {
     return this.request<RecurringInvoiceSchedule[]>('/api/v1/businesses/' + encodeURIComponent(businessId) + '/recurring-invoices?limit=100');

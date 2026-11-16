@@ -65,16 +65,74 @@ def test_assistant_missing_provider_key_uses_labeled_local_fallback(assistant_cl
     assert "Bearer" not in response.text
 
 
-def test_assistant_checks_membership_before_provider_configuration(assistant_client):
+def test_assistant_foreign_tenant_denial_has_no_provider_or_persistence_side_effects(
+    monkeypatch, assistant_client
+):
+    """A member of another workspace cannot invoke AI or cause any persisted side effect."""
+    import json
+
+    from sqlalchemy import func, select
+
+    import app.assistant_api as assistant_api
+    from app.models import AuditEvent
+
     business_id = create_workspace(assistant_client)
-    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("unrelated-user")
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal("assistant-other-owner")
+    other_business_id = create_workspace(assistant_client)
+    assert other_business_id != business_id
+
+    provider_calls = []
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "choices": [{
+                    "message": {
+                        "content": json.dumps({"answer": "must not be reached", "source_ids": []})
+                    }
+                }]
+            }
+
+    class RecordingAsyncClient:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *args):
+            return False
+
+        async def post(self, url, *, headers, json):
+            provider_calls.append({"url": url, "headers": headers})
+            return FakeResponse()
+
+    monkeypatch.setattr(assistant_api.httpx, "AsyncClient", RecordingAsyncClient)
+    monkeypatch.setenv("OPENAI_API_KEY", "test-only-placeholder")
+
+    def persisted_snapshot():
+        with app.state.session_factory() as session:
+            table_counts = {
+                table.name: session.scalar(select(func.count()).select_from(table))
+                for table in Base.metadata.sorted_tables
+            }
+            audit_count = session.scalar(select(func.count()).select_from(AuditEvent))
+            return table_counts, audit_count
+
+    before = persisted_snapshot()
     response = assistant_client.post(
         f"/api/v1/businesses/{business_id}/assistant/chat",
         json={"message": "Show me this business's invoices."},
     )
+    after = persisted_snapshot()
+
     assert response.status_code == 403
     assert response.json()["detail"] == "No access to this business workspace."
-    assert "OPENAI_API_KEY" not in response.text
+    assert provider_calls == []
+    assert after == before
+    assert "test-only-placeholder" not in response.text
 
 
 def test_assistant_rejects_caller_supplied_system_role(assistant_client):
