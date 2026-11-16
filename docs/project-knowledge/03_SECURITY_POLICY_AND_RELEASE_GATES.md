@@ -1,10 +1,10 @@
 ---
 document_id: ABA-KNOW-03
 title: Security Policy & Release Gates
-version: 1.0.13
+version: 1.0.14
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-16T23:02:52Z
+last_verified_at: 2026-11-17
 review_due: 2026-12-17
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant engineering, data handling and release operations
