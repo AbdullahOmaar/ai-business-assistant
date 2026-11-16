@@ -1,11 +1,11 @@
 ---
 document_id: ABA-KNOW-02
 title: Architecture & Engineering Standards
-version: 1.0.13
+version: 1.0.14
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-13T04:19:05Z
-review_due: 2026-12-11
+last_verified_at: 2026-11-17
+review_due: 2026-12-17
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant Production V1 application architecture
 canonical_sources:
@@ -105,8 +105,8 @@ Follow the Owner's economical validation decision in the canonical [MWOS — Mod
 - Reuse a matching active branch/PR; one coherent branch and PR per work package.
 - Preserve unrelated user work. Do not overwrite or delete unique changes.
 - Keep diffs focused; add tests and docs alongside behavior changes.
-- Require the accountable maintainer/Project Master to document a full self-review on the exact candidate SHA for every change. Controlled/security/architecture changes and knowledge publication must also satisfy the applicable independent non-author review and authorized-approval gate in active project instructions. The Owner's 2026-11-10 Notion decision waives that review, so the package remains DRAFT / CONFLICTED until the policy is reconciled. Formal GitHub branch-protection approvals remain mandatory and must never be bypassed.
-- Do not merge until the exact PR head has required checks, any formal approval actually enforced by GitHub branch protection, documented maintainer/Project Master full self-review, any applicable independent non-author review and authorized approval, and Owner authorization. Never bypass provider-enforced protections.
+- Require the accountable maintainer/Project Master to document a full self-review on the exact candidate SHA for every change. Current AIBA policy does not require a separate project-level independent reviewer solely for routine PRs or controlled knowledge updates. Formal GitHub approvals actually enforced by repository protection remain mandatory; action-specific independent security/privacy verification remains required where an applicable high-impact policy explicitly says so. Owner adoption/publication approval, when required, remains separate from maintainer review.
+- MASTER may merge an ordinary non-Draft READY PR under the standing Owner delegation when exact-head required checks pass, the full maintainer self-review is current, blocking review threads are resolved, base/divergence is reconciled and provider-enforced protections are satisfied. No separate per-PR Owner approval is required. Never bypass provider-enforced protections.
 - Do not create duplicate task trackers or branch-per-subtask noise.
 
 ## 8. Dependency and security review
