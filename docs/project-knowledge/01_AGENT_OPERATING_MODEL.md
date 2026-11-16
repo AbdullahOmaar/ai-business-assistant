@@ -4,7 +4,7 @@ title: Agent Operating Model
 version: 1.0.13
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-17
+last_verified_at: 2026-11-16T23:02:52Z
 review_due: 2026-12-17
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams
@@ -16,7 +16,7 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb812ebd0dc58a22d8ed7c
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://github.com/AbdullahOmaar/ai-business-assistant/blob/master/nov-2026-phase-1-ux-foundation/AGENTS.md
-related_github_sha: d9878e6ea0955ff97b2f8bf827854392878f15ed
+related_github_sha: 0e6b956c55815ad8b1297ffe0bac1e25b8991888
 supersedes: none
 superseded_by: none
 ---
