@@ -4,7 +4,7 @@ title: Agent Operating Model
 version: 1.0.14
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-17T00:00:00Z
+last_verified_at: 2026-11-16T23:08:00Z
 review_due: 2026-12-17
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams
