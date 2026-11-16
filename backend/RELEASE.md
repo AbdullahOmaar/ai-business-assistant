@@ -59,3 +59,14 @@ The main Neon database is currently at `0005_employee_payroll`. CI now generates
 - Production remains on the previous release until PR #398 is merged under repository protections and the approved release process completes.
 
 [release-api] Build the coordinated API 1.5.0 candidate from the exact reviewed PR head.
+
+## Public synthetic demo session — 2026-11-17
+
+The API now exposes an opt-in public demo session endpoint. It uses the server-side
+Firebase Admin configuration to mint a custom token for the configured demo
+identity; no password is delivered to the browser. Enable only with
+`DEMO_LOGIN_ENABLED=true` and `DEMO_LOGIN_EMAIL` set in the API environment.
+The endpoint refuses platform super-admin and delegated platform-role identities.
+See `docs/PUBLIC_DEMO_ACCESS.md` for the operator checklist.
+
+[release-api] Rebuild API Preview for public synthetic demo session support.
