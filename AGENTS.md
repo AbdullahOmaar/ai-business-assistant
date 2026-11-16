@@ -1,3 +1,25 @@
+## OWNER DECISION — CURRENT SYNTHETIC DEVELOPMENT DATA & PREVIEW AUTHORIZATION — effective 2026-11-15
+
+The Owner confirms AIBA remains in development / pre-release. The environment labelled Production currently contains synthetic, non-real development data. Preview may use the existing API, Firebase client configuration and configured application database; do not block sign-in or QA solely because provider metadata labels those resources Production. A separate Neon QA database, Firebase project, paid QA resource or repeated Owner approval is not required solely to test this current synthetic environment.
+
+### Authorized application-level operations
+- Create, read, update and delete synthetic test users, accounts, workspaces, memberships and business/application records through supported, authenticated application/API workflows.
+- Bulk create, update, delete, clean up and reset synthetic test records when needed for development and QA, without repeated per-action Owner approval.
+- Use clearly identifiable test identities/records and preserve normal authorization, tenant isolation, validation, idempotency and audit history.
+
+### Boundaries that remain mandatory
+- This is not permission for direct database bypass, arbitrary SQL, audit-log tampering, schema changes, destructive migrations, data-loss operations or weakening provider security.
+- Safe additive/backward-compatible migrations require exact migration/generated-SQL review, disposable PostgreSQL CI validation and rollback/recovery planning before application to the current development database.
+- No CI job or untrusted PR code may connect to the current runtime/database or receive its secrets. Keep secrets only in provider secret stores.
+- Real external payments/transfers/settlements, real customer messages/notifications, tax filing, T37 financial semantics, paid provisioning/billing and provider security changes remain approval-gated.
+- Before real customer/business data is introduced, pause this exception and obtain a new Owner data-handling decision.
+
+This 2026-11-15 decision supersedes the older 2026-11-14 wording below that limits ordinary data operations to scoped/non-destructive CRUD or requires separate approval for bulk deletion/reset. The superseded text is retained as historical policy context only. All other security, migration, exact-head CI, review, merge and release gates remain active.
+
+Canonical decision: https://app.notion.com/p/4089320b90fb81ddb93de5116f9f0097
+
+---
+
 # OWNER DECISION — PRODUCTION & PREVIEW USE THE CURRENT SYNTHETIC DEVELOPMENT ENVIRONMENT — effective 2026-11-15
 
 **Lifecycle classification:** AIBA is still development / pre-release. The deployed environment technically labelled Production currently contains synthetic, non-real development data. It is not a real customer-production environment. This Owner decision controls over provider labels such as `target=production`, Neon branch names, or the use of a Vercel Preview URL.
