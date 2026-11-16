@@ -4,7 +4,7 @@ title: Security Policy & Release Gates
 version: 1.0.13
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-17
+last_verified_at: 2026-11-16T23:02:52Z
 review_due: 2026-12-17
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant engineering, data handling and release operations
@@ -15,7 +15,7 @@ canonical_sources:
   - https://app.notion.com/p/4099320b90fb8107a66dd4aeb6924fb9
   - https://app.notion.com/p/4099320b90fb81b388fadb891c9e7f44
   - https://app.notion.com/p/4099320b90fb8158bc86d8e105cfc3ea
-related_github_sha: d9878e6ea0955ff97b2f8bf827854392878f15ed
+related_github_sha: 0e6b956c55815ad8b1297ffe0bac1e25b8991888
 supersedes: none
 superseded_by: none
 ---
