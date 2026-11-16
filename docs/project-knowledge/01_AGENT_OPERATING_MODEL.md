@@ -4,7 +4,7 @@ title: Agent Operating Model
 version: 1.0.14
 status: DRAFT
 owner: Project Master / Repository Owner
-last_verified_at: 2026-11-17
+last_verified_at: 2026-11-17T00:00:00Z
 review_due: 2026-12-17
 knowledge_class: CONTROLLED
 applicable_scope: AI Business Assistant project chats and assigned workstreams
@@ -23,7 +23,7 @@ superseded_by: none
 
 # Agent Operating Model
 
-> **Approval state:** DRAFT candidate version 1.0.13; this five-document package is not approved for Project Sources publication. The Owner's underlying development-stage write authorization is effective in canonical Notion from 2026-11-11 and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. Role labels describe documented responsibilities; they do not prove a current runtime identity.
+> **Approval state:** DRAFT candidate version 1.0.14; this five-document package is not approved for Project Sources publication. The Owner's standing synthetic-development authorization is effective in canonical Notion and is separate from approval of this package. **Project Sources upload/readback:** NOT VERIFIED; publication requires the separate UI operation and exact readback. Role labels describe documented responsibilities; they do not prove a current runtime identity.
 
 ## 1. Authority and coordination
 
