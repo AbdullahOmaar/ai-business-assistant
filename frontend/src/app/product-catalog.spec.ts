@@ -36,7 +36,8 @@ test('catalogue sorting is available to desktop keyboard users and mobile touch 
   assert.match(component, /onMobileSortChange\(\$event\)/);
   assert.match(component, /filterAndSortProducts\(/);
   assert.match(sortHelper, /new Intl\.Collator\(locale/);
-  assert.match(sortHelper, /Number\(left\.unit_price\)/);
+  assert.match(sortHelper, /compareDecimalStrings/);
+  assert.doesNotMatch(sortHelper, /Number\(left\.(unit_price|stock_quantity)/);
   assert.match(sortHelper, /leftCurrency/);
 });
 
