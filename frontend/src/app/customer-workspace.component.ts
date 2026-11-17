@@ -270,8 +270,14 @@ export class CustomerWorkspaceComponent {
   openInvoices(): void { if (this.selectedCustomerId) this.invoicesRequested.emit(this.selectedCustomerId); }
   openStatement(): void { if (this.selectedCustomerId) this.statementRequested.emit(this.selectedCustomerId); }
 
+  async editCustomerFromDirectory(customerId: string): Promise<void> {
+    await this.openCustomer(customerId);
+    if (this.selectedCustomerId === customerId && this.selectedCustomer()) this.editCustomer();
+  }
+
   handleRowAction(event: AbaRecordTableActionEvent): void {
     if (event.actionId === 'invoices') this.invoicesRequested.emit(event.rowId);
     if (event.actionId === 'statement') this.statementRequested.emit(event.rowId);
+    if (event.actionId === 'edit') void this.editCustomerFromDirectory(event.rowId);
   }
 }
