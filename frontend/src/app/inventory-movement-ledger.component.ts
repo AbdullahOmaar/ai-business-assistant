@@ -263,7 +263,9 @@ export class InventoryMovementLedgerComponent {
 
   async load(reset: boolean): Promise<void> {
     const requested = this.context();
-    if (!requested.businessId || !requested.userId || this.loading()) return;
+    if (!requested.businessId || !requested.userId || (!reset && this.loading())) return;
+    // A filter/refresh request supersedes an in-flight page so stale results cannot
+    // be rendered under the newly selected filter values.
     const version = this.guard.begin();
     if (reset) {
       this.offset = 0;
