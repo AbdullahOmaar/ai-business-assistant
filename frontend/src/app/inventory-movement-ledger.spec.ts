@@ -4,12 +4,21 @@ import test from 'node:test';
 
 const component = readFileSync(new URL('./inventory-movement-ledger.component.ts', import.meta.url), 'utf8');
 const guard = readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8');
+const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 
 test('inventory ledger is an isolated standalone read-only component', () => {
   assert.match(component, /selector: 'aba-inventory-movement-ledger'/);
   assert.match(component, /standalone: true/);
   assert.match(component, /readonly loadPage = input\.required<InventoryMovementLoader>\(\)/);
   assert.doesNotMatch(component, /createMovement|updateMovement|deleteMovement|adjustStock/);
+});
+
+test('component reuses the canonical authenticated API movement DTOs', () => {
+  assert.match(component, /StockMovementPage as InventoryMovementPage/);
+  assert.match(component, /StockMovementRecord as InventoryMovement/);
+  assert.match(component, /StockMovementType as InventoryMovementType/);
+  assert.match(api, /export interface StockMovementRecord/);
+  assert.match(api, /export interface StockMovementPage/);
 });
 
 test('ledger query exposes only supported tenant-scoped read filters and bounded pagination', () => {
@@ -68,7 +77,8 @@ test('signed quantities and localized timestamps retain backend values', () => {
   assert.match(component, /signDisplay: 'always'/);
   assert.match(component, /dateStyle: 'medium', timeStyle: 'short'/);
   assert.match(component, /Number\(value\) < 0/);
-  assert.match(component, /created_at: string/);
+  assert.match(component, /StockMovementRecord as InventoryMovement/);
+  assert.match(api, /created_at: string/);
 });
 
 test('pagination appends unique records and follows the server has_more flag', () => {
