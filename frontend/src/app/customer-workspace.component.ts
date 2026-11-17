@@ -122,6 +122,8 @@ export class CustomerWorkspaceComponent {
         this.customers.set([]);
         this.selectedCustomer.set(null);
         this.selectedCustomerId = null;
+        this.searchQuery = '';
+        this.searchDraft.set('');
         this.offset = 0;
         this.hasMore.set(false);
         this.loading.set(false);
@@ -241,6 +243,8 @@ export class CustomerWorkspaceComponent {
         return exists ? rows.map(row => row.id === record.id ? record : row) : [record, ...rows];
       });
       this.mode.set('profile');
+      // Re-read the server-filtered first page so create/edit cannot leave a record in the wrong search result set.
+      void this.loadCustomers(true);
     } catch {
       if (this.isCurrent(this.saveGuard, version, requested)) this.editorError.set(this.t('customerWorkspace.saveError'));
     } finally {
