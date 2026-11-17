@@ -1884,6 +1884,12 @@
     "reason": "Reason",
     "referenceType": "Reference type",
     "allReferences": "All references",
+    "referenceTypes": {
+      "invoice": "Sales invoice",
+      "invoice_void": "Invoice reversal",
+      "purchase_order": "Purchase order",
+      "sales_return": "Sales return"
+    },
     "reference": "Reference",
     "shown": "Shown",
     "loadingMore": "Loading more…",
