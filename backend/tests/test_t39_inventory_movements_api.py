@@ -9,7 +9,9 @@ import pytest
 from sqlalchemy.orm import Session
 
 from app.main import app
-from app.models import (\n    AuditEvent, Business, BusinessMembership, MembershipRole, Product, StockMovement,\n)
+from app.models import (
+    AuditEvent, Business, BusinessMembership, MembershipRole, Product, StockMovement,
+)
 from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
 
 
