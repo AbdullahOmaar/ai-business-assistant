@@ -22,6 +22,7 @@ test('ledger query exposes only supported tenant-scoped read filters and bounded
   assert.match(component, /productId: this\.productId\(\)/);
   assert.match(component, /movementType: this\.movementType\(\)/);
   assert.match(component, /referenceType: this\.referenceType\(\)/);
+  assert.match(component, /referenceType: this\.referenceType\(\)/);
 });
 
 test('movement types match the backend allowlist without inventing filters', () => {
