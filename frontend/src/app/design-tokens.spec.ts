@@ -465,9 +465,9 @@ test('shared cards follow the approved hybrid visual direction with balanced mob
   assert.match(cardSource, /overflow-wrap:anywhere/);
   assert.match(metricSource, /\.aba-metric-card::before/);
   assert.match(metricSource, /@media\(max-width:760px\)/);
-  assert.match(metricSource, /min-height:116px/);
-  assert.match(quickAccessSource, /grid-template-columns:36px minmax\(0,1fr\)/);
-  assert.match(quickAccessSource, /min-height:108px/);
+  assert.match(metricSource, /min-height:112px/);
+  assert.match(quickAccessSource, /grid-template-columns:32px minmax\(0,1fr\)/);
+  assert.match(quickAccessSource, /min-height:96px/);
   assert.match(quickAccessSource, /prefers-reduced-motion:reduce/);
 });
 
