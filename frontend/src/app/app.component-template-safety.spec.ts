@@ -1660,7 +1660,7 @@ test('PWA update notice stays touch-sized and readable in forced-colors mode', (
 
 test('inventory ledger is mounted inside the existing Products workspace with current tenant identity', () => {
   const ledgerIndex = source.indexOf('<aba-inventory-movement-ledger');
-  const productsTabIndex = source.lastIndexOf("@if (tab === 'products')", ledgerIndex);
+  const productsTabIndex = source.lastIndexOf("@if (tab === 'products' && business?.id)", ledgerIndex);
   const invoicesTabIndex = source.indexOf("@if (tab === 'invoices')", ledgerIndex);
   assert.ok(ledgerIndex >= 0 && productsTabIndex >= 0 && invoicesTabIndex > ledgerIndex,
     'ledger must remain nested in the existing Products tab, without a new route');
