@@ -1,27 +1,13 @@
 import { ChangeDetectionStrategy, Component, effect, inject, input, signal, untracked } from '@angular/core';
-import type { Product } from './api.service';
+import type {
+  Product,
+  StockMovementPage as InventoryMovementPage,
+  StockMovementRecord as InventoryMovement,
+  StockMovementType as InventoryMovementType,
+} from './api.service';
 import { LocalizationService } from './localization.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 
-export type InventoryMovementType = 'opening' | 'receipt' | 'sale' | 'return' | 'adjustment';
-export interface InventoryMovement {
-  id: string;
-  product_id: string;
-  movement_type: InventoryMovementType;
-  quantity_delta: string;
-  reason: string | null;
-  reference_type: string | null;
-  reference_id: string | null;
-  created_by_subject: string | null;
-  created_at: string;
-  product: { id: string; name: string; sku: string | null; unit: string | null };
-}
-export interface InventoryMovementPage {
-  items: InventoryMovement[];
-  limit: number;
-  offset: number;
-  has_more: boolean;
-}
 export interface InventoryMovementQuery {
   businessId: string;
   productId: string;
