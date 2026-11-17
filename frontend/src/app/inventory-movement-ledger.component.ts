@@ -57,6 +57,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
             }
           </select>
         </label>
+        @if (supportsReferenceFilter()) {
         <label>
           <span>{{ copy().referenceType }}</span>
           <select [value]="referenceType()" (change)="setReferenceType(readValue($event))" [disabled]="loading()">
@@ -66,6 +67,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
             }
           </select>
         </label>
+        }
       </div>
 
       @if (error()) {
@@ -196,6 +198,7 @@ export class InventoryMovementLedgerComponent {
   readonly items = signal<InventoryMovement[]>([]);
   readonly productId = signal('');
   readonly movementType = signal<InventoryMovementType | ''>('');
+  readonly supportsReferenceFilter = input(false);
   readonly referenceType = signal('');
   readonly referenceTypes = ['invoice', 'invoice_void', 'purchase_order', 'sales_return'];
   readonly loading = signal(false);
