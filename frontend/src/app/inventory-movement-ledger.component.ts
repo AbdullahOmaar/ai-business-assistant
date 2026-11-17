@@ -178,7 +178,8 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
     .inventory-ledger__quantity small{font-size:11px;font-weight:600;color:var(--aiba-muted,#64748b)}
     .inventory-ledger__quantity--negative{color:var(--aiba-danger,#b91c1c)}
     .inventory-ledger__quantity--positive{color:var(--aiba-success,#15803d)}
-    .inventory-ledger__reason{margin:0;font-size:12px;overflow-wrap:anywhere}
+    .inventory-ledger__reason,.inventory-ledger__reference{margin:0;font-size:12px;overflow-wrap:anywhere}
+    .inventory-ledger__reference{color:var(--aiba-muted,#64748b)}
     .inventory-ledger__meta{flex-wrap:wrap;color:var(--aiba-muted,#64748b);font-size:11px}
     .inventory-ledger__desktop-table{display:none;overflow:auto;border:1px solid var(--aiba-line,#e2e8f0);border-radius:var(--aiba-radius-card,16px)}
     .inventory-ledger table{width:100%;border-collapse:collapse;text-align:start;font-size:12px}
@@ -242,6 +243,7 @@ export class InventoryMovementLedgerComponent {
       title: this.t('title'), eyebrow: this.t('eyebrow'), subtitle: this.t('subtitle'),
       refresh: this.t('refresh'), filters: this.t('filters'), product: this.t('product'),
       allProducts: this.t('allProducts'), movementType: this.t('movementType'), allTypes: this.t('allTypes'),
+      referenceType: this.t('referenceType'), allReferences: this.t('allReferences'),
       retry: this.t('retry'), loading: this.t('loading'), emptyTitle: this.t('emptyTitle'),
       emptyDescription: this.t('emptyDescription'), movementList: this.t('movementList'),
       unit: this.t('unit'), sku: this.t('sku'), noReason: this.t('noReason'),
