@@ -1882,6 +1882,8 @@
     "date": "Date",
     "quantity": "Quantity",
     "reason": "Reason",
+    "referenceType": "Reference type",
+    "allReferences": "All references",
     "reference": "Reference",
     "shown": "Shown",
     "loadingMore": "Loading more…",
