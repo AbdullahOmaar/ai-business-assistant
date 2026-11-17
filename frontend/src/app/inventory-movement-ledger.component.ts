@@ -75,8 +75,8 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
           <span>{{ copy().referenceType }}</span>
           <select [value]="referenceType()" (change)="setReferenceType(readValue($event))" [disabled]="loading()">
             <option value="">{{ copy().allReferences }}</option>
-            @for (type of referenceTypes; track type.value) {
-              <option [value]="type.value">{{ typeLabel(type.value) }}</option>
+            @for (type of referenceTypes; track type) {
+              <option [value]="type">{{ referenceTypeLabel(type) }}</option>
             }
           </select>
         </label>
@@ -208,12 +208,7 @@ export class InventoryMovementLedgerComponent {
   readonly productId = signal('');
   readonly movementType = signal<InventoryMovementType | ''>('');
   readonly referenceType = signal('');
-  readonly referenceTypes = [
-    { value: 'invoice', label: 'Invoice' },
-    { value: 'invoice_void', label: 'Invoice reversal' },
-    { value: 'purchase_order', label: 'Purchase order' },
-    { value: 'sales_return', label: 'Sales return' },
-  ];
+  readonly referenceTypes = ['invoice', 'invoice_void', 'purchase_order', 'sales_return'];
   readonly loading = signal(false);
   readonly hasMore = signal(false);
   readonly error = signal('');
@@ -255,7 +250,19 @@ export class InventoryMovementLedgerComponent {
   }
 
   typeLabel(type: InventoryMovementType): string {
-    return this.t('type.' + type) || type;
+    const label = this.t('type.' + type);
+    return label === 'inventoryLedger.type.' + type ? type : label;
+  }
+
+  referenceTypeLabel(type: string): string {
+    const ar = this.language() === 'ar';
+    const labels: Record<string, [string, string]> = {
+      invoice: ['فاتورة بيع', 'Sales invoice'],
+      invoice_void: ['عكس فاتورة', 'Invoice reversal'],
+      purchase_order: ['أمر شراء', 'Purchase order'],
+      sales_return: ['مرتجع مبيعات', 'Sales return'],
+    };
+    return labels[type]?.[ar ? 0 : 1] ?? type;
   }
 
   readValue(event: Event): string { return (event.currentTarget as HTMLSelectElement | null)?.value ?? ''; }
