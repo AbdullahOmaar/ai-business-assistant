@@ -22,17 +22,17 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     .aba-metric-card__values .metric-basis{margin-top:3px;padding-top:8px;border-top:1px solid var(--aba-color-border-subtle,#e2e8f0);color:var(--aba-color-text-muted,#475569)}
     @media(max-width:760px){
       :host{--aba-font-size-2xs:12px}
-      .aba-metric-card{min-height:116px;padding:13px 12px 12px}
+      .aba-metric-card{min-height:112px;padding:12px}
       .aba-metric-card__label{margin-bottom:8px}
       .aba-metric-card__values{gap:6px}
-      .aba-metric-card__values strong{font-size:18px;line-height:1.3}
+      .aba-metric-card__values strong{font-size:17px;line-height:1.3}
       .aba-metric-card__values small{line-height:1.45}
       .aba-metric-card__values .metric-basis{margin-top:2px;padding-top:6px}
     }
     @media(max-width:380px){
-      .aba-metric-card{min-height:108px;padding:11px 10px 10px}
+      .aba-metric-card{min-height:104px;padding:10px}
       .aba-metric-card__label{font-size:11px;min-height:1.45em}
-      .aba-metric-card__values strong{font-size:16px}
+      .aba-metric-card__values strong{font-size:15px}
     }
   `],
 })
