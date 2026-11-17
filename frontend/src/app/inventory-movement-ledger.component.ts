@@ -309,7 +309,7 @@ export class InventoryMovementLedgerComponent {
   }
 
   formatQuantity(value: string): string {
-    const match = /^([+-]?)(\\d+)(?:\\.(\\d+))?$/.exec(value.trim());
+    const match = /^([+-]?)(\d+)(?:\.(\d+))?$/.exec(value.trim());
     if (!match) return value;
     const [, rawSign, rawInteger, fraction = ''] = match;
     const locale = this.language() === 'ar' ? 'ar-EG' : 'en-GB';
@@ -331,7 +331,7 @@ export class InventoryMovementLedgerComponent {
     return new Intl.NumberFormat(this.language() === 'ar' ? 'ar-EG' : 'en-GB').format(value);
   }
 
-  isNegative(value: string): boolean { return /^-\\d/.test(value.trim()); }
+  isNegative(value: string): boolean { return /^-\d/.test(value.trim()); }
 
   private context(): MovementContext {
     return { businessId: this.businessId(), userId: this.userId(), role: this.role() };
