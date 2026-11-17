@@ -1658,6 +1658,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.loadInventoryMovementPage = query => this.api.inventoryMovements(query.businessId, {
       productId: query.productId || undefined,
       movementType: query.movementType || undefined,
+      referenceType: query.referenceType || undefined,
       limit: query.limit,
       offset: query.offset,
     });
