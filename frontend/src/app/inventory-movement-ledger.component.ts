@@ -26,6 +26,7 @@ export interface InventoryMovementQuery {
   businessId: string;
   productId: string;
   movementType: InventoryMovementType | '';
+  referenceType: string;
   limit: number;
   offset: number;
 }
@@ -67,6 +68,15 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
             <option value="">{{ copy().allTypes }}</option>
             @for (type of movementTypes; track type) {
               <option [value]="type">{{ typeLabel(type) }}</option>
+            }
+          </select>
+        </label>
+        <label>
+          <span>{{ copy().referenceType }}</span>
+          <select [value]="referenceType()" (change)="setReferenceType(readValue($event))" [disabled]="loading()">
+            <option value="">{{ copy().allReferences }}</option>
+            @for (type of referenceTypes; track type.value) {
+              <option [value]="type.value">{{ typeLabel(type.value) }}</option>
             }
           </select>
         </label>
@@ -197,6 +207,13 @@ export class InventoryMovementLedgerComponent {
   readonly items = signal<InventoryMovement[]>([]);
   readonly productId = signal('');
   readonly movementType = signal<InventoryMovementType | ''>('');
+  readonly referenceType = signal('');
+  readonly referenceTypes = [
+    { value: 'invoice', label: 'Invoice' },
+    { value: 'invoice_void', label: 'Invoice reversal' },
+    { value: 'purchase_order', label: 'Purchase order' },
+    { value: 'sales_return', label: 'Sales return' },
+  ];
   readonly loading = signal(false);
   readonly hasMore = signal(false);
   readonly error = signal('');
@@ -238,13 +255,14 @@ export class InventoryMovementLedgerComponent {
   }
 
   typeLabel(type: InventoryMovementType): string {
-    return this.t('type.' + type);
+    return this.t('type.' + type) || type;
   }
 
   readValue(event: Event): string { return (event.currentTarget as HTMLSelectElement | null)?.value ?? ''; }
   setProduct(value: string): void { this.productId.set(value); void this.load(true); }
   setMovementType(value: InventoryMovementType | ''): void { this.movementType.set(value); void this.load(true); }
   setMovementTypeFromEvent(event: Event): void { this.setMovementType(this.readValue(event) as InventoryMovementType | ''); }
+  setReferenceType(value: string): void { this.referenceType.set(value); void this.load(true); }
   refresh(): void { void this.load(true); }
   retry(): void { void this.load(true); }
 
@@ -264,6 +282,7 @@ export class InventoryMovementLedgerComponent {
         businessId: requested.businessId,
         productId: this.productId(),
         movementType: this.movementType(),
+        referenceType: this.referenceType(),
         limit: this.pageSize,
         offset: this.offset,
       });
