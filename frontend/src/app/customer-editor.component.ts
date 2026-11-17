@@ -23,7 +23,7 @@ export interface CustomerEditorValue {
           <h2 id="customer-editor-title">{{ customer() ? t('customerEditor.editTitle') : t('customerEditor.createTitle') }}</h2>
           <p>{{ t('customerEditor.description') }}</p>
         </div>
-        <button class="customer-editor__close" type="button" (click)="cancel.emit()" [attr.aria-label]="t('customerEditor.close')">×</button>
+        <button class="customer-editor__close" type="button" (click)="cancel.emit()" [attr.aria-label]="t('customerEditor.close')" [disabled]="busy()">×</button>
       </header>
 
       <form (submit)="submit($event)" novalidate>
