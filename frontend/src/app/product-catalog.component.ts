@@ -85,7 +85,7 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
             <li class="product-catalog__mobile-row">
               <div class="product-catalog__main">
                 <h3><button class="product-catalog__open" type="button" (click)="select.emit(product.id)">{{ product.name }}</button></h3>
-                <strong class="product-catalog__mobile-price"><bdi dir="ltr">{{ product.unit_price }} {{ product.currency_code || currencyCode() }}</bdi></strong>
+                <strong class="product-catalog__mobile-price"><span class="product-catalog__mobile-price-label">{{ t('productCatalog.m_1iz2xk3') }}</span><bdi dir="ltr">{{ product.unit_price }} {{ product.currency_code || currencyCode() }}</bdi></strong>
               </div>
               <div class="product-catalog__meta">
                 <span class="product-catalog__sku"><span>SKU</span> <bdi dir="ltr">{{ product.sku || '—' }}</bdi></span>

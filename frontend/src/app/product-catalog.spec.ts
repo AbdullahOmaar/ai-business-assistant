@@ -91,3 +91,15 @@ test('product workspace landmark uses a localized accessible name', () => {
   assert.ok(workspaceSource.includes("[attr.aria-label]=\"t('productEditor.eyebrow')\""));
   assert.doesNotMatch(workspaceSource, /aria-label="Product workspace"/);
 });
+
+
+test('mobile product cards label their price in both supported locales', () => {
+  const start = component.indexOf('class="product-catalog__mobile-price"');
+  const end = component.indexOf('</strong>', start);
+  const mobilePrice = component.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(mobilePrice, /Unit price/);
+  assert.match(mobilePrice, /سعر الوحدة/);
+  assert.match(mobilePrice, /product\.unit_price/);
+  assert.match(css, /product-catalog__mobile-price-label/);
+});
