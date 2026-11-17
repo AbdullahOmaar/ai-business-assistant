@@ -22,7 +22,6 @@ test('ledger query exposes only supported tenant-scoped read filters and bounded
   assert.match(component, /productId: this\.productId\(\)/);
   assert.match(component, /movementType: this\.movementType\(\)/);
   assert.match(component, /referenceType: this\.referenceType\(\)/);
-  assert.match(component, /referenceType: this\.referenceType\(\)/);
 });
 
 test('movement types match the backend allowlist without inventing filters', () => {
@@ -34,10 +33,10 @@ test('movement types match the backend allowlist without inventing filters', () 
 });
 
 test('reference filter labels are supplied by the component copy model', () => {
-  assert.match(component, /referenceType: this\\.t\\('referenceType'\\)/);
-  assert.match(component, /allReferences: this\\.t\\('allReferences'\\)/);
-  assert.match(component, /copy\\(\\)\\.referenceType/);
-  assert.match(component, /copy\\(\\)\\.allReferences/);
+  assert.match(component, /referenceType: this\.t\('referenceType'\)/);
+  assert.match(component, /allReferences: this\.t\('allReferences'\)/);
+  assert.match(component, /copy\(\)\.referenceType/);
+  assert.match(component, /copy\(\)\.allReferences/);
 });
 
 test('reference filters use only reference types observed in backend stock events', () => {
