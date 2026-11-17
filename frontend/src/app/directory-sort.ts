@@ -79,8 +79,11 @@ export function filterAndSortProducts(
     if (field === 'stock') {
       // Non-stock items remain after tracked inventory in either direction.
       if (left.is_stock_tracked !== right.is_stock_tracked) return left.is_stock_tracked ? -1 : 1;
-      const leftQuantity = left.stock_quantity ?? '0';
-      const rightQuantity = right.stock_quantity ?? '0';
+      const leftQuantity = left.stock_quantity ?? null;
+      const rightQuantity = right.stock_quantity ?? null;
+      if (leftQuantity === null && rightQuantity !== null) return 1;
+      if (leftQuantity !== null && rightQuantity === null) return -1;
+      if (leftQuantity === null || rightQuantity === null) return 0;
       return (compareDecimalStrings(leftQuantity, rightQuantity) ?? collator.compare(leftQuantity, rightQuantity)) * multiplier;
     }
     const leftValue = field === 'name' ? left.name : left.sku || '';

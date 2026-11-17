@@ -20,8 +20,7 @@ test('Products uses a dedicated catalogue presentation, not the shared generic r
 
 test('catalogue filters stock-tracked and non-stock items on the current searched result set', () => {
   assert.match(component, /readonly filter = signal<ProductFilter>/);
-  assert.match(component, /stockCount = computed/);
-  assert.match(component, /nonStockCount = computed/);
+  assert.doesNotMatch(component, /stockCount|nonStockCount|<span>\\{\\{ products\\(\\)\\.length \\}\\}<\\/span>/);
   assert.match(component, /filter\(\) === 'non-stock'/);
   assert.match(component, /'Non-stock'/);
   assert.match(component, /'Item'/);

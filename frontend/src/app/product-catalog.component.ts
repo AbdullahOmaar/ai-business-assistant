@@ -26,13 +26,13 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
         <div class="product-catalog__toolbar">
           <div class="product-catalog__filters" role="group" [attr.aria-label]="t('productCatalog.m_47v71n')">
             <button type="button" [class.is-active]="filter() === 'all'" [attr.aria-pressed]="filter() === 'all'" (click)="setFilter('all')">
-              {{ t('productCatalog.m_1vmpuau') }} <span>{{ products().length }}</span>
+              {{ t('productCatalog.m_1vmpuau') }}
             </button>
             <button type="button" [class.is-active]="filter() === 'stock'" [attr.aria-pressed]="filter() === 'stock'" (click)="setFilter('stock')">
-              {{ t('productCatalog.m_j15h0g') }} <span>{{ stockCount() }}</span>
+              {{ t('productCatalog.m_j15h0g') }}
             </button>
             <button type="button" [class.is-active]="filter() === 'non-stock'" [attr.aria-pressed]="filter() === 'non-stock'" (click)="setFilter('non-stock')">
-              {{ t('productCatalog.m_1c1wx97') }} <span>{{ nonStockCount() }}</span>
+              {{ t('productCatalog.m_1c1wx97') }}
             </button>
           </div>
           <label class="product-catalog__mobile-sort">
@@ -135,8 +135,6 @@ export class ProductCatalogComponent {
   private readonly sortField = signal<ProductSortField>('name');
   private readonly sortDirection = signal<SortDirection>('asc');
 
-  readonly stockCount = computed(() => this.products().filter(product => product.is_stock_tracked).length);
-  readonly nonStockCount = computed(() => this.products().length - this.stockCount());
   readonly visibleProducts = computed(() =>
     filterAndSortProducts(this.products(), this.filter(), this.sortField(), this.sortDirection(), this.locale(), this.currencyCode())
   );

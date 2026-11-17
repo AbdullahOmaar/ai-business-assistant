@@ -45,6 +45,13 @@ test('product stock sorting keeps non-stock rows after tracked stock in either d
   assert.deepEqual(filterAndSortProducts(products, 'all', 'stock', 'desc', 'en', 'EGP').map(row => row.id), ['egp-twenty', 'egp-ten', 'egp-two', 'usd-five', 'usd-one']);
 });
 
+test('product stock sorting keeps unknown tracked quantities last in both directions', () => {
+  const unknown: Product = { id: 'stock-unknown', name: 'Unknown stock', unit_price: '1', is_stock_tracked: true };
+  const known: Product = { id: 'stock-known', name: 'Known stock', unit_price: '1', is_stock_tracked: true, stock_quantity: '0' };
+  assert.deepEqual(filterAndSortProducts([unknown, known], 'all', 'stock', 'asc', 'en', 'EGP').map(row => row.id), ['stock-known', 'stock-unknown']);
+  assert.deepEqual(filterAndSortProducts([unknown, known], 'all', 'stock', 'desc', 'en', 'EGP').map(row => row.id), ['stock-known', 'stock-unknown']);
+});
+
 test('product SKU sorting keeps missing SKU last in both directions', () => {
   assert.deepEqual(filterAndSortProducts(products, 'all', 'sku', 'asc', 'en', 'EGP').map(row => row.id), ['egp-ten', 'egp-twenty', 'usd-one', 'usd-five', 'egp-two']);
   assert.deepEqual(filterAndSortProducts(products, 'all', 'sku', 'desc', 'en', 'EGP').map(row => row.id), ['usd-five', 'usd-one', 'egp-twenty', 'egp-ten', 'egp-two']);
