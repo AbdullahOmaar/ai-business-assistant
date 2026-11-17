@@ -4348,3 +4348,13 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Branch:** `master/nov-2026-phase-1-runtime-qa@f5428f4ef64a109aa208288d292871e636ca687a`; main `560f3b402bfd265f8509dcbbdd1ed5988e72efbe`; compare 24 ahead / 0 behind. No open PR found in the latest repository search.
 - **Validation:** focused unit tests, full frontend suite, build, browser smoke and GitHub Actions NOT RUN yet. No rendered/device acceptance, physical Android/PWA, authenticated role/tenant, screen-reader, forced-colors or actual 200% zoom claim. No merge, deployment, API/schema/database or business-semantic change.
 - **Disposition:** shared-card foundation IMPLEMENTED; Mobile UX Modernization and Inventory Movement Ledger remain IN PROGRESS pending the remaining screen/form/filter/state review, integration and exact-head acceptance.
+
+
+## 2026-11-17 — Mobile UX Modernization milestone 1: phone controls and record cards
+- Extended the approved design-system layer: phone inputs/selects/textareas now use 48px minimum height and 16px text at <=760px; shared buttons/sort controls retain 44px minimum targets; mobile dashboard-period and record-card geometry use balanced padding/radius while every record field remains present.
+- Added focused source assertions for phone control sizing, record-card geometry and sort target sizing.
+- **Additional files:** `frontend/src/design-system.css`, `frontend/src/app/design-tokens.spec.ts`.
+- **Additional commits:** `8b8bab37e6f7bcadaf02d30fad45358f1a13c174`, `c5d0c63369356af7da77884e30446e331195a2c9`, `2c708fb6b10ee424eb914eed9da66c76ddda8c4f`.
+- **Current head before this ledger append:** `2c708fb6b10ee424eb914eed9da66c76ddda8c4f`; branch remains based on current main. The ledger append itself advances the branch and does not validate the resulting SHA.
+- **Validation:** focused tests, browser rendering, full suite/build/CI NOT RUN. The CSS/source assertions are implementation evidence only; physical Android/PWA, screen-reader, forced-colors and actual 200% zoom remain NOT RUN.
+- **Disposition:** MUX-01 shared-card foundation and the MUX-03 phone-control foundation IMPLEMENTED. Remaining per-destination record/form/filter/navigation/state review and integrated acceptance remain IN PROGRESS.
