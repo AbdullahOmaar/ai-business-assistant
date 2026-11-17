@@ -44,7 +44,7 @@ test('customer directory keeps compact mobile contact rows and visible existing 
 
 test('customer screen preserves workspace search, owner CSV affordance and statement workflow', () => {
   assert.match(workspace, /customer-workspace__search/);
-  assert.match(workspace, /this\.api\.customers\(requested\.businessId, this\.offset, this\.pageSize, this\.searchQuery\)/);
+  assert.match(workspace, /this\.api\.customers\(requested\.businessId, this\.offset, this\.pageSize, this\.searchQuery\(\)\)/);
   assert.match(app, /business\?\.role === 'owner'[\s\S]*?csv-import-panel/);
   assert.match(app, /<section abaCard class="panel statement-panel">/);
   assert.match(app, /openCustomerStatementById\(customerId: string\)/);
@@ -56,7 +56,7 @@ test('customer screen preserves workspace search, owner CSV affordance and state
 test('main customer directory exposes guarded pagination beyond the first page', () => {
   assert.match(workspace, /\(click\)="loadMore\(\)"/);
   assert.match(workspace, /loadMore\(\): void/);
-  assert.match(workspace, /this\.api\.customers\(requested\.businessId, this\.offset, this\.pageSize, this\.searchQuery\)/);
+  assert.match(workspace, /this\.api\.customers\(requested\.businessId, this\.offset, this\.pageSize, this\.searchQuery\(\)\)/);
   assert.match(app, /return this\.loadMoreInvoiceCustomers\(\)/);
   assert.match(app, /fetchPage: \(id, offset\) => this\.api\.customers\(id, offset\)/);
 });
