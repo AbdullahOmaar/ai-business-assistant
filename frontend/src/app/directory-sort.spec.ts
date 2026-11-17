@@ -87,3 +87,21 @@ test('product stock sorting preserves arbitrary decimal precision and signed qua
     ['stock-later', 'stock-earlier', 'stock-negative'],
   );
 });
+
+test('product stock sorting orders negative, zero and positive decimal strings exactly', () => {
+  const signedStock: Product[] = [
+    { id: 'positive', name: 'Positive', unit_price: '1', is_stock_tracked: true, stock_quantity: '0.00000000000000000001' },
+    { id: 'zero', name: 'Zero', unit_price: '1', is_stock_tracked: true, stock_quantity: '0' },
+    { id: 'negative', name: 'Negative', unit_price: '1', is_stock_tracked: true, stock_quantity: '-0.00000000000000000001' },
+    { id: 'negative-large', name: 'Negative large', unit_price: '1', is_stock_tracked: true, stock_quantity: '-10' },
+    { id: 'negative-small', name: 'Negative small', unit_price: '1', is_stock_tracked: true, stock_quantity: '-2' },
+  ];
+  assert.deepEqual(
+    filterAndSortProducts(signedStock, 'all', 'stock', 'asc', 'en', 'EGP').map(row => row.id),
+    ['negative-large', 'negative-small', 'negative', 'zero', 'positive'],
+  );
+  assert.deepEqual(
+    filterAndSortProducts(signedStock, 'all', 'stock', 'desc', 'en', 'EGP').map(row => row.id),
+    ['positive', 'zero', 'negative', 'negative-small', 'negative-large'],
+  );
+});
