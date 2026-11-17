@@ -21,6 +21,7 @@ test('ledger query exposes only supported tenant-scoped read filters and bounded
   assert.match(component, /businessId: requested\.businessId/);
   assert.match(component, /productId: this\.productId\(\)/);
   assert.match(component, /movementType: this\.movementType\(\)/);
+  assert.match(component, /referenceType: this\.referenceType\(\)/);
 });
 
 test('movement types match the backend allowlist without inventing filters', () => {
@@ -35,8 +36,8 @@ test('reference filters use only reference types observed in backend stock event
   for (const type of ['invoice', 'invoice_void', 'purchase_order', 'sales_return']) {
     assert.ok(component.includes(`'${type}'`));
   }
-  assert.match(component, /setReferenceType\\(value: string\\)/);
-  assert.match(component, /referenceTypeLabel\\(type: string\\)/);
+  assert.match(component, /setReferenceType\(value: string\)/);
+  assert.match(component, /referenceTypeLabel\(type: string\)/);
 });
 
 test('desktop table and mobile cards present the same read-only movement records', () => {
