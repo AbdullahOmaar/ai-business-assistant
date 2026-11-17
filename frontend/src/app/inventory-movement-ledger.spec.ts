@@ -49,13 +49,13 @@ test('reference filter labels are supplied by the component copy model', () => {
   assert.match(component, /copy\(\)\.allReferences/);
 });
 
-test('reference filter stays hidden until the authenticated API adapter forwards it', () => {
-  assert.match(component, /supportsReferenceFilter = input\\(true\\)/);
-  assert.match(component, /@if \\(supportsReferenceFilter\\(\\)\\)/);
-  assert.match(component, /referenceType: this\\.referenceType\\(\\)/);
-  assert.match(api, /referenceType\\?: string/);
-  assert.match(api, /params\\.set\\('reference_type', query\\.referenceType\\)/);
-  assert.match(shell, /referenceType: query\\.referenceType \\|\\| undefined/);
+test('reference filter is enabled only with the authenticated API adapter contract', () => {
+  assert.ok(component.includes('supportsReferenceFilter = input(true)'));
+  assert.ok(component.includes('@if (supportsReferenceFilter())'));
+  assert.ok(component.includes('referenceType: this.referenceType()'));
+  assert.ok(api.includes('referenceType?: string'));
+  assert.ok(api.includes("params.set('reference_type', query.referenceType)"));
+  assert.ok(shell.includes('referenceType: query.referenceType || undefined'));
 });
 
 test('reference filters use only reference types observed in backend stock events', () => {
