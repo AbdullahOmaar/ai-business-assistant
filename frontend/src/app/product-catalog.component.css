@@ -58,3 +58,24 @@
 @media(prefers-reduced-motion:reduce){
  .product-catalog *{scroll-behavior:auto}
 }
+
+/* Phone catalogue: clearer price hierarchy, touch-friendly filters and sort. */
+@media(max-width:760px){
+  .product-catalog__filters button{min-height:48px;padding-inline:7px;font-size:12px}
+  .product-catalog__mobile-sort select{min-height:48px;font-size:16px}
+  .product-catalog__mobile-list{gap:10px}
+  .product-catalog__mobile-row{gap:10px;padding:14px;border-radius:16px}
+  .product-catalog__main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px}
+  .product-catalog__main h3{font-size:15px;line-height:1.45}
+  .product-catalog__open{display:inline-flex;align-items:center;min-height:44px}
+  .product-catalog__mobile-price{max-width:min(48%,180px);font-size:14px}
+  .product-catalog__mobile-price-label{font-size:11px}
+  .product-catalog__meta{gap:7px 12px;font-size:12px}
+  .product-catalog__clear-filter{min-height:48px}
+}
+@media(max-width:380px){
+  .product-catalog__filters button{font-size:11px;padding-inline:4px}
+  .product-catalog__mobile-row{padding:12px}
+  .product-catalog__main{gap:8px}
+  .product-catalog__mobile-price{font-size:13px}
+}

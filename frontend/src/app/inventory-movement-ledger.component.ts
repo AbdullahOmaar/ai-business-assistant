@@ -179,6 +179,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
     @media(min-width:761px){.inventory-ledger__mobile-list{display:none}.inventory-ledger__desktop-table{display:block}}
     @media(max-width:760px){.inventory-ledger__filters{grid-template-columns:1fr}.inventory-ledger select{min-height:48px;font-size:16px}.inventory-ledger__refresh{min-height:48px}}
     @media(max-width:520px){.inventory-ledger__header{align-items:flex-start}.inventory-ledger__refresh{min-width:84px}}
+    @media(max-width:760px){.inventory-ledger__filters{gap:10px;padding:14px}.inventory-ledger__card{gap:11px;padding:16px;border-radius:16px}.inventory-ledger__quantity{font-size:22px}.inventory-ledger__refresh,.inventory-ledger__footer button{min-height:48px}.inventory-ledger__meta{font-size:12px}}
     @media(prefers-reduced-motion:reduce){.inventory-ledger *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
     @media(forced-colors:active){.inventory-ledger button,.inventory-ledger select,.inventory-ledger__card{border:1px solid CanvasText}.inventory-ledger :is(button,select,[tabindex]):focus-visible{outline-color:Highlight}.inventory-ledger__quantity--negative,.inventory-ledger__quantity--positive{color:CanvasText}}
   `],

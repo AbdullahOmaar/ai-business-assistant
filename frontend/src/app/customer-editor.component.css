@@ -25,3 +25,9 @@
 @media(max-width:560px){.customer-editor{gap:15px;padding:15px;border-radius:14px}.customer-editor__grid{grid-template-columns:minmax(0,1fr);gap:12px}.customer-editor__field--wide{grid-column:auto}.customer-editor__footer{display:grid;grid-template-columns:1fr 1fr}.customer-editor__footer button{padding-inline:9px}}
 @media(forced-colors:active){.customer-editor,.customer-editor input,.customer-editor textarea,.customer-editor button{border:1px solid CanvasText}.customer-editor button:focus-visible,.customer-editor input:focus-visible,.customer-editor textarea:focus-visible{outline-color:Highlight}}
 @media(prefers-reduced-motion:reduce){.customer-editor *{scroll-behavior:auto}}
+
+@media(max-width:760px){
+  .customer-editor input,.customer-editor textarea{min-height:48px;font-size:16px}
+  .customer-editor textarea{min-height:112px}
+  .customer-editor__footer button,.customer-editor__close{min-height:48px}
+}

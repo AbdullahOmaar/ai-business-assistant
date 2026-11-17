@@ -48,6 +48,7 @@ test('catalogue only renders fields already present in the Product API contract'
     assert.ok(component.includes('product.' + field) || component.includes('left.' + field), 'missing existing product field: ' + field);
   }
   assert.doesNotMatch(component, /availableQuantity|reservedQuantity|reorderPoint|valuation|costOfGoods/);
+  assert.doesNotMatch(component, /stock_quantity \?\? '0'/);
 });
 
 test('mobile catalogue remains compact and readable in RTL/LTR with visible focus', () => {
@@ -55,6 +56,7 @@ test('mobile catalogue remains compact and readable in RTL/LTR with visible focu
   assert.match(css, /product-catalog__mobile-row/);
   assert.match(css, /product-catalog__filters button\{[^}]*min-height:44px/);
   assert.match(css, /product-catalog__mobile-sort select\{[^}]*min-height:44px/);
+  assert.match(css, /font-size:16px/);
   assert.match(css, /product-catalog__clear-filter\{[^}]*min-height:44px/);
   assert.match(css, /focus-visible/);
   assert.match(css, /forced-colors:active/);
@@ -84,6 +86,7 @@ test('product editor close is disabled during save and meets the 44px touch targ
   assert.match(productEditor, /class="product-editor__close"[\s\S]*?\[disabled\]="busy\(\)"/);
   assert.match(productEditor, /product-editor__close\{flex:0 0 44px;width:44px;height:44px/);
   assert.match(productEditor, /product-editor button:disabled/);
+  assert.match(productEditor, /font-size:16px/);
 });
 
 

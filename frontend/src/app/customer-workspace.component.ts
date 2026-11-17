@@ -78,6 +78,7 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
     .customer-workspace :is(button,input):focus-visible{outline:3px solid var(--aiba-focus,#2563eb);outline-offset:2px}
     .customer-workspace__sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
     @media(max-width:520px){.customer-workspace__toolbar{align-items:stretch;flex-direction:column}.customer-workspace__create{width:100%}.customer-workspace__search{width:100%}}
+    @media(max-width:760px){.customer-workspace__search input{min-height:48px;font-size:16px}.customer-workspace__search button,.customer-workspace__create{min-height:48px}}
     @media(forced-colors:active){.customer-workspace button,.customer-workspace input{border:1px solid CanvasText}.customer-workspace :is(button,input):focus-visible{outline-color:Highlight}}
   `],
 })
@@ -109,7 +110,7 @@ export class CustomerWorkspaceComponent {
   readonly searchDraft = signal('');
   private offset = 0;
   readonly searchQuery = signal('');
-  private readonly pageSize = 100;
+  private readonly pageSize = 50;
   private selectedCustomerId: string | null = null;
 
   constructor() {

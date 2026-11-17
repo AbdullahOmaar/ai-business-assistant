@@ -29,6 +29,8 @@ test('product editor never exposes price or stock mutation and validates require
 test('product profile presents API-backed price and derived stock without exposing stock editing', () => {
   assert.match(profile, /record\.unit_price/);
   assert.match(profile, /record\.stock_quantity/);
+  assert.doesNotMatch(profile, /stock_quantity \?\? '0'/);
+  assert.match(profile, /stock_quantity \?\? '—'/);
   assert.match(profile, /record\.is_stock_tracked/);
   assert.doesNotMatch(profile, /quantity_delta|StockMovement|opening_quantity/);
   assert.match(profile, /loading\(\)/);
@@ -56,7 +58,7 @@ test('product workspace provides tenant-scoped list, detail, descriptive edit an
   assert.match(workspace, /current\.userId === requested\.userId/);
   assert.match(workspace, /current\.role === requested\.role/);
   assert.match(workspace, /this\.selectedProductId !== productId/);
-  assert.match(workspace, /pageSize = 100/);
+  assert.match(workspace, /pageSize = 50/);
   assert.match(workspace, /@if \(hasMore\(\) && !error\(\)\)/);
   assert.match(workspace, /\[disabled\]="loading\(\)"/);
   assert.match(workspace, /loadingMore\(\) \? t\('ui\.m_1dwk1vm'\)/);

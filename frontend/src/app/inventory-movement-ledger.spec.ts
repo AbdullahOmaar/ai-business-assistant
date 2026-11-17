@@ -138,6 +138,14 @@ test('all visible copy is routed through the shared Arabic and English localizat
   assert.match(component, /this\.t\('type\.' \+ type\)/);
 });
 
+test('mobile ledger cards and filters use clear hierarchy and thumb-sized controls', () => {
+  assert.match(component, /inventory-ledger__mobile-list/);
+  assert.match(component, /inventory-ledger__card/);
+  assert.match(component, /@media\(max-width:760px\)/);
+  assert.match(component, /min-height:48px/);
+  assert.match(component, /font-size:16px/);
+});
+
 test('loading, empty, error, retry and keyboard-accessible controls are present', () => {
   for (const state of ['role="status"', 'role="alert"', 'emptyTitle', 'retry()', 'loadMore()']) {
     assert.ok(component.includes(state), `missing state/control: ${state}`);

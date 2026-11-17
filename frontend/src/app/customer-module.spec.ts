@@ -19,6 +19,8 @@ test('customer editor covers all supported contact fields and required-name/emai
   assert.match(editor, /hasWhitespace/);
   assert.match(editorCss, /@media\(max-width:560px\)/);
   assert.match(editorCss, /min-height:46px/);
+  assert.match(editorCss, /min-height:48px/);
+  assert.match(editorCss, /font-size:16px/);
   assert.match(editorCss, /forced-colors:active/);
 });
 
@@ -49,6 +51,7 @@ test('customer directory preserves responsive layouts and exposes saved address 
   assert.match(directory, /error\(\)/);
   assert.match(directory, /retry\.emit\(\)/);
   assert.match(directoryCss, /min-height:44px/);
+  assert.match(directoryCss, /min-height:48px/);
   assert.match(directoryCss, /forced-colors:active/);
 });
 
@@ -67,7 +70,7 @@ test('customer workspace covers server search, paginated list, detail and create
   assert.match(workspace, /readonly statementRequested = output<string>\(\)/);
   assert.match(workspace, /openInvoices\(\): void \{ if \(this\.selectedCustomerId\) this\.invoicesRequested\.emit/);
   assert.match(workspace, /openStatement\(\): void \{ if \(this\.selectedCustomerId\) this\.statementRequested\.emit/);
-  assert.match(workspace, /pageSize = 100/);
+  assert.match(workspace, /pageSize = 50/);
   assert.match(workspace, /@if \(hasMore\(\) && !error\(\)\)/);
   assert.match(workspace, /\[disabled\]="loading\(\)"/);
   assert.match(workspace, /loadingMore\(\) \? t\('ui\.m_1dwk1vm'\)/);

@@ -62,3 +62,16 @@
 .customer-directory__profile-link{padding:0;border:0;background:transparent;color:var(--aiba-brand-strong,#115e59);font:inherit;font-weight:750;text-align:start;cursor:pointer}
 .customer-directory__profile-link:hover{text-decoration:underline}
 .customer-directory__profile-link:focus-visible{outline:3px solid var(--aiba-focus,#2563eb);outline-offset:3px;border-radius:3px}
+
+/* Mobile directory refinement — balanced density and thumb-first actions. */
+@media(max-width:760px){
+  .customer-directory__mobile-sort select{min-height:48px;font-size:16px}
+  .customer-directory__mobile-list{gap:10px}
+  .customer-directory__mobile-row{align-items:start;gap:10px;padding:14px;border-radius:16px}
+  .customer-directory__identity h3{font-size:15px}
+  .customer-directory__identity h3 .customer-directory__profile-link{display:inline-flex;align-items:center;min-height:44px}
+  .customer-directory__contact{gap:6px 12px;line-height:1.5}
+  .customer-directory__actions{gap:8px}
+  .customer-directory__action{min-height:48px;padding-inline:12px;border-radius:11px}
+}
+@media(max-width:480px){.customer-directory__mobile-row{padding:14px}.customer-directory__actions{gap:8px}}

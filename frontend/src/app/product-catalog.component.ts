@@ -69,7 +69,7 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
                   <td>
                     @if (product.is_stock_tracked) {
                       <span class="product-catalog__stock"><span class="product-catalog__dot" aria-hidden="true"></span>{{ t('productCatalog.m_1abb5if') }}</span>
-                      <strong class="product-catalog__quantity"><bdi dir="ltr">{{ product.stock_quantity ?? '0' }}</bdi></strong>
+                      <strong class="product-catalog__quantity"><bdi dir="ltr">{{ product.stock_quantity ?? '—' }}</bdi></strong>
                     } @else {
                       <span class="product-catalog__service">{{ t('productCatalog.m_1c1wx97') }}</span>
                     }
