@@ -243,7 +243,10 @@ export class InventoryMovementLedgerComponent {
       title: this.t('title'), eyebrow: this.t('eyebrow'), subtitle: this.t('subtitle'),
       refresh: this.t('refresh'), filters: this.t('filters'), product: this.t('product'),
       allProducts: this.t('allProducts'), movementType: this.t('movementType'), allTypes: this.t('allTypes'),
-      referenceType: this.t('referenceType'), allReferences: this.t('allReferences'),
+      referenceType: this.t('referenceType') === 'inventoryLedger.referenceType'
+        ? (this.language() === 'ar' ? 'نوع المرجع' : 'Reference type') : this.t('referenceType'),
+      allReferences: this.t('allReferences') === 'inventoryLedger.allReferences'
+        ? (this.language() === 'ar' ? 'كل المراجع' : 'All references') : this.t('allReferences'),
       retry: this.t('retry'), loading: this.t('loading'), emptyTitle: this.t('emptyTitle'),
       emptyDescription: this.t('emptyDescription'), movementList: this.t('movementList'),
       unit: this.t('unit'), sku: this.t('sku'), noReason: this.t('noReason'),
