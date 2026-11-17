@@ -7,6 +7,8 @@ const sortHelper = readFileSync(new URL('./directory-sort.ts', import.meta.url),
 const css = readFileSync(new URL('./customer-directory.component.css', import.meta.url), 'utf8');
 const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 const workspace = readFileSync(new URL('./customer-workspace.component.ts', import.meta.url), 'utf8');
+const editor = readFileSync(new URL('./customer-editor.component.ts', import.meta.url), 'utf8');
+const editorCss = readFileSync(new URL('./customer-editor.component.css', import.meta.url), 'utf8');
 
 test('Customers uses a feature-specific directory instead of the shared generic record table', () => {
   assert.match(component, /selector: 'aba-customer-directory'/);
@@ -72,4 +74,10 @@ test('customer create and edit refresh the server-filtered directory after savin
   const saveFlow = workspace.slice(saveStart, saveEnd);
   assert.match(saveFlow, /this\.mode\.set\('profile'\)/);
   assert.match(saveFlow, /void this\.loadCustomers\(true\)/);
+});
+
+
+test('customer editor close is disabled during save and meets the 44px touch target', () => {
+  assert.match(editor, /class="customer-editor__close"[\s\S]*?\[disabled\]="busy\(\)"/);
+  assert.match(editorCss, /customer-editor__close\{[^}]*flex:0 0 44px;width:44px;height:44px/);
 });
