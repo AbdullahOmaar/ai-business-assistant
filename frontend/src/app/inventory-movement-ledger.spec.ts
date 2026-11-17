@@ -88,7 +88,7 @@ test('ledger cards and controls follow the approved mobile design tokens', () =>
 test('signed quantities and localized timestamps retain backend values', () => {
   assert.match(component, /signDisplay: 'always'/);
   assert.match(component, /dateStyle: 'medium', timeStyle: 'short'/);
-  assert.match(component, /isNegative\(value: string\): boolean \{ return \/\^-\\d\//);
+  assert.ok(component.includes("isNegative(value: string): boolean { return /^-\\d/.test(value.trim()); }"));
   assert.match(component, /StockMovementRecord as InventoryMovement/);
   assert.match(api, /created_at: string/);
 });
@@ -113,7 +113,7 @@ test('reference labels are dictionary-backed and include stock count in both loc
 });
 
 test('feature component contains no inline Arabic UI copy', () => {
-  assert.doesNotMatch(component, /[\\u0600-\\u06FF]/);
+  assert.equal([...component].some(character => { const code = character.charCodeAt(0); return code >= 0x0600 && code <= 0x06ff; }), false);
 });
 
 test('pagination appends unique records and follows the server has_more flag', () => {
