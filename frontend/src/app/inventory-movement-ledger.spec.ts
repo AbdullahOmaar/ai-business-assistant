@@ -49,6 +49,14 @@ test('desktop table and mobile cards present the same read-only movement records
   assert.match(component, /movement\.created_at/);
 });
 
+test('ledger cards and controls follow the approved mobile design tokens', () => {
+  assert.match(component, /var\\(--aiba-radius-card,16px\\)/);
+  assert.match(component, /var\\(--aiba-shadow-card/);
+  assert.match(component, /@media\\(max-width:760px\\)/);
+  assert.match(component, /min-height:48px;font-size:16px/);
+  assert.match(component, /overflow-wrap:anywhere/);
+});
+
 test('signed quantities and localized timestamps retain backend values', () => {
   assert.match(component, /signDisplay: 'always'/);
   assert.match(component, /dateStyle: 'medium', timeStyle: 'short'/);
