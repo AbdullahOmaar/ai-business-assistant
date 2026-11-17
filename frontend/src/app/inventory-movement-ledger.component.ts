@@ -279,8 +279,7 @@ export class InventoryMovementLedgerComponent {
       this.offset = page.offset + page.items.length;
       this.hasMore.set(page.has_more);
     } catch {
-      if (this.isCurrent(version, requested)) this.error.set(this.language() === 'ar'
-        ? 'تعذر تحميل سجل الحركات. حاول مرة أخرى.' : 'Could not load inventory movements. Please retry.');
+      if (this.isCurrent(version, requested)) this.error.set(this.t('loadError'));
     } finally {
       if (this.isCurrent(version, requested)) this.loading.set(false);
     }
