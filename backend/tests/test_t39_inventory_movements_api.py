@@ -1,5 +1,6 @@
 """API coverage for the tenant-scoped stock movement ledger."""
 from datetime import datetime, timedelta, timezone
+import os
 from decimal import Decimal
 from uuid import uuid4
 
@@ -7,7 +8,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.main import app
-from app.models import AuditEvent, Business, BusinessMembership, MembershipRole, Product, StockMovement
+from app.models import (\n    AuditEvent, Business, BusinessMembership, MembershipRole, Product, StockMovement,\n)
 from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
 
 
@@ -223,4 +224,111 @@ def test_inventory_movement_ledger_foreign_or_missing_product_filter_is_empty():
             assert response.json()["has_more"] is False
     finally:
         _restore_test_identity(*previous)
+        engine.dispose()
+
+
+
+def test_inventory_movement_ledger_postgres_tenant_read_only_and_pagination():
+    """Exercise tenant joins and read-only ledger behavior on disposable PostgreSQL."""
+    if os.getenv("CI_ALLOW_DATABASE_SCHEMA_TESTS") != "true":
+        pytest.skip("requires the isolated PostgreSQL CI service")
+    database_url = os.getenv("TEST_DATABASE_URL", "").strip()
+    if not database_url:
+        pytest.skip("TEST_DATABASE_URL is not configured")
+    engine = create_engine(database_url, pool_size=3, max_overflow=2, pool_pre_ping=True)
+    if engine.dialect.name != "postgresql" or not (engine.url.database or "").endswith("_test"):
+        engine.dispose()
+        pytest.skip("ledger regression requires a disposable PostgreSQL *_test database")
+
+    previous = None
+    try:
+        with Session(engine) as session:
+            own_business = Business(name="T39 ledger PostgreSQL tenant", currency_code="EGP")
+            foreign_business = Business(name="T39 ledger PostgreSQL foreign", currency_code="EGP")
+            session.add_all([own_business, foreign_business])
+            session.flush()
+            session.add(BusinessMembership(
+                business_id=own_business.id,
+                user_subject="test-subject",
+                role=MembershipRole.STAFF,
+            ))
+            own_product = Product(
+                business_id=own_business.id, name="PG ledger own",
+                unit_price=Decimal("10.00"), is_stock_tracked=True,
+            )
+            foreign_product = Product(
+                business_id=foreign_business.id, name="PG ledger foreign",
+                unit_price=Decimal("10.00"), is_stock_tracked=True,
+            )
+            session.add_all([own_product, foreign_product])
+            session.flush()
+            timestamp = datetime(2026, 11, 17, 12, 0, tzinfo=timezone.utc)
+            own_movements = [
+                StockMovement(
+                    business_id=own_business.id, product_id=own_product.id,
+                    movement_type="adjustment", quantity_delta=Decimal(value),
+                    reason=f"PG tie {index}", reference_type="stock_count",
+                    reference_id=uuid4(), created_at=timestamp,
+                )
+                for index, value in enumerate(("1.000", "2.000", "3.000"))
+            ]
+            session.add_all(own_movements)
+            session.add(StockMovement(
+                business_id=foreign_business.id, product_id=foreign_product.id,
+                movement_type="opening", quantity_delta=Decimal("99.000"),
+                reason="Foreign tenant movement",
+            ))
+            session.commit()
+            own_business_id = own_business.id
+            foreign_business_id = foreign_business.id
+            own_product_id = own_product.id
+            foreign_product_id = foreign_product.id
+            expected_ids = sorted((str(item.id) for item in own_movements), reverse=True)
+
+        previous = _configure_test_identity(engine)
+        client = TestClient(app)
+        base = f"/api/v1/businesses/{own_business_id}/inventory/movements"
+        with Session(engine) as session:
+            movement_count = session.query(StockMovement).filter_by(
+                business_id=own_business_id
+            ).count()
+            audit_count = session.query(AuditEvent).filter_by(
+                business_id=own_business_id
+            ).count()
+
+        first = client.get(base, params={
+            "product_id": str(own_product_id),
+            "movement_type": "adjustment",
+            "reference_type": "stock_count",
+            "limit": 2,
+            "offset": 0,
+        })
+        assert first.status_code == 200, first.text
+        assert [row["id"] for row in first.json()["items"]] == expected_ids[:2]
+        assert first.json()["has_more"] is True
+
+        second = client.get(base, params={"limit": 2, "offset": 2})
+        assert second.status_code == 200, second.text
+        assert len(second.json()["items"]) == 1
+        assert second.json()["has_more"] is False
+
+        foreign_product = client.get(base, params={"product_id": str(foreign_product_id)})
+        assert foreign_product.status_code == 200, foreign_product.text
+        assert foreign_product.json()["items"] == []
+
+        foreign_business = client.get(
+            f"/api/v1/businesses/{foreign_business_id}/inventory/movements"
+        )
+        assert foreign_business.status_code == 403, foreign_business.text
+
+        with Session(engine) as session:
+            assert session.query(StockMovement).filter_by(
+                business_id=own_business_id
+            ).count() == movement_count
+            assert session.query(AuditEvent).filter_by(
+                business_id=own_business_id
+            ).count() == audit_count
+    finally:
+        if previous is not None:
+            _restore_test_identity(*previous)
         engine.dispose()
