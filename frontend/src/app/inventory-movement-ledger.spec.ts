@@ -32,6 +32,13 @@ test('movement types match the backend allowlist without inventing filters', () 
   assert.doesNotMatch(component, /supplierId|warehouseId|dateFrom|dateTo/);
 });
 
+test('reference filter labels are supplied by the component copy model', () => {
+  assert.match(component, /referenceType: this\\.t\\('referenceType'\\)/);
+  assert.match(component, /allReferences: this\\.t\\('allReferences'\\)/);
+  assert.match(component, /copy\\(\\)\\.referenceType/);
+  assert.match(component, /copy\\(\\)\\.allReferences/);
+});
+
 test('reference filters use only reference types observed in backend stock events', () => {
   for (const type of ['invoice', 'invoice_void', 'purchase_order', 'sales_return']) {
     assert.ok(component.includes(`'${type}'`));
