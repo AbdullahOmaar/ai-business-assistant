@@ -48,6 +48,12 @@ test('reference filter labels are supplied by the component copy model', () => {
   assert.match(component, /copy\(\)\.allReferences/);
 });
 
+test('reference filter stays hidden until the authenticated API adapter forwards it', () => {
+  assert.match(component, /supportsReferenceFilter = input\\(false\\)/);
+  assert.match(component, /@if \\(supportsReferenceFilter\\(\\)\\)/);
+  assert.match(component, /referenceType: this\\.referenceType\\(\\)/);
+});
+
 test('reference filters use only reference types observed in backend stock events', () => {
   for (const type of ['invoice', 'invoice_void', 'purchase_order', 'sales_return']) {
     assert.ok(component.includes(`'${type}'`));
