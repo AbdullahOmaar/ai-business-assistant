@@ -1882,6 +1882,8 @@
     "date": "التاريخ",
     "quantity": "الكمية",
     "reason": "السبب",
+    "referenceType": "نوع المرجع",
+    "allReferences": "كل المراجع",
     "reference": "المرجع",
     "shown": "المعروض",
     "loadingMore": "جارٍ تحميل المزيد…",
