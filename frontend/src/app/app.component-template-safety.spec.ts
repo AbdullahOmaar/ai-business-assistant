@@ -6,7 +6,7 @@ import { createServiceWorkerUpdateHandler } from './service-worker-update.ts';
 
 const globalStyles = expandTranslationCalls(readFileSync(new URL('../styles.css', import.meta.url), 'utf8'));
 const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
-const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
+const inventoryApiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const invoiceEditorSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8'));
 const invoiceDraftSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8'));
 const releaseGuideSource = expandTranslationCalls(readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8'));
@@ -1677,10 +1677,10 @@ test('inventory ledger is mounted inside the existing Products workspace with cu
 });
 
 test('inventory movement API uses authenticated tenant-scoped GET with bounded read filters', () => {
-  const start = apiSource.indexOf('inventoryMovements(');
-  const end = apiSource.indexOf('\n  product(', start);
+  const start = inventoryApiSource.indexOf('inventoryMovements(');
+  const end = inventoryApiSource.indexOf('\n  product(', start);
   assert.ok(start >= 0 && end > start, 'typed inventory movement method must exist before product detail');
-  const method = apiSource.slice(start, end);
+  const method = inventoryApiSource.slice(start, end);
   assert.match(method, /businesses\/\$\{encodeURIComponent\(businessId\)\}\/inventory\/movements/);
   assert.match(method, /params\.set\('product_id'/);
   assert.match(method, /params\.set\('movement_type'/);
