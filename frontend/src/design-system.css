@@ -1909,3 +1909,43 @@
   color: var(--aiba-brand);
   font-size: 11px;
 }
+
+
+/* Owner-approved Mobile UX Modernization — hybrid surfaces, balanced density. */
+@media (max-width: 760px) {
+  :root body .shell :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]), select, textarea) {
+    min-height: 48px;
+    font-size: 16px;
+  }
+
+  :root body .shell :is(button, .primary, .secondary, .aba-record-table__sort-button) {
+    min-height: 44px;
+  }
+
+  :root body .shell section.panel {
+    border-radius: 16px;
+  }
+
+  :root body .shell .dashboard-period {
+    padding: 14px 16px;
+    border-radius: 16px;
+  }
+
+  :root body .shell .aba-record-table tbody tr {
+    border-radius: 16px;
+  }
+
+  :root body .shell .aba-record-table tbody :is(td, th) {
+    padding: 12px 13px;
+  }
+
+  :root body .shell .aba-record-table__sort-button {
+    min-height: 44px;
+  }
+}
+
+@media (max-width: 380px) {
+  :root body .shell .dashboard-period {
+    padding: 12px;
+  }
+}
