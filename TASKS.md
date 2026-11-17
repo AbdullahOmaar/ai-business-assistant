@@ -4393,3 +4393,10 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Observed pre-correction head:** `c38bab45262947d150bb3824ba24218f5a2d32db`; main `560f3b402bfd265f8509dcbbdd1ed5988e72efbe`; compare 73 ahead / 0 behind; no open PR.
 - GitHub Actions `actions/runs?head_sha=c38bab45262947d150bb3824ba24218f5a2d32db` returned zero runs. Combined status reports only a Semaphore failure; AGENTS.md defines GitHub Actions as the sole active CI provider, so Semaphore is non-authoritative. No exact-head GitHub Actions PASS exists.
 - **Disposition:** feature-local source blockers RESOLVED; test execution and integrated acceptance remain NOT RUN. Next milestone is a Draft PR to trigger the mandatory exact-head GitHub Actions workflow, followed by fixing only affected failures and completing route/device/accessibility acceptance.
+
+## Exact-head CI success — candidate e59054b0498d986fca9a210dcf27e94b81e353bf
+- Draft PR [#401](https://github.com/AbdullahOmaar/ai-business-assistant/pull/401) exact-head GitHub Actions run [#44017963531](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44017963531) completed SUCCESS on `e59054b0498d986fca9a210dcf27e94b81e353bf`.
+- SUCCESS: frontend-unit-tests, frontend-production-build, frontend-dependency-audit, backend-accounting, backend-container, aggregate `all-checks-passed`.
+- `authenticated-api-smoke` SKIPPED as expected for this scope. Browser smoke remains intentionally removed per Owner decision. The non-authoritative Semaphore status remains FAILURE; AGENTS.md says GitHub Actions is the sole active CI provider.
+- PR #401 remains DRAFT / UNMERGED. Physical Android/installed-PWA, authenticated OWNER/STAFF/second-tenant, route-by-route rendered RTL/LTR, screen reader, forced-colors and actual 200% zoom remain NOT RUN. Do not claim full product acceptance or merge.
+- This TASKS documentation append advances the PR head; exact-head GitHub Actions must run again on the new SHA before any merge decision.
