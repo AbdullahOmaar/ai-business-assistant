@@ -4413,3 +4413,11 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Exact-head CI SUCCESS:** [GitHub Actions run #44018433390](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44018433390) on `63bc39ed5b60e075ad49cc6aca15770aab1579e1`. frontend-unit-tests, frontend-production-build, frontend-dependency-audit, backend-accounting, backend-container and aggregate `all-checks-passed` all SUCCESS. `authenticated-api-smoke` SKIPPED as expected; browser smoke intentionally removed per Owner decision.
 - **PR:** [#401](https://github.com/AbdullahOmaar/ai-business-assistant/pull/401) DRAFT / UNMERGED. No production deploy, DB/schema/migration, financial semantic or production-data change.
 - **This TASKS append advances the PR head; exact-head GitHub Actions must rerun on the new SHA before any merge decision. Keep Draft until rendered/device/accessibility acceptance is complete.**
+
+
+## Latest exact-head CI + acceptance disposition — candidate eb4adbe4de1c3ebcbd5fc29194e80ac760e97d44
+- [GitHub Actions run #44018644216](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44018644216) SUCCESS on exact SHA `eb4adbe4de1c3ebcbd5fc29194e80ac760e97d44`: frontend-unit-tests, frontend-production-build, frontend-dependency-audit, full backend-accounting pytest against disposable PostgreSQL, backend-container and aggregate `all-checks-passed` all SUCCESS.
+- `authenticated-api-smoke` SKIPPED as expected; browser smoke intentionally removed per Owner decision. Semaphore status remains non-authoritative per AGENTS.md.
+- **MUX-07 BLOCKED / NOT RUN:** physical Android/installed-PWA, authenticated OWNER/STAFF/second-tenant live journeys, screen-reader, forced-colors and actual 200% zoom cannot be established in this execution environment. Source review + CI do not substitute. Unblock requires a physical device/PWA session, test memberships and assistive-technology QA evidence from Owner/QA.
+- PR [#401](https://github.com/AbdullahOmaar/ai-business-assistant/pull/401) remains DRAFT / UNMERGED. Mobile UX workstream and T18/T39/T42 remain PARTIALLY COMPLETE / IN PROGRESS until MUX-07 acceptance is supplied.
+- This TASKS append advances the PR head; rerun exact-head GitHub Actions on the new SHA before any merge decision. Keep Draft.
