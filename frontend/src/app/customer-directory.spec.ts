@@ -81,3 +81,9 @@ test('customer editor close is disabled during save and meets the 44px touch tar
   assert.match(editor, /class="customer-editor__close"[\s\S]*?\[disabled\]="busy\(\)"/);
   assert.match(editorCss, /customer-editor__close\{[^}]*flex:0 0 44px;width:44px;height:44px/);
 });
+
+
+test('customer workspace landmark uses a localized accessible name', () => {
+  assert.ok(workspace.includes("[attr.aria-label]=\"t('customerWorkspace.directory')\""));
+  assert.doesNotMatch(workspace, /aria-label="Customer workspace"/);
+});

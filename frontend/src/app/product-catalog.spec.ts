@@ -8,6 +8,7 @@ const sortHelper = readFileSync(new URL('./directory-sort.ts', import.meta.url),
 const css = readFileSync(new URL('./product-catalog.component.css', import.meta.url), 'utf8');
 const app = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const workspace = expandTranslationCalls(readFileSync(new URL('./product-workspace.component.ts', import.meta.url), 'utf8'));
+const workspaceSource = readFileSync(new URL('./product-workspace.component.ts', import.meta.url), 'utf8');
 const productEditor = readFileSync(new URL('./product-editor.component.ts', import.meta.url), 'utf8');
 
 test('Products uses a dedicated catalogue presentation, not the shared generic record table', () => {
@@ -83,4 +84,10 @@ test('product editor close is disabled during save and meets the 44px touch targ
   assert.match(productEditor, /class="product-editor__close"[\s\S]*?\[disabled\]="busy\(\)"/);
   assert.match(productEditor, /product-editor__close\{flex:0 0 44px;width:44px;height:44px/);
   assert.match(productEditor, /product-editor button:disabled/);
+});
+
+
+test('product workspace landmark uses a localized accessible name', () => {
+  assert.ok(workspaceSource.includes("[attr.aria-label]=\"t('productEditor.eyebrow')\""));
+  assert.doesNotMatch(workspaceSource, /aria-label="Product workspace"/);
 });

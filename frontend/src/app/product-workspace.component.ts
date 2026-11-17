@@ -16,7 +16,7 @@ type ProductWorkspaceContext = { businessId: string; userId: string; role: 'owne
   imports: [ProductCatalogComponent, ProductEditorComponent, ProductProfileComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="product-workspace" aria-label="Product workspace">
+    <section class="product-workspace" [attr.aria-label]="t('productEditor.eyebrow')">
       @if (mode() === 'list') {
         <aba-product-catalog
           [ariaLabel]="t('productEditor.eyebrow')"

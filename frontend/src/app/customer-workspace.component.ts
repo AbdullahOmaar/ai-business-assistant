@@ -17,7 +17,7 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
   imports: [CustomerDirectoryComponent, CustomerEditorComponent, CustomerProfileComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="customer-workspace" aria-label="Customer workspace">
+    <section class="customer-workspace" [attr.aria-label]="t('customerWorkspace.directory')">
       @if (mode() === 'list') {
         <header class="customer-workspace__toolbar">
           <form class="customer-workspace__search" role="search" (submit)="submitSearch($event)">
