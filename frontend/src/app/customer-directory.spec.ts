@@ -62,7 +62,7 @@ test('main customer directory exposes guarded pagination beyond the first page',
 });
 
 test('customer search terms are cleared when the active business or identity changes', () => {
-  assert.match(workspace, /this\.searchQuery = '';/);
+  assert.match(workspace, /this\.searchQuery\.set\(''\);/);
   assert.match(workspace, /this\.searchDraft\.set\(''\)/);
   assert.match(workspace, /this\.listGuard\.invalidate\(\)/);
   assert.match(workspace, /this\.customers\.set\(\[\]\)/);
@@ -86,4 +86,10 @@ test('customer editor close is disabled during save and meets the 44px touch tar
 test('customer workspace landmark uses a localized accessible name', () => {
   assert.ok(workspace.includes("[attr.aria-label]=\"t('customerWorkspace.directory')\""));
   assert.doesNotMatch(workspace, /aria-label="Customer workspace"/);
+});
+
+
+test('customer directory distinguishes an empty list from a no-match search', () => {
+  assert.match(workspace, /\[emptyTitle\]="searchQuery\(\) \? t\('ui\.m_1lfpojf'\) : t\('ui\.m_v7mhxb'\)"/);
+  assert.match(workspace, /\[emptyDescription\]="searchQuery\(\) \? '' : t\('customerWorkspace\.emptyDescription'\)"/);
 });

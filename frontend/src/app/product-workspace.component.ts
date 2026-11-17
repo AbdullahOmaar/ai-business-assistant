@@ -26,8 +26,8 @@ type ProductWorkspaceContext = { businessId: string; userId: string; role: 'owne
           [loading]="loading()"
           [error]="error()"
           (retry)="retry()"
-          [emptyTitle]="t('productProfile.emptyTitle')"
-          [emptyDescription]="t('productProfile.emptyDescription')"
+          [emptyTitle]="t('ui.m_12dkqai')"
+          [emptyDescription]="''"
           (select)="openProduct($event)" />
         @if (hasMore() && !error()) {
           <button class="product-workspace__load-more" type="button" [disabled]="loading()" (click)="loadMore()" [attr.aria-live]="'polite'">

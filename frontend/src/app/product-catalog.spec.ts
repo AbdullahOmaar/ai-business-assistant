@@ -103,3 +103,10 @@ test('mobile product cards label their price in both supported locales', () => {
   assert.match(mobilePrice, /product\.unit_price/);
   assert.match(css, /product-catalog__mobile-price-label/);
 });
+
+
+test('empty product catalogue uses a no-products state instead of a detail-selection prompt', () => {
+  assert.ok(workspaceSource.includes("[emptyTitle]=\"t('ui.m_12dkqai')\""));
+  assert.ok(workspaceSource.includes('[emptyDescription]="\'\'"'));
+  assert.doesNotMatch(workspaceSource, /productProfile\.emptyTitle/);
+});

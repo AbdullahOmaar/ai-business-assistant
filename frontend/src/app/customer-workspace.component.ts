@@ -36,8 +36,8 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
           [loading]="loading()"
           [error]="error()"
           (retry)="retry()"
-          [emptyTitle]="t('customerProfile.emptyTitle')"
-          [emptyDescription]="t('customerWorkspace.emptyDescription')"
+          [emptyTitle]="searchQuery() ? t('ui.m_1lfpojf') : t('ui.m_v7mhxb')"
+          [emptyDescription]="searchQuery() ? '' : t('customerWorkspace.emptyDescription')"
           (rowAction)="handleRowAction($event)"
           (select)="openCustomer($event)" />
         @if (hasMore() && !error()) {
@@ -108,7 +108,7 @@ export class CustomerWorkspaceComponent {
   readonly hasMore = signal(false);
   readonly searchDraft = signal('');
   private offset = 0;
-  private searchQuery = '';
+  readonly searchQuery = signal('');
   private readonly pageSize = 100;
   private selectedCustomerId: string | null = null;
 
@@ -122,7 +122,7 @@ export class CustomerWorkspaceComponent {
         this.customers.set([]);
         this.selectedCustomer.set(null);
         this.selectedCustomerId = null;
-        this.searchQuery = '';
+        this.searchQuery.set('');
         this.searchDraft.set('');
         this.offset = 0;
         this.hasMore.set(false);
@@ -165,7 +165,7 @@ export class CustomerWorkspaceComponent {
     this.loadingMore.set(!reset);
     this.error.set('');
     try {
-      const records = await this.api.customers(requested.businessId, this.offset, this.pageSize, this.searchQuery);
+      const records = await this.api.customers(requested.businessId, this.offset, this.pageSize, this.searchQuery());
       if (!this.isCurrent(this.listGuard, version, requested)) return;
       const combined = reset ? records : [...this.customers(), ...records];
       const unique = new Map<string, Customer>();
@@ -185,7 +185,7 @@ export class CustomerWorkspaceComponent {
 
   submitSearch(event: Event): void {
     event.preventDefault();
-    this.searchQuery = this.searchDraft().trim().slice(0, 120);
+    this.searchQuery.set(this.searchDraft().trim().slice(0, 120));
     void this.loadCustomers(true);
   }
 
