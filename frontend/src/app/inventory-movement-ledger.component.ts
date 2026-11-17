@@ -153,24 +153,24 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
   `,
   styles: [`
     :host{display:block;min-width:0}
-    .inventory-ledger{display:grid;gap:14px;min-width:0;color:var(--aiba-ink,#172033)}
+    .inventory-ledger{display:grid;gap:var(--aiba-space-4,16px);min-width:0;color:var(--aiba-ink,#172033);font-family:var(--aiba-font-sans,system-ui,sans-serif)}
     .inventory-ledger__header{display:flex;align-items:center;justify-content:space-between;gap:12px}
     .inventory-ledger__header h2{margin:3px 0;font-size:19px}
     .inventory-ledger__eyebrow{margin:0;color:var(--aiba-brand,#0f766e);font-size:11px;font-weight:800}
     .inventory-ledger__muted{color:var(--aiba-muted,#64748b);font-size:12px}
-    .inventory-ledger__filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+    .inventory-ledger__filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--aiba-space-3,12px);padding:var(--aiba-space-3,12px);border:1px solid var(--aiba-line,#e2e8f0);border-radius:var(--aiba-radius-card,16px);background:var(--aiba-surface-tint,#f6fafb)}
     .inventory-ledger__filters label{display:grid;gap:6px;min-width:0;font-size:12px;font-weight:700}
-    .inventory-ledger select{box-sizing:border-box;width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--aiba-line-strong,#cbd5e1);border-radius:10px;background:var(--aiba-surface,#fff);color:inherit;font:inherit}
-    .inventory-ledger button{min-height:44px;padding:8px 13px;border:1px solid var(--aiba-line-strong,#cbd5e1);border-radius:10px;background:var(--aiba-surface,#fff);color:inherit;font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+    .inventory-ledger select{box-sizing:border-box;width:100%;min-height:44px;padding:8px 10px;border:1px solid var(--aiba-line-strong,#cbd5e1);border-radius:var(--aiba-radius-control,11px);background:var(--aiba-surface,#fff);color:inherit;font:inherit}
+    .inventory-ledger button{min-height:44px;padding:8px 13px;border:1px solid var(--aiba-line-strong,#cbd5e1);border-radius:var(--aiba-radius-control,11px);background:var(--aiba-surface,#fff);color:inherit;font:inherit;font-size:12px;font-weight:750;cursor:pointer}
     .inventory-ledger button:disabled{opacity:.55;cursor:wait}
     .inventory-ledger :is(button,select,[tabindex]):focus-visible{outline:3px solid var(--aiba-focus,#2563eb);outline-offset:2px}
     .inventory-ledger__refresh,.inventory-ledger__footer button{border-color:var(--aiba-brand,#0f766e);background:var(--aiba-brand,#0f766e);color:#fff}
-    .inventory-ledger__state{padding:24px 14px;border:1px dashed var(--aiba-line-strong,#cbd5e1);border-radius:14px;text-align:center}
+    .inventory-ledger__state{padding:var(--aiba-space-6,24px) var(--aiba-space-4,16px);border:1px dashed var(--aiba-line-strong,#cbd5e1);border-radius:var(--aiba-radius-card,16px);text-align:center}
     .inventory-ledger__state p{margin:6px 0 0;color:var(--aiba-muted,#64748b);font-size:12px}
     .inventory-ledger__state--error{border-color:var(--aiba-danger,#dc2626);color:var(--aiba-danger,#b91c1c)}
     .inventory-ledger__state--error button{margin-top:8px}
     .inventory-ledger__mobile-list{display:grid;gap:9px}
-    .inventory-ledger__card{display:grid;gap:9px;padding:13px;border:1px solid var(--aiba-line,#e2e8f0);border-radius:13px;background:var(--aiba-surface,#fff);min-width:0}
+    .inventory-ledger__card{display:grid;gap:9px;padding:var(--aiba-space-4,16px);border:1px solid var(--aiba-line,#e2e8f0);border-radius:var(--aiba-radius-card,16px);background:var(--aiba-surface,#fff);box-shadow:var(--aiba-shadow-card,0 2px 8px rgb(15 23 42 / 4%));min-width:0;overflow-wrap:anywhere}
     .inventory-ledger__card-top,.inventory-ledger__meta,.inventory-ledger__footer{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
     .inventory-ledger__card-top strong{overflow-wrap:anywhere}
     .inventory-ledger__type{padding:4px 8px;border-radius:999px;background:var(--aiba-soft,#f1f5f9);font-size:11px}
@@ -180,7 +180,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
     .inventory-ledger__quantity--positive{color:var(--aiba-success,#15803d)}
     .inventory-ledger__reason{margin:0;font-size:12px;overflow-wrap:anywhere}
     .inventory-ledger__meta{flex-wrap:wrap;color:var(--aiba-muted,#64748b);font-size:11px}
-    .inventory-ledger__desktop-table{display:none;overflow:auto;border:1px solid var(--aiba-line,#e2e8f0);border-radius:12px}
+    .inventory-ledger__desktop-table{display:none;overflow:auto;border:1px solid var(--aiba-line,#e2e8f0);border-radius:var(--aiba-radius-card,16px)}
     .inventory-ledger table{width:100%;border-collapse:collapse;text-align:start;font-size:12px}
     .inventory-ledger th,.inventory-ledger td{padding:11px 12px;border-bottom:1px solid var(--aiba-line,#e2e8f0);text-align:start;white-space:nowrap}
     .inventory-ledger th{background:var(--aiba-soft,#f8fafc);font-weight:800}
@@ -188,7 +188,8 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
     .inventory-ledger__table-quantity{direction:ltr;font-weight:800;font-variant-numeric:tabular-nums}
     .inventory-ledger__footer{justify-content:center;flex-wrap:wrap}
     @media(min-width:761px){.inventory-ledger__mobile-list{display:none}.inventory-ledger__desktop-table{display:block}}
-    @media(max-width:520px){.inventory-ledger__header{align-items:flex-start}.inventory-ledger__filters{grid-template-columns:1fr}.inventory-ledger__refresh{min-width:84px}}
+    @media(max-width:760px){.inventory-ledger__filters{grid-template-columns:1fr}.inventory-ledger select{min-height:48px;font-size:16px}.inventory-ledger__refresh{min-height:48px}}
+    @media(max-width:520px){.inventory-ledger__header{align-items:flex-start}.inventory-ledger__refresh{min-width:84px}}
     @media(prefers-reduced-motion:reduce){.inventory-ledger *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
     @media(forced-colors:active){.inventory-ledger button,.inventory-ledger select,.inventory-ledger__card{border:1px solid CanvasText}.inventory-ledger :is(button,select,[tabindex]):focus-visible{outline-color:Highlight}.inventory-ledger__quantity--negative,.inventory-ledger__quantity--positive{color:CanvasText}}
   `],
