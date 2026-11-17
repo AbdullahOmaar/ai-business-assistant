@@ -555,7 +555,7 @@ export class ApiService {
   }
   inventoryMovements(
     businessId: string,
-    query: { productId?: string; movementType?: StockMovementType; limit?: number; offset?: number } = {},
+    query: { productId?: string; movementType?: StockMovementType; referenceType?: string; limit?: number; offset?: number } = {},
   ): Promise<StockMovementPage> {
     const limit = Number.isFinite(query.limit) ? Math.trunc(query.limit as number) : 50;
     const offset = Number.isFinite(query.offset) ? Math.trunc(query.offset as number) : 0;
@@ -565,6 +565,7 @@ export class ApiService {
     });
     if (query.productId) params.set('product_id', query.productId);
     if (query.movementType) params.set('movement_type', query.movementType);
+    if (query.referenceType) params.set('reference_type', query.referenceType);
     return this.request<StockMovementPage>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/inventory/movements?${params.toString()}`,
     );
