@@ -36,7 +36,7 @@
   .customer-directory__identity h3{margin:0;color:var(--aiba-ink,#172033);font-size:14px;font-weight:720;line-height:1.35;overflow-wrap:anywhere}
    .customer-directory__details{display:grid;gap:3px;min-width:0;color:var(--aiba-muted,#5f6e83);font-size:11px;line-height:1.45;overflow-wrap:anywhere}.customer-directory__details b{color:var(--aiba-ink-soft,#344256)}
   .customer-directory__contact{display:flex;flex-wrap:wrap;align-items:center;gap:3px 10px;min-width:0;color:var(--aiba-muted,#5f6e83);font-size:12px;line-height:1.4}
-  .customer-directory__contact a{min-width:0;max-width:100%;color:var(--aiba-ink-soft,#344256);text-decoration:none;overflow-wrap:anywhere}
+  .customer-directory__contact a{display:inline-flex;align-items:center;min-width:0;max-width:100%;min-height:44px;color:var(--aiba-ink-soft,#344256);text-decoration:none;overflow-wrap:anywhere}
   .customer-directory__actions{justify-content:flex-end;gap:5px}
   .customer-directory__action{min-height:44px;padding:7px 9px;font-size:12px;white-space:normal}
 }
