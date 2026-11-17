@@ -33,6 +33,9 @@ test('customer directory keeps compact mobile contact rows and visible existing 
   assert.match(component, /customer\.email/);
   assert.match(component, /emitAction\(customer\.id, 'invoices'/);
   assert.match(component, /emitAction\(customer\.id, 'statement'/);
+  assert.match(component, /emitAction\(customer\.id, 'edit'/);
+  assert.match(component, /t\('customerProfile\.edit'\)/);
+  assert.match(workspace, /event\.actionId === 'edit'[\s\S]*?editCustomerFromDirectory/);
   assert.match(component, /rowAction\.emit\(\{ rowId, actionId, anchor \}\)/);
   assert.match(css, /@media\(max-width:760px\)/);
   assert.match(css, /grid-template-columns:minmax\(0,1fr\) auto/);
