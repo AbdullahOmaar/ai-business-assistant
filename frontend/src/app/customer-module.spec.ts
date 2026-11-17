@@ -53,8 +53,8 @@ test('customer directory preserves responsive layouts and exposes saved address 
 });
 
 test('customer workspace covers server search, paginated list, detail and create/edit with tenant stale-response guards', () => {
-  assert.match(workspace, /this\.api\.customers\(requested\.businessId, this\.offset, this\.pageSize, this\.searchQuery\)/);
-  assert.match(workspace, /this\.searchQuery = this\.searchDraft\(\)\.trim\(\)\.slice\(0, 120\)/);
+  assert.match(workspace, /this\.api\.customers\(requested\.businessId, this\.offset, this\.pageSize, this\.searchQuery\(\)\)/);
+  assert.match(workspace, /this\.searchQuery\.set\(this\.searchDraft\(\)\.trim\(\)\.slice\(0, 120\)\)/);
   assert.match(workspace, /this\.api\.customer\(requested\.businessId, customerId\)/);
   assert.match(workspace, /this\.api\.createCustomer\(requested\.businessId, value\)/);
   assert.match(workspace, /this\.api\.updateCustomer\(requested\.businessId, editingId, value\)/);
