@@ -4336,3 +4336,15 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Reuses existing authenticated API workflows, current OWNER/STAFF tab visibility and existing validation. No new route, API, schema, financial, stock or authorization semantics were introduced.
 - Source: `frontend/src/app/app.component.ts`; commit `e0c7ba6d40094f2c077179a25fb39aba78a99e74`.
 - Validation: automated tests/build/CI intentionally NOT RUN in this product batch per Owner test-economy policy and current user direction. No merge, deployment or business-data mutation.
+
+
+## 2026-11-17 — Owner-approved Mobile UX Modernization (Hybrid / Balanced)
+- **Decision:** Owner approved Modern Hybrid visual direction and Balanced information density. Canonical workstream: [Notion Mobile UX Modernization](https://app.notion.com/p/41b9320b90fb81faa4a3fdfbf449ad22).
+- **Baseline:** reuse `docs/UX_DESIGN_SYSTEM.md` and the 19-destination / nested-surface inventory in `docs/UX_NESTED_SURFACE_INVENTORY.md`. Existing mobile header, role-aware dock/More, responsive record cards, KPI foundation and RTL/LTR rules remain; this is a refinement, not a rebuild.
+- **Implemented shared-card foundation:** aligned shared card radius token to 16px; improved generic card content wrapping; added a subtle teal-to-blue KPI accent and balanced mobile KPI rhythm; refined module-directory quick-access card sizing and spacing; added focused source assertions.
+- **Files:** `frontend/src/styles.css`, `frontend/src/app/shared/ui/aba-card.component.ts`, `frontend/src/app/shared/ui/aba-metric-card.component.ts`, `frontend/src/app/shared/ui/aba-quick-access-card.component.ts`, `frontend/src/app/design-tokens.spec.ts`.
+- **Commits:** `854752e02ba87f76f535e17988c3a3fd6b8bcfd4`, `6f80b78e80f7621f5dae64dd66fe9df6fcd6631f`, `6f0663fdef042cb8bf6c5fbdbfe5a4a9a14f8258`, `7a880eed2b636c6dcb5e129ae99d67badb855180`, `d379d830f1a25b6df3d8ce8279d796743854eae3`, `f5428f4ef64a109aa208288d292871e636ca687a`.
+- **Parallel Inventory Ledger:** Chat 1 feature-local UI and Chat 2 backend/API tests are present in the active branch diff. MASTER retains shared API client, app shell, localization and task-ledger integration; no shared ownership was taken from either chat.
+- **Branch:** `master/nov-2026-phase-1-runtime-qa@f5428f4ef64a109aa208288d292871e636ca687a`; main `560f3b402bfd265f8509dcbbdd1ed5988e72efbe`; compare 24 ahead / 0 behind. No open PR found in the latest repository search.
+- **Validation:** focused unit tests, full frontend suite, build, browser smoke and GitHub Actions NOT RUN yet. No rendered/device acceptance, physical Android/PWA, authenticated role/tenant, screen-reader, forced-colors or actual 200% zoom claim. No merge, deployment, API/schema/database or business-semantic change.
+- **Disposition:** shared-card foundation IMPLEMENTED; Mobile UX Modernization and Inventory Movement Ledger remain IN PROGRESS pending the remaining screen/form/filter/state review, integration and exact-head acceptance.
