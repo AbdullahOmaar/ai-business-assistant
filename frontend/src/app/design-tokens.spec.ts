@@ -453,3 +453,20 @@ test('Arabic typography overrides stay RTL-scoped and preserve English heading t
   assert.match(designSystemStyles, /:root body \.shell\[dir="rtl"\] :is\(\.eyebrow, \.nav-label, \.mobile-more-group h3\) \{\s*letter-spacing: normal;/);
   assert.doesNotMatch(designSystemStyles, /:root body \.shell\s+:is\(h1, h2, h3\) \{\s*letter-spacing: normal;/);
 });;
+
+
+test('shared cards follow the approved hybrid visual direction with balanced mobile density', () => {
+  const cardSource = componentSources[0];
+  const metricSource = componentSources[1];
+  const quickAccessSource = componentSources[2];
+
+  assert.match(styles, /--aba-radius-card:\\s*16px/);
+  assert.match(cardSource, /border-radius:var\\(--aba-radius-card, 16px\\)/);
+  assert.match(cardSource, /overflow-wrap:anywhere/);
+  assert.match(metricSource, /\\.aba-metric-card::before/);
+  assert.match(metricSource, /@media\\(max-width:760px\\)/);
+  assert.match(metricSource, /min-height:116px/);
+  assert.match(quickAccessSource, /grid-template-columns:36px minmax\\(0,1fr\\)/);
+  assert.match(quickAccessSource, /min-height:108px/);
+  assert.match(quickAccessSource, /prefers-reduced-motion:reduce/);
+});
