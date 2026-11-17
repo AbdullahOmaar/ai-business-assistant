@@ -1673,6 +1673,7 @@ test('inventory ledger is mounted inside the existing Products workspace with cu
   assert.match(mount, /\[loadPage\]="loadInventoryMovementPage"/);
   assert.match(source, /InventoryMovementLedgerComponent/);
   assert.match(source, /loadInventoryMovementPage = query => this\.api\.inventoryMovements/);
+  assert.match(source, /referenceType: query\.referenceType \|\| undefined/);
 });
 
 test('inventory movement API uses authenticated tenant-scoped GET with bounded read filters', () => {
@@ -1683,6 +1684,7 @@ test('inventory movement API uses authenticated tenant-scoped GET with bounded r
   assert.match(method, /businesses\/\$\{encodeURIComponent\(businessId\)\}\/inventory\/movements/);
   assert.match(method, /params\.set\('product_id'/);
   assert.match(method, /params\.set\('movement_type'/);
+  assert.match(method, /params\.set\('reference_type'/);
   assert.match(method, /Math\.min\(200, Math\.max\(1, limit\)\)/);
   assert.match(method, /Math\.max\(0, offset\)/);
   assert.match(method, /request<StockMovementPage>/);
