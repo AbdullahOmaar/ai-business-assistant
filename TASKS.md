@@ -4385,3 +4385,11 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - GitHub Actions `actions/runs?head_sha=020577c869fa843466abb0d4227dce9f3719a402` returned `total_count=0`.
 - Commit combined status returned one `ci/semaphoreci/push: Pipeline = failure`. Branch AGENTS.md explicitly states GitHub Actions is the sole active CI provider and Semaphore is not authoritative; therefore this failure is recorded as non-authoritative context, not as the GitHub Actions result and not as a PASS.
 - No GitHub Actions workflow run, required `all-checks-passed` result or exact-head CI evidence exists for this candidate. No PR opened because feature-local precision/localization acceptance remains open.
+
+
+## Correction — Chat 1 ledger source fixes resolved — 2026-11-17
+- Chat 1 has completed the feature-local fixes that were listed as open in the prior checkpoint: decimal quantities are parsed from the source string with BigInt for the integer portion and localized digits/separators; sign detection uses the decimal string; no inline Arabic UI copy remains; dictionary-backed reference labels include `stock_count`.
+- The component source-contract suite now has 17 tests, including exact decimal precision, dictionary-backed labels, stock-count references and no-inline-Arabic policy. The final assertion corrections are in `c38bab45262947d150bb3824ba24218f5a2d32db`.
+- **Observed pre-correction head:** `c38bab45262947d150bb3824ba24218f5a2d32db`; main `560f3b402bfd265f8509dcbbdd1ed5988e72efbe`; compare 73 ahead / 0 behind; no open PR.
+- GitHub Actions `actions/runs?head_sha=c38bab45262947d150bb3824ba24218f5a2d32db` returned zero runs. Combined status reports only a Semaphore failure; AGENTS.md defines GitHub Actions as the sole active CI provider, so Semaphore is non-authoritative. No exact-head GitHub Actions PASS exists.
+- **Disposition:** feature-local source blockers RESOLVED; test execution and integrated acceptance remain NOT RUN. Next milestone is a Draft PR to trigger the mandatory exact-head GitHub Actions workflow, followed by fixing only affected failures and completing route/device/accessibility acceptance.
