@@ -31,6 +31,14 @@ test('movement types match the backend allowlist without inventing filters', () 
   assert.doesNotMatch(component, /supplierId|warehouseId|dateFrom|dateTo/);
 });
 
+test('reference filters use only reference types observed in backend stock events', () => {
+  for (const type of ['invoice', 'invoice_void', 'purchase_order', 'sales_return']) {
+    assert.ok(component.includes(`'${type}'`));
+  }
+  assert.match(component, /setReferenceType\\(value: string\\)/);
+  assert.match(component, /referenceTypeLabel\\(type: string\\)/);
+});
+
 test('desktop table and mobile cards present the same read-only movement records', () => {
   assert.match(component, /inventory-ledger__mobile-list/);
   assert.match(component, /inventory-ledger__desktop-table/);
