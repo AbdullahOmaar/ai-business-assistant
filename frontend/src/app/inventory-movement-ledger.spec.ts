@@ -5,6 +5,7 @@ import test from 'node:test';
 const component = readFileSync(new URL('./inventory-movement-ledger.component.ts', import.meta.url), 'utf8');
 const guard = readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8');
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
+const shell = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 
 test('inventory ledger is an isolated standalone read-only component', () => {
   assert.match(component, /selector: 'aba-inventory-movement-ledger'/);
@@ -49,9 +50,12 @@ test('reference filter labels are supplied by the component copy model', () => {
 });
 
 test('reference filter stays hidden until the authenticated API adapter forwards it', () => {
-  assert.match(component, /supportsReferenceFilter = input\\(false\\)/);
+  assert.match(component, /supportsReferenceFilter = input\\(true\\)/);
   assert.match(component, /@if \\(supportsReferenceFilter\\(\\)\\)/);
   assert.match(component, /referenceType: this\\.referenceType\\(\\)/);
+  assert.match(api, /referenceType\\?: string/);
+  assert.match(api, /params\\.set\\('reference_type', query\\.referenceType\\)/);
+  assert.match(shell, /referenceType: query\\.referenceType \\|\\| undefined/);
 });
 
 test('reference filters use only reference types observed in backend stock events', () => {
