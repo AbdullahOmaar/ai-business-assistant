@@ -29,7 +29,7 @@ test('customer profile presents contact, address, notes and existing invoice/sta
   assert.match(profile, /invoices\.emit\(\)/);
   assert.match(profile, /statement\.emit\(\)/);
   assert.match(profile, /loading\(\)/);
-  assert.match(profile, /customer-profile__item a\\{[^}]*min-height:44px/);
+  assert.match(profile, /customer-profile__item a\{[^}]*min-height:44px/);
   assert.match(profile, /retry\.emit\(\)/);
   assert.doesNotMatch(profile, /totalPurchases|receivableBalance|creditLimit/);
   assert.ok(profile.includes('customerProfile.financialNote'));
