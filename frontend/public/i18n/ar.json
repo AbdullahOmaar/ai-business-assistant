@@ -1884,6 +1884,12 @@
     "reason": "السبب",
     "referenceType": "نوع المرجع",
     "allReferences": "كل المراجع",
+    "referenceTypes": {
+      "invoice": "فاتورة بيع",
+      "invoice_void": "عكس فاتورة",
+      "purchase_order": "أمر شراء",
+      "sales_return": "مرتجع مبيعات"
+    },
     "reference": "المرجع",
     "shown": "المعروض",
     "loadingMore": "جارٍ تحميل المزيد…",
