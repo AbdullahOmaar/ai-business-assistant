@@ -4379,3 +4379,9 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Source review dispositions:** MUX-04 mobile header/dock/More and MUX-05 shared feedback states are N/A for rebuilding because the existing primitives already provide the reviewed behaviors; physical/rendered acceptance remains NOT RUN. MUX-02 shared record-table mobile cards preserve all fields and actions; per-destination review remains open.
 - **Checks:** no unit tests, localization test, build, browser smoke, backend tests, PostgreSQL tests or exact-head CI run in this batch. No merge/deploy/DB/schema/migration or business-data mutation.
 - **Status:** Mobile UX Modernization and Inventory Movement Ledger remain IN PROGRESS / PARTIALLY COMPLETE. Do not claim acceptance or parent completion while Chat 1 fixes and exact-head gates remain open.
+
+
+## CI evidence readback — candidate 020577c869fa843466abb0d4227dce9f3719a402
+- GitHub Actions `actions/runs?head_sha=020577c869fa843466abb0d4227dce9f3719a402` returned `total_count=0`.
+- Commit combined status returned one `ci/semaphoreci/push: Pipeline = failure`. Branch AGENTS.md explicitly states GitHub Actions is the sole active CI provider and Semaphore is not authoritative; therefore this failure is recorded as non-authoritative context, not as the GitHub Actions result and not as a PASS.
+- No GitHub Actions workflow run, required `all-checks-passed` result or exact-head CI evidence exists for this candidate. No PR opened because feature-local precision/localization acceptance remains open.
