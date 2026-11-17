@@ -17,7 +17,7 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
   `,
   styles: [`
     :host{display:block;min-width:0}
-    .aba-quick-access{width:100%;height:100%;min-height:104px;display:flex;align-items:flex-start;gap:var(--aba-space-3, 12px);padding:var(--aba-space-4, 16px);text-align:start;border:1px solid var(--aba-color-border, #e5eaf1);border-radius:var(--aba-radius-card, 14px);background:var(--aba-color-surface, #fff);color:var(--aba-color-text-primary, #172033);box-shadow:var(--aba-shadow-card, 0 1px 2px rgb(15 23 42 / 4%));cursor:pointer;transition:border-color var(--aba-motion-fast, 150ms) var(--aba-easing-standard, ease),box-shadow var(--aba-motion-fast, 150ms) var(--aba-easing-standard, ease),transform var(--aba-motion-fast, 150ms) var(--aba-easing-standard, ease)}
+    .aba-quick-access{width:100%;height:100%;min-height:108px;display:flex;align-items:flex-start;gap:var(--aba-space-3, 12px);padding:var(--aba-space-4, 16px);text-align:start;border:1px solid var(--aba-color-border, #e5eaf1);border-radius:var(--aba-radius-card, 16px);background:var(--aba-color-surface, #fff);color:var(--aba-color-text-primary, #172033);box-shadow:var(--aba-shadow-card, 0 1px 2px rgb(15 23 42 / 4%));cursor:pointer;transition:border-color var(--aba-motion-fast, 150ms) var(--aba-easing-standard, ease),box-shadow var(--aba-motion-fast, 150ms) var(--aba-easing-standard, ease),transform var(--aba-motion-fast, 150ms) var(--aba-easing-standard, ease)}
     .aba-quick-access:hover:not(:disabled){border-color:var(--aba-color-primary-border, #99f6e4);box-shadow:var(--aba-shadow-card-hover, 0 8px 22px rgb(15 23 42 / 4%));transform:translateY(-1px)}
     .aba-quick-access:active:not(:disabled){border-color:var(--aba-color-primary-border, #99f6e4);transform:scale(.99)}
     .aba-quick-access:focus-visible{outline:var(--aba-focus-ring-width, 3px) solid var(--aba-color-focus-ring, #2563eb);outline-offset:var(--aba-focus-ring-offset, 2px)}
@@ -30,16 +30,16 @@ import { ChangeDetectionStrategy, Component, input, output } from '@angular/core
     :host-context([dir="rtl"]) .aba-quick-access__arrow{transform:scaleX(-1)}
     @media(prefers-reduced-motion:reduce){.aba-quick-access{transition:none}.aba-quick-access:hover:not(:disabled),.aba-quick-access:active:not(:disabled){transform:none}}
     @media(max-width:760px){
-      :host-context(.module-directory-grid) .aba-quick-access{min-height:96px;display:grid;grid-template-columns:32px minmax(0,1fr);align-content:start;align-items:start;gap:8px;padding:10px}
-      :host-context(.module-directory-grid) .aba-quick-access__icon{flex:0 0 32px;width:32px;height:32px;font-size:15px}
-      :host-context(.module-directory-grid) .aba-quick-access__copy{gap:3px}
+      :host-context(.module-directory-grid) .aba-quick-access{min-height:108px;display:grid;grid-template-columns:36px minmax(0,1fr);align-content:start;align-items:start;gap:10px;padding:12px}
+      :host-context(.module-directory-grid) .aba-quick-access__icon{flex:0 0 36px;width:36px;height:36px;font-size:16px}
+      :host-context(.module-directory-grid) .aba-quick-access__copy{gap:4px}
       :host-context(.module-directory-grid) .aba-quick-access__copy>span{display:-webkit-box;min-height:2.9em;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;line-height:1.45}
       :host-context(.module-directory-grid) .aba-quick-access__arrow{display:none}
     }
     @media(max-width:380px){
-      :host-context(.module-directory-grid) .aba-quick-access{min-height:96px;gap:6px;padding:8px}
-      :host-context(.module-directory-grid) .aba-quick-access__icon{flex-basis:28px;width:28px;height:28px;font-size:14px}
-      :host-context(.module-directory-grid) .aba-quick-access__copy strong{font-size:12px}
+      :host-context(.module-directory-grid) .aba-quick-access{min-height:100px;gap:7px;padding:10px}
+      :host-context(.module-directory-grid) .aba-quick-access__icon{flex-basis:32px;width:32px;height:32px;font-size:15px}
+      :host-context(.module-directory-grid) .aba-quick-access__copy strong{font-size:13px}
       :host-context(.module-directory-grid) .aba-quick-access__copy>span{font-size:12px}
     }
   `],
