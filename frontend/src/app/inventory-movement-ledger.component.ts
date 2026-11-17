@@ -108,6 +108,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
                 {{ formatQuantity(movement.quantity_delta) }} <small>{{ movement.product.unit || copy().unit }}</small>
               </div>
               <p class="inventory-ledger__reason">{{ movement.reason || copy().noReason }}</p>
+              @if (movement.reference_type) { <p class="inventory-ledger__reference">{{ copy().reference }}: {{ referenceTypeLabel(movement.reference_type) }}</p> }
               <div class="inventory-ledger__meta">
                 <time [attr.datetime]="movement.created_at">{{ formatDate(movement.created_at) }}</time>
                 @if (movement.product.sku) { <span>{{ copy().sku }}: {{ movement.product.sku }}</span> }
@@ -134,7 +135,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
                   <td>{{ typeLabel(movement.movement_type) }}</td>
                   <td class="inventory-ledger__table-quantity" [class.inventory-ledger__quantity--negative]="isNegative(movement.quantity_delta)" [class.inventory-ledger__quantity--positive]="!isNegative(movement.quantity_delta)">{{ formatQuantity(movement.quantity_delta) }} {{ movement.product.unit || copy().unit }}</td>
                   <td>{{ movement.reason || copy().noReason }}</td>
-                  <td>{{ movement.reference_type || '—' }}</td>
+                  <td>{{ movement.reference_type ? referenceTypeLabel(movement.reference_type) : '—' }}</td>
                 </tr>
               }
             </tbody>
