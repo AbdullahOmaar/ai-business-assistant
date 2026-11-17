@@ -1888,7 +1888,8 @@
       "invoice": "فاتورة بيع",
       "invoice_void": "عكس فاتورة",
       "purchase_order": "أمر شراء",
-      "sales_return": "مرتجع مبيعات"
+      "sales_return": "مرتجع مبيعات",
+      "stock_count": "جرد مخزون"
     },
     "reference": "المرجع",
     "shown": "المعروض",
