@@ -8,9 +8,9 @@ export type ProductSortField = 'name' | 'sku' | 'price' | 'stock';
 type DecimalParts = { sign: -1 | 1; integer: string; fraction: string };
 
 function parseDecimal(value: string): DecimalParts | null {
-  const match = /^([+-]?)(\\d+)(?:\\.(\\d+))?$/.exec(value.trim());
+  const match = /^([+-]?)(\d+)(?:\.(\d+))?$/.exec(value.trim());
   if (!match) return null;
-  const integer = match[2].replace(/^0+(?=\\d)/, '');
+  const integer = match[2].replace(/^0+(?=\d)/, '');
   const fraction = (match[3] || '').replace(/0+$/, '');
   const isZero = integer === '0' && fraction.length === 0;
   return {
