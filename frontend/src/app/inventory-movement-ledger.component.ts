@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, effect, input, signal, untracked } from '@angular/core';
+import { ChangeDetectionStrategy, Component, effect, inject, input, signal, untracked } from '@angular/core';
 import type { Product } from './api.service';
+import { LocalizationService } from './localization.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 
 export type InventoryMovementType = 'opening' | 'receipt' | 'sale' | 'return' | 'adjustment';
@@ -218,37 +219,26 @@ export class InventoryMovementLedgerComponent {
 
   direction(): 'rtl' | 'ltr' { return this.language() === 'ar' ? 'rtl' : 'ltr'; }
 
+  private readonly localization = inject(LocalizationService);
+
+  private t(key: string): string { return this.localization.translate('inventoryLedger.' + key); }
+
   copy() {
-    const ar = this.language() === 'ar';
-    return ar ? {
-      title: 'سجل حركات المخزون', eyebrow: 'المخزون', subtitle: 'عرض تفصيلي لكل حركة مسجلة على المنتجات',
-      refresh: 'تحديث', filters: 'تصفية الحركات', product: 'المنتج', allProducts: 'كل المنتجات',
-      movementType: 'نوع الحركة', allTypes: 'كل الحركات', retry: 'إعادة المحاولة',
-      loading: 'جاري تحميل الحركات…', emptyTitle: 'لا توجد حركات مخزون', emptyDescription: 'ستظهر الحركات هنا عند تسجيل استلام أو صرف أو حركة مخزون.',
-      movementList: 'قائمة حركات المخزون', unit: 'وحدة', sku: 'الكود', noReason: 'بدون سبب مسجل',
-      date: 'التاريخ', quantity: 'الكمية', reason: 'السبب', reference: 'المرجع',
-      shown: 'عدد السجلات', loadingMore: 'جاري التحميل…', loadMore: 'تحميل المزيد',
-    } : {
-      title: 'Inventory movement ledger', eyebrow: 'Inventory', subtitle: 'A read-only history of recorded product stock movements',
-      refresh: 'Refresh', filters: 'Movement filters', product: 'Product', allProducts: 'All products',
-      movementType: 'Movement type', allTypes: 'All types', retry: 'Retry',
-      loading: 'Loading movements…', emptyTitle: 'No stock movements yet', emptyDescription: 'Recorded receipts, sales and other stock movements will appear here.',
-      movementList: 'Inventory movements', unit: 'unit', sku: 'SKU', noReason: 'No reason recorded',
-      date: 'Date', quantity: 'Quantity', reason: 'Reason', reference: 'Reference',
-      shown: 'Records shown', loadingMore: 'Loading…', loadMore: 'Load more',
+    return {
+      title: this.t('title'), eyebrow: this.t('eyebrow'), subtitle: this.t('subtitle'),
+      refresh: this.t('refresh'), filters: this.t('filters'), product: this.t('product'),
+      allProducts: this.t('allProducts'), movementType: this.t('movementType'), allTypes: this.t('allTypes'),
+      retry: this.t('retry'), loading: this.t('loading'), emptyTitle: this.t('emptyTitle'),
+      emptyDescription: this.t('emptyDescription'), movementList: this.t('movementList'),
+      unit: this.t('unit'), sku: this.t('sku'), noReason: this.t('noReason'),
+      date: this.t('date'), quantity: this.t('quantity'), reason: this.t('reason'),
+      reference: this.t('reference'), shown: this.t('shown'), loadingMore: this.t('loadingMore'),
+      loadMore: this.t('loadMore'),
     };
   }
 
   typeLabel(type: InventoryMovementType): string {
-    const ar = this.language() === 'ar';
-    const labels: Record<InventoryMovementType, [string, string]> = {
-      opening: ['رصيد افتتاحي', 'Opening stock'],
-      receipt: ['استلام مشتريات', 'Purchase receipt'],
-      sale: ['صرف مبيعات', 'Sale'],
-      return: ['مرتجع', 'Return'],
-      adjustment: ['تسوية مخزون', 'Adjustment'],
-    };
-    return labels[type]?.[ar ? 0 : 1] ?? type;
+    return this.t('type.' + type);
   }
 
   readValue(event: Event): string { return (event.currentTarget as HTMLSelectElement | null)?.value ?? ''; }
@@ -278,7 +268,8 @@ export class InventoryMovementLedgerComponent {
         offset: this.offset,
       });
       if (!this.isCurrent(version, requested)) return;
-      if (!page || !Array.isArray(page.items) || typeof page.has_more !== 'boolean') {
+      if (!page || !Array.isArray(page.items) || typeof page.has_more !== 'boolean'
+          || !Number.isInteger(page.offset) || !Number.isInteger(page.limit)) {
         throw new Error('Invalid inventory movement response');
       }
       const next = reset ? page.items : [...this.items(), ...page.items];
