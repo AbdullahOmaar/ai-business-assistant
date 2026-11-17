@@ -46,6 +46,8 @@ test('customer directory preserves responsive layouts and exposes saved address 
   assert.match(directory, /customer-directory__mobile-list/);
   assert.match(directory, /aria-sort/);
   assert.match(directory, /emitAction\(customer\.id, 'statement'/);
+  assert.match(directory, /emitAction\(customer\.id, 'edit'/);
+  assert.match(workspace, /editCustomerFromDirectory/);
   assert.match(directory, /customer\.address/);
   assert.match(directory, /customer\.notes/);
   assert.match(directory, /error\(\)/);
