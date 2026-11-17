@@ -1,3 +1,14 @@
+## Current execution checkpoint — 2026-11-17
+
+- **Active branch:** `master/nov-2026-phase-1-runtime-qa`.
+- **Branch reconciliation:** completed. Current main `560f3b402bfd265f8509dcbbdd1ed5988e72efbe` was merged into the active November branch while preserving both branch-only commits. Merge commit: `0462f16f99dd5c2a4997fa5e2a8b7df49c7b1629` (parents: main + previous runtime-qa head `d08d5eae6f5a6291fae08ad056862f77516dd3af`). The merge resolution retained current main content and reconciled the canonical active-branch line in `AGENTS.md` to runtime-qa.
+- **Current branch parity:** active branch is based on current main; only the deliberate active-branch policy line differs from main. No new branch created; no branch deleted.
+- **PR #400:** closed unmerged after GitHub reported a dirty reverse-direction synchronization PR. It was not merged; reconciliation was completed as a two-parent merge commit on the existing active branch.
+- **Inventory Movement Ledger:** Chat 1/Chat 2 work packages remain READY. Backend endpoint already exists; do not duplicate it. Chat 1 owns feature-local UI; Chat 2 owns focused API/tenant/idempotency tests; MASTER owns shared API client, app shell, localization and this ledger.
+- **Validation:** merge ancestry and branch parity verified via GitHub compare. No application tests/build/CI run for this history/documentation-only reconciliation. Exact-head CI for the eventual integrated product candidate remains mandatory. No application code, database, migration, runtime or deployment changed.
+- **Next action:** authorize Chat 2 and Chat 1 to start on the reconciled active branch with their existing path ownership; MASTER keeps shared files reserved until explicit integration handoff.
+
+---
 ## Owner decision — November execution model — 2026-11-12
 
 - **Product objective:** prioritize real product capability and end-to-end workflows; do not optimize for cosmetic changes or isolated small fixes.
