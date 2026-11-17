@@ -55,3 +55,35 @@ test('product sorting uses the workspace currency only when product currency is 
   const result = filterAndSortProducts([...products, fallbackCurrency], 'all', 'price', 'asc', 'en', 'EGP');
   assert.deepEqual(result.map(row => row.id).slice(0, 4), ['egp-two', 'fallback', 'egp-ten', 'egp-twenty']);
 });
+
+test('product price sorting preserves exact cent ordering for large decimal strings', () => {
+  const largePrices: Product[] = [
+    { id: 'price-91', name: 'Price 91', unit_price: '90071992547409.91', currency_code: 'EGP', is_stock_tracked: false },
+    { id: 'price-90', name: 'Price 90', unit_price: '90071992547409.90', currency_code: 'EGP', is_stock_tracked: false },
+    { id: 'price-92', name: 'Price 92', unit_price: '90071992547409.92', currency_code: 'EGP', is_stock_tracked: false },
+  ];
+  assert.deepEqual(
+    filterAndSortProducts(largePrices, 'all', 'price', 'asc', 'en', 'EGP').map(row => row.id),
+    ['price-90', 'price-91', 'price-92'],
+  );
+  assert.deepEqual(
+    filterAndSortProducts(largePrices, 'all', 'price', 'desc', 'en', 'EGP').map(row => row.id),
+    ['price-92', 'price-91', 'price-90'],
+  );
+});
+
+test('product stock sorting preserves arbitrary decimal precision and signed quantities', () => {
+  const largeStock: Product[] = [
+    { id: 'stock-later', name: 'Later', unit_price: '1', is_stock_tracked: true, stock_quantity: '9007199254740992.00000000000000000002' },
+    { id: 'stock-negative', name: 'Negative', unit_price: '1', is_stock_tracked: true, stock_quantity: '-0.00000000000000000003' },
+    { id: 'stock-earlier', name: 'Earlier', unit_price: '1', is_stock_tracked: true, stock_quantity: '9007199254740992.00000000000000000001' },
+  ];
+  assert.deepEqual(
+    filterAndSortProducts(largeStock, 'all', 'stock', 'asc', 'en', 'EGP').map(row => row.id),
+    ['stock-negative', 'stock-earlier', 'stock-later'],
+  );
+  assert.deepEqual(
+    filterAndSortProducts(largeStock, 'all', 'stock', 'desc', 'en', 'EGP').map(row => row.id),
+    ['stock-later', 'stock-earlier', 'stock-negative'],
+  );
+});
