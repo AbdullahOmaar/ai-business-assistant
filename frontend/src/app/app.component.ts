@@ -15,6 +15,7 @@ import { EmployeePayrollComponent } from './employee-payroll.component';
 import { ReleaseGuideComponent } from './release-guide.component';
 import { CustomerWorkspaceComponent } from './customer-workspace.component';
 import { ProductWorkspaceComponent } from './product-workspace.component';
+import { InventoryMovementLedgerComponent, type InventoryMovementLoader } from './inventory-movement-ledger.component';
 import { PurchasingWorkspaceComponent } from './purchasing-workspace.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
@@ -43,7 +44,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, PurchasingWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -692,6 +693,13 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   [role]="business.role === 'owner' ? 'owner' : 'staff'"
                   [locale]="language"
                   [currencyCode]="business?.currency_code || ''" />
+                <aba-inventory-movement-ledger
+                  [businessId]="business.id"
+                  [userId]="workspaceUserId"
+                  [role]="business.role === 'owner' ? 'owner' : 'staff'"
+                  [products]="products"
+                  [language]="language"
+                  [loadPage]="loadInventoryMovementPage" />
               </section>
             }
 
@@ -1644,7 +1652,15 @@ export class AppComponent implements OnInit, OnDestroy {
   appUpdateAvailable = false;
   private installPrompt: (Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }) | null = null;
 
+  readonly loadInventoryMovementPage: InventoryMovementLoader;
+
   constructor(private readonly auth: AuthService, private readonly api: ApiService, private readonly localization: LocalizationService) {
+    this.loadInventoryMovementPage = query => this.api.inventoryMovements(query.businessId, {
+      productId: query.productId || undefined,
+      movementType: query.movementType || undefined,
+      limit: query.limit,
+      offset: query.offset,
+    });
     const standalone = window.matchMedia('(display-mode: standalone)');
     this.isInstalled = standalone.matches || Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
     standalone.addEventListener?.('change', event => { this.isInstalled = event.matches; });
