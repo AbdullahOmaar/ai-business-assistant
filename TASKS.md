@@ -4400,3 +4400,16 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - `authenticated-api-smoke` SKIPPED as expected for this scope. Browser smoke remains intentionally removed per Owner decision. The non-authoritative Semaphore status remains FAILURE; AGENTS.md says GitHub Actions is the sole active CI provider.
 - PR #401 remains DRAFT / UNMERGED. Physical Android/installed-PWA, authenticated OWNER/STAFF/second-tenant, route-by-route rendered RTL/LTR, screen reader, forced-colors and actual 200% zoom remain NOT RUN. Do not claim full product acceptance or merge.
 - This TASKS documentation append advances the PR head; exact-head GitHub Actions must run again on the new SHA before any merge decision.
+
+
+## Mobile UX + Inventory Ledger milestone — exact-head CI success — 2026-11-17
+- **Active outcome:** Owner-approved Modern Hybrid / Balanced mobile foundation plus read-only Inventory Movement Ledger, integrated inside the existing Products workspace.
+- **MUX-01:** shared card surfaces, 16px radius, KPI accent/hierarchy, quick-access card treatment; established compact card dimensions retained after CI review.
+- **MUX-02:** shared record-card layout preserves all fields; Chat 1 added exact decimal-string price/stock sorting, customer search reset/filtered refresh, and 44px Customer/Product editor close targets locked while save is in progress.
+- **MUX-03:** phone inputs/selects/textareas 48px minimum and 16px text; shared button/sort targets 44px; existing filter semantics retained.
+- **MUX-04 / MUX-05:** N/A for rebuilding; existing mobile header/dock/More and shared feedback-state primitives reviewed and retained. Rendered acceptance remains separate.
+- **MUX-06:** Ledger typed authenticated GET client, product/type/reference filters, bounded pagination, Arabic/English labels, read-only UI, exact decimal-string display, reference types including stock_count. Backend test sources present.
+- **MUX-07:** route/device/accessibility acceptance remains NOT RUN; physical Android/PWA, authenticated OWNER/STAFF/second-tenant, screen reader, forced-colors and actual 200% zoom require QA evidence not available in this run.
+- **Exact-head CI SUCCESS:** [GitHub Actions run #44018433390](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44018433390) on `63bc39ed5b60e075ad49cc6aca15770aab1579e1`. frontend-unit-tests, frontend-production-build, frontend-dependency-audit, backend-accounting, backend-container and aggregate `all-checks-passed` all SUCCESS. `authenticated-api-smoke` SKIPPED as expected; browser smoke intentionally removed per Owner decision.
+- **PR:** [#401](https://github.com/AbdullahOmaar/ai-business-assistant/pull/401) DRAFT / UNMERGED. No production deploy, DB/schema/migration, financial semantic or production-data change.
+- **This TASKS append advances the PR head; exact-head GitHub Actions must rerun on the new SHA before any merge decision. Keep Draft until rendered/device/accessibility acceptance is complete.**
