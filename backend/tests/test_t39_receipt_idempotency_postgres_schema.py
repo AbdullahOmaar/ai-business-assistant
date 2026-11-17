@@ -55,10 +55,15 @@ def test_receipt_idempotency_postgres_enforces_scope_fk_and_unique_key():
                 order_number=f"T39-IDB-{suffix}", status="approved",
                 currency_code="EGP", total=0,
             )
-            session.add_all([order_a, order_b])
+            order_c = PurchaseOrder(
+                business_id=business_a.id, supplier_id=supplier_a.id,
+                order_number=f"T39-IDC-{suffix}", status="approved",
+                currency_code="EGP", total=0,
+            )
+            session.add_all([order_a, order_b, order_c])
             session.flush()
             business_a_id, business_b_id = business_a.id, business_b.id
-            order_a_id, order_b_id = order_a.id, order_b.id
+            order_a_id, order_b_id, order_c_id = order_a.id, order_b.id, order_c.id
 
             session.add(PurchaseReceiptIdempotency(
                 business_id=business_a_id, purchase_order_id=order_a_id,
@@ -80,7 +85,7 @@ def test_receipt_idempotency_postgres_enforces_scope_fk_and_unique_key():
             session.rollback()
 
         # The operation key is unique within a business + PO, but reusable for
-        # another PO and another business.
+        # another PO in the same business and another business.
         with Session(engine) as session:
             session.add_all([
                 PurchaseReceiptIdempotency(
@@ -99,14 +104,20 @@ def test_receipt_idempotency_postgres_enforces_scope_fk_and_unique_key():
                     request_hash="d" * 64, response_snapshot={"status": "received"},
                 ),
                 PurchaseReceiptIdempotency(
-                    business_id=business_b_id, purchase_order_id=order_b_id,
+                    business_id=business_a_id, purchase_order_id=order_c_id,
                     idempotency_key="11111111-1111-4111-8111-111111111111",
                     request_hash="e" * 64, response_snapshot={"status": "received"},
+                ),
+                PurchaseReceiptIdempotency(
+                    business_id=business_b_id, purchase_order_id=order_b_id,
+                    idempotency_key="11111111-1111-4111-8111-111111111111",
+                    request_hash="f" * 64, response_snapshot={"status": "received"},
                 ),
             ])
             session.commit()
 
-        # Fixed-width hashes and canonical UUID storage are enforced by DB checks.
+        # Fixed-width key/hash storage is enforced by DB checks. Canonical UUID
+        # syntax is validated at the HTTP boundary, not by the storage schema.
         for key, digest in (
             ("short", "f" * 64),
             ("44444444-4444-4444-8444-444444444444", "short"),
