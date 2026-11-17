@@ -50,9 +50,9 @@ test('desktop table and mobile cards present the same read-only movement records
 });
 
 test('ledger cards and controls follow the approved mobile design tokens', () => {
-  assert.match(component, /var\\(--aiba-radius-card,16px\\)/);
-  assert.match(component, /var\\(--aiba-shadow-card/);
-  assert.match(component, /@media\\(max-width:760px\\)/);
+  assert.match(component, /var\(--aiba-radius-card,16px\)/);
+  assert.match(component, /var\(--aiba-shadow-card/);
+  assert.match(component, /@media\(max-width:760px\)/);
   assert.match(component, /min-height:48px;font-size:16px/);
   assert.match(component, /overflow-wrap:anywhere/);
 });
