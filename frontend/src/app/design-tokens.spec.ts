@@ -470,3 +470,11 @@ test('shared cards follow the approved hybrid visual direction with balanced mob
   assert.match(quickAccessSource, /min-height:108px/);
   assert.match(quickAccessSource, /prefers-reduced-motion:reduce/);
 });
+
+
+test('mobile forms and record cards use readable phone-sized controls without dropping data fields', () => {
+  assert.match(designSystemStyles, /@media \\(max-width: 760px\\)[\\s\\S]*?min-height: 48px;[\\s\\S]*?font-size: 16px;/);
+  assert.match(designSystemStyles, /aba-record-table tbody tr \\{[\\s\\S]*?border-radius: 16px;/);
+  assert.match(designSystemStyles, /aba-record-table tbody :is\\(td, th\\) \\{[\\s\\S]*?padding: 12px 13px;/);
+  assert.match(designSystemStyles, /aba-record-table__sort-button \\{[\\s\\S]*?min-height: 44px;/);
+});
