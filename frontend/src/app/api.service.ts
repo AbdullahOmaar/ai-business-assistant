@@ -21,6 +21,16 @@ export interface BusinessInvitationCreated extends BusinessInvitation { token: s
 export interface BusinessMembership { id: string; business_id: string; role: 'owner' | 'staff'; created_at: string | null; }
 export interface Customer { id: string; name: string; email?: string | null; phone?: string | null; address?: string | null; notes?: string | null; created_at?: string | null; }
 export interface Product { id: string; name: string; sku?: string | null; description?: string | null; unit?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; created_at?: string | null; }
+export type StockMovementType = 'opening' | 'receipt' | 'sale' | 'return' | 'adjustment';
+export interface StockMovementRecord {
+  id: string; product_id: string; movement_type: StockMovementType; quantity_delta: string;
+  reason: string | null; reference_type: string | null; reference_id: string | null;
+  created_by_subject: string | null; created_at: string;
+  product: { id: string; name: string; sku: string | null; unit: string | null };
+}
+export interface StockMovementPage {
+  items: StockMovementRecord[]; limit: number; offset: number; has_more: boolean;
+}
 export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; outstanding_amount?: string; issue_date?: string | null; created_at?: string | null; due_date?: string | null; }
 export interface InvoiceDetail extends Invoice {
   notes?: string | null;
@@ -542,6 +552,22 @@ export class ApiService {
       offset: String(Math.max(0, offset)),
     });
     return this.request<Product[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products?${params.toString()}`);
+  }
+  inventoryMovements(
+    businessId: string,
+    query: { productId?: string; movementType?: StockMovementType; limit?: number; offset?: number } = {},
+  ): Promise<StockMovementPage> {
+    const limit = Number.isFinite(query.limit) ? Math.trunc(query.limit as number) : 50;
+    const offset = Number.isFinite(query.offset) ? Math.trunc(query.offset as number) : 0;
+    const params = new URLSearchParams({
+      limit: String(Math.min(200, Math.max(1, limit))),
+      offset: String(Math.max(0, offset)),
+    });
+    if (query.productId) params.set('product_id', query.productId);
+    if (query.movementType) params.set('movement_type', query.movementType);
+    return this.request<StockMovementPage>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/inventory/movements?${params.toString()}`,
+    );
   }
   product(businessId: string, productId: string): Promise<Product> {
     return this.request<Product>(`/api/v1/businesses/${encodeURIComponent(businessId)}/products/${encodeURIComponent(productId)}`);
