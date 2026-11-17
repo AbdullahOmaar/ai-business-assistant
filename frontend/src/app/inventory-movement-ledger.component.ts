@@ -1,6 +1,5 @@
 import { ChangeDetectionStrategy, Component, effect, input, signal, untracked } from '@angular/core';
 import type { Product } from './api.service';
-import { LocalizationService } from './localization.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 
 export type InventoryMovementType = 'opening' | 'receipt' | 'sale' | 'return' | 'adjustment';
@@ -63,7 +62,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
         </label>
         <label>
           <span>{{ copy().movementType }}</span>
-          <select [value]="movementType()" (change)="setMovementType(readValue($event) as InventoryMovementType | '')" [disabled]="loading()">
+          <select [value]="movementType()" (change)="setMovementTypeFromEvent($event)" [disabled]="loading()">
             <option value="">{{ copy().allTypes }}</option>
             @for (type of movementTypes; track type) {
               <option [value]="type">{{ typeLabel(type) }}</option>
@@ -87,7 +86,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
           <p>{{ copy().emptyDescription }}</p>
         </div>
       } @else if (items().length) {
-        <div class="inventory-ledger__mobile-list" aria-label="{{ copy().movementList }}">
+        <div class="inventory-ledger__mobile-list" [attr.aria-label]="copy().movementList">
           @for (movement of items(); track movement.id) {
             <article class="inventory-ledger__card">
               <div class="inventory-ledger__card-top">
@@ -183,7 +182,6 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
   `],
 })
 export class InventoryMovementLedgerComponent {
-  private readonly localization = new LocalizationService();
   private readonly guard = new WorkspaceLoadGuard();
   private offset = 0;
   private readonly pageSize = 50;
@@ -256,6 +254,7 @@ export class InventoryMovementLedgerComponent {
   readValue(event: Event): string { return (event.currentTarget as HTMLSelectElement | null)?.value ?? ''; }
   setProduct(value: string): void { this.productId.set(value); void this.load(true); }
   setMovementType(value: InventoryMovementType | ''): void { this.movementType.set(value); void this.load(true); }
+  setMovementTypeFromEvent(event: Event): void { this.setMovementType(this.readValue(event) as InventoryMovementType | ''); }
   refresh(): void { void this.load(true); }
   retry(): void { void this.load(true); }
 
