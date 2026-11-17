@@ -91,7 +91,7 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
                 <span class="product-catalog__sku"><span>SKU</span> <bdi dir="ltr">{{ product.sku || '—' }}</bdi></span>
                 @if (product.is_stock_tracked) {
                   <span class="product-catalog__stock"><span class="product-catalog__dot" aria-hidden="true"></span>{{ t('productCatalog.m_j15h0g') }}</span>
-                  <span class="product-catalog__quantity">{{ t('productCatalog.m_j49abf') }}: <bdi dir="ltr">{{ product.stock_quantity ?? '0' }}</bdi></span>
+                  <span class="product-catalog__quantity">{{ t('productCatalog.m_j49abf') }}: <bdi dir="ltr">{{ product.stock_quantity ?? '—' }}</bdi></span>
                 } @else {
                   <span class="product-catalog__service">{{ t('productCatalog.m_1c1wx97') }}</span>
                 }
