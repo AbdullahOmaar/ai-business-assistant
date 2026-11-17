@@ -123,6 +123,14 @@ test('pagination appends unique records and follows the server has_more flag', (
   assert.match(component, /loadMore\(\)/);
 });
 
+test('new filter and refresh requests supersede in-flight pages instead of showing stale results', () => {
+  assert.match(component, /\(!reset && this\.loading\(\)\)/);
+  assert.match(component, /const version = this\.guard\.begin\(\)/);
+  assert.match(component, /if \(this\.isCurrent\(version, requested\)\) return/);
+  assert.match(component, /setProduct\(value: string\): void \{ this\.productId\.set\(value\); void this\.load\(true\); \}/);
+  assert.match(component, /setReferenceType\(value: string\): void \{ this\.referenceType\.set\(value\); void this\.load\(true\); \}/);
+});
+
 test('workspace identity changes invalidate pending requests and clear old tenant data', () => {
   assert.match(component, /this\.guard\.invalidate\(\)/);
   assert.match(component, /this\.items\.set\(\[\]\)/);
