@@ -62,6 +62,13 @@ test('workspace identity changes invalidate pending requests and clear old tenan
   assert.match(guard, /isCurrent\(version: number, currentWorkspaceId/);
 });
 
+test('all visible copy is routed through the shared Arabic and English localization dictionary', () => {
+  assert.match(component, /inject\(LocalizationService\)/);
+  assert.match(component, /this\.localization\.translate\('inventoryLedger\.' \+ key\)/);
+  assert.match(component, /this\.t\('loadError'\)/);
+  assert.match(component, /this\.t\('type\.' \+ type\)/);
+});
+
 test('loading, empty, error, retry and keyboard-accessible controls are present', () => {
   for (const state of ['role="status"', 'role="alert"', 'emptyTitle', 'retry()', 'loadMore()']) {
     assert.ok(component.includes(state), `missing state/control: ${state}`);
