@@ -8,6 +8,7 @@ const sortHelper = readFileSync(new URL('./directory-sort.ts', import.meta.url),
 const css = readFileSync(new URL('./product-catalog.component.css', import.meta.url), 'utf8');
 const app = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const workspace = expandTranslationCalls(readFileSync(new URL('./product-workspace.component.ts', import.meta.url), 'utf8'));
+const productEditor = readFileSync(new URL('./product-editor.component.ts', import.meta.url), 'utf8');
 
 test('Products uses a dedicated catalogue presentation, not the shared generic record table', () => {
   assert.match(component, /selector: 'aba-product-catalog'/);
@@ -76,3 +77,10 @@ test('main product directory exposes guarded pagination beyond the first page', 
   assert.match(app, /fetchPage: \(id, offset\) => this\.api\.products\(id, offset\)/);
 });
 
+
+
+test('product editor close is disabled during save and meets the 44px touch target', () => {
+  assert.match(productEditor, /class="product-editor__close"[\s\S]*?\[disabled\]="busy\(\)"/);
+  assert.match(productEditor, /product-editor__close\{flex:0 0 44px;width:44px;height:44px/);
+  assert.match(productEditor, /product-editor button:disabled/);
+});
