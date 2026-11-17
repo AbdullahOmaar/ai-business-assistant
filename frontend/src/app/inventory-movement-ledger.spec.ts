@@ -128,7 +128,7 @@ test('workspace identity changes invalidate pending requests and clear old tenan
   assert.match(component, /this\.items\.set\(\[\]\)/);
   assert.match(component, /current\.userId === requested\.userId/);
   assert.match(component, /current\.role === requested\.role/);
-  assert.match(guard, /isCurrent\(version: number, currentWorkspaceId/);
+  assert.match(guard, /isCurrent\(\s*version: number,\s*currentWorkspaceId/);
 });
 
 test('all visible copy is routed through the shared Arabic and English localization dictionary', () => {
