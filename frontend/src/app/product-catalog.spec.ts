@@ -31,6 +31,11 @@ test('catalogue filters stock-tracked and non-stock items on the current searche
   assert.match(component, /aria-pressed/);
 });
 
+test('filter chips do not imply a catalogue total from the currently loaded page', () => {
+  assert.doesNotMatch(component, /stockCount|nonStockCount|products\\(\\)\\.length \\}\\}/);
+  assert.match(component, /visibleProducts = computed/);
+});
+
 test('catalogue sorting is available to desktop keyboard users and mobile touch users', () => {
   assert.match(component, /aria-sort/);
   assert.match(component, /toggleSort\('price'\)/);
