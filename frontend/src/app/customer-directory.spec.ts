@@ -59,3 +59,17 @@ test('main customer directory exposes guarded pagination beyond the first page',
   assert.match(app, /fetchPage: \(id, offset\) => this\.api\.customers\(id, offset\)/);
 });
 
+test('customer search terms are cleared when the active business or identity changes', () => {
+  assert.match(workspace, /this\.searchQuery = '';/);
+  assert.match(workspace, /this\.searchDraft\.set\(''\)/);
+  assert.match(workspace, /this\.listGuard\.invalidate\(\)/);
+  assert.match(workspace, /this\.customers\.set\(\[\]\)/);
+});
+
+test('customer create and edit refresh the server-filtered directory after saving', () => {
+  const saveStart = workspace.indexOf('async saveCustomer');
+  const saveEnd = workspace.indexOf('cancelEditor()', saveStart);
+  const saveFlow = workspace.slice(saveStart, saveEnd);
+  assert.match(saveFlow, /this\.mode\.set\('profile'\)/);
+  assert.match(saveFlow, /void this\.loadCustomers\(true\)/);
+});
