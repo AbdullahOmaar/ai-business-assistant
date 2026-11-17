@@ -42,8 +42,8 @@
 }
 @media(max-width:480px){
   .customer-directory__mobile-row{grid-template-columns:minmax(0,1fr);gap:8px}
-  .customer-directory__actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
-  .customer-directory__action{width:100%;min-width:0}
+  .customer-directory__actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}
+  .customer-directory__action{width:100%;min-width:0;padding-inline:6px;font-size:11px}
   .customer-directory__mobile-sort label{align-items:center}
 }
 @media(max-width:360px){
