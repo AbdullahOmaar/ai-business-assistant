@@ -200,7 +200,7 @@ export class InventoryMovementLedgerComponent {
   readonly movementType = signal<InventoryMovementType | ''>('');
   readonly supportsReferenceFilter = input(true);
   readonly referenceType = signal('');
-  readonly referenceTypes = ['invoice', 'invoice_void', 'purchase_order', 'sales_return'];
+  readonly referenceTypes = ['invoice', 'invoice_void', 'purchase_order', 'sales_return', 'stock_count'];
   readonly loading = signal(false);
   readonly hasMore = signal(false);
   readonly error = signal('');
@@ -232,10 +232,7 @@ export class InventoryMovementLedgerComponent {
       title: this.t('title'), eyebrow: this.t('eyebrow'), subtitle: this.t('subtitle'),
       refresh: this.t('refresh'), filters: this.t('filters'), product: this.t('product'),
       allProducts: this.t('allProducts'), movementType: this.t('movementType'), allTypes: this.t('allTypes'),
-      referenceType: this.t('referenceType') === 'inventoryLedger.referenceType'
-        ? (this.language() === 'ar' ? 'نوع المرجع' : 'Reference type') : this.t('referenceType'),
-      allReferences: this.t('allReferences') === 'inventoryLedger.allReferences'
-        ? (this.language() === 'ar' ? 'كل المراجع' : 'All references') : this.t('allReferences'),
+      referenceType: this.t('referenceType'), allReferences: this.t('allReferences'),
       retry: this.t('retry'), loading: this.t('loading'), emptyTitle: this.t('emptyTitle'),
       emptyDescription: this.t('emptyDescription'), movementList: this.t('movementList'),
       unit: this.t('unit'), sku: this.t('sku'), noReason: this.t('noReason'),
@@ -251,14 +248,8 @@ export class InventoryMovementLedgerComponent {
   }
 
   referenceTypeLabel(type: string): string {
-    const ar = this.language() === 'ar';
-    const labels: Record<string, [string, string]> = {
-      invoice: ['فاتورة بيع', 'Sales invoice'],
-      invoice_void: ['عكس فاتورة', 'Invoice reversal'],
-      purchase_order: ['أمر شراء', 'Purchase order'],
-      sales_return: ['مرتجع مبيعات', 'Sales return'],
-    };
-    return labels[type]?.[ar ? 0 : 1] ?? type;
+    const label = this.t('referenceTypes.' + type);
+    return label === 'inventoryLedger.referenceTypes.' + type ? type : label;
   }
 
   readValue(event: Event): string { return (event.currentTarget as HTMLSelectElement | null)?.value ?? ''; }
@@ -318,18 +309,29 @@ export class InventoryMovementLedgerComponent {
   }
 
   formatQuantity(value: string): string {
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) return value;
-    return new Intl.NumberFormat(this.language() === 'ar' ? 'ar-EG' : 'en-GB', {
-      maximumFractionDigits: 3, signDisplay: 'always',
-    }).format(numeric);
+    const match = /^([+-]?)(\\d+)(?:\\.(\\d+))?$/.exec(value.trim());
+    if (!match) return value;
+    const [, rawSign, rawInteger, fraction = ''] = match;
+    const locale = this.language() === 'ar' ? 'ar-EG' : 'en-GB';
+    const integer = BigInt(rawInteger);
+    const integerLabel = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(integer);
+    const digitFormatter = new Intl.NumberFormat(locale, { useGrouping: false, maximumFractionDigits: 0 });
+    const localizedDigits = Array.from({ length: 10 }, (_, digit) => digitFormatter.format(digit));
+    const decimal = new Intl.NumberFormat(locale).formatToParts(1.1).find(part => part.type === 'decimal')?.value ?? '.';
+    const signParts = new Intl.NumberFormat(locale, { signDisplay: 'always', maximumFractionDigits: 0 })
+      .formatToParts(rawSign === '-' ? -0 : 0);
+    const sign = signParts.find(part => part.type === 'minusSign' || part.type === 'plusSign')?.value ?? (rawSign === '-' ? '-' : '+');
+    const fractionLabel = fraction
+      ? decimal + Array.from(fraction, digit => localizedDigits[digit.charCodeAt(0) - 48]).join('')
+      : '';
+    return sign + integerLabel + fractionLabel;
   }
 
   formatNumber(value: number): string {
     return new Intl.NumberFormat(this.language() === 'ar' ? 'ar-EG' : 'en-GB').format(value);
   }
 
-  isNegative(value: string): boolean { return Number(value) < 0; }
+  isNegative(value: string): boolean { return /^-\\d/.test(value.trim()); }
 
   private context(): MovementContext {
     return { businessId: this.businessId(), userId: this.userId(), role: this.role() };
