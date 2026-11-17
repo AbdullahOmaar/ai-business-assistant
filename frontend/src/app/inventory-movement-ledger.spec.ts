@@ -6,8 +6,8 @@ const component = readFileSync(new URL('./inventory-movement-ledger.component.ts
 const guard = readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8');
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const shell = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
-const ar = JSON.parse(readFileSync(new URL('../public/i18n/ar.json', import.meta.url), 'utf8'));
-const en = JSON.parse(readFileSync(new URL('../public/i18n/en.json', import.meta.url), 'utf8'));
+const ar = JSON.parse(readFileSync(new URL('../../public/i18n/ar.json', import.meta.url), 'utf8'));
+const en = JSON.parse(readFileSync(new URL('../../public/i18n/en.json', import.meta.url), 'utf8'));
 
 test('inventory ledger is an isolated standalone read-only component', () => {
   assert.match(component, /selector: 'aba-inventory-movement-ledger'/);
