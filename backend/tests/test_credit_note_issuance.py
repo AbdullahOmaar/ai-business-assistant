@@ -8,7 +8,7 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from app.extended_api import issue_credit_note_for_return, list_credit_notes
+from app.extended_api import issue_credit_note_for_return, list_credit_notes, list_sales_returns
 from app.models import (
     AuditEvent,
     Base,
@@ -254,3 +254,17 @@ def test_credit_note_listing_is_business_scoped_and_does_not_claim_application_o
         assert "applied_total" not in item
         assert "refunded_total" not in item
         assert "remaining_credit" not in item
+
+
+
+@pytest.mark.parametrize("reader", [list_sales_returns, list_credit_notes])
+def test_credit_note_history_reads_translate_missing_membership_to_forbidden(credit_note_workspace, reader):
+    engine, business_id = credit_note_workspace
+    with Session(engine) as session:
+        with pytest.raises(HTTPException) as error:
+            reader(
+                business_id=business_id,
+                session=session,
+                principal=AuthenticatedPrincipal(subject="not-a-member"),
+            )
+        assert error.value.status_code == 403
