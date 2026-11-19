@@ -72,8 +72,11 @@ def _enforce_demo_rate_limit(request: Request, response: Response) -> None:
         raise HTTPException(status_code=503, detail="Demo access rate limiting is temporarily unavailable.") from exc
 
     if count > limit:
-        response.headers["Retry-After"] = str(window_seconds)
-        raise HTTPException(status_code=429, detail="Demo access request limit reached. Try again later.")
+        raise HTTPException(
+            status_code=429,
+            detail="Demo access request limit reached. Try again later.",
+            headers={"Retry-After": str(window_seconds)},
+        )
 
 
 @router.post("/session")
