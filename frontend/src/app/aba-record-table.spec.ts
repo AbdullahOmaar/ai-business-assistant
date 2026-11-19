@@ -4,7 +4,7 @@ import test from 'node:test';
 import { expandTranslationCalls } from './localization-test-helpers.ts';
 const component=readFileSync(new URL('./shared/ui/aba-record-table.component.ts',import.meta.url),'utf8');
 const css=readFileSync(new URL('../design-system.css',import.meta.url),'utf8');
-const appRaw=readFileSync(new URL('./app.component.ts',import.meta.url),'utf8');
+const appRaw=readFileSync(new URL('./app.component.ts',import.meta.url),'utf8')+'\n'+readFileSync(new URL('./app.component.css',import.meta.url),'utf8');
 const app=expandTranslationCalls(appRaw);
 const customerDirectory=readFileSync(new URL('./customer-directory.component.ts',import.meta.url),'utf8');
 const productCatalog=readFileSync(new URL('./product-catalog.component.ts',import.meta.url),'utf8');
