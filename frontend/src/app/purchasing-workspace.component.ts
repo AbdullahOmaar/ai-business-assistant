@@ -12,6 +12,7 @@ import {
 } from './api.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { LocalizationService } from './localization.service';
+import { isValidPurchaseDecimalInput, normalizePurchaseDecimalInput } from './purchasing-decimal';
 
 type PurchasingContext = { businessId: string; userId: string; role: 'owner' | 'staff' };
 type PurchaseDraftLine = { product_id: string; quantity: string; unit_cost: string };
@@ -379,16 +380,9 @@ export class PurchasingWorkspaceComponent {
   private emptyLine(): PurchaseDraftLine { return { product_id: '', quantity: '1', unit_cost: '0' }; }
   readValue(event: Event): string { return (event.target as HTMLInputElement).value; }
 
-  /** Validate API Decimal constraints without rounding through JavaScript Number. */
+  /** Validate API Decimal constraints and localized keyboard input without Number coercion. */
   isValidDecimal(value: string, maxScale: number, allowZero: boolean): boolean {
-    const normalized = String(value ?? '').trim();
-    const match = /^(\d+)(?:\.(\d+))?$/.exec(normalized);
-    if (!match) return false;
-    const integer = match[1].replace(/^0+(?=\d)/, '');
-    const fraction = match[2] ?? '';
-    if (fraction.length > maxScale || integer.length + fraction.length > 14) return false;
-    const scaled = BigInt(integer + fraction.padEnd(maxScale, '0'));
-    return allowZero ? scaled >= 0n : scaled > 0n;
+    return isValidPurchaseDecimalInput(value, maxScale, allowZero);
   }
 
   hasRemaining(line: PurchaseOrderDetail['lines'][number]): boolean { return Number(line.remaining_quantity) > 0; }
@@ -546,7 +540,7 @@ export class PurchasingWorkspaceComponent {
   async saveDraft(): Promise<void> {
     if (this.mode() !== 'create' && this.mode() !== 'edit') return;
     if (this.mode() === 'edit' && !this.isOwner()) return;
-    const lines = this.formLines.map(line => ({ product_id: line.product_id, quantity: String(line.quantity).trim(), unit_cost: String(line.unit_cost).trim() }));
+    const lines = this.formLines.map(line => ({ product_id: line.product_id, quantity: normalizePurchaseDecimalInput(line.quantity), unit_cost: normalizePurchaseDecimalInput(line.unit_cost) }));
     if (!this.draft.order_number.trim() || !this.draft.supplier_id) {
       this.formError.set(this.t('invalidOrder'));
       return;
