@@ -5,7 +5,11 @@ import { expandTranslationCalls } from './localization-test-helpers.ts';
 import { createServiceWorkerUpdateHandler } from './service-worker-update.ts';
 
 const globalStyles = expandTranslationCalls(readFileSync(new URL('../styles.css', import.meta.url), 'utf8'));
-const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const source = expandTranslationCalls(
+  readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8')
+  + '\n'
+  + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8')
+);
 const inventoryApiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const invoiceEditorSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8'));
 const invoiceDraftSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8'));
