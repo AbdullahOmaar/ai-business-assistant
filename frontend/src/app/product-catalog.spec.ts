@@ -6,7 +6,11 @@ import { expandTranslationCalls } from './localization-test-helpers.ts';
 const component = expandTranslationCalls(readFileSync(new URL('./product-catalog.component.ts', import.meta.url), 'utf8'));
 const sortHelper = readFileSync(new URL('./directory-sort.ts', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./product-catalog.component.css', import.meta.url), 'utf8');
-const app = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const app = expandTranslationCalls(
+  readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8')
+  + '\n'
+  + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8')
+);
 const workspace = expandTranslationCalls(readFileSync(new URL('./product-workspace.component.ts', import.meta.url), 'utf8'));
 const workspaceSource = readFileSync(new URL('./product-workspace.component.ts', import.meta.url), 'utf8');
 const productEditor = readFileSync(new URL('./product-editor.component.ts', import.meta.url), 'utf8');
