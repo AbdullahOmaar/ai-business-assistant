@@ -611,7 +611,10 @@ def list_sales_returns(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ):
     """List business-scoped returns; reads never issue a credit note or refund cash."""
-    _authorized(session, principal, business_id)
+    try:
+        _authorized(session, principal, business_id)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     statement = select(SalesReturn).where(SalesReturn.business_id == business_id)
     if status is not None:
         statement = statement.where(SalesReturn.status == status)
@@ -895,7 +898,10 @@ def list_credit_notes(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ):
     """List issued Stage-1 credit-note documents; does not imply applied credit or cash refund."""
-    _authorized(session, principal, business_id)
+    try:
+        _authorized(session, principal, business_id)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     statement = select(CreditNote).where(CreditNote.business_id == business_id)
     if customer_id is not None:
         statement = statement.where(CreditNote.customer_id == customer_id)
