@@ -106,6 +106,8 @@ test('quantity formatting preserves arbitrary decimal precision without JS Numbe
 test('reference labels are dictionary-backed and include stock count in both locales', () => {
   assert.ok(component.includes("'stock_count'"));
   assert.ok(component.includes("this.t('referenceTypes.' + type)"));
+  assert.equal(ar.inventoryLedger.referenceTypes.product_opening, 'إضافة رصيد افتتاحي');
+  assert.equal(en.inventoryLedger.referenceTypes.product_opening, 'Product opening balance');
   assert.equal(ar.inventoryLedger.referenceTypes.stock_count, 'جرد مخزون');
   assert.equal(en.inventoryLedger.referenceTypes.stock_count, 'Stock count');
   assert.equal(ar.inventoryLedger.referenceType, 'نوع المرجع');
