@@ -18,6 +18,7 @@ import { ProductWorkspaceComponent } from './product-workspace.component';
 import { InventoryMovementLedgerComponent, type InventoryMovementLoader } from './inventory-movement-ledger.component';
 import { PurchasingWorkspaceComponent } from './purchasing-workspace.component';
 import { CreditNoteIssuanceComponent } from './credit-note-issuance.component';
+import { AuditEventsWorkspaceComponent } from './audit-events-workspace.component';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
 import { filterWorkspaceModules, selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
@@ -45,7 +46,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -893,57 +894,19 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
 
             @if (tab === 'audit') {
-              <section abaCard class="panel">
-                <aba-section-header [title]="t('ui.m_hd46sj')" [description]="t('ui.m_fie4u1')"><span class="count">{{ auditTotal }} {{ t('ui.m_187o97') }}</span></aba-section-header>
-                 <form class="inline-form" (ngSubmit)="loadAuditEvents(0)">
-                  <label>{{ t('ui.m_16u0xte') }}<select name="auditAction" [(ngModel)]="auditAction">
-                    <option value="">{{ t('ui.m_s5wvrw') }}</option>
-                    <option value="invoice.issued">{{ t('ui.m_1dgwo7k') }}</option>
-                    <option value="invoice.created">{{ t('ui.m_s89hy1') }}</option>
-                    <option value="invoice.draft_updated">{{ t('ui.m_1h1mtay') }}</option>
-                    <option value="invoice.voided">{{ t('ui.m_1b7zju0') }}</option>
-                    <option value="payment.recorded">{{ t('ui.m_1fzpn4c') }}</option>
-                    <option value="expense.created">{{ t('ui.m_1eswv36') }}</option>
-                    <option value="customer.created">{{ t('ui.m_7ayrnh') }}</option>
-                    <option value="product.created">{{ t('ui.m_w0ko2p') }}</option>
-                    <option value="stock.movement_recorded">{{ t('ui.m_1jl8qoq') }}</option>
-                    <option value="supplier.created">{{ t('ui.m_n1vp0a') }}</option>
-                    <option value="customer.updated">{{ t('ui.m_1j81wf0') }}</option>
-                    <option value="customer.deactivated">{{ t('ui.m_11zlj4h') }}</option>
-                    <option value="product.updated">{{ t('ui.m_bu5930') }}</option>
-                    <option value="product.deactivated">{{ t('ui.m_8y4ee1') }}</option>
-                    <option value="purchase_order.created">{{ t('ui.m_1ghnskj') }}</option>
-                    <option value="purchase_order.approved">{{ t('ui.m_xyjlem') }}</option>
-                    <option value="purchase_order.received">{{ t('ui.m_5cn0in') }}</option>
-                    <option value="sales_return.created">{{ t('ui.m_6u7t2s') }}</option>
-                    <option value="sales_return.approved">{{ t('ui.m_kb0bxp') }}</option>
-                    <option value="recurring_invoice_schedule.created">{{ t('ui.m_xaohcb') }}</option>
-                    <option value="data_import.completed">{{ t('ui.m_rs4k6j') }}</option>
-                    <option value="pricing_rule.created">{{ t('ui.m_yytv5x') }}</option>
-                  </select></label>
-                  <label>{{ t('ui.m_1bu5iqp') }}<select name="auditTarget" [(ngModel)]="auditTargetType">
-                    <option value="">{{ t('ui.m_1c69yfk') }}</option>
-                    <option value="invoice">{{ t('ui.m_1nfhuv2') }}</option>
-                    <option value="payment">{{ t('ui.m_p9fxzd') }}</option>
-                    <option value="expense">{{ t('ui.m_q7obp1') }}</option>
-                    <option value="customer">{{ t('ui.m_1uow5er') }}</option>
-                    <option value="product">{{ t('ui.m_13rez2z') }}</option>
-                    <option value="business">{{ t('ui.m_1evo6p1') }}</option>
-                    <option value="supplier">{{ t('ui.m_1ec9f70') }}</option>
-                    <option value="stock_movement">{{ t('ui.m_1yixbf5') }}</option>
-                    <option value="purchase_order">{{ t('ui.m_zu2vq6') }}</option>
-                    <option value="sales_return">{{ t('ui.m_1b010yp') }}</option>
-                    <option value="recurring_invoice_schedule">{{ t('ui.m_3pds34') }}</option>
-                    <option value="import_job">{{ t('ui.m_g2eok7') }}</option>
-                    <option value="pricing_rule">{{ t('ui.m_9ckn2u') }}</option>
-                  </select></label>
-                  <button class="primary" type="submit" [disabled]="auditLoading">{{ t('ui.m_11q6v6c') }}</button>
-                  <button class="secondary" type="button" (click)="auditAction=''; auditTargetType=''; loadAuditEvents(0)" [disabled]="auditLoading">{{ t('ui.m_1np7zc4') }}</button>
-                </form>
-                @if (auditError) { <aba-state-message kind="error" [description]="auditError" /> }
-                <aba-record-table [ariaLabel]="t('ui.m_j3pe5o')" [columns]="auditTableColumns" [rows]="auditTableRows" [loading]="auditLoading && !auditEvents.length" [loadingDescription]="t('ui.m_19p9gnl')" [emptyTitle]="t('ui.m_1en86jm')" [emptyDescription]="t('ui.m_1f0oymq')" />
-                <div class="inline-form"><span class="muted">{{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} / {{ auditTotal }}</span><button class="secondary" type="button" (click)="loadAuditEvents((auditOffset > 50 ? auditOffset - 50 : 0))" [disabled]="auditLoading || auditOffset === 0">{{ t('ui.m_14wy3hz') }}</button><button class="secondary" type="button" (click)="loadAuditEvents(auditOffset + 50)" [disabled]="auditLoading || auditOffset + auditEvents.length >= auditTotal">{{ t('ui.m_thb9eg') }}</button></div>
-              </section>
+              <aba-audit-events-workspace
+                [total]="auditTotal"
+                [offset]="auditOffset"
+                [events]="auditEvents"
+                [loading]="auditLoading"
+                [error]="auditError"
+                [action]="auditAction"
+                [targetType]="auditTargetType"
+                [columns]="auditTableColumns"
+                [rows]="auditTableRows"
+                (actionChange)="auditAction=$event"
+                (targetTypeChange)="auditTargetType=$event"
+                (loadPage)="loadAuditEvents($event)" />
             }
 
             @if (tab === 'release-guide') {
