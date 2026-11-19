@@ -1957,6 +1957,7 @@
     "statusApproved": "Approved",
     "statusRejected": "Rejected",
     "statusDraft": "Draft",
-    "errorGeneric": "The operation failed. Refresh or check your permissions."
+    "errorGeneric": "The operation failed. Refresh or check your permissions.",
+    "loadMore": "Load more"
   }
 }
