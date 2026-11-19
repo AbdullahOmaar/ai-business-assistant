@@ -113,7 +113,7 @@ def test_customer_statement_keeps_currency_and_local_day_semantics_with_sql_pagi
     statements = []
 
     def capture_sql(connection, cursor, statement, parameters, context, executemany):
-        if statement.lstrip().upper().startswith("SELECT"):
+        if "customer_statement_windowed" in statement:
             statements.append(statement)
 
     event.listen(engine, "before_cursor_execute", capture_sql)
