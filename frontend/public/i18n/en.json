@@ -1889,6 +1889,7 @@
     "referenceType": "Reference type",
     "allReferences": "All references",
     "referenceTypes": {
+      "product_opening": "Product opening balance",
       "invoice": "Sales invoice",
       "invoice_void": "Invoice reversal",
       "purchase_order": "Purchase order",
