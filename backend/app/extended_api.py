@@ -332,10 +332,14 @@ def report_tax_summary(
         func.coalesce(func.sum(Invoice.tax_total), 0),
         func.count(Invoice.id),
     ).where(Invoice.business_id == business_id, Invoice.status == "issued")
-    if start_date:
-        statement = statement.where(Invoice.issue_date >= datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc))
-    if end_date:
-        statement = statement.where(Invoice.issue_date < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc))
+    business = session.get(Business, business_id)
+    if business is None:
+        raise HTTPException(status_code=404, detail="Business not found")
+    start_utc, end_utc = _day_bounds(start_date, end_date, business.timezone)
+    if start_utc is not None:
+        statement = statement.where(Invoice.issue_date >= start_utc)
+    if end_utc is not None:
+        statement = statement.where(Invoice.issue_date < end_utc)
     rows = session.execute(statement.group_by(Invoice.currency_code).order_by(Invoice.currency_code)).all()
     return {
         "period": {"start_date": start_date.isoformat() if start_date else None,

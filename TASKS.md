@@ -4485,3 +4485,12 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - T42 remains PARTIALLY COMPLETE. T39 remains PARTIALLY COMPLETE; T37 financial semantics remain DRAFT / NOT APPROVED. T45 remains NOT STARTED / NOT ACTIVE and read-only discovery only until its explicit activation gates pass.
 - Notion T18, T39 and T42 records and PR #401 description were refreshed with current exact-head evidence. No backend runtime, financial semantics, schema/migration, live DB, production data or external messaging changed.
 - This TASKS documentation update advances the PR head; exact-head GitHub Actions and a matching Preview must be re-established for the resulting SHA. Keep PR #401 Draft until required acceptance evidence is recorded.
+
+
+## BUG-01 — tax report uses business-local IANA date boundaries — 2026-11-19
+
+- **Branch:** `master/nov-2026-phase-1-runtime-qa`; implementation parent `1df9afd2e170bd83dccfad17471681ddf8fe9623`.
+- **Source change:** `backend/app/extended_api.py` now reads the authorized business timezone and reuses the existing `_day_bounds` helper to build UTC half-open bounds from inclusive local dates. Currency separation, saved invoice tax snapshots and existing workspace authorization are preserved.
+- **Regression:** `backend/tests/test_business_tenant_boundaries.py` sets the workspace timezone to `America/Los_Angeles` and covers the UTC instants immediately before/at the local start and end boundaries. The expected report includes local October dates only.
+- **Status:** [قيد المراجعة] — implementation committed; consolidated exact-head CI and backend regression are still required. No production runtime or database changes.
+- **Next:** proceed to BUG-02 only after this candidate's targeted regression is validated; BUG-02 remains gated by the T37 financial-semantics approval boundary.
