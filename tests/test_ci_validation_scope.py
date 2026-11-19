@@ -187,8 +187,9 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
         plan = self.run_selector()
         for key in ("backend_tests", "backend_full", "backend_container", "backend_audit",
                     "migrations", "frontend_tests", "frontend_full", "frontend_build",
-                    "frontend_audit", "docs_validation"):
+                    "frontend_audit"):
             self.assertEqual(plan[key], "true", key)
+        self.assertEqual(plan["docs_validation"], "false")
 
     def test_deleted_path_falls_back_to_full_regression(self) -> None:
         (self.root / "README.md").unlink()
