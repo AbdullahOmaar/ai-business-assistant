@@ -78,3 +78,19 @@ test('purchasing workspace is mounted in the authenticated app shell', () => {
   assert.match(shell, /<aba-purchasing-workspace/);
   assert.match(shell, /\[role\]="business\.role === 'owner' \? 'owner' : 'staff'"/);
 });
+
+
+test('purchase order workspace exposes a localized accessible region name', () => {
+  assert.match(workspace, /\\[attr\\.aria-label\\]="t\\('title'\\)"/);
+  assert.doesNotMatch(workspace, /aria-label="Purchase order workspace"/);
+});
+
+test('purchase line inputs preserve decimal strings and match backend precision constraints', () => {
+  assert.match(workspace, /type="text" inputmode="decimal" autocomplete="off"[^>]*[(]ngModel[)]="line\\.quantity"/);
+  assert.match(workspace, /type="text" inputmode="decimal" autocomplete="off"[^>]*[(]ngModel[)]="line\\.unit_cost"/);
+  assert.match(workspace, /isValidDecimal\\(line\\.quantity, 3, false\\)/);
+  assert.match(workspace, /isValidDecimal\\(line\\.unit_cost, 2, true\\)/);
+  assert.match(workspace, /const scaled = BigInt\\(integer \\+ fraction\\.padEnd\\(maxScale, '0'\\)\\)/);
+  assert.match(workspace, /integer\\.length \\+ fraction\\.length > 14/);
+  assert.doesNotMatch(workspace, /Number\\(line\\.(?:quantity|unit_cost)\\)/);
+});
