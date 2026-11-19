@@ -115,8 +115,8 @@ test('audit actions and record types have Arabic display labels', () => {
   assert.match(auditWorkspaceSource, /value="invoice\.draft_updated"/);
   assert.match(auditWorkspaceSource, /value="stock\.movement_recorded"/);
   assert.match(auditWorkspaceSource, /value="purchase_order\.approved"/);
-  assert.match(source, /value="sales_return\.approved"/);
-  assert.match(source, /value="recurring_invoice_schedule\.created"/);
+  assert.match(auditWorkspaceSource, /value="sales_return\.approved"/);
+  assert.match(auditWorkspaceSource, /value="recurring_invoice_schedule\.created"/);
   assert.match(auditLabelsSource, /"supplier\.created": "audit\.actions\.m_n1vp0a"/);
   assert.equal((source.match(/<option value="supplier">/g) || []).length, 1);
 });
