@@ -3,8 +3,9 @@ name: Verify backend and frontend
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
+  # Active candidate branch is validated by pull_request synchronize; avoid duplicate push + PR suites.
   push:
-    branches: [main, master/nov-2026-phase-1-runtime-qa]
+    branches: [main]
   schedule:
     - cron: "23 8 * * 1"
   workflow_dispatch:

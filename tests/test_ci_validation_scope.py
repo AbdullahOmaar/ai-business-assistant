@@ -134,6 +134,8 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
             "tests/test_github_actions_slack_failure.py",
         ):
             with self.subTest(path=path):
+                self.git("reset", "--hard", self.base)
+                self.git("clean", "-fd")
                 self.write(path, "def test_ci_meta():\\n    assert True\\n")
                 self.commit(f"update {path}")
                 plan = self.run_selector()
