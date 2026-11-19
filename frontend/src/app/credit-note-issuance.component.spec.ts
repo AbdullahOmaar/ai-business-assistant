@@ -19,8 +19,8 @@ test('Stage 1 UI supports return draft, owner approval, and owner-only credit-no
 
 test('Stage 1 UI does not expose receivable application or cash refund controls', () => {
   assert.doesNotMatch(component, /applyCredit|beginApplyCredit|refundCredit|createCashRefund|CashRefund|CreditApplication/);
-  assert.match(component, /does not apply receivable credit or prove a cash refund/);
-  assert.match(component, /does not apply credit to receivables or record a cash refund/);
+  assert.match(component, /this\.t\('phaseFootnote'\)/);
+  assert.match(component, /this\.t\('creditNoteIssuedMessage'\)/);
 });
 
 test('invoice workspace mounts the stage-one workflow and API client uses the scoped endpoints', () => {
