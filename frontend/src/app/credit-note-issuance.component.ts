@@ -83,7 +83,7 @@ type ReturnDraftLine = {
               <strong>{{ t('return') }} · {{ shortId(ret.id) }}</strong>
               <small>{{ t('invoice') }} · {{ invoiceNumber(ret.invoice_id) }}</small>
               @if (ret.reason) { <small>{{ ret.reason }}</small> }
-              <small>{{ statusLabel(ret.status) }} · {{ ret.created_at | date:'short' }}</small>
+              <small>{{ statusLabel(ret.status) }} · {{ formatDate(ret.created_at) }}</small>
             </div>
             <strong class="amount">{{ ret.total }}</strong>
             @if (ret.status === 'draft' && role === 'owner') {
@@ -119,7 +119,7 @@ type ReturnDraftLine = {
               <strong>{{ note.credit_note_number }}</strong>
               <small>{{ t('return') }} · {{ shortId(note.sales_return_id) }}</small>
               <small>{{ t('customer') }} · {{ customerName(note.customer_id) }}</small>
-              <small>{{ note.created_at | date:'short' }}</small>
+              <small>{{ formatDate(note.created_at) }}</small>
             </div>
             <strong class="amount">{{ note.total }} {{ note.currency_code }}</strong>
             <span class="issued">{{ t('issued') }}</span>
@@ -331,6 +331,10 @@ export class CreditNoteIssuanceComponent implements OnChanges {
 
   customerName(customerId: string): string {
     return customerId ? this.customers.find(customer => customer.id === customerId)?.name ?? this.shortId(customerId) : '—';
+  }
+
+  formatDate(value: string): string {
+    return this.localization.formatDate(value, { dateStyle: 'short', timeStyle: 'short' });
   }
 
   shortId(value: string): string {
