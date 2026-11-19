@@ -702,8 +702,8 @@ export class ApiService {
       `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}`
     );
   }
-  salesReturns(businessId: string, status?: SalesReturn['status']): Promise<{ items: SalesReturn[]; limit: number; offset: number }> {
-    const params = new URLSearchParams({ limit: '100', offset: '0' });
+  salesReturns(businessId: string, status?: SalesReturn['status'], offset = 0, limit = 100): Promise<{ items: SalesReturn[]; limit: number; offset: number }> {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
     if (status) params.set('status', status);
     return this.request<{ items: SalesReturn[]; limit: number; offset: number }>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns?${params.toString()}`
@@ -722,9 +722,10 @@ export class ApiService {
       'POST', {}
     );
   }
-  creditNotes(businessId: string): Promise<{ items: CreditNote[]; limit: number; offset: number }> {
+  creditNotes(businessId: string, offset = 0, limit = 100): Promise<{ items: CreditNote[]; limit: number; offset: number }> {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
     return this.request<{ items: CreditNote[]; limit: number; offset: number }>(
-      `/api/v1/businesses/${encodeURIComponent(businessId)}/credit-notes?limit=100&offset=0`
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/credit-notes?${params.toString()}`
     );
   }
   issueCreditNote(businessId: string, returnId: string): Promise<CreditNote> {
