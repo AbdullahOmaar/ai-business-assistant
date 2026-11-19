@@ -8,6 +8,8 @@ const sortHelper = readFileSync(new URL('./directory-sort.ts', import.meta.url),
 const css = readFileSync(new URL('./product-catalog.component.css', import.meta.url), 'utf8');
 const app = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const workspace = expandTranslationCalls(readFileSync(new URL('./product-workspace.component.ts', import.meta.url), 'utf8'));
+const workspaceSource = readFileSync(new URL('./product-workspace.component.ts', import.meta.url), 'utf8');
+const productEditor = readFileSync(new URL('./product-editor.component.ts', import.meta.url), 'utf8');
 
 test('Products uses a dedicated catalogue presentation, not the shared generic record table', () => {
   assert.match(component, /selector: 'aba-product-catalog'/);
@@ -18,8 +20,8 @@ test('Products uses a dedicated catalogue presentation, not the shared generic r
 
 test('catalogue filters stock-tracked and non-stock items on the current searched result set', () => {
   assert.match(component, /readonly filter = signal<ProductFilter>/);
-  assert.match(component, /stockCount = computed/);
-  assert.match(component, /nonStockCount = computed/);
+  assert.doesNotMatch(component, /stockCount|nonStockCount/);
+  assert.equal(component.includes('products().length'), false);
   assert.match(component, /filter\(\) === 'non-stock'/);
   assert.match(component, /'Non-stock'/);
   assert.match(component, /'Item'/);
@@ -30,13 +32,19 @@ test('catalogue filters stock-tracked and non-stock items on the current searche
   assert.match(component, /aria-pressed/);
 });
 
+test('filter chips do not imply a catalogue total from the currently loaded page', () => {
+  assert.doesNotMatch(component, /stockCount|nonStockCount|products\\(\\)\\.length \\}\\}/);
+  assert.match(component, /visibleProducts = computed/);
+});
+
 test('catalogue sorting is available to desktop keyboard users and mobile touch users', () => {
   assert.match(component, /aria-sort/);
   assert.match(component, /toggleSort\('price'\)/);
   assert.match(component, /onMobileSortChange\(\$event\)/);
   assert.match(component, /filterAndSortProducts\(/);
   assert.match(sortHelper, /new Intl\.Collator\(locale/);
-  assert.match(sortHelper, /Number\(left\.unit_price\)/);
+  assert.match(sortHelper, /compareDecimalStrings/);
+  assert.doesNotMatch(sortHelper, /Number\(left\.(unit_price|stock_quantity)/);
   assert.match(sortHelper, /leftCurrency/);
 });
 
@@ -45,6 +53,7 @@ test('catalogue only renders fields already present in the Product API contract'
     assert.ok(component.includes('product.' + field) || component.includes('left.' + field), 'missing existing product field: ' + field);
   }
   assert.doesNotMatch(component, /availableQuantity|reservedQuantity|reorderPoint|valuation|costOfGoods/);
+  assert.doesNotMatch(component, /stock_quantity \?\? '0'/);
 });
 
 test('mobile catalogue remains compact and readable in RTL/LTR with visible focus', () => {
@@ -52,6 +61,7 @@ test('mobile catalogue remains compact and readable in RTL/LTR with visible focu
   assert.match(css, /product-catalog__mobile-row/);
   assert.match(css, /product-catalog__filters button\{[^}]*min-height:44px/);
   assert.match(css, /product-catalog__mobile-sort select\{[^}]*min-height:44px/);
+  assert.match(css, /font-size:16px/);
   assert.match(css, /product-catalog__clear-filter\{[^}]*min-height:44px/);
   assert.match(css, /focus-visible/);
   assert.match(css, /forced-colors:active/);
@@ -75,3 +85,36 @@ test('main product directory exposes guarded pagination beyond the first page', 
   assert.match(app, /fetchPage: \(id, offset\) => this\.api\.products\(id, offset\)/);
 });
 
+
+
+test('product editor close is disabled during save and meets the 44px touch target', () => {
+  assert.match(productEditor, /class="product-editor__close"[\s\S]*?\[disabled\]="busy\(\)"/);
+  assert.match(productEditor, /product-editor__close\{flex:0 0 44px;width:44px;height:44px/);
+  assert.match(productEditor, /product-editor button:disabled/);
+  assert.match(productEditor, /font-size:16px/);
+});
+
+
+test('product workspace landmark uses a localized accessible name', () => {
+  assert.ok(workspaceSource.includes("[attr.aria-label]=\"t('productEditor.eyebrow')\""));
+  assert.doesNotMatch(workspaceSource, /aria-label="Product workspace"/);
+});
+
+
+test('mobile product cards label their price in both supported locales', () => {
+  const start = component.indexOf('class="product-catalog__mobile-price"');
+  const end = component.indexOf('</strong>', start);
+  const mobilePrice = component.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(mobilePrice, /Unit price/);
+  assert.match(mobilePrice, /سعر الوحدة/);
+  assert.match(mobilePrice, /product\.unit_price/);
+  assert.match(css, /product-catalog__mobile-price-label/);
+});
+
+
+test('empty product catalogue uses a no-products state instead of a detail-selection prompt', () => {
+  assert.ok(workspaceSource.includes("[emptyTitle]=\"t('ui.m_12dkqai')\""));
+  assert.ok(workspaceSource.includes('[emptyDescription]="\'\'"'));
+  assert.doesNotMatch(workspaceSource, /productProfile\.emptyTitle/);
+});

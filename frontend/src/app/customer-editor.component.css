@@ -4,7 +4,7 @@
 .customer-editor__eyebrow{margin:0 0 5px;color:var(--aiba-brand-strong,#115e59);font-size:10px;font-weight:800;letter-spacing:.09em}
 .customer-editor h2{margin:0;font-size:clamp(18px,3vw,22px);font-weight:780;line-height:1.3}
 .customer-editor__header p:last-child{margin:6px 0 0;color:var(--aiba-muted,#64748b);font-size:12px;line-height:1.5}
-.customer-editor__close{display:grid;place-items:center;flex:0 0 40px;width:40px;height:40px;border:1px solid var(--aiba-line,#e2e8f0);border-radius:12px;background:var(--aiba-page,#f8fafc);color:var(--aiba-ink,#172033);font-size:24px;cursor:pointer}
+.customer-editor__close{display:grid;place-items:center;flex:0 0 44px;width:44px;height:44px;border:1px solid var(--aiba-line,#e2e8f0);border-radius:12px;background:var(--aiba-page,#f8fafc);color:var(--aiba-ink,#172033);font-size:24px;cursor:pointer}
 .customer-editor__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
 .customer-editor__field{display:grid;gap:7px;min-width:0;color:var(--aiba-ink-soft,#344256);font-size:12px;font-weight:700}
 .customer-editor__field--wide{grid-column:1/-1}
@@ -25,3 +25,9 @@
 @media(max-width:560px){.customer-editor{gap:15px;padding:15px;border-radius:14px}.customer-editor__grid{grid-template-columns:minmax(0,1fr);gap:12px}.customer-editor__field--wide{grid-column:auto}.customer-editor__footer{display:grid;grid-template-columns:1fr 1fr}.customer-editor__footer button{padding-inline:9px}}
 @media(forced-colors:active){.customer-editor,.customer-editor input,.customer-editor textarea,.customer-editor button{border:1px solid CanvasText}.customer-editor button:focus-visible,.customer-editor input:focus-visible,.customer-editor textarea:focus-visible{outline-color:Highlight}}
 @media(prefers-reduced-motion:reduce){.customer-editor *{scroll-behavior:auto}}
+
+@media(max-width:760px){
+  .customer-editor input,.customer-editor textarea{min-height:48px;font-size:16px}
+  .customer-editor textarea{min-height:112px}
+  .customer-editor__footer button,.customer-editor__close{min-height:48px}
+}

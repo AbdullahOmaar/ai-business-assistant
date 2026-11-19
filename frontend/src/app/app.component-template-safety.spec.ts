@@ -6,6 +6,7 @@ import { createServiceWorkerUpdateHandler } from './service-worker-update.ts';
 
 const globalStyles = expandTranslationCalls(readFileSync(new URL('../styles.css', import.meta.url), 'utf8'));
 const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const inventoryApiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const invoiceEditorSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8'));
 const invoiceDraftSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8'));
 const releaseGuideSource = expandTranslationCalls(readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8'));
@@ -1654,4 +1655,38 @@ test('PWA update notice stays touch-sized and readable in forced-colors mode', (
   assert.ok(forcedColors.includes('background: Canvas;'));
   assert.ok(forcedColors.includes('color: CanvasText;'));
   assert.ok(forcedColors.includes('color: ButtonText;'));
+});
+
+
+test('inventory ledger is mounted inside the existing Products workspace with current tenant identity', () => {
+  const ledgerIndex = source.indexOf('<aba-inventory-movement-ledger');
+  const productsTabIndex = source.lastIndexOf("@if (tab === 'products' && business?.id)", ledgerIndex);
+  const invoicesTabIndex = source.indexOf("@if (tab === 'invoices')", ledgerIndex);
+  assert.ok(ledgerIndex >= 0 && productsTabIndex >= 0 && invoicesTabIndex > ledgerIndex,
+    'ledger must remain nested in the existing Products tab, without a new route');
+  const mount = source.slice(ledgerIndex, source.indexOf('/>', ledgerIndex));
+  assert.match(mount, /\[businessId\]="business\.id"/);
+  assert.match(mount, /\[userId\]="workspaceUserId"/);
+  assert.match(mount, /business\.role === 'owner' \? 'owner' : 'staff'/);
+  assert.match(mount, /\[products\]="products"/);
+  assert.match(mount, /\[language\]="language"/);
+  assert.match(mount, /\[loadPage\]="loadInventoryMovementPage"/);
+  assert.match(source, /InventoryMovementLedgerComponent/);
+  assert.match(source, /loadInventoryMovementPage = query => this\.api\.inventoryMovements/);
+  assert.match(source, /referenceType: query\.referenceType \|\| undefined/);
+});
+
+test('inventory movement API uses authenticated tenant-scoped GET with bounded read filters', () => {
+  const start = inventoryApiSource.indexOf('inventoryMovements(');
+  const end = inventoryApiSource.indexOf('\n  product(', start);
+  assert.ok(start >= 0 && end > start, 'typed inventory movement method must exist before product detail');
+  const method = inventoryApiSource.slice(start, end);
+  assert.match(method, /businesses\/\$\{encodeURIComponent\(businessId\)\}\/inventory\/movements/);
+  assert.match(method, /params\.set\('product_id'/);
+  assert.match(method, /params\.set\('movement_type'/);
+  assert.match(method, /params\.set\('reference_type'/);
+  assert.match(method, /Math\.min\(200, Math\.max\(1, limit\)\)/);
+  assert.match(method, /Math\.max\(0, offset\)/);
+  assert.match(method, /request<StockMovementPage>/);
+  assert.doesNotMatch(method, /'POST'|'PUT'|'PATCH'|'DELETE'/);
 });

@@ -19,6 +19,8 @@ test('customer editor covers all supported contact fields and required-name/emai
   assert.match(editor, /hasWhitespace/);
   assert.match(editorCss, /@media\(max-width:560px\)/);
   assert.match(editorCss, /min-height:46px/);
+  assert.match(editorCss, /min-height:48px/);
+  assert.match(editorCss, /font-size:16px/);
   assert.match(editorCss, /forced-colors:active/);
 });
 
@@ -27,6 +29,7 @@ test('customer profile presents contact, address, notes and existing invoice/sta
   assert.match(profile, /invoices\.emit\(\)/);
   assert.match(profile, /statement\.emit\(\)/);
   assert.match(profile, /loading\(\)/);
+  assert.match(profile, /customer-profile__item a\{[^}]*min-height:44px/);
   assert.match(profile, /retry\.emit\(\)/);
   assert.doesNotMatch(profile, /totalPurchases|receivableBalance|creditLimit/);
   assert.ok(profile.includes('customerProfile.financialNote'));
@@ -44,17 +47,20 @@ test('customer directory preserves responsive layouts and exposes saved address 
   assert.match(directory, /customer-directory__mobile-list/);
   assert.match(directory, /aria-sort/);
   assert.match(directory, /emitAction\(customer\.id, 'statement'/);
+  assert.match(directory, /emitAction\(customer\.id, 'edit'/);
+  assert.match(workspace, /editCustomerFromDirectory/);
   assert.match(directory, /customer\.address/);
   assert.match(directory, /customer\.notes/);
   assert.match(directory, /error\(\)/);
   assert.match(directory, /retry\.emit\(\)/);
   assert.match(directoryCss, /min-height:44px/);
+  assert.match(directoryCss, /min-height:48px/);
   assert.match(directoryCss, /forced-colors:active/);
 });
 
 test('customer workspace covers server search, paginated list, detail and create/edit with tenant stale-response guards', () => {
-  assert.match(workspace, /this\.api\.customers\(requested\.businessId, this\.offset, this\.pageSize, this\.searchQuery\)/);
-  assert.match(workspace, /this\.searchQuery = this\.searchDraft\(\)\.trim\(\)\.slice\(0, 120\)/);
+  assert.match(workspace, /this\.api\.customers\(requested\.businessId, this\.offset, this\.pageSize, this\.searchQuery\(\)\)/);
+  assert.match(workspace, /this\.searchQuery\.set\(this\.searchDraft\(\)\.trim\(\)\.slice\(0, 120\)\)/);
   assert.match(workspace, /this\.api\.customer\(requested\.businessId, customerId\)/);
   assert.match(workspace, /this\.api\.createCustomer\(requested\.businessId, value\)/);
   assert.match(workspace, /this\.api\.updateCustomer\(requested\.businessId, editingId, value\)/);
@@ -67,7 +73,7 @@ test('customer workspace covers server search, paginated list, detail and create
   assert.match(workspace, /readonly statementRequested = output<string>\(\)/);
   assert.match(workspace, /openInvoices\(\): void \{ if \(this\.selectedCustomerId\) this\.invoicesRequested\.emit/);
   assert.match(workspace, /openStatement\(\): void \{ if \(this\.selectedCustomerId\) this\.statementRequested\.emit/);
-  assert.match(workspace, /pageSize = 100/);
+  assert.match(workspace, /pageSize = 50/);
   assert.match(workspace, /@if \(hasMore\(\) && !error\(\)\)/);
   assert.match(workspace, /\[disabled\]="loading\(\)"/);
   assert.match(workspace, /loadingMore\(\) \? t\('ui\.m_1dwk1vm'\)/);

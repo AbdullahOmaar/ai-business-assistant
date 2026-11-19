@@ -17,7 +17,7 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
   imports: [CustomerDirectoryComponent, CustomerEditorComponent, CustomerProfileComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="customer-workspace" aria-label="Customer workspace">
+    <section class="customer-workspace" [attr.aria-label]="t('customerWorkspace.directory')">
       @if (mode() === 'list') {
         <header class="customer-workspace__toolbar">
           <form class="customer-workspace__search" role="search" (submit)="submitSearch($event)">
@@ -36,8 +36,8 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
           [loading]="loading()"
           [error]="error()"
           (retry)="retry()"
-          [emptyTitle]="t('customerProfile.emptyTitle')"
-          [emptyDescription]="t('customerWorkspace.emptyDescription')"
+          [emptyTitle]="searchQuery() ? t('ui.m_1lfpojf') : t('ui.m_v7mhxb')"
+          [emptyDescription]="searchQuery() ? '' : t('customerWorkspace.emptyDescription')"
           (rowAction)="handleRowAction($event)"
           (select)="openCustomer($event)" />
         @if (hasMore() && !error()) {
@@ -78,6 +78,7 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
     .customer-workspace :is(button,input):focus-visible{outline:3px solid var(--aiba-focus,#2563eb);outline-offset:2px}
     .customer-workspace__sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
     @media(max-width:520px){.customer-workspace__toolbar{align-items:stretch;flex-direction:column}.customer-workspace__create{width:100%}.customer-workspace__search{width:100%}}
+    @media(max-width:760px){.customer-workspace__search input{min-height:48px;font-size:16px}.customer-workspace__search button,.customer-workspace__create{min-height:48px}}
     @media(forced-colors:active){.customer-workspace button,.customer-workspace input{border:1px solid CanvasText}.customer-workspace :is(button,input):focus-visible{outline-color:Highlight}}
   `],
 })
@@ -108,8 +109,8 @@ export class CustomerWorkspaceComponent {
   readonly hasMore = signal(false);
   readonly searchDraft = signal('');
   private offset = 0;
-  private searchQuery = '';
-  private readonly pageSize = 100;
+  readonly searchQuery = signal('');
+  private readonly pageSize = 50;
   private selectedCustomerId: string | null = null;
 
   constructor() {
@@ -122,6 +123,8 @@ export class CustomerWorkspaceComponent {
         this.customers.set([]);
         this.selectedCustomer.set(null);
         this.selectedCustomerId = null;
+        this.searchQuery.set('');
+        this.searchDraft.set('');
         this.offset = 0;
         this.hasMore.set(false);
         this.loading.set(false);
@@ -163,7 +166,7 @@ export class CustomerWorkspaceComponent {
     this.loadingMore.set(!reset);
     this.error.set('');
     try {
-      const records = await this.api.customers(requested.businessId, this.offset, this.pageSize, this.searchQuery);
+      const records = await this.api.customers(requested.businessId, this.offset, this.pageSize, this.searchQuery());
       if (!this.isCurrent(this.listGuard, version, requested)) return;
       const combined = reset ? records : [...this.customers(), ...records];
       const unique = new Map<string, Customer>();
@@ -183,7 +186,7 @@ export class CustomerWorkspaceComponent {
 
   submitSearch(event: Event): void {
     event.preventDefault();
-    this.searchQuery = this.searchDraft().trim().slice(0, 120);
+    this.searchQuery.set(this.searchDraft().trim().slice(0, 120));
     void this.loadCustomers(true);
   }
 
@@ -241,6 +244,8 @@ export class CustomerWorkspaceComponent {
         return exists ? rows.map(row => row.id === record.id ? record : row) : [record, ...rows];
       });
       this.mode.set('profile');
+      // Re-read the server-filtered first page so create/edit cannot leave a record in the wrong search result set.
+      void this.loadCustomers(true);
     } catch {
       if (this.isCurrent(this.saveGuard, version, requested)) this.editorError.set(this.t('customerWorkspace.saveError'));
     } finally {
@@ -265,8 +270,14 @@ export class CustomerWorkspaceComponent {
   openInvoices(): void { if (this.selectedCustomerId) this.invoicesRequested.emit(this.selectedCustomerId); }
   openStatement(): void { if (this.selectedCustomerId) this.statementRequested.emit(this.selectedCustomerId); }
 
+  async editCustomerFromDirectory(customerId: string): Promise<void> {
+    await this.openCustomer(customerId);
+    if (this.selectedCustomerId === customerId && this.selectedCustomer()) this.editCustomer();
+  }
+
   handleRowAction(event: AbaRecordTableActionEvent): void {
     if (event.actionId === 'invoices') this.invoicesRequested.emit(event.rowId);
     if (event.actionId === 'statement') this.statementRequested.emit(event.rowId);
+    if (event.actionId === 'edit') void this.editCustomerFromDirectory(event.rowId);
   }
 }

@@ -26,13 +26,13 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
         <div class="product-catalog__toolbar">
           <div class="product-catalog__filters" role="group" [attr.aria-label]="t('productCatalog.m_47v71n')">
             <button type="button" [class.is-active]="filter() === 'all'" [attr.aria-pressed]="filter() === 'all'" (click)="setFilter('all')">
-              {{ t('productCatalog.m_1vmpuau') }} <span>{{ products().length }}</span>
+              {{ t('productCatalog.m_1vmpuau') }}
             </button>
             <button type="button" [class.is-active]="filter() === 'stock'" [attr.aria-pressed]="filter() === 'stock'" (click)="setFilter('stock')">
-              {{ t('productCatalog.m_j15h0g') }} <span>{{ stockCount() }}</span>
+              {{ t('productCatalog.m_j15h0g') }}
             </button>
             <button type="button" [class.is-active]="filter() === 'non-stock'" [attr.aria-pressed]="filter() === 'non-stock'" (click)="setFilter('non-stock')">
-              {{ t('productCatalog.m_1c1wx97') }} <span>{{ nonStockCount() }}</span>
+              {{ t('productCatalog.m_1c1wx97') }}
             </button>
           </div>
           <label class="product-catalog__mobile-sort">
@@ -69,7 +69,7 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
                   <td>
                     @if (product.is_stock_tracked) {
                       <span class="product-catalog__stock"><span class="product-catalog__dot" aria-hidden="true"></span>{{ t('productCatalog.m_1abb5if') }}</span>
-                      <strong class="product-catalog__quantity"><bdi dir="ltr">{{ product.stock_quantity ?? '0' }}</bdi></strong>
+                      <strong class="product-catalog__quantity"><bdi dir="ltr">{{ product.stock_quantity ?? '—' }}</bdi></strong>
                     } @else {
                       <span class="product-catalog__service">{{ t('productCatalog.m_1c1wx97') }}</span>
                     }
@@ -85,13 +85,13 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
             <li class="product-catalog__mobile-row">
               <div class="product-catalog__main">
                 <h3><button class="product-catalog__open" type="button" (click)="select.emit(product.id)">{{ product.name }}</button></h3>
-                <strong class="product-catalog__mobile-price"><bdi dir="ltr">{{ product.unit_price }} {{ product.currency_code || currencyCode() }}</bdi></strong>
+                <strong class="product-catalog__mobile-price"><span class="product-catalog__mobile-price-label">{{ t('productCatalog.m_1iz2xk3') }}</span><bdi dir="ltr">{{ product.unit_price }} {{ product.currency_code || currencyCode() }}</bdi></strong>
               </div>
               <div class="product-catalog__meta">
                 <span class="product-catalog__sku"><span>SKU</span> <bdi dir="ltr">{{ product.sku || '—' }}</bdi></span>
                 @if (product.is_stock_tracked) {
                   <span class="product-catalog__stock"><span class="product-catalog__dot" aria-hidden="true"></span>{{ t('productCatalog.m_j15h0g') }}</span>
-                  <span class="product-catalog__quantity">{{ t('productCatalog.m_j49abf') }}: <bdi dir="ltr">{{ product.stock_quantity ?? '0' }}</bdi></span>
+                  <span class="product-catalog__quantity">{{ t('productCatalog.m_j49abf') }}: <bdi dir="ltr">{{ product.stock_quantity ?? '—' }}</bdi></span>
                 } @else {
                   <span class="product-catalog__service">{{ t('productCatalog.m_1c1wx97') }}</span>
                 }
@@ -135,8 +135,6 @@ export class ProductCatalogComponent {
   private readonly sortField = signal<ProductSortField>('name');
   private readonly sortDirection = signal<SortDirection>('asc');
 
-  readonly stockCount = computed(() => this.products().filter(product => product.is_stock_tracked).length);
-  readonly nonStockCount = computed(() => this.products().length - this.stockCount());
   readonly visibleProducts = computed(() =>
     filterAndSortProducts(this.products(), this.filter(), this.sortField(), this.sortDirection(), this.locale(), this.currencyCode())
   );

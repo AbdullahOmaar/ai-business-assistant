@@ -36,14 +36,14 @@
   .customer-directory__identity h3{margin:0;color:var(--aiba-ink,#172033);font-size:14px;font-weight:720;line-height:1.35;overflow-wrap:anywhere}
    .customer-directory__details{display:grid;gap:3px;min-width:0;color:var(--aiba-muted,#5f6e83);font-size:11px;line-height:1.45;overflow-wrap:anywhere}.customer-directory__details b{color:var(--aiba-ink-soft,#344256)}
   .customer-directory__contact{display:flex;flex-wrap:wrap;align-items:center;gap:3px 10px;min-width:0;color:var(--aiba-muted,#5f6e83);font-size:12px;line-height:1.4}
-  .customer-directory__contact a{min-width:0;max-width:100%;color:var(--aiba-ink-soft,#344256);text-decoration:none;overflow-wrap:anywhere}
+  .customer-directory__contact a{display:inline-flex;align-items:center;min-width:0;max-width:100%;min-height:44px;color:var(--aiba-ink-soft,#344256);text-decoration:none;overflow-wrap:anywhere}
   .customer-directory__actions{justify-content:flex-end;gap:5px}
   .customer-directory__action{min-height:44px;padding:7px 9px;font-size:12px;white-space:normal}
 }
 @media(max-width:480px){
   .customer-directory__mobile-row{grid-template-columns:minmax(0,1fr);gap:8px}
-  .customer-directory__actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%}
-  .customer-directory__action{width:100%;min-width:0}
+  .customer-directory__actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));width:100%}
+  .customer-directory__action{width:100%;min-width:0;padding-inline:6px;font-size:11px}
   .customer-directory__mobile-sort label{align-items:center}
 }
 @media(max-width:360px){
@@ -62,3 +62,16 @@
 .customer-directory__profile-link{padding:0;border:0;background:transparent;color:var(--aiba-brand-strong,#115e59);font:inherit;font-weight:750;text-align:start;cursor:pointer}
 .customer-directory__profile-link:hover{text-decoration:underline}
 .customer-directory__profile-link:focus-visible{outline:3px solid var(--aiba-focus,#2563eb);outline-offset:3px;border-radius:3px}
+
+/* Mobile directory refinement — balanced density and thumb-first actions. */
+@media(max-width:760px){
+  .customer-directory__mobile-sort select{min-height:48px;font-size:16px}
+  .customer-directory__mobile-list{gap:10px}
+  .customer-directory__mobile-row{align-items:start;gap:10px;padding:14px;border-radius:16px}
+  .customer-directory__identity h3{font-size:15px}
+  .customer-directory__identity h3 .customer-directory__profile-link{display:inline-flex;align-items:center;min-height:44px}
+  .customer-directory__contact{gap:6px 12px;line-height:1.5}
+  .customer-directory__actions{gap:8px}
+  .customer-directory__action{min-height:48px;padding-inline:12px;border-radius:11px}
+}
+@media(max-width:480px){.customer-directory__mobile-row{padding:14px}.customer-directory__actions{gap:8px}}

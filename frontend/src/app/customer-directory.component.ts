@@ -95,6 +95,9 @@ import { LocalizationService } from './localization.service';
                       <button class="customer-directory__action customer-directory__action--primary" type="button" (click)="emitAction(customer.id, 'statement', $event)" [attr.aria-label]="actionAriaLabel(customer, 'statement')">
                         {{ t('customerDirectory.m_np2h9e') }}
                       </button>
+                      <button class="customer-directory__action" type="button" (click)="emitAction(customer.id, 'edit', $event)" [attr.aria-label]="actionAriaLabel(customer, 'edit')">
+                        {{ t('customerProfile.edit') }}
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -132,6 +135,9 @@ import { LocalizationService } from './localization.service';
                 </button>
                 <button class="customer-directory__action customer-directory__action--primary" type="button" (click)="emitAction(customer.id, 'statement', $event)" [attr.aria-label]="actionAriaLabel(customer, 'statement')">
                   {{ t('customerDirectory.m_np2h9e') }}
+                </button>
+                <button class="customer-directory__action" type="button" (click)="emitAction(customer.id, 'edit', $event)" [attr.aria-label]="actionAriaLabel(customer, 'edit')">
+                  {{ t('customerProfile.edit') }}
                 </button>
               </div>
             </li>
@@ -198,10 +204,12 @@ export class CustomerDirectoryComponent {
     return this.sortDirection() === 'asc' ? '↑' : '↓';
   }
 
-  actionAriaLabel(customer: Customer, action: 'invoices' | 'statement'): string {
+  actionAriaLabel(customer: Customer, action: 'invoices' | 'statement' | 'edit'): string {
     const label = action === 'invoices'
-      ? (this.t('customerDirectory.m_1muaaw0'))
-      : (this.t('customerDirectory.m_mmu2iu'));
+      ? this.t('customerDirectory.m_1muaaw0')
+      : action === 'statement'
+        ? this.t('customerDirectory.m_mmu2iu')
+        : this.t('customerProfile.edit');
     return label + ' ' + customer.name;
   }
 

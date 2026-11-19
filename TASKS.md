@@ -1,3 +1,49 @@
+## MASTER CI selector audit — 2026-11-19
+
+- **Active candidate:** `master/nov-2026-phase-1-runtime-qa`, PR #401, head `d37b66b68421e0db0fd1cceaefbaa06381a544f3`; no new branch or PR.
+- **Classification matrix:** frontend-only mapped component changes select impacted specs + build; frontend spec-only changes select focused specs; high-risk frontend shared/core/auth/tenant/routes/API/runtime/security/permissions/localization/accounting/inventory/audit/payroll changes select full frontend regression; backend-only independent test modules select targeted tests; backend app/security/tenant/data-integrity/models/migrations/shared fixtures/helpers select full backend regression; docs-only under `docs/` and approved root knowledge files select project-knowledge validation; dependency/lockfile changes retain full relevant tests/build/container/audits; unknown paths (including Markdown outside recognized roots), deleted/renamed/type-changed paths and missing base/diff force full regression.
+- **Fail-closed controls:** selector and every selected test/build/audit/smoke job verify the exact PR candidate SHA. The backend dependency-audit job now has the missing exact-SHA assertion. `all-checks-passed` requires every selected job to succeed and every unselected job to be explicitly skipped. Disposable PostgreSQL only.
+- **Regression cases:** focused frontend/backend; docs-only; high-risk frontend auth; backend security; migrations; frontend/backend dependencies; CI meta-tests; shared backend test helpers; unknown ordinary and Markdown paths; deleted/renamed paths; unavailable merge-base; selector/backend-audit exact-SHA guards.
+- **Gap fixes:** shared pytest helper modules `backend/tests/test_api.py`, `test_t39_purchase_receiving_api.py`, `test_platform_admin_api.py` now force full backend regression. Arbitrary `.md` paths are no longer implicitly trusted. Exact checkout SHA is verified in `detect-changes` and `backend-dependency-audit`.
+- **Exact-head CI:** run [#44528796996](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44528796996) SUCCESS on `d37b66b68421e0db0fd1cceaefbaa06381a544f3`. `detect-changes`, `project-knowledge`, frontend regression/build/audit, full backend regression (324 passed; 23 warnings), backend container, backend dependency audit, authenticated API smoke and `all-checks-passed` all SUCCESS. Selector regression suite ran 20 tests successfully; project-knowledge validator and Slack workflow tests ran 17 and 15 tests successfully.
+- **Ruleset:** active repository ruleset `26009350` applies to the default branch, requires strict `all-checks-passed` from GitHub Actions integration `15368`, blocks deletion and non-fast-forward updates, and has no bypass actors. The legacy branch-protection endpoint is unavailable to this integration (403); no protection settings were changed.
+- **Outstanding separate acceptance:** #402 rendered/device/accessibility and physical Android / installed-PWA checks remain NOT RUN / BLOCKED; #403 code-level receipt and purchasing tests are present, with exact-head full backend regression green. PR #401 remains Draft / unmerged pending product acceptance. T37 remains DRAFT / NOT APPROVED.
+
+---
+## MASTER CI selector hardening follow-up — 2026-11-19
+
+- Reopened [issue #406](https://github.com/AbdullahOmaar/ai-business-assistant/issues/406) after exact source review found that `backend/tests/test_api.py`, `test_t39_purchase_receiving_api.py`, and `test_platform_admin_api.py` are shared helper/fixture modules imported by sibling test files. Treating them as isolated changed test modules could miss dependent regressions.
+- Updated `.github/workflows/ci.yml` so changes to those three shared modules run the full backend suite while retaining focused execution for independent `test_*.py` modules.
+- Added a selector regression that checks all three shared modules and keeps the ordinary independent inventory-ledger test module on the targeted path.
+- Current implementation commit: `71a62bbc8851d5b307fe9237625528abe16003d4`. Exact-head CI is pending; do not close #406 or reuse the previous run as evidence for this follow-up.
+- Scope remains CI/governance only; no feature-owned application code, production secrets, runtime databases, or live data changed.
+
+## MASTER execution checkpoint — Risk-based CI implementation — final closeout 2026-11-19
+
+- **Owner decision / branch:** `master/nov-2026-phase-1-runtime-qa` remains the sole active November branch. No branch created, renamed or deleted. `main@560f3b402bfd265f8509dcbbdd1ed5988e72efbe`; active candidate is PR #401.
+- **Candidate before this documentation closeout:** `d509dcab4cd61bd526769f496e010f72b45cf7a7`; PR #401 remains DRAFT / OPEN / UNMERGED and owns the Inventory Ledger + mobile UX product changes. MASTER edits were restricted to shared CI/governance paths; no feature-owned frontend/backend source was touched.
+- **Change-aware selection:** ordinary mapped frontend source runs its related spec plus build; frontend spec-only changes run only impacted specs and skip build; CI meta-test-only changes run the project-knowledge job only. Backend test-only changes run changed test modules only when safely mapped. Docs/governance-only changes run focused project-knowledge validation.
+- **Fail-closed broad triggers:** frontend shared/core, auth/session, tenant, routes/guards, API/runtime config, service worker, security/permissions, localization, accounting/invoice/payment, stock/inventory, audit and payroll paths run full frontend regression; locale dictionary changes also build. Backend application/security/tenant/data-integrity, model/schema/migration, fixture/conftest/helper, dependency/config and unknown paths run full backend regression. Migration checks, disposable PostgreSQL, container and dependency audits remain selected when relevant. Unknown/deleted/renamed/type-changed paths or missing merge-base/diff data force full regression.
+- **CI economy:** CI meta-test-only paths `tests/test_ci_validation_scope.py`, `tests/test_project_knowledge_validator.py`, and `tests/test_github_actions_slack_failure.py` are excluded from application regression and validated by project-knowledge; all other `tests/` paths retain full fallback. Active November branch was removed from `push` triggers because PR `synchronize` is authoritative; `main` push and scheduled/manual full regression remain enabled, preventing duplicate push + PR suites.
+- **Exact-head evidence on the pre-documentation candidate:** GitHub Actions run [#44525524749](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44525524749) SUCCESS on `d509dcab4cd61bd526769f496e010f72b45cf7a7`. detect-changes, project-knowledge, frontend unit tests/build/audit, backend dependency audit/container, full backend regression with disposable PostgreSQL, authenticated API smoke and aggregate `all-checks-passed` all SUCCESS. GitGuardian Security Checks SUCCESS.
+- **Correction history:** run #44463937666 SUCCESS on `21d32059eca51086e109a29df6c8d0f915d50135`. A later selector fixture attempt failed; its cumulative temp-git fixture and output-file collision were corrected in `012171e1facb2f0564b96eaf0e874ecfdd99ab80`. The final high-risk frontend selector refinement then passed run #44525524749. No failure was waived.
+- **Issues:** #404 frontend map, #405 backend map and #406 MASTER integration task are CLOSED / COMPLETED by MASTER. Source-backed matrices, commands, limitations and exact-head evidence are recorded in their GitHub issue comments.
+- **Governance:** canonical test-economy principles remain in `AGENTS.md`; detailed selector implementation is in `.github/workflows/ci.yml`; this checkpoint records its evidence. CI uses disposable PostgreSQL only; no runtime secrets, live DB, application records, financial semantics, provider security settings or branch protections changed. T37 remains DRAFT / NOT APPROVED.
+- **Documentation follow-up:** this TASKS-only closeout advances the candidate SHA; a new exact-head GitHub Actions run is required before any merge decision. PR #401 remains Draft because MUX-07 rendered/device/accessibility/authenticated acceptance remains BLOCKED / NOT RUN.
+
+---
+
+## Current execution checkpoint — 2026-11-17
+
+- **Active branch:** `master/nov-2026-phase-1-runtime-qa`.
+- **Branch reconciliation:** completed. Current main `560f3b402bfd265f8509dcbbdd1ed5988e72efbe` was merged into the active November branch while preserving both branch-only commits. Merge commit: `0462f16f99dd5c2a4997fa5e2a8b7df49c7b1629` (parents: main + previous runtime-qa head `d08d5eae6f5a6291fae08ad056862f77516dd3af`). The merge resolution retained current main content and reconciled the canonical active-branch line in `AGENTS.md` to runtime-qa.
+- **Current branch parity:** active branch is based on current main; only the deliberate active-branch policy line differs from main. No new branch created; no branch deleted.
+- **PR #400:** closed unmerged after GitHub reported a dirty reverse-direction synchronization PR. It was not merged; reconciliation was completed as a two-parent merge commit on the existing active branch.
+- **Inventory Movement Ledger:** Chat 1/Chat 2 work packages remain READY. Backend endpoint already exists; do not duplicate it. Chat 1 owns feature-local UI; Chat 2 owns focused API/tenant/idempotency tests; MASTER owns shared API client, app shell, localization and this ledger.
+- **Validation:** merge ancestry and branch parity verified via GitHub compare. No application tests/build/CI run for this history/documentation-only reconciliation. Exact-head CI for the eventual integrated product candidate remains mandatory. No application code, database, migration, runtime or deployment changed.
+- **Next action:** authorize Chat 2 and Chat 1 to start on the reconciled active branch with their existing path ownership; MASTER keeps shared files reserved until explicit integration handoff.
+
+---
 ## Owner decision — November execution model — 2026-11-12
 
 - **Product objective:** prioritize real product capability and end-to-end workflows; do not optimize for cosmetic changes or isolated small fixes.
@@ -4325,3 +4371,117 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Reuses existing authenticated API workflows, current OWNER/STAFF tab visibility and existing validation. No new route, API, schema, financial, stock or authorization semantics were introduced.
 - Source: `frontend/src/app/app.component.ts`; commit `e0c7ba6d40094f2c077179a25fb39aba78a99e74`.
 - Validation: automated tests/build/CI intentionally NOT RUN in this product batch per Owner test-economy policy and current user direction. No merge, deployment or business-data mutation.
+
+
+## 2026-11-17 — Owner-approved Mobile UX Modernization (Hybrid / Balanced)
+- **Decision:** Owner approved Modern Hybrid visual direction and Balanced information density. Canonical workstream: [Notion Mobile UX Modernization](https://app.notion.com/p/41b9320b90fb81faa4a3fdfbf449ad22).
+- **Baseline:** reuse `docs/UX_DESIGN_SYSTEM.md` and the 19-destination / nested-surface inventory in `docs/UX_NESTED_SURFACE_INVENTORY.md`. Existing mobile header, role-aware dock/More, responsive record cards, KPI foundation and RTL/LTR rules remain; this is a refinement, not a rebuild.
+- **Implemented shared-card foundation:** aligned shared card radius token to 16px; improved generic card content wrapping; added a subtle teal-to-blue KPI accent and balanced mobile KPI rhythm; refined module-directory quick-access card sizing and spacing; added focused source assertions.
+- **Files:** `frontend/src/styles.css`, `frontend/src/app/shared/ui/aba-card.component.ts`, `frontend/src/app/shared/ui/aba-metric-card.component.ts`, `frontend/src/app/shared/ui/aba-quick-access-card.component.ts`, `frontend/src/app/design-tokens.spec.ts`.
+- **Commits:** `854752e02ba87f76f535e17988c3a3fd6b8bcfd4`, `6f80b78e80f7621f5dae64dd66fe9df6fcd6631f`, `6f0663fdef042cb8bf6c5fbdbfe5a4a9a14f8258`, `7a880eed2b636c6dcb5e129ae99d67badb855180`, `d379d830f1a25b6df3d8ce8279d796743854eae3`, `f5428f4ef64a109aa208288d292871e636ca687a`.
+- **Parallel Inventory Ledger:** Chat 1 feature-local UI and Chat 2 backend/API tests are present in the active branch diff. MASTER retains shared API client, app shell, localization and task-ledger integration; no shared ownership was taken from either chat.
+- **Branch:** `master/nov-2026-phase-1-runtime-qa@f5428f4ef64a109aa208288d292871e636ca687a`; main `560f3b402bfd265f8509dcbbdd1ed5988e72efbe`; compare 24 ahead / 0 behind. No open PR found in the latest repository search.
+- **Validation:** focused unit tests, full frontend suite, build, browser smoke and GitHub Actions NOT RUN yet. No rendered/device acceptance, physical Android/PWA, authenticated role/tenant, screen-reader, forced-colors or actual 200% zoom claim. No merge, deployment, API/schema/database or business-semantic change.
+- **Disposition:** shared-card foundation IMPLEMENTED; Mobile UX Modernization and Inventory Movement Ledger remain IN PROGRESS pending the remaining screen/form/filter/state review, integration and exact-head acceptance.
+
+
+## 2026-11-17 — Mobile UX Modernization milestone 1: phone controls and record cards
+- Extended the approved design-system layer: phone inputs/selects/textareas now use 48px minimum height and 16px text at <=760px; shared buttons/sort controls retain 44px minimum targets; mobile dashboard-period and record-card geometry use balanced padding/radius while every record field remains present.
+- Added focused source assertions for phone control sizing, record-card geometry and sort target sizing.
+- **Additional files:** `frontend/src/design-system.css`, `frontend/src/app/design-tokens.spec.ts`.
+- **Additional commits:** `8b8bab37e6f7bcadaf02d30fad45358f1a13c174`, `c5d0c63369356af7da77884e30446e331195a2c9`, `2c708fb6b10ee424eb914eed9da66c76ddda8c4f`.
+- **Current head before this ledger append:** `2c708fb6b10ee424eb914eed9da66c76ddda8c4f`; branch remains based on current main. The ledger append itself advances the branch and does not validate the resulting SHA.
+- **Validation:** focused tests, browser rendering, full suite/build/CI NOT RUN. The CSS/source assertions are implementation evidence only; physical Android/PWA, screen-reader, forced-colors and actual 200% zoom remain NOT RUN.
+- **Disposition:** MUX-01 shared-card foundation and the MUX-03 phone-control foundation IMPLEMENTED. Remaining per-destination record/form/filter/navigation/state review and integrated acceptance remain IN PROGRESS.
+
+
+## 2026-11-17 — Mobile UX + Inventory Ledger integration checkpoint
+- **Mobile UX:** Owner-approved Hybrid / Balanced. Shared card radius, KPI hierarchy, quick-access spacing, 48px mobile fields, 16px mobile input text, 44px touch targets and labeled record-card rhythm are implemented in the shared design system.
+- **Ledger integration:** MASTER added typed authenticated `ApiService.inventoryMovements` with bounded pagination and product / movement type / reference type filters; mounted the feature-local ledger inside the existing Products workspace (no new route/tab); passed active business, auth subject, OWNER/STAFF role, products, locale and loader.
+- **Localization:** Arabic/English dictionary keys added for the ledger and reference filters, including observed stock-count reference labels.
+- **Files added/changed by MASTER in this integration slice:** `frontend/src/app/api.service.ts`, `frontend/src/app/app.component.ts`, `frontend/src/app/app.component-template-safety.spec.ts`, `frontend/public/i18n/ar.json`, `frontend/public/i18n/en.json`, plus the shared card/design-system files recorded above.
+- **Backend evidence in branch:** Chat 2's six focused inventory movement API tests and disposable-PostgreSQL idempotency schema test are present. Existing T39 receiving API suite already covers partial/full receipt, STAFF denial, foreign-tenant denial, rollback, replay/conflict and concurrent same-key behavior. These tests are source evidence only; execution NOT VERIFIED.
+- **Current branch before this ledger append:** `master/nov-2026-phase-1-runtime-qa@ef810310ffe9a5f4975069f3a9d4b5f333958fba`; main `560f3b402bfd265f8509dcbbdd1ed5988e72efbe`; compare 66 ahead / 0 behind. Latest open-PR search returned none. This TASKS append advances the branch and does not validate the resulting SHA.
+- **Feature-local Chat 1 acceptance blockers:** quantity formatting currently converts decimal strings to JS Number and caps at 3 fraction digits (precision loss risk); component still contains inline Arabic fallback/label strings that violate localization source policy; reference filter list must include observed `stock_count` or document exclusion. These are handed back to Chat 1 in Notion; MASTER will not overwrite its feature-local component/spec while Chat 1 is active.
+- **Validation:** frontend focused tests, localization suite, build, browser smoke, backend API tests, disposable PostgreSQL tests and exact-head GitHub Actions NOT RUN. Physical Android/PWA, authenticated OWNER/STAFF/second-tenant, screen reader, forced-colors and actual 200% zoom NOT RUN.
+- **Disposition:** shared mobile foundation and shell/API/localization integration IMPLEMENTED; Inventory Ledger and Mobile UX Modernization remain IN PROGRESS until Chat 1 precision/localization fixes, focused test execution, remaining route review and exact-head acceptance. No merge, deployment, DB/schema/migration, production data or financial-semantic change.
+
+
+## 2026-11-17 — Final master checkpoint for this execution batch
+- **Observed pre-checkpoint head:** `b4736aebcf9f7781f19cc34201efbd2a22f4a480`; compare to main `560f3b402bfd265f8509dcbbdd1ed5988e72efbe`: 67 ahead / 0 behind.
+- **Source validation only:** Arabic and English dictionaries parse as valid JSON and contain matching 1,798 flattened translation keys, including ledger reference filters and observed stock-count reference labels. Typed API query and existing Products-tab mount are present.
+- **Open feature-local Chat 1 fixes:** `formatQuantity` still uses JS Number + 3 fractional digits (precision risk); Arabic fallback/labels remain inline in component source (localization policy failure); `stock_count` label exists in dictionaries but is not yet in the component's referenceTypes list. Notion T42 contains the explicit handoff. Chat 1 remains active owner; MASTER did not overwrite its component/spec.
+- **Source review dispositions:** MUX-04 mobile header/dock/More and MUX-05 shared feedback states are N/A for rebuilding because the existing primitives already provide the reviewed behaviors; physical/rendered acceptance remains NOT RUN. MUX-02 shared record-table mobile cards preserve all fields and actions; per-destination review remains open.
+- **Checks:** no unit tests, localization test, build, browser smoke, backend tests, PostgreSQL tests or exact-head CI run in this batch. No merge/deploy/DB/schema/migration or business-data mutation.
+- **Status:** Mobile UX Modernization and Inventory Movement Ledger remain IN PROGRESS / PARTIALLY COMPLETE. Do not claim acceptance or parent completion while Chat 1 fixes and exact-head gates remain open.
+
+
+## CI evidence readback — candidate 020577c869fa843466abb0d4227dce9f3719a402
+- GitHub Actions `actions/runs?head_sha=020577c869fa843466abb0d4227dce9f3719a402` returned `total_count=0`.
+- Commit combined status returned one `ci/semaphoreci/push: Pipeline = failure`. Branch AGENTS.md explicitly states GitHub Actions is the sole active CI provider and Semaphore is not authoritative; therefore this failure is recorded as non-authoritative context, not as the GitHub Actions result and not as a PASS.
+- No GitHub Actions workflow run, required `all-checks-passed` result or exact-head CI evidence exists for this candidate. No PR opened because feature-local precision/localization acceptance remains open.
+
+
+## Correction — Chat 1 ledger source fixes resolved — 2026-11-17
+- Chat 1 has completed the feature-local fixes that were listed as open in the prior checkpoint: decimal quantities are parsed from the source string with BigInt for the integer portion and localized digits/separators; sign detection uses the decimal string; no inline Arabic UI copy remains; dictionary-backed reference labels include `stock_count`.
+- The component source-contract suite now has 17 tests, including exact decimal precision, dictionary-backed labels, stock-count references and no-inline-Arabic policy. The final assertion corrections are in `c38bab45262947d150bb3824ba24218f5a2d32db`.
+- **Observed pre-correction head:** `c38bab45262947d150bb3824ba24218f5a2d32db`; main `560f3b402bfd265f8509dcbbdd1ed5988e72efbe`; compare 73 ahead / 0 behind; no open PR.
+- GitHub Actions `actions/runs?head_sha=c38bab45262947d150bb3824ba24218f5a2d32db` returned zero runs. Combined status reports only a Semaphore failure; AGENTS.md defines GitHub Actions as the sole active CI provider, so Semaphore is non-authoritative. No exact-head GitHub Actions PASS exists.
+- **Disposition:** feature-local source blockers RESOLVED; test execution and integrated acceptance remain NOT RUN. Next milestone is a Draft PR to trigger the mandatory exact-head GitHub Actions workflow, followed by fixing only affected failures and completing route/device/accessibility acceptance.
+
+## Exact-head CI success — candidate e59054b0498d986fca9a210dcf27e94b81e353bf
+- Draft PR [#401](https://github.com/AbdullahOmaar/ai-business-assistant/pull/401) exact-head GitHub Actions run [#44017963531](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44017963531) completed SUCCESS on `e59054b0498d986fca9a210dcf27e94b81e353bf`.
+- SUCCESS: frontend-unit-tests, frontend-production-build, frontend-dependency-audit, backend-accounting, backend-container, aggregate `all-checks-passed`.
+- `authenticated-api-smoke` SKIPPED as expected for this scope. Browser smoke remains intentionally removed per Owner decision. The non-authoritative Semaphore status remains FAILURE; AGENTS.md says GitHub Actions is the sole active CI provider.
+- PR #401 remains DRAFT / UNMERGED. Physical Android/installed-PWA, authenticated OWNER/STAFF/second-tenant, route-by-route rendered RTL/LTR, screen reader, forced-colors and actual 200% zoom remain NOT RUN. Do not claim full product acceptance or merge.
+- This TASKS documentation append advances the PR head; exact-head GitHub Actions must run again on the new SHA before any merge decision.
+
+
+## Mobile UX + Inventory Ledger milestone — exact-head CI success — 2026-11-17
+- **Active outcome:** Owner-approved Modern Hybrid / Balanced mobile foundation plus read-only Inventory Movement Ledger, integrated inside the existing Products workspace.
+- **MUX-01:** shared card surfaces, 16px radius, KPI accent/hierarchy, quick-access card treatment; established compact card dimensions retained after CI review.
+- **MUX-02:** shared record-card layout preserves all fields; Chat 1 added exact decimal-string price/stock sorting, customer search reset/filtered refresh, and 44px Customer/Product editor close targets locked while save is in progress.
+- **MUX-03:** phone inputs/selects/textareas 48px minimum and 16px text; shared button/sort targets 44px; existing filter semantics retained.
+- **MUX-04 / MUX-05:** N/A for rebuilding; existing mobile header/dock/More and shared feedback-state primitives reviewed and retained. Rendered acceptance remains separate.
+- **MUX-06:** Ledger typed authenticated GET client, product/type/reference filters, bounded pagination, Arabic/English labels, read-only UI, exact decimal-string display, reference types including stock_count. Backend test sources present.
+- **MUX-07:** route/device/accessibility acceptance remains NOT RUN; physical Android/PWA, authenticated OWNER/STAFF/second-tenant, screen reader, forced-colors and actual 200% zoom require QA evidence not available in this run.
+- **Exact-head CI SUCCESS:** [GitHub Actions run #44018433390](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44018433390) on `63bc39ed5b60e075ad49cc6aca15770aab1579e1`. frontend-unit-tests, frontend-production-build, frontend-dependency-audit, backend-accounting, backend-container and aggregate `all-checks-passed` all SUCCESS. `authenticated-api-smoke` SKIPPED as expected; browser smoke intentionally removed per Owner decision.
+- **PR:** [#401](https://github.com/AbdullahOmaar/ai-business-assistant/pull/401) DRAFT / UNMERGED. No production deploy, DB/schema/migration, financial semantic or production-data change.
+- **This TASKS append advances the PR head; exact-head GitHub Actions must rerun on the new SHA before any merge decision. Keep Draft until rendered/device/accessibility acceptance is complete.**
+
+
+## Latest exact-head CI + acceptance disposition — candidate eb4adbe4de1c3ebcbd5fc29194e80ac760e97d44
+- [GitHub Actions run #44018644216](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44018644216) SUCCESS on exact SHA `eb4adbe4de1c3ebcbd5fc29194e80ac760e97d44`: frontend-unit-tests, frontend-production-build, frontend-dependency-audit, full backend-accounting pytest against disposable PostgreSQL, backend-container and aggregate `all-checks-passed` all SUCCESS.
+- `authenticated-api-smoke` SKIPPED as expected; browser smoke intentionally removed per Owner decision. Semaphore status remains non-authoritative per AGENTS.md.
+- **MUX-07 BLOCKED / NOT RUN:** physical Android/installed-PWA, authenticated OWNER/STAFF/second-tenant live journeys, screen-reader, forced-colors and actual 200% zoom cannot be established in this execution environment. Source review + CI do not substitute. Unblock requires a physical device/PWA session, test memberships and assistive-technology QA evidence from Owner/QA.
+- PR [#401](https://github.com/AbdullahOmaar/ai-business-assistant/pull/401) remains DRAFT / UNMERGED. Mobile UX workstream and T18/T39/T42 remain PARTIALLY COMPLETE / IN PROGRESS until MUX-07 acceptance is supplied.
+- This TASKS append advances the PR head; rerun exact-head GitHub Actions on the new SHA before any merge decision. Keep Draft.
+
+
+## Final exact-head CI confirmation — 2026-11-17
+- [GitHub Actions run #44018838925](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44018838925) SUCCESS on exact PR head `60115994d6f98ec16fcb5cafc986c4eca6969a63`.
+- frontend-unit-tests, frontend-production-build, frontend-dependency-audit, full backend-accounting pytest (including disposable PostgreSQL schema/idempotency tests), backend-container and aggregate `all-checks-passed` all SUCCESS. `authenticated-api-smoke` SKIPPED; browser smoke remains intentionally removed.
+- PR #401 remains DRAFT / UNMERGED because MUX-07 physical/rendered/accessibility/authenticated acceptance is BLOCKED / NOT RUN. No merge/deploy.
+- This final TASKS evidence update advances the PR head; exact-head GitHub Actions must run again on the new docs-only SHA. Keep Draft.
+
+
+## Latest PR exact-head verification — candidate ddbaf3176e000267832961241043edbcbf690618
+- [GitHub Actions run #44019028533](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44019028533) completed SUCCESS on exact head `ddbaf3176e000267832961241043edbcbf690618`.
+- SUCCESS: frontend-unit-tests, frontend-production-build, frontend-dependency-audit, full backend-accounting pytest (including disposable PostgreSQL tests), backend-container and aggregate `all-checks-passed`. `authenticated-api-smoke` SKIPPED; browser smoke intentionally removed per Owner decision.
+- PR #401 remains DRAFT / UNMERGED because MUX-07 physical/rendered/accessibility/authenticated acceptance is BLOCKED / NOT RUN. No merge or deployment.
+- This final evidence append advances the PR head; exact-head GitHub Actions must rerun on the resulting docs-only SHA. Keep Draft.
+
+
+
+## MASTER closeout checkpoint — 2026-11-17 (pre-documentation head f0d7e7d16c1b1b0f1bcf66841b207175f84ed32a)
+
+- PR [#401](https://github.com/AbdullahOmaar/ai-business-assistant/pull/401) is OPEN / DRAFT / UNMERGED on `master/nov-2026-phase-1-runtime-qa`; base `main@560f3b402bfd265f8509dcbbdd1ed5988e72efbe`. No merge or production release.
+- Exact-head GitHub Actions [#44065162410](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44065162410) SUCCESS: frontend Node tests 555/555, Angular production build, frontend dependency audit at configured `npm audit --audit-level=high`, backend accounting/regression 324/324 against disposable PostgreSQL, backend container and aggregate `all-checks-passed`. `authenticated-api-smoke` SKIPPED; browser smoke intentionally removed per Owner decision. Semaphore failure is non-authoritative under AGENTS.md.
+- Exact-head Vercel Web Preview deployment `dpl_6GQYFDbUAYvJHLdFqUsuh9c2quLN` READY for the same SHA: https://ai-business-assistant-r6acm7opi-thepresidentabdo-9110s-projects.vercel.app. A read-only Browser Use check on the immediately preceding Preview redirected to Vercel Login/SSO before Angular rendered. No credentials or SSO bypass used; the current exact-head authenticated UI has not been inspected.
+- Vercel's Preview install emitted an npm summary of 18 moderate vulnerabilities. The GitHub audit passed only its configured HIGH threshold; this is not a zero-moderate result. Track and triage moderate advisories separately; no forced upgrades made.
+- MUX source review pass 1/2 covered shared record-table semantics/mobile labeled cards, shared state messages, customer/product directory/profile/editor, invoice cards, payments/expenses, customer statement, reports/tax, audit, notifications, suppliers, recurring schedules, integrity, operational health, purchasing, employee/payroll and Platform Admin. Mobile source foundations include 48px inputs with 16px text, 44px buttons, one-column forms/filters, RTL/LTR, keyboard focus scroll margins, reduced motion and forced-colors focus. This is source review, not rendered/device acceptance.
+- One feature-local accessibility/localization issue found in `frontend/src/app/purchasing-workspace.component.ts`: root landmark hard-codes English `aria-label="Purchase order workspace"`. Recorded to T39 for Chat 2; Master did not edit Chat 2-owned file.
+- T18 MUX-02/03 source review is substantially complete for primary record/list/form/filter surfaces; MUX-02 retains the T39 landmark follow-up. MUX-07 rendered/authenticated/device/accessibility acceptance remains BLOCKED / NOT RUN pending authorized Vercel SSO, Android/installed-PWA, OWNER/STAFF/second-tenant identities, screen-reader, forced-colors and actual 200% zoom evidence.
+- T42 remains PARTIALLY COMPLETE. T39 remains PARTIALLY COMPLETE; T37 financial semantics remain DRAFT / NOT APPROVED. T45 remains NOT STARTED / NOT ACTIVE and read-only discovery only until its explicit activation gates pass.
+- Notion T18, T39 and T42 records and PR #401 description were refreshed with current exact-head evidence. No backend runtime, financial semantics, schema/migration, live DB, production data or external messaging changed.
+- This TASKS documentation update advances the PR head; exact-head GitHub Actions and a matching Preview must be re-established for the resulting SHA. Keep PR #401 Draft until required acceptance evidence is recorded.

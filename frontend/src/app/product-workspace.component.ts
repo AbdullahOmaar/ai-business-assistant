@@ -16,7 +16,7 @@ type ProductWorkspaceContext = { businessId: string; userId: string; role: 'owne
   imports: [ProductCatalogComponent, ProductEditorComponent, ProductProfileComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="product-workspace" aria-label="Product workspace">
+    <section class="product-workspace" [attr.aria-label]="t('productEditor.eyebrow')">
       @if (mode() === 'list') {
         <aba-product-catalog
           [ariaLabel]="t('productEditor.eyebrow')"
@@ -26,8 +26,8 @@ type ProductWorkspaceContext = { businessId: string; userId: string; role: 'owne
           [loading]="loading()"
           [error]="error()"
           (retry)="retry()"
-          [emptyTitle]="t('productProfile.emptyTitle')"
-          [emptyDescription]="t('productProfile.emptyDescription')"
+          [emptyTitle]="t('ui.m_12dkqai')"
+          [emptyDescription]="''"
           (select)="openProduct($event)" />
         @if (hasMore() && !error()) {
           <button class="product-workspace__load-more" type="button" [disabled]="loading()" (click)="loadMore()" [attr.aria-live]="'polite'">
@@ -61,7 +61,7 @@ type ProductWorkspaceContext = { businessId: string; userId: string; role: 'owne
     .product-workspace__load-more{justify-self:center;min-width:min(100%,220px)}
     .product-workspace__back{justify-self:start}
     .product-workspace :is(button):focus-visible{outline:3px solid var(--aiba-focus,#2563eb);outline-offset:2px}
-    @media(forced-colors:active){.product-workspace button{border:1px solid CanvasText}.product-workspace button:focus-visible{outline-color:Highlight}}
+    @media(max-width:760px){.product-workspace button{min-height:48px}}@media(forced-colors:active){.product-workspace button{border:1px solid CanvasText}.product-workspace button:focus-visible{outline-color:Highlight}}
   `],
 })
 export class ProductWorkspaceComponent {
@@ -90,7 +90,7 @@ export class ProductWorkspaceComponent {
   readonly hasMore = signal(false);
 
   private offset = 0;
-  private readonly pageSize = 100;
+  private readonly pageSize = 50;
   private selectedProductId: string | null = null;
 
   constructor() {

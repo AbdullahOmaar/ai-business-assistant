@@ -40,7 +40,7 @@
  .product-catalog__mobile-row{display:grid;gap:7px;min-width:0;padding:10px 11px;border:1px solid var(--aiba-line,#e2e8f0);border-radius:11px;background:var(--aiba-surface,#fff)}
  .product-catalog__main{display:flex;align-items:flex-start;justify-content:space-between;gap:9px;min-width:0}
  .product-catalog__main h3{min-width:0;margin:0;color:var(--aiba-ink,#172033);font-size:14px;font-weight:720;line-height:1.35;overflow-wrap:anywhere}
- .product-catalog__mobile-price{max-width:45%;font-size:13px;text-align:end;white-space:normal;overflow-wrap:anywhere}
+ .product-catalog__mobile-price{display:grid;gap:2px;max-width:45%;font-size:13px;text-align:end;white-space:normal;overflow-wrap:anywhere}.product-catalog__mobile-price-label{color:var(--aiba-muted,#5f6e83);font-size:10px;font-weight:650;line-height:1.2}
  .product-catalog__meta{display:flex;align-items:center;flex-wrap:wrap;gap:5px 10px;min-width:0;color:var(--aiba-muted,#5f6e83);font-size:11px;line-height:1.4}
  .product-catalog__sku{display:inline-flex;gap:4px;min-width:0}.product-catalog__sku>span{font-weight:700;color:var(--aiba-muted-soft,#94a3b8)}
  .product-catalog__quantity{margin-inline-start:0}
@@ -57,4 +57,25 @@
 }
 @media(prefers-reduced-motion:reduce){
  .product-catalog *{scroll-behavior:auto}
+}
+
+/* Phone catalogue: clearer price hierarchy, touch-friendly filters and sort. */
+@media(max-width:760px){
+  .product-catalog__filters button{min-height:48px;padding-inline:7px;font-size:12px}
+  .product-catalog__mobile-sort select{min-height:48px;font-size:16px}
+  .product-catalog__mobile-list{gap:10px}
+  .product-catalog__mobile-row{gap:10px;padding:14px;border-radius:16px}
+  .product-catalog__main{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px}
+  .product-catalog__main h3{font-size:15px;line-height:1.45}
+  .product-catalog__open{display:inline-flex;align-items:center;min-height:44px}
+  .product-catalog__mobile-price{max-width:min(48%,180px);font-size:14px}
+  .product-catalog__mobile-price-label{font-size:11px}
+  .product-catalog__meta{gap:7px 12px;font-size:12px}
+  .product-catalog__clear-filter{min-height:48px}
+}
+@media(max-width:380px){
+  .product-catalog__filters button{font-size:11px;padding-inline:4px}
+  .product-catalog__mobile-row{padding:12px}
+  .product-catalog__main{gap:8px}
+  .product-catalog__mobile-price{font-size:13px}
 }
