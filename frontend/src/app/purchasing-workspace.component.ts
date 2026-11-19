@@ -25,7 +25,7 @@ type PurchaseAction = 'approve' | 'cancel';
   imports: [FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="purchasing-workspace" [attr.dir]="language() === 'ar' ? 'rtl' : 'ltr'" aria-label="Purchase order workspace">
+    <section class="purchasing-workspace" [attr.dir]="language() === 'ar' ? 'rtl' : 'ltr'" [attr.aria-label]="t('title')">
       <header class="pw__heading">
         <div>
           <p class="pw__eyebrow">{{ t('title') }}</p>
@@ -108,10 +108,10 @@ type PurchaseAction = 'approve' | 'cancel';
                   </select>
                 </label>
                 <label>{{ t('quantity') }}
-                  <input [name]="'quantity-' + $index" type="number" min="0.001" step="0.001" required [(ngModel)]="line.quantity" [disabled]="saving()" />
+                  <input [name]="'quantity-' + $index" type="text" inputmode="decimal" autocomplete="off" required [(ngModel)]="line.quantity" [disabled]="saving()" />
                 </label>
                 <label>{{ t('unitCost') }}
-                  <input [name]="'cost-' + $index" type="number" min="0" step="0.01" required [(ngModel)]="line.unit_cost" [disabled]="saving()" />
+                  <input [name]="'cost-' + $index" type="text" inputmode="decimal" autocomplete="off" required [(ngModel)]="line.unit_cost" [disabled]="saving()" />
                 </label>
                 <button class="pw__remove" type="button" (click)="removeLine($index)" [disabled]="saving() || formLines.length <= 1" [attr.aria-label]="t('removeLine')">×</button>
               </div>
@@ -378,6 +378,19 @@ export class PurchasingWorkspaceComponent {
 
   private emptyLine(): PurchaseDraftLine { return { product_id: '', quantity: '1', unit_cost: '0' }; }
   readValue(event: Event): string { return (event.target as HTMLInputElement).value; }
+
+  /** Validate API Decimal constraints without rounding through JavaScript Number. */
+  isValidDecimal(value: string, maxScale: number, allowZero: boolean): boolean {
+    const normalized = String(value ?? '').trim();
+    const match = /^(\d+)(?:\.(\d+))?$/.exec(normalized);
+    if (!match) return false;
+    const integer = match[1].replace(/^0+(?=\d)/, '');
+    const fraction = match[2] ?? '';
+    if (fraction.length > maxScale || integer.length + fraction.length > 14) return false;
+    const scaled = BigInt(integer + fraction.padEnd(maxScale, '0'));
+    return allowZero ? scaled >= 0n : scaled > 0n;
+  }
+
   hasRemaining(line: PurchaseOrderDetail['lines'][number]): boolean { return Number(line.remaining_quantity) > 0; }
 
   supplierName(id: string): string { return this.suppliers().find(supplier => supplier.id === id)?.name || id; }
@@ -541,8 +554,8 @@ export class PurchasingWorkspaceComponent {
     const validProducts = new Set(this.stockProducts().map(product => product.id));
     if (!lines.length || lines.some(line =>
       !validProducts.has(line.product_id)
-      || !Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0
-      || !Number.isFinite(Number(line.unit_cost)) || Number(line.unit_cost) < 0
+      || !this.isValidDecimal(line.quantity, 3, false)
+      || !this.isValidDecimal(line.unit_cost, 2, true)
     )) {
       this.formError.set(this.t('invalidLines'));
       return;
