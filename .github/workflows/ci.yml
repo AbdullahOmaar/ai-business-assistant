@@ -61,7 +61,7 @@ jobs:
               "migrations": "false", "frontend_tests": "false",
               "frontend_full": "false", "frontend_specs": "",
               "frontend_build": "false", "frontend_audit": "false",
-              "api_smoke": "false", "docs_validation": "false",
+              "api_smoke": "false", "docs_validation": "true",
           }
 
           def save():
@@ -119,8 +119,21 @@ jobs:
                   paths = []
 
               if paths:
-                  if any(p.startswith("docs/") or p.endswith(".md") for p in paths):
-                      keys["docs_validation"] = "true"
+                  known_prefixes = ("backend/", "frontend/", "docs/", "scripts/", ".github/", "tests/")
+                  known_root_files = {
+                      "AGENTS.md", "TASKS.md", "README.md", "CONTRIBUTING.md",
+                      ".gitlab-ci.yml", ".gitignore", ".gitattributes", ".editorconfig",
+                      "LICENSE", "SECURITY.md", "CODE_OF_CONDUCT.md",
+                  }
+                  unknown = [
+                      p for p in paths
+                      if not p.startswith(known_prefixes)
+                      and p not in known_root_files
+                      and not p.endswith(".md")
+                  ]
+                  if unknown:
+                      print(f"::warning::Unknown changed paths require full regression: {unknown}")
+                      force_full()
                   broad = any(
                       p.startswith(".github/workflows/")
                       or p.startswith("scripts/")
@@ -228,11 +241,12 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
       - name: Verify exact source SHA
         run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
-      - name: Validate project knowledge and CI regression tests
+      - name: Validate project knowledge and CI selector regression tests
         run: |
           python scripts/validate_project_knowledge.py
           python -m unittest discover -s tests -p 'test_project_knowledge_validator.py' -v
           python -m unittest discover -s tests -p 'test_github_actions_slack_failure.py' -v
+          python -m unittest discover -s tests -p 'test_ci_validation_scope.py' -v
 
   backend-accounting:
     name: backend-accounting
