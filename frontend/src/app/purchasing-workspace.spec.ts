@@ -23,8 +23,8 @@ test('purchasing workspace supports multi-line create and draft edit with finite
   assert.match(workspace, /addLine\(\)/);
   assert.match(workspace, /removeLine\(index: number\)/);
   assert.match(workspace, /updatePurchaseOrder/);
-  assert.match(workspace, /Number\(line\.quantity\) <= 0/);
-  assert.match(workspace, /Number\(line\.unit_cost\) < 0/);
+  assert.match(workspace, /isValidDecimal\(line\.quantity, 3, false\)/);
+  assert.match(workspace, /isValidDecimal\(line\.unit_cost, 2, true\)/);
   assert.match(workspace, /is_stock_tracked/);
 });
 
@@ -81,16 +81,17 @@ test('purchasing workspace is mounted in the authenticated app shell', () => {
 
 
 test('purchase order workspace exposes a localized accessible region name', () => {
-  assert.match(workspace, /\\[attr\\.aria-label\\]="t\\('title'\\)"/);
+  assert.ok(workspace.includes("[attr.aria-label]=\"t('title')\""));
   assert.doesNotMatch(workspace, /aria-label="Purchase order workspace"/);
 });
 
 test('purchase line inputs preserve decimal strings and match backend precision constraints', () => {
-  assert.match(workspace, /type="text" inputmode="decimal" autocomplete="off"[^>]*[(]ngModel[)]="line\\.quantity"/);
-  assert.match(workspace, /type="text" inputmode="decimal" autocomplete="off"[^>]*[(]ngModel[)]="line\\.unit_cost"/);
-  assert.match(workspace, /isValidDecimal\\(line\\.quantity, 3, false\\)/);
-  assert.match(workspace, /isValidDecimal\\(line\\.unit_cost, 2, true\\)/);
-  assert.match(workspace, /const scaled = BigInt\\(integer \\+ fraction\\.padEnd\\(maxScale, '0'\\)\\)/);
-  assert.match(workspace, /integer\\.length \\+ fraction\\.length > 14/);
-  assert.doesNotMatch(workspace, /Number\\(line\\.(?:quantity|unit_cost)\\)/);
+  assert.ok(workspace.includes('type="text" inputmode="decimal" autocomplete="off"'));
+  assert.ok(workspace.includes('[(ngModel)]="line.quantity"'));
+  assert.ok(workspace.includes('[(ngModel)]="line.unit_cost"'));
+  assert.ok(workspace.includes('isValidDecimal(line.quantity, 3, false)'));
+  assert.ok(workspace.includes('isValidDecimal(line.unit_cost, 2, true)'));
+  assert.ok(workspace.includes("const scaled = BigInt(integer + fraction.padEnd(maxScale, '0'))"));
+  assert.ok(workspace.includes('integer.length + fraction.length > 14'));
+  assert.doesNotMatch(workspace, /Number\(line\.(?:quantity|unit_cost)\)/);
 });
