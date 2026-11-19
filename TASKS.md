@@ -1,3 +1,17 @@
+## MASTER execution checkpoint — Risk-based CI implementation — 2026-11-19
+
+- **Owner decision:** `master/nov-2026-phase-1-runtime-qa` is the sole active November branch. This 2026-11-19 decision supersedes historical UX-foundation references retained in older task snapshots below. No branch was created, renamed or deleted.
+- **Branch evidence:** GitHub branch inventory contains the single November branch. `main` is at `560f3b402bfd265f8509dcbbdd1ed5988e72efbe`; active branch compare is 124 commits ahead / 0 behind with merge-base equal to main. Branch was advanced only by MASTER-owned shared CI/governance commits.
+- **Open product writer:** PR #401 remains DRAFT / UNMERGED and owns the integrated Inventory Ledger + mobile UX candidate. MASTER changes are restricted to shared CI/governance paths; no frontend/backend feature source paths were touched.
+- **Delegation:** FRONTEND analysis #404 and BACKEND analysis #405 remain open with no recorded specialist handoff/comments at this checkpoint. Notion Custom Agent dispatch was unavailable under the connected workspace entitlement. MASTER independently inspected the source-backed CI maps and completed central integration; this does not claim Chat 1/2 acknowledged the work.
+- **CI changes:** hardened changed-path detection to fail full on deletes/renames/type changes or missing diff data; backend test helper/conftest changes now select the full backend suite; frontend dependency changes now retain production build + audit; documentation-only changes now run a dedicated exact-SHA project-knowledge validator job included in the aggregate.
+- **Fail-closed gate:** `all-checks-passed` validates the selected job set and verifies unselected jobs are explicitly skipped. Exact source SHA checks remain in validation jobs. High-risk/unknown/workflow/governance changes retain full validation; scheduled/manual runs remain full regression.
+- **Safety:** CI uses disposable PostgreSQL only. No runtime secrets, production DB, application records, financial semantics or provider security settings were touched. T37 remains DRAFT / NOT APPROVED.
+- **Validation:** workflow source and exact candidate SHA readback completed. GitHub Actions run evidence is still pending at this checkpoint; no tests or builds are marked PASS until the exact-head workflow completes. The workflow push should trigger the branch run; stale results do not count.
+- **Issues:** #406 is the MASTER implementation task; #404/#405 remain open specialist-analysis tasks until their evidence is supplied and reviewed.
+
+---
+
 ## Current execution checkpoint — 2026-11-17
 
 - **Active branch:** `master/nov-2026-phase-1-runtime-qa`.
