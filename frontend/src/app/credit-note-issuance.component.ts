@@ -262,8 +262,12 @@ export class CreditNoteIssuanceComponent implements OnChanges {
   async loadMoreInvoices(): Promise<void> {
     if (this.loadingInvoices || !this.invoiceHasMore || !this.businessId) return;
     this.loadingInvoices = true;
+    const businessId = this.businessId;
+    const sequence = this.refreshSequence;
+    const offset = this.invoiceOffset;
     try {
-      const page = await this.api.invoices(this.businessId, this.invoiceOffset, this.pageSize);
+      const page = await this.api.invoices(businessId, offset, this.pageSize);
+      if (sequence !== this.refreshSequence || businessId !== this.businessId || offset !== this.invoiceOffset) return;
       this.invoices = [...this.invoices, ...page];
       this.invoiceOffset += page.length;
       this.invoiceHasMore = page.length === this.pageSize;
@@ -277,8 +281,12 @@ export class CreditNoteIssuanceComponent implements OnChanges {
   async loadMoreReturns(): Promise<void> {
     if (this.loadingReturns || !this.returnsHasMore || !this.businessId) return;
     this.loadingReturns = true;
+    const businessId = this.businessId;
+    const sequence = this.refreshSequence;
+    const offset = this.returnsOffset;
     try {
-      const page = await this.api.salesReturns(this.businessId, undefined, this.returnsOffset, this.pageSize);
+      const page = await this.api.salesReturns(businessId, undefined, offset, this.pageSize);
+      if (sequence !== this.refreshSequence || businessId !== this.businessId || offset !== this.returnsOffset) return;
       this.returns = [...this.returns, ...page.items];
       this.returnsOffset += page.items.length;
       this.returnsHasMore = page.items.length === this.pageSize;
@@ -292,8 +300,12 @@ export class CreditNoteIssuanceComponent implements OnChanges {
   async loadMoreNotes(): Promise<void> {
     if (this.loadingNotes || !this.notesHasMore || !this.businessId) return;
     this.loadingNotes = true;
+    const businessId = this.businessId;
+    const sequence = this.refreshSequence;
+    const offset = this.notesOffset;
     try {
-      const page = await this.api.creditNotes(this.businessId, this.notesOffset, this.pageSize);
+      const page = await this.api.creditNotes(businessId, offset, this.pageSize);
+      if (sequence !== this.refreshSequence || businessId !== this.businessId || offset !== this.notesOffset) return;
       this.notes = [...this.notes, ...page.items];
       this.notesOffset += page.items.length;
       this.notesHasMore = page.items.length === this.pageSize;
