@@ -184,8 +184,9 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
         step = workflow.split("      - name: Run changed backend test modules", 1)[1].split(
             "      - name: Upload backend test results", 1
         )[0]
-        self.assertNotIn("working-directory: backend", step)
-        self.assertIn('python -m pytest -q "${files[@]}" --junitxml=backend/test-results/pytest.xml', step)
+        self.assertIn("working-directory: backend", step)
+        self.assertIn("sed 's#^backend/##'", step)
+        self.assertIn('python -m pytest -q "${files[@]}" --junitxml=test-results/pytest.xml', step)
         self.assertIn("test_t39_receipt_idempotency_postgres_schema.py", workflow)
         self.assertIn("Path(p).name in postgres_schema_tests", workflow)
 
