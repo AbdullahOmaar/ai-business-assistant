@@ -3,11 +3,13 @@ from decimal import Decimal
 from uuid import UUID
 
 from fastapi.testclient import TestClient
-from sqlalchemy import select
+from sqlalchemy import event, select
 from sqlalchemy.orm import Session
 
+from app.extended_api import list_purchase_orders
 from app.main import app
 from app.models import AuditEvent, Business, BusinessMembership, MembershipRole, Product, PurchaseOrder, PurchaseOrderLine, StockMovement, Supplier
+from app.security import AuthenticatedPrincipal
 from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
 from test_t39_purchase_receiving_api import _create_approved_order, _receipt_headers
 
@@ -253,6 +255,45 @@ def test_owner_cannot_update_draft_with_foreign_or_inactive_references_without_w
             })
             assert response.status_code == 422, response.text
             assert persisted_state() == before
+    finally:
+        _restore_test_identity(*previous)
+        engine.dispose()
+
+
+def test_purchase_order_list_batches_lines_in_one_tenant_scoped_query():
+    engine, business_id, _, _ = _sales_return_fixture()
+    previous = _configure_test_identity(engine)
+    try:
+        client = TestClient(app)
+        for index in range(3):
+            _draft_order(engine, client, business_id, f"PO-T39-BATCH-{index}")
+
+        line_selects = []
+
+        def count_line_selects(connection, cursor, statement, parameters, context, executemany):
+            normalized = statement.lstrip().upper()
+            if normalized.startswith("SELECT") and "purchase_order_lines" in statement.lower():
+                line_selects.append(statement)
+
+        event.listen(engine, "before_cursor_execute", count_line_selects)
+        try:
+            with Session(engine) as session:
+                result = list_purchase_orders(
+                    business_id=business_id,
+                    limit=100,
+                    offset=0,
+                    session=session,
+                    principal=AuthenticatedPrincipal(subject="test-subject"),
+                )
+        finally:
+            event.remove(engine, "before_cursor_execute", count_line_selects)
+
+        assert len(result) == 3
+        assert all(len(order["lines"]) == 1 for order in result)
+        assert all(order["lines"][0]["remaining_quantity"] == "2.000" for order in result)
+        assert len(line_selects) == 1, f"Expected one batched line query, observed {len(line_selects)}"
+        assert "purchase_order_id IN" in line_selects[0]
+        assert "business_id" in line_selects[0]
     finally:
         _restore_test_identity(*previous)
         engine.dispose()
