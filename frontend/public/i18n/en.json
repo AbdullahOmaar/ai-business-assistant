@@ -1140,7 +1140,9 @@
       "m_vj2szz": "Preview totals, discounts, and tax before saving.",
       "v160_ledger": "Version 1.6.0 adds a read-only inventory movement ledger with filters and pagination inside Products.",
       "v160_mobile": "Improved shared workspace cards, KPIs and form controls for a clearer mobile experience.",
-      "v160_precision": "Improved exact decimal price and stock sorting, search context and customer/product editing."
+      "v160_precision": "Improved exact decimal price and stock sorting, search context and customer/product editing.",
+      "v161_purchasing": "Version 1.6.1 preserves purchase quantity and unit-cost decimal strings and validates them against the API precision limits.",
+      "v161_inventory": "Version 1.6.1 adds product-opening balance as a filterable inventory movement reference."
     },
     "catalog": {
       "m_aba150_title": "Workspace and purchasing workflows",
@@ -1282,7 +1284,8 @@
       "m_1lj8xv7": "Press Enter to send and Shift + Enter for a new line, with a visible character counter and a 2,000-character limit.",
       "m_12vb645": "Review activity entries available to workspace owners; action and target labels use the selected language.",
       "m_hnk1p9": "A separate area for authorized platform administrators.",
-      "v160_title": "Inventory ledger and mobile experience update"
+      "v160_title": "Inventory ledger and mobile experience update",
+      "v161_title": "Purchasing precision and inventory reference improvements"
     }
   },
   "catalog": {
