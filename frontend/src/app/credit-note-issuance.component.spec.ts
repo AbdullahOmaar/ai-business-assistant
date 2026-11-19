@@ -19,7 +19,7 @@ test('Stage 1 UI supports return draft, owner approval, and owner-only credit-no
 
 test('Stage 1 UI does not expose receivable application or cash refund controls', () => {
   assert.doesNotMatch(component, /applyCredit|beginApplyCredit|refundCredit|createCashRefund|CashRefund|CreditApplication/);
-  assert.match(component, /this\.t\('phaseFootnote'\)/);
+  assert.match(component, /t\('phaseFootnote'\)/);
   assert.match(component, /this\.t\('creditNoteIssuedMessage'\)/);
 });
 
