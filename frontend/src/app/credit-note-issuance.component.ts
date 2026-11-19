@@ -46,6 +46,9 @@ type ReturnDraftLine = {
             }
           </select>
         </label>
+        @if (invoiceHasMore) {
+          <button type="button" (click)="loadMoreInvoices()" [disabled]="loadingInvoices">{{ loadingInvoices ? t('loading') : t('loadMore') }}</button>
+        }
         <label>
           {{ t('returnReason') }}
           <input name="returnReason" maxlength="500" [(ngModel)]="returnReason" [disabled]="creatingReturn">
@@ -107,6 +110,9 @@ type ReturnDraftLine = {
           </article>
         }
       </div>
+      @if (returnsHasMore) {
+        <button type="button" (click)="loadMoreReturns()" [disabled]="loadingReturns">{{ loadingReturns ? t('loading') : t('loadMore') }}</button>
+      }
 
       <h3>{{ t('issuedNotes') }}</h3>
       @if (!loading && !notes.length) {
@@ -126,6 +132,9 @@ type ReturnDraftLine = {
           </article>
         }
       </div>
+      @if (notesHasMore) {
+        <button type="button" (click)="loadMoreNotes()" [disabled]="loadingNotes">{{ loadingNotes ? t('loading') : t('loadMore') }}</button>
+      }
 
       <p class="footnote">{{ t('phaseFootnote') }}</p>
     </section>
@@ -172,6 +181,16 @@ export class CreditNoteIssuanceComponent implements OnChanges {
   error = '';
   private refreshSequence = 0;
   private detailSequence = 0;
+  private readonly pageSize = 100;
+  private invoiceOffset = 0;
+  private returnsOffset = 0;
+  private notesOffset = 0;
+  invoiceHasMore = true;
+  returnsHasMore = true;
+  notesHasMore = true;
+  loadingInvoices = false;
+  loadingReturns = false;
+  loadingNotes = false;
 
   constructor(
     private readonly api: ApiService,
@@ -194,6 +213,12 @@ export class CreditNoteIssuanceComponent implements OnChanges {
       this.customers = [];
       this.returns = [];
       this.notes = [];
+      this.invoiceOffset = 0;
+      this.returnsOffset = 0;
+      this.notesOffset = 0;
+      this.invoiceHasMore = true;
+      this.returnsHasMore = true;
+      this.notesHasMore = true;
       this.invoiceDetail = null;
       this.returnLines = [];
       this.selectedInvoiceId = '';
@@ -209,22 +234,73 @@ export class CreditNoteIssuanceComponent implements OnChanges {
     this.error = '';
     try {
       const [invoices, customers, returns, notes] = await Promise.all([
-        this.api.invoices(businessId, 0, 100),
+        this.api.invoices(businessId, 0, this.pageSize),
         this.api.customers(businessId, 0, 200),
-        this.api.salesReturns(businessId),
-        this.api.creditNotes(businessId),
+        this.api.salesReturns(businessId, undefined, 0, this.pageSize),
+        this.api.creditNotes(businessId, 0, this.pageSize),
       ]);
       if (sequence !== this.refreshSequence || businessId !== this.businessId) return;
       this.invoices = invoices;
       this.customers = customers;
       this.returns = returns.items;
       this.notes = notes.items;
+      this.invoiceOffset = invoices.length;
+      this.returnsOffset = returns.items.length;
+      this.notesOffset = notes.items.length;
+      this.invoiceHasMore = invoices.length === this.pageSize;
+      this.returnsHasMore = returns.items.length === this.pageSize;
+      this.notesHasMore = notes.items.length === this.pageSize;
     } catch (error) {
       if (sequence === this.refreshSequence && businessId === this.businessId) {
         this.error = this.messageFor(error);
       }
     } finally {
       if (sequence === this.refreshSequence && businessId === this.businessId) this.loading = false;
+    }
+  }
+
+  async loadMoreInvoices(): Promise<void> {
+    if (this.loadingInvoices || !this.invoiceHasMore || !this.businessId) return;
+    this.loadingInvoices = true;
+    try {
+      const page = await this.api.invoices(this.businessId, this.invoiceOffset, this.pageSize);
+      this.invoices = [...this.invoices, ...page];
+      this.invoiceOffset += page.length;
+      this.invoiceHasMore = page.length === this.pageSize;
+    } catch (error) {
+      this.error = this.messageFor(error);
+    } finally {
+      this.loadingInvoices = false;
+    }
+  }
+
+  async loadMoreReturns(): Promise<void> {
+    if (this.loadingReturns || !this.returnsHasMore || !this.businessId) return;
+    this.loadingReturns = true;
+    try {
+      const page = await this.api.salesReturns(this.businessId, undefined, this.returnsOffset, this.pageSize);
+      this.returns = [...this.returns, ...page.items];
+      this.returnsOffset += page.items.length;
+      this.returnsHasMore = page.items.length === this.pageSize;
+    } catch (error) {
+      this.error = this.messageFor(error);
+    } finally {
+      this.loadingReturns = false;
+    }
+  }
+
+  async loadMoreNotes(): Promise<void> {
+    if (this.loadingNotes || !this.notesHasMore || !this.businessId) return;
+    this.loadingNotes = true;
+    try {
+      const page = await this.api.creditNotes(this.businessId, this.notesOffset, this.pageSize);
+      this.notes = [...this.notes, ...page.items];
+      this.notesOffset += page.items.length;
+      this.notesHasMore = page.items.length === this.pageSize;
+    } catch (error) {
+      this.error = this.messageFor(error);
+    } finally {
+      this.loadingNotes = false;
     }
   }
 
