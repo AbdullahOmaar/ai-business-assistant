@@ -1,3 +1,11 @@
+## MASTER CI selector hardening follow-up — 2026-11-19
+
+- Reopened [issue #406](https://github.com/AbdullahOmaar/ai-business-assistant/issues/406) after exact source review found that `backend/tests/test_api.py`, `test_t39_purchase_receiving_api.py`, and `test_platform_admin_api.py` are shared helper/fixture modules imported by sibling test files. Treating them as isolated changed test modules could miss dependent regressions.
+- Updated `.github/workflows/ci.yml` so changes to those three shared modules run the full backend suite while retaining focused execution for independent `test_*.py` modules.
+- Added a selector regression that checks all three shared modules and keeps the ordinary independent inventory-ledger test module on the targeted path.
+- Current implementation commit: `71a62bbc8851d5b307fe9237625528abe16003d4`. Exact-head CI is pending; do not close #406 or reuse the previous run as evidence for this follow-up.
+- Scope remains CI/governance only; no feature-owned application code, production secrets, runtime databases, or live data changed.
+
 ## MASTER execution checkpoint — Risk-based CI implementation — final closeout 2026-11-19
 
 - **Owner decision / branch:** `master/nov-2026-phase-1-runtime-qa` remains the sole active November branch. No branch created, renamed or deleted. `main@560f3b402bfd265f8509dcbbdd1ed5988e72efbe`; active candidate is PR #401.
