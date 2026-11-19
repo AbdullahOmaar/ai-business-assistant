@@ -370,16 +370,17 @@ jobs:
           python -m pytest -q --junitxml=test-results/pytest.xml
       - name: Run changed backend test modules
         if: needs.detect-changes.outputs.backend_full != 'true'
+        working-directory: backend
         env:
           CHANGED_TESTS: ${{ needs.detect-changes.outputs.backend_tests == 'true' && needs.detect-changes.outputs.backend_full != 'true' && 'targeted' || 'none' }}
         run: |
-          mkdir -p backend/test-results
-          mapfile -t files < <(git diff --name-only "${{ github.event.pull_request.base.sha || github.event.before }}" "${{ github.event.pull_request.head.sha || github.sha }}" -- 'backend/tests/*.py' || true)
+          mkdir -p test-results
+          mapfile -t files < <(git diff --name-only "${{ github.event.pull_request.base.sha || github.event.before }}" "${{ github.event.pull_request.head.sha || github.sha }}" -- 'backend/tests/*.py' | sed 's#^backend/##' || true)
           if [ "${#files[@]}" -eq 0 ]; then
             echo "::error::No safe backend test selection was available."
             exit 1
           fi
-          python -m pytest -q "${files[@]}" --junitxml=backend/test-results/pytest.xml
+          python -m pytest -q "${files[@]}" --junitxml=test-results/pytest.xml
       - name: Upload backend test results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
