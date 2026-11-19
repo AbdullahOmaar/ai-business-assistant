@@ -61,7 +61,7 @@ test('reference filter is enabled only with the authenticated API adapter contra
 });
 
 test('reference filters use only reference types observed in backend stock events', () => {
-  for (const type of ['invoice', 'invoice_void', 'purchase_order', 'sales_return', 'stock_count']) {
+  for (const type of ['product_opening', 'invoice', 'invoice_void', 'purchase_order', 'sales_return', 'stock_count']) {
     assert.ok(component.includes(`'${type}'`));
   }
   assert.match(component, /setReferenceType\(value: string\)/);
