@@ -241,12 +241,22 @@ def list_purchase_orders(business_id: UUID, limit: int = Query(default=100, ge=1
         orders = session.scalars(select(PurchaseOrder).where(
             PurchaseOrder.business_id == business_id,
         ).order_by(PurchaseOrder.created_at.desc(), PurchaseOrder.id.desc()).offset(offset).limit(limit)).all()
+
+        # Load all lines for the selected page in one tenant-scoped query. Avoid
+        # one extra round trip per order while preserving each order's line order.
+        lines_by_order: dict[UUID, list[PurchaseOrderLine]] = {}
+        order_ids = [order.id for order in orders]
+        if order_ids:
+            page_lines = session.scalars(select(PurchaseOrderLine).where(
+                PurchaseOrderLine.business_id == business_id,
+                PurchaseOrderLine.purchase_order_id.in_(order_ids),
+            ).order_by(PurchaseOrderLine.purchase_order_id, PurchaseOrderLine.id)).all()
+            for line in page_lines:
+                lines_by_order.setdefault(line.purchase_order_id, []).append(line)
+
         result = []
         for order in orders:
-            lines = session.scalars(select(PurchaseOrderLine).where(
-                PurchaseOrderLine.business_id == business_id,
-                PurchaseOrderLine.purchase_order_id == order.id,
-            ).order_by(PurchaseOrderLine.id)).all()
+            lines = lines_by_order.get(order.id, [])
             item = _dict(order, ("id", "business_id", "supplier_id", "order_number", "status", "currency_code", "total", "created_at"))
             item["lines"] = [
                 {**_dict(line, ("id", "product_id", "quantity", "unit_cost", "received_quantity")),
@@ -257,7 +267,6 @@ def list_purchase_orders(business_id: UUID, limit: int = Query(default=100, ge=1
         return result
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
-
 
 @router.get("/recurring-invoices")
 def list_recurring_schedules(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
