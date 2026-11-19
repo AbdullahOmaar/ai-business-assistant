@@ -1889,6 +1889,7 @@
     "referenceType": "نوع المرجع",
     "allReferences": "كل المراجع",
     "referenceTypes": {
+      "product_opening": "إضافة رصيد افتتاحي",
       "invoice": "فاتورة بيع",
       "invoice_void": "عكس فاتورة",
       "purchase_order": "أمر شراء",
