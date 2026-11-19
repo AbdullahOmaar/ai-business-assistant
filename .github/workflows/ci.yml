@@ -192,12 +192,21 @@ jobs:
                       keys["frontend_tests"] = "true"
                       spec_paths = []
                       force_frontend = False
+                      high_risk_frontend_tokens = (
+                          "auth", "firebase", "tenant", "guard", "route", "api.service",
+                          "runtime-config", "service-worker", "security", "permission",
+                          "localization", "accounting", "invoice", "payment", "stock",
+                          "inventory", "audit", "payroll",
+                      )
                       for p in frontend_paths:
                           if p.endswith(".spec.ts"):
-                              spec_paths.append(p)
+                              if any(token in p.lower() for token in high_risk_frontend_tokens):
+                                  force_frontend = True
+                              else:
+                                  spec_paths.append(p)
                               continue
                           if p.startswith(("frontend/src/app/core/", "frontend/src/app/shared/")) or any(
-                              token in p.lower() for token in ("auth", "firebase", "tenant", "guard", "route", "api.service", "runtime-config", "service-worker")
+                              token in p.lower() for token in high_risk_frontend_tokens
                           ):
                               force_frontend = True
                               continue
@@ -218,7 +227,8 @@ jobs:
                           elif p in ("frontend/package.json", "frontend/package-lock.json", "frontend/angular.json", "frontend/tsconfig.json"):
                               force_frontend = True
                           elif p.startswith("frontend/public/i18n/"):
-                              spec_paths.append("frontend/src/app/localization.spec.ts")
+                              # Locale data is shared across every workspace; retain full frontend regression.
+                              force_frontend = True
                           else:
                               force_frontend = True
 

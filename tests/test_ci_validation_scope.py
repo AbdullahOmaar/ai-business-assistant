@@ -122,6 +122,22 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
         self.assertEqual(plan["frontend_build"], "false")
         self.assertEqual(plan["docs_validation"], "false")
 
+    def test_frontend_auth_spec_change_runs_full_suite(self) -> None:
+        self.write("frontend/src/app/auth-session.spec.ts", "import test from 'node:test';\\n")
+        self.commit("frontend auth spec")
+        plan = self.run_selector()
+        self.assertEqual(plan["frontend_tests"], "true")
+        self.assertEqual(plan["frontend_full"], "true")
+        self.assertEqual(plan["frontend_build"], "false")
+
+    def test_frontend_locale_data_change_runs_full_suite_and_build(self) -> None:
+        self.write("frontend/public/i18n/ar.json", "{\\n  \"app.title\": \"تطبيق\"\\n}\\n")
+        self.commit("frontend locale data")
+        plan = self.run_selector()
+        self.assertEqual(plan["frontend_tests"], "true")
+        self.assertEqual(plan["frontend_full"], "true")
+        self.assertEqual(plan["frontend_build"], "true")
+
     def test_docs_validation_is_not_selected_for_app_only_changes(self) -> None:
         self.write("backend/tests/test_api.py", "def test_targeted():\\n    assert 3 == 3\\n")
         self.commit("backend test only")
