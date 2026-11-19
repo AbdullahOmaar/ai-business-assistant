@@ -1137,7 +1137,10 @@
       "m_l45aln": "Payment and expense recording, with financial reports separated by currency.",
       "m_1a7j5yu": "Initial stock movement tracking and product CSV import.",
       "m_118l28j": "A mobile-friendly multi-line invoice draft editor.",
-      "m_vj2szz": "Preview totals, discounts, and tax before saving."
+      "m_vj2szz": "Preview totals, discounts, and tax before saving.",
+      "v160_ledger": "Added a read-only inventory movement ledger with filters and pagination inside Products.",
+      "v160_mobile": "Improved shared workspace cards, KPIs and form controls for a clearer mobile experience.",
+      "v160_precision": "Improved exact decimal price and stock sorting, search context and customer/product editing."
     },
     "catalog": {
       "m_aba150_title": "Workspace and purchasing workflows",
@@ -1278,7 +1281,8 @@
       "m_1rnhwjs": "Copy assistant responses with a fallback for browsers without Clipboard API support; preserve your reading position when reviewing older messages.",
       "m_1lj8xv7": "Press Enter to send and Shift + Enter for a new line, with a visible character counter and a 2,000-character limit.",
       "m_12vb645": "Review activity entries available to workspace owners; action and target labels use the selected language.",
-      "m_hnk1p9": "A separate area for authorized platform administrators."
+      "m_hnk1p9": "A separate area for authorized platform administrators.",
+      "v160_title": "Inventory ledger and mobile experience update"
     }
   },
   "catalog": {
