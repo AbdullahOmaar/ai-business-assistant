@@ -107,7 +107,7 @@ jobs:
                   )
                   paths = []
                   for line in result.stdout.splitlines():
-                      fields = line.split("\\t")
+                      fields = line.split("\t")
                       if len(fields) != 2 or fields[0] not in ("A", "M"):
                           raise RuntimeError(f"added/deleted/renamed/type-changed path requires full fallback: {line}")
                       paths.append(fields[1])
