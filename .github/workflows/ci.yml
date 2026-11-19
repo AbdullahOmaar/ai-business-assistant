@@ -61,7 +61,7 @@ jobs:
               "migrations": "false", "frontend_tests": "false",
               "frontend_full": "false", "frontend_specs": "",
               "frontend_build": "false", "frontend_audit": "false",
-              "api_smoke": "false", "docs_validation": "true",
+              "api_smoke": "false", "docs_validation": "false",
           }
 
           def save():
@@ -75,8 +75,7 @@ jobs:
           def force_full():
               for key in ("backend_tests", "backend_full", "backend_container",
                           "backend_audit", "migrations", "frontend_tests",
-                          "frontend_full", "frontend_build", "frontend_audit",
-                          "docs_validation"):
+                          "frontend_full", "frontend_build", "frontend_audit"):
                   keys[key] = "true"
 
           event = os.environ["EVENT_NAME"]
@@ -119,6 +118,13 @@ jobs:
                   paths = []
 
               if paths:
+                  if any(
+                      p.startswith(("docs/", ".github/"))
+                      or p in ("AGENTS.md", "TASKS.md", "README.md", "CONTRIBUTING.md", "SECURITY.md")
+                      for p in paths
+                  ):
+                      keys["docs_validation"] = "true"
+
                   known_prefixes = ("backend/", "frontend/", "docs/", "scripts/", ".github/", "tests/")
                   known_root_files = {
                       "AGENTS.md", "TASKS.md", "README.md", "CONTRIBUTING.md",
@@ -214,7 +220,11 @@ jobs:
                           else:
                               keys["frontend_specs"] = " ".join(unique)
                       if any(
-                          p.startswith(("frontend/src/", "frontend/public/", "frontend/angular.json", "frontend/tsconfig"))
+                          (
+                              p.startswith(("frontend/src/", "frontend/public/"))
+                              and not p.endswith(".spec.ts")
+                          )
+                          or p.startswith(("frontend/angular.json", "frontend/tsconfig"))
                           or p in ("frontend/package.json", "frontend/package-lock.json")
                           for p in frontend_paths
                       ):
