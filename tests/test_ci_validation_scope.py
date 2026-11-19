@@ -163,12 +163,29 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
                 self.assertEqual(plan["frontend_build"], "false")
 
     def test_backend_test_module_is_targeted(self) -> None:
-        self.write("backend/tests/test_api.py", "def test_targeted():\n    assert 2 == 2\n")
+        self.write("backend/tests/test_t39_inventory_movements_api.py", "def test_targeted():\n    assert 2 == 2\n")
         self.commit("backend test module")
         plan = self.run_selector()
         self.assertEqual(plan["backend_tests"], "true")
         self.assertEqual(plan["backend_full"], "false")
         self.assertEqual(plan["backend_container"], "false")
+
+    def test_backend_shared_test_helpers_run_full_suite(self) -> None:
+        shared_modules = (
+            "backend/tests/test_api.py",
+            "backend/tests/test_t39_purchase_receiving_api.py",
+            "backend/tests/test_platform_admin_api.py",
+        )
+        for path in shared_modules:
+            with self.subTest(path=path):
+                self.git("reset", "--hard", self.base)
+                self.git("clean", "-fd")
+                self.write(path, "# changed shared test helper\n")
+                self.commit(f"change shared helper {path}")
+                plan = self.run_selector()
+                self.assertEqual(plan["backend_tests"], "true")
+                self.assertEqual(plan["backend_full"], "true")
+                self.assertEqual(plan["backend_container"], "false")
 
     def test_backend_fixture_or_conftest_change_runs_full_suite(self) -> None:
         self.write("backend/tests/conftest.py", "# changed shared fixture\n")
