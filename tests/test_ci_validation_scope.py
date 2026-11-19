@@ -105,7 +105,27 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
         self.assertEqual(plan["frontend_full"], "false")
         self.assertIn("frontend/src/app/customer-directory.spec.ts", plan["frontend_specs"])
         self.assertEqual(plan["frontend_build"], "true")
+        self.assertEqual(plan["docs_validation"], "false")
         self.assertEqual(plan["backend_tests"], "false")
+
+    def test_frontend_spec_only_change_skips_production_build(self) -> None:
+        self.write(
+            "frontend/src/app/customer-directory.spec.ts",
+            "import test from 'node:test';\\ntest('updated assertion', () => {});\\n",
+        )
+        self.commit("frontend spec only")
+        plan = self.run_selector()
+        self.assertEqual(plan["frontend_tests"], "true")
+        self.assertEqual(plan["frontend_full"], "false")
+        self.assertIn("frontend/src/app/customer-directory.spec.ts", plan["frontend_specs"])
+        self.assertEqual(plan["frontend_build"], "false")
+        self.assertEqual(plan["docs_validation"], "false")
+
+    def test_docs_validation_is_not_selected_for_app_only_changes(self) -> None:
+        self.write("backend/tests/test_api.py", "def test_targeted():\\n    assert 3 == 3\\n")
+        self.commit("backend test only")
+        plan = self.run_selector()
+        self.assertEqual(plan["docs_validation"], "false")
 
     def test_backend_test_module_is_targeted(self) -> None:
         self.write("backend/tests/test_api.py", "def test_targeted():\n    assert 2 == 2\n")
@@ -151,6 +171,7 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
         self.assertEqual(plan["frontend_full"], "true")
         self.assertEqual(plan["frontend_build"], "true")
         self.assertEqual(plan["frontend_audit"], "true")
+        self.assertEqual(plan["docs_validation"], "false")
 
     def test_docs_only_change_runs_project_knowledge_validation(self) -> None:
         self.write("docs/README.md", "updated docs\n")
