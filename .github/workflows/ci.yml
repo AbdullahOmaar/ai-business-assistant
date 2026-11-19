@@ -171,10 +171,19 @@ jobs:
                           for p in backend_paths
                       )
                       backend_test_paths = [p for p in backend_paths if p.startswith("backend/tests/") and p.endswith(".py")]
+                      # These test modules also provide fixtures/helpers imported by other test files.
+                      # A focused run of the helper module alone would miss dependent regressions.
+                      shared_backend_test_modules = {
+                          "backend/tests/test_api.py",
+                          "backend/tests/test_t39_purchase_receiving_api.py",
+                          "backend/tests/test_platform_admin_api.py",
+                      }
                       if backend_source or not backend_test_paths:
                           keys["backend_full"] = "true"
                       elif any(
-                          not Path(p).exists() or not Path(p).name.startswith("test_")
+                          not Path(p).exists()
+                          or not Path(p).name.startswith("test_")
+                          or p in shared_backend_test_modules
                           for p in backend_test_paths
                       ):
                           # conftest.py, helpers, fixtures and non-test support modules
