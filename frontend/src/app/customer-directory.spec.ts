@@ -5,7 +5,9 @@ import test from 'node:test';
 const component = readFileSync(new URL('./customer-directory.component.ts', import.meta.url), 'utf8');
 const sortHelper = readFileSync(new URL('./directory-sort.ts', import.meta.url), 'utf8');
 const css = readFileSync(new URL('./customer-directory.component.css', import.meta.url), 'utf8');
-const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8')
+  + '\n'
+  + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
 const workspace = readFileSync(new URL('./customer-workspace.component.ts', import.meta.url), 'utf8');
 const editor = readFileSync(new URL('./customer-editor.component.ts', import.meta.url), 'utf8');
 const editorCss = readFileSync(new URL('./customer-editor.component.css', import.meta.url), 'utf8');
