@@ -1142,8 +1142,7 @@
       "v160_mobile": "Improved shared workspace cards, KPIs and form controls for a clearer mobile experience.",
       "v160_precision": "Improved exact decimal price and stock sorting, search context and customer/product editing.",
       "v161_purchasing": "Version 1.6.1 preserves purchase quantity and unit-cost decimal strings and validates them against the API precision limits.",
-      "v161_inventory": "Version 1.6.1 adds product-opening balance as a filterable inventory movement reference.",
-      "v162_credit_notes": "Version 1.6.2 adds return drafts, owner approval, and owner-only issuance of a separate credit-note document. It does not apply credit to receivables or record cash refunds; tax-bearing invoices remain blocked pending an approved tax-allocation contract."
+      "v161_inventory": "Version 1.6.1 adds product-opening balance as a filterable inventory movement reference."
     },
     "catalog": {
       "m_aba150_title": "Workspace and purchasing workflows",
@@ -1286,8 +1285,7 @@
       "m_12vb645": "Review activity entries available to workspace owners; action and target labels use the selected language.",
       "m_hnk1p9": "A separate area for authorized platform administrators.",
       "v160_title": "Inventory ledger and mobile experience update",
-      "v161_title": "Purchasing precision and inventory reference improvements",
-      "v162_title": "Credit notes from approved returns"
+      "v161_title": "Purchasing precision and inventory reference improvements"
     }
   },
   "catalog": {
