@@ -16,7 +16,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Response
 from pydantic import BaseModel, Field
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import Numeric, String, case, cast, func, literal, or_, select, text, union_all
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -1806,11 +1806,7 @@ def customer_statement(
     session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ):
-    """Return a currency-separated customer statement from issued invoices and payment allocations.
-
-    Credit notes are not represented by a dedicated ledger model yet, so this endpoint
-    explicitly reports that limitation rather than treating sales returns as cash credits.
-    """
+    """Build a currency-separated customer statement with SQL-side pagination and balances."""
     try:
         _authorized(session, principal, business_id)
         if from_date is not None and to_date is not None and from_date > to_date:
@@ -1828,97 +1824,142 @@ def customer_statement(
             raise HTTPException(status_code=404, detail="Business not found")
         start_utc, end_utc = _day_bounds(from_date, to_date, business.timezone)
 
+        invoice_occurred_at = func.coalesce(Invoice.issue_date, Invoice.created_at)
+        invoice_events = select(
+            invoice_occurred_at.label("occurred_at"),
+            literal("invoice_issued", type_=String()).label("event_type"),
+            cast(Invoice.id, String()).label("source_id"),
+            Invoice.invoice_number.label("reference"),
+            Invoice.currency_code.label("currency_code"),
+            Invoice.total.label("debit"),
+            literal(0, type_=Numeric(14, 2)).label("credit"),
+            literal(True).label("affects_balance"),
+            literal(None, type_=String()).label("invoice_id"),
+        ).where(
+            Invoice.business_id == business_id,
+            Invoice.customer_id == customer_id,
+            Invoice.status == "issued",
+            invoice_occurred_at.is_not(None),
+        )
+        if start_utc is not None:
+            invoice_events = invoice_events.where(invoice_occurred_at >= start_utc)
+        if end_utc is not None:
+            invoice_events = invoice_events.where(invoice_occurred_at < end_utc)
+
+        allocation_occurred_at = func.coalesce(Payment.received_at, PaymentAllocation.created_at)
+        same_currency = Payment.currency_code == Invoice.currency_code
+        allocation_events = select(
+            allocation_occurred_at.label("occurred_at"),
+            case(
+                (same_currency, literal("payment_allocation", type_=String())),
+                else_=literal("currency_mismatch_allocation", type_=String()),
+            ).label("event_type"),
+            cast(PaymentAllocation.id, String()).label("source_id"),
+            Payment.reference.label("reference"),
+            case(
+                (same_currency, Invoice.currency_code),
+                else_=Payment.currency_code,
+            ).label("currency_code"),
+            literal(0, type_=Numeric(14, 2)).label("debit"),
+            PaymentAllocation.amount.label("credit"),
+            same_currency.label("affects_balance"),
+            cast(Invoice.id, String()).label("invoice_id"),
+        ).join(
+            Payment,
+            Payment.id == PaymentAllocation.payment_id,
+        ).join(
+            Invoice,
+            Invoice.id == PaymentAllocation.invoice_id,
+        ).where(
+            PaymentAllocation.business_id == business_id,
+            Payment.business_id == business_id,
+            Invoice.business_id == business_id,
+            Invoice.customer_id == customer_id,
+            Invoice.status == "issued",
+            allocation_occurred_at.is_not(None),
+        )
+        if start_utc is not None:
+            allocation_events = allocation_events.where(allocation_occurred_at >= start_utc)
+        if end_utc is not None:
+            allocation_events = allocation_events.where(allocation_occurred_at < end_utc)
+
+        # UNION ALL keeps the event sources in the database. The window function
+        # computes running balances per currency before LIMIT/OFFSET is applied.
+        events = union_all(invoice_events, allocation_events).cte("customer_statement_events")
+        applicable_credit = case(
+            (events.c.affects_balance.is_(True), events.c.credit),
+            else_=literal(0, type_=Numeric(14, 2)),
+        )
+        event_order = (events.c.occurred_at, events.c.event_type, events.c.source_id)
+        running_balance = func.sum(events.c.debit - applicable_credit).over(
+            partition_by=events.c.currency_code,
+            order_by=event_order,
+            rows=(None, 0),
+        )
+        windowed = select(
+            events,
+            running_balance.label("balance"),
+        ).cte("customer_statement_windowed")
+
+        total = session.scalar(select(func.count()).select_from(events)) or 0
+        page_rows = session.execute(
+            select(windowed)
+            .order_by(windowed.c.occurred_at, windowed.c.event_type, windowed.c.source_id)
+            .offset(offset)
+            .limit(limit)
+        ).all()
+
+        latest_rank = func.row_number().over(
+            partition_by=windowed.c.currency_code,
+            order_by=(
+                windowed.c.occurred_at.desc(),
+                windowed.c.event_type.desc(),
+                windowed.c.source_id.desc(),
+            ),
+        ).label("latest_rank")
+        ranked_balances = select(
+            windowed.c.currency_code,
+            windowed.c.balance,
+            latest_rank,
+        ).subquery("customer_statement_ranked_balances")
+        balance_rows = session.execute(
+            select(ranked_balances.c.currency_code, ranked_balances.c.balance)
+            .where(ranked_balances.c.latest_rank == 1)
+            .order_by(ranked_balances.c.currency_code)
+        ).all()
+
         def as_utc_timestamp(value: datetime) -> datetime:
             # SQLite may return naive values for timezone-aware columns; treat those as UTC.
             if value.tzinfo is None or value.utcoffset() is None:
                 return value.replace(tzinfo=timezone.utc)
             return value.astimezone(timezone.utc)
 
-        invoices = session.scalars(select(Invoice).where(
-            Invoice.business_id == business_id,
-            Invoice.customer_id == customer_id,
-            Invoice.status == "issued",
-        )).all()
-        invoice_ids = [item.id for item in invoices]
-        events: list[dict] = []
-        for item in invoices:
-            occurred_at = item.issue_date or item.created_at
-            if occurred_at is None:
-                continue
-            occurred_at = as_utc_timestamp(occurred_at)
-            if start_utc is not None and occurred_at < start_utc:
-                continue
-            if end_utc is not None and occurred_at >= end_utc:
-                continue
-            events.append({
-                "occurred_at": occurred_at,
-                "event_type": "invoice_issued",
-                "source_id": str(item.id),
-                "reference": item.invoice_number,
-                "currency_code": item.currency_code,
-                "debit": item.total,
-                "credit": ZERO,
-                "affects_balance": True,
-            })
+        def decimal_string(value) -> str:
+            amount = Decimal(str(value or ZERO))
+            return str(ZERO if amount == ZERO else amount)
 
-        if invoice_ids:
-            allocations = session.execute(
-                select(PaymentAllocation, Payment, Invoice)
-                .join(Payment, Payment.id == PaymentAllocation.payment_id)
-                .join(Invoice, Invoice.id == PaymentAllocation.invoice_id)
-                .where(
-                    PaymentAllocation.business_id == business_id,
-                    Payment.business_id == business_id,
-                    Invoice.business_id == business_id,
-                    Invoice.customer_id == customer_id,
-                    PaymentAllocation.invoice_id.in_(invoice_ids),
-                )
-            ).all()
-            for allocation, payment, invoice in allocations:
-                occurred_at = payment.received_at or allocation.created_at
-                if occurred_at is None:
-                    continue
-                occurred_at = as_utc_timestamp(occurred_at)
-                if start_utc is not None and occurred_at < start_utc:
-                    continue
-                if end_utc is not None and occurred_at >= end_utc:
-                    continue
-                same_currency = payment.currency_code == invoice.currency_code
-                events.append({
-                    "occurred_at": occurred_at,
-                    "event_type": "payment_allocation" if same_currency else "currency_mismatch_allocation",
-                    "source_id": str(allocation.id),
-                    "reference": payment.reference,
-                    "invoice_id": str(invoice.id),
-                    "currency_code": invoice.currency_code if same_currency else payment.currency_code,
-                    "debit": ZERO,
-                    "credit": allocation.amount,
-                    "affects_balance": same_currency,
-                })
-
-        events.sort(key=lambda event: (event["occurred_at"], event["event_type"], event["source_id"]))
-        running: dict[str, Decimal] = {}
-        for event in events:
-            currency = event["currency_code"]
-            running.setdefault(currency, ZERO)
-            if event["affects_balance"]:
-                running[currency] += event["debit"] - event["credit"]
-            event["balance"] = running[currency]
-            event["occurred_at"] = event["occurred_at"].isoformat()
+        items = []
+        for row in page_rows:
+            item = dict(row._mapping)
+            item["occurred_at"] = as_utc_timestamp(item["occurred_at"]).isoformat()
             for key in ("debit", "credit", "balance"):
-                event[key] = str(event[key])
+                item[key] = decimal_string(item[key])
+            items.append(item)
 
-        total = len(events)
+        balances_by_currency = {
+            currency: decimal_string(balance)
+            for currency, balance in balance_rows
+        }
         return {
             "customer": {"id": str(customer.id), "name": customer.name},
-            "items": events[offset:offset + limit],
+            "items": items,
             "total": total,
             "limit": limit,
             "offset": offset,
-            "balances_by_currency": {currency: str(balance) for currency, balance in running.items()},
+            "balances_by_currency": balances_by_currency,
             "limitations": [
-                "Credit notes are not implemented in the current data model and are excluded.",
-                "Approved sales returns are not treated as receivable credits until a credit-note ledger exists.",
+                "Issued credit notes are excluded from this statement and do not reduce receivables in Stage 1.",
+                "Approved sales returns are not treated as receivable credits until Stage 2 is separately approved and implemented.",
                 "Allocations with a currency mismatch are shown but do not change the running balance.",
                 "Balances represent issued invoices less matching-currency allocations, not a double-entry general ledger.",
             ],
