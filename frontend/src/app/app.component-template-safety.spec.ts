@@ -1185,8 +1185,8 @@ test('purchase order and recurring schedule forms expose accessible localized va
   assert.ok(purchase.includes('name="orderNumber" maxlength="64" required'));
   assert.ok(purchase.includes('name="supplier" required'));
   assert.ok(purchase.includes('required [(ngModel)]="line.product_id"'));
-  assert.ok(purchase.includes('type="number" min="0.001" step="0.001" required'));
-  assert.ok(purchase.includes('type="number" min="0" step="0.01" required'));
+  assert.ok(purchase.includes('type="text" inputmode="decimal" autocomplete="off" required [(ngModel)]="line.quantity"'));
+  assert.ok(purchase.includes('type="text" inputmode="decimal" autocomplete="off" required [(ngModel)]="line.unit_cost"'));
   assert.ok(purchase.includes('role="alert"'));
   assert.ok(purchase.includes("this.formError.set(this.t('invalidLines'))"));
 
