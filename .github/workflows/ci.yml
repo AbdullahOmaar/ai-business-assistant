@@ -137,6 +137,7 @@ jobs:
                   broad = any(
                       p.startswith(".github/workflows/")
                       or p.startswith("scripts/")
+                      or p.startswith("tests/")
                       or p in ("AGENTS.md", "TASKS.md", "pyproject.toml", "pytest.ini",
                                "requirements.txt", "package.json", "package-lock.json")
                       for p in paths
