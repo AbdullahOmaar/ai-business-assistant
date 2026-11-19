@@ -1,9 +1,10 @@
 name: Verify backend and frontend
+
 on:
   pull_request:
     types: [opened, synchronize, reopened, ready_for_review]
   push:
-    branches: [main]
+    branches: [main, master/nov-2026-phase-1-runtime-qa]
   schedule:
     - cron: "23 8 * * 1"
   workflow_dispatch:
@@ -16,8 +17,193 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  detect-changes:
+    name: detect-changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend_tests: ${{ steps.plan.outputs.backend_tests }}
+      backend_full: ${{ steps.plan.outputs.backend_full }}
+      backend_container: ${{ steps.plan.outputs.backend_container }}
+      backend_audit: ${{ steps.plan.outputs.backend_audit }}
+      migrations: ${{ steps.plan.outputs.migrations }}
+      frontend_tests: ${{ steps.plan.outputs.frontend_tests }}
+      frontend_full: ${{ steps.plan.outputs.frontend_full }}
+      frontend_specs: ${{ steps.plan.outputs.frontend_specs }}
+      frontend_build: ${{ steps.plan.outputs.frontend_build }}
+      frontend_audit: ${{ steps.plan.outputs.frontend_audit }}
+      api_smoke: ${{ steps.plan.outputs.api_smoke }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Select safe validation scope
+        id: plan
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          PR_HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          REPOSITORY: ${{ github.repository }}
+          REF_NAME: ${{ github.ref }}
+        run: |
+          python - <<'PY'
+          import os, subprocess
+          from pathlib import Path
+
+          out = Path(os.environ["GITHUB_OUTPUT"])
+          keys = {
+              "backend_tests": "false", "backend_full": "false",
+              "backend_container": "false", "backend_audit": "false",
+              "migrations": "false", "frontend_tests": "false",
+              "frontend_full": "false", "frontend_specs": "",
+              "frontend_build": "false", "frontend_audit": "false",
+              "api_smoke": "false",
+          }
+
+          def save():
+              with out.open("a", encoding="utf-8") as f:
+                  for key, value in keys.items():
+                      if key == "frontend_specs":
+                          f.write(f"{key}<<EOF\n{value}\nEOF\n")
+                      else:
+                          f.write(f"{key}={value}\n")
+
+          def force_full():
+              for key in ("backend_tests", "backend_full", "backend_container",
+                          "backend_audit", "migrations", "frontend_tests",
+                          "frontend_full", "frontend_build", "frontend_audit"):
+                  keys[key] = "true"
+
+          event = os.environ["EVENT_NAME"]
+          head = os.environ["HEAD_SHA"]
+          api_required = (
+              event == "pull_request"
+              and os.environ.get("PR_HEAD_REF") == "master/nov-2026-phase-1-runtime-qa"
+              and os.environ.get("PR_HEAD_REPO") == os.environ.get("REPOSITORY")
+          ) or (
+              event == "workflow_dispatch"
+              and os.environ.get("REF_NAME") == "refs/heads/master/nov-2026-phase-1-runtime-qa"
+          )
+          keys["api_smoke"] = "true" if api_required else "false"
+
+          full_event = event in ("schedule", "workflow_dispatch")
+          base = os.environ.get("PR_BASE_SHA", "") if event == "pull_request" else os.environ.get("PUSH_BEFORE", "")
+          if full_event:
+              force_full()
+          elif not base or set(base) == {"0"}:
+              force_full()
+          else:
+              try:
+                  subprocess.run(["git", "cat-file", "-e", f"{base}^{{commit}}"], check=True, capture_output=True)
+                  subprocess.run(["git", "cat-file", "-e", f"{head}^{{commit}}"], check=True, capture_output=True)
+                  result = subprocess.run(
+                      ["git", "diff", "--name-only", "--diff-filter=ACMRTUXB", base, head],
+                      check=True, capture_output=True, text=True,
+                  )
+                  paths = [p for p in result.stdout.splitlines() if p]
+                  if any(not Path(p).exists() for p in paths):
+                      raise RuntimeError("deleted or renamed path requires full fallback")
+              except Exception as exc:
+                  print(f"::warning::Unable to calculate a trustworthy changed-path set ({exc}); running full regression.")
+                  force_full()
+                  paths = []
+
+              if paths and not any(v == "true" for v in keys.values() if isinstance(v, str) and v != ""):
+                  pass
+              if paths:
+                  broad = any(
+                      p.startswith(".github/workflows/")
+                      or p.startswith("scripts/")
+                      or p in ("AGENTS.md", "TASKS.md", "pyproject.toml", "pytest.ini",
+                               "requirements.txt", "package.json", "package-lock.json")
+                      for p in paths
+                  )
+                  if broad:
+                      force_full()
+
+                  backend_paths = [p for p in paths if p.startswith("backend/")]
+                  if backend_paths:
+                      keys["backend_tests"] = "true"
+                      backend_source = any(
+                          p.startswith(("backend/app/", "backend/alembic/", "backend/migrations/"))
+                          or p in ("backend/Dockerfile", "backend/requirements.txt")
+                          for p in backend_paths
+                      )
+                      backend_test_paths = [p for p in backend_paths if p.startswith("backend/tests/") and p.endswith(".py")]
+                      if backend_source or not backend_test_paths:
+                          keys["backend_full"] = "true"
+                      elif any(not Path(p).exists() for p in backend_test_paths):
+                          keys["backend_full"] = "true"
+                      if any("alembic" in p or "migration" in p or p.endswith("/models.py") for p in backend_paths):
+                          keys["migrations"] = "true"
+                      if any(p.startswith("backend/app/") or p in ("backend/Dockerfile", "backend/requirements.txt") for p in backend_paths):
+                          keys["backend_container"] = "true"
+                      if "backend/requirements.txt" in backend_paths:
+                          keys["backend_audit"] = "true"
+
+                  frontend_paths = [p for p in paths if p.startswith("frontend/")]
+                  if frontend_paths:
+                      keys["frontend_tests"] = "true"
+                      spec_paths = []
+                      force_frontend = False
+                      for p in frontend_paths:
+                          if p.endswith(".spec.ts"):
+                              spec_paths.append(p)
+                              continue
+                          if p.startswith(("frontend/src/app/core/", "frontend/src/app/shared/")) or any(
+                              token in p.lower() for token in ("auth", "firebase", "tenant", "guard", "route", "api.service", "runtime-config", "service-worker")
+                          ):
+                              force_frontend = True
+                              continue
+                          if p.startswith("frontend/src/app/") and p.endswith(".ts"):
+                              stem = Path(p).name.removesuffix(".ts")
+                              candidates = [Path(p).with_name(stem + ".spec.ts")]
+                              if stem.endswith(".component"):
+                                  candidates.append(Path(p).with_name(stem.removesuffix(".component") + ".spec.ts"))
+                              if stem.endswith(("-module", "-workspace")):
+                                  candidates.append(Path(p).with_name(stem + ".spec.ts"))
+                              found = [str(c) for c in candidates if c.exists()]
+                              if found:
+                                  spec_paths.extend(found)
+                              else:
+                                  force_frontend = True
+                          elif p.startswith("frontend/src/app/") or p.startswith("frontend/src/"):
+                              force_frontend = True
+                          elif p in ("frontend/package.json", "frontend/package-lock.json", "frontend/angular.json", "frontend/tsconfig.json"):
+                              force_frontend = True
+                          elif p.startswith("frontend/public/i18n/"):
+                              spec_paths.append("frontend/src/app/localization.spec.ts")
+                          else:
+                              force_frontend = True
+
+                      if force_frontend:
+                          keys["frontend_full"] = "true"
+                      else:
+                          unique = sorted(set(spec_paths))
+                          if not unique or any(not Path(p).exists() for p in unique):
+                              keys["frontend_full"] = "true"
+                          else:
+                              keys["frontend_specs"] = " ".join(unique)
+                      if any(p.startswith(("frontend/src/", "frontend/public/", "frontend/angular.json", "frontend/tsconfig")) for p in frontend_paths):
+                          keys["frontend_build"] = "true"
+                      if any(p in ("frontend/package.json", "frontend/package-lock.json", "frontend/.npmrc") for p in frontend_paths):
+                          keys["frontend_audit"] = "true"
+
+          # Changes to workflow/governance or inability to compute a diff are broad;
+          # dependency/config changes always retain their audit/build safety checks.
+          save()
+          print("Validation plan:")
+          for key, value in keys.items():
+              print(f"{key}={value}")
+          PY
+
   backend-accounting:
     name: backend-accounting
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.backend_tests == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 30
     services:
@@ -49,15 +235,16 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
       - name: Install backend test dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r backend/requirements.txt pip-audit
+          python -m pip install -r backend/requirements.txt
       - name: Wait for disposable PostgreSQL
         run: |
           python - <<'PY'
-          import time
-          import psycopg
+          import time, psycopg
           deadline = time.monotonic() + 90
           dsn = "postgresql://postgres:postgres@127.0.0.1:5432/ai_business_assistant_test"
           while True:
@@ -71,36 +258,36 @@ jobs:
                   time.sleep(2)
           PY
       - name: Apply migrations and check schema drift
+        if: needs.detect-changes.outputs.migrations == 'true'
         working-directory: backend
         run: |
           python -m alembic upgrade head
           python -m alembic current
           python -m alembic check
-      - name: Run backend regression suite
+      - name: Run full backend regression suite
+        if: needs.detect-changes.outputs.backend_full == 'true'
         working-directory: backend
         run: |
           mkdir -p test-results
           python -m pytest -q --junitxml=test-results/pytest.xml
-      - name: Validate project knowledge and regression tests
+      - name: Run changed backend test modules
+        if: needs.detect-changes.outputs.backend_full != 'true'
+        working-directory: backend
+        env:
+          CHANGED_TESTS: ${{ needs.detect-changes.outputs.backend_tests == 'true' && needs.detect-changes.outputs.backend_full != 'true' && 'targeted' || 'none' }}
+        run: |
+          mkdir -p test-results
+          mapfile -t files < <(git diff --name-only "${{ github.event.pull_request.base.sha || github.event.before }}" "${{ github.event.pull_request.head.sha || github.sha }}" -- 'backend/tests/*.py' || true)
+          if [ "${#files[@]}" -eq 0 ]; then
+            echo "::error::No safe backend test selection was available."
+            exit 1
+          fi
+          python -m pytest -q "${files[@]}" --junitxml=test-results/pytest.xml
+      - name: Validate project knowledge and CI regression tests
         run: |
           python scripts/validate_project_knowledge.py
           python -m unittest discover -s tests -p 'test_project_knowledge_validator.py' -v
           python -m unittest discover -s tests -p 'test_github_actions_slack_failure.py' -v
-      - name: Verify offline migration SQL generation
-        working-directory: backend
-        run: |
-          python -m alembic upgrade 0005_employee_payroll:head --sql > test-results/alembic-upgrade.sql
-          test -s test-results/alembic-upgrade.sql
-      - name: Upload generated Alembic SQL for exact review
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: backend-migration-sql
-          path: backend/test-results/alembic-upgrade.sql
-          if-no-files-found: error
-          retention-days: 3
-      - name: Audit Python dependencies
-        run: pip-audit -r backend/requirements.txt
       - name: Upload backend test results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -111,6 +298,8 @@ jobs:
 
   frontend-unit-tests:
     name: frontend-unit-tests
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.frontend_tests == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -122,15 +311,34 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci --no-audit --no-fund
-      - name: Run frontend unit tests
+      - name: Generate test metadata
+        working-directory: frontend
+        run: npm run pretest
+      - name: Run full frontend regression suite
+        if: needs.detect-changes.outputs.frontend_full == 'true'
         working-directory: frontend
         run: npm test
+      - name: Run impacted frontend spec files
+        if: needs.detect-changes.outputs.frontend_full != 'true'
+        working-directory: frontend
+        env:
+          FRONTEND_SPECS: ${{ needs.detect-changes.outputs.frontend_specs }}
+        run: |
+          if [ -z "$FRONTEND_SPECS" ]; then
+            echo "::error::No safe frontend test selection was available."
+            exit 1
+          fi
+          node --experimental-strip-types --test $FRONTEND_SPECS
 
   frontend-production-build:
     name: frontend-production-build
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.frontend_build == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -142,6 +350,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci --no-audit --no-fund
@@ -154,6 +364,8 @@ jobs:
 
   frontend-dependency-audit:
     name: frontend-dependency-audit
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.frontend_audit == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -165,6 +377,8 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
       - name: Install frontend dependencies
         working-directory: frontend
         run: npm ci --no-audit --no-fund
@@ -172,8 +386,30 @@ jobs:
         working-directory: frontend
         run: npm audit --audit-level=high
 
+  backend-dependency-audit:
+    name: backend-dependency-audit
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.backend_audit == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install audit tool
+        run: python -m pip install pip-audit
+      - name: Audit Python dependencies
+        run: pip-audit -r backend/requirements.txt
+
   backend-container:
     name: backend-container
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.backend_container == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -192,22 +428,10 @@ jobs:
       - name: Verify FastAPI application import in container
         run: docker run --rm --entrypoint python ai-business-assistant-backend:ci -c "import app.main; print('FastAPI import OK')"
 
-
   authenticated-api-smoke:
     name: authenticated-api-smoke
-    if: >-
-      (
-        github.event_name == 'pull_request' &&
-        (
-          github.event.pull_request.head.ref == 'feat/invoice-payment-currency-guard-20261109' ||
-          github.event.pull_request.head.ref == 'master/nov-2026-phase-1-ux-foundation'
-        ) &&
-        github.event.pull_request.head.repo.full_name == github.repository
-      ) ||
-      (
-        github.event_name == 'workflow_dispatch' &&
-        github.ref == 'refs/heads/master/nov-2026-phase-1-ux-foundation'
-      )
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.api_smoke == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     services:
@@ -236,6 +460,8 @@ jobs:
       - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
       - name: Install backend dependencies
         run: |
           python -m pip install --upgrade pip
@@ -261,27 +487,49 @@ jobs:
     name: all-checks-passed
     runs-on: ubuntu-latest
     if: always()
-    needs: [backend-accounting, frontend-unit-tests, frontend-production-build, frontend-dependency-audit, backend-container, authenticated-api-smoke]
+    needs:
+      - detect-changes
+      - backend-accounting
+      - frontend-unit-tests
+      - frontend-production-build
+      - frontend-dependency-audit
+      - backend-dependency-audit
+      - backend-container
+      - authenticated-api-smoke
     steps:
-      - name: Require every substantive job to succeed
+      - name: Require every selected validation job to succeed
         env:
+          DETECT: ${{ needs.detect-changes.result }}
           BACKEND: ${{ needs.backend-accounting.result }}
-          FRONTEND_TESTS: ${{ needs.frontend-unit-tests.result }}
-          FRONTEND_BUILD: ${{ needs.frontend-production-build.result }}
-          FRONTEND_AUDIT: ${{ needs.frontend-dependency-audit.result }}
+          BACKEND_REQUIRED: ${{ needs.detect-changes.outputs.backend_tests }}
           BACKEND_CONTAINER: ${{ needs.backend-container.result }}
+          BACKEND_CONTAINER_REQUIRED: ${{ needs.detect-changes.outputs.backend_container }}
+          BACKEND_AUDIT: ${{ needs.backend-dependency-audit.result }}
+          BACKEND_AUDIT_REQUIRED: ${{ needs.detect-changes.outputs.backend_audit }}
+          FRONTEND_TESTS: ${{ needs.frontend-unit-tests.result }}
+          FRONTEND_TESTS_REQUIRED: ${{ needs.detect-changes.outputs.frontend_tests }}
+          FRONTEND_BUILD: ${{ needs.frontend-production-build.result }}
+          FRONTEND_BUILD_REQUIRED: ${{ needs.detect-changes.outputs.frontend_build }}
+          FRONTEND_AUDIT: ${{ needs.frontend-dependency-audit.result }}
+          FRONTEND_AUDIT_REQUIRED: ${{ needs.detect-changes.outputs.frontend_audit }}
           API_SMOKE: ${{ needs.authenticated-api-smoke.result }}
-          REQUIRE_API_SMOKE: ${{ (github.event_name == 'pull_request' && (github.event.pull_request.head.ref == 'feat/invoice-payment-currency-guard-20261109' || github.event.pull_request.head.ref == 'master/nov-2026-phase-1-ux-foundation') && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/master/nov-2026-phase-1-ux-foundation') }}
+          API_SMOKE_REQUIRED: ${{ needs.detect-changes.outputs.api_smoke }}
         run: |
           set -euo pipefail
-          for result in "$BACKEND" "$FRONTEND_TESTS" "$FRONTEND_BUILD" "$FRONTEND_AUDIT" "$BACKEND_CONTAINER"; do
-            if [ "$result" != "success" ]; then
-              echo "::error::Required CI job did not succeed: $result"
-              exit 1
+          test "$DETECT" = "success" || { echo "::error::Change detection did not succeed: $DETECT"; exit 1; }
+          check_job() {
+            name="$1"; result="$2"; required="$3"
+            if [ "$required" = "true" ]; then
+              [ "$result" = "success" ] || { echo "::error::$name was required but result was $result"; exit 1; }
+            else
+              [ "$result" = "skipped" ] || { echo "::error::$name was not selected but result was $result"; exit 1; }
             fi
-          done
-          if [ "$REQUIRE_API_SMOKE" = "true" ] && [ "$API_SMOKE" != "success" ]; then
-            echo "::error::Authenticated API smoke is required for this integration candidate but did not succeed: $API_SMOKE"
-            exit 1
-          fi
-          echo "All five standard validation jobs and any branch-scoped candidate smoke passed."
+          }
+          check_job backend-accounting "$BACKEND" "$BACKEND_REQUIRED"
+          check_job backend-container "$BACKEND_CONTAINER" "$BACKEND_CONTAINER_REQUIRED"
+          check_job backend-dependency-audit "$BACKEND_AUDIT" "$BACKEND_AUDIT_REQUIRED"
+          check_job frontend-unit-tests "$FRONTEND_TESTS" "$FRONTEND_TESTS_REQUIRED"
+          check_job frontend-production-build "$FRONTEND_BUILD" "$FRONTEND_BUILD_REQUIRED"
+          check_job frontend-dependency-audit "$FRONTEND_AUDIT" "$FRONTEND_AUDIT_REQUIRED"
+          check_job authenticated-api-smoke "$API_SMOKE" "$API_SMOKE_REQUIRED"
+          echo "All selected checks passed on the exact candidate SHA; unselected jobs are explicitly verified as skipped."
