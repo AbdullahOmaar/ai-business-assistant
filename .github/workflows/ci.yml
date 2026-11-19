@@ -32,6 +32,7 @@ jobs:
       frontend_build: ${{ steps.plan.outputs.frontend_build }}
       frontend_audit: ${{ steps.plan.outputs.frontend_audit }}
       api_smoke: ${{ steps.plan.outputs.api_smoke }}
+      docs_validation: ${{ steps.plan.outputs.docs_validation }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -60,7 +61,7 @@ jobs:
               "migrations": "false", "frontend_tests": "false",
               "frontend_full": "false", "frontend_specs": "",
               "frontend_build": "false", "frontend_audit": "false",
-              "api_smoke": "false",
+              "api_smoke": "false", "docs_validation": "false",
           }
 
           def save():
@@ -74,7 +75,8 @@ jobs:
           def force_full():
               for key in ("backend_tests", "backend_full", "backend_container",
                           "backend_audit", "migrations", "frontend_tests",
-                          "frontend_full", "frontend_build", "frontend_audit"):
+                          "frontend_full", "frontend_build", "frontend_audit",
+                          "docs_validation"):
                   keys[key] = "true"
 
           event = os.environ["EVENT_NAME"]
@@ -100,20 +102,25 @@ jobs:
                   subprocess.run(["git", "cat-file", "-e", f"{base}^{{commit}}"], check=True, capture_output=True)
                   subprocess.run(["git", "cat-file", "-e", f"{head}^{{commit}}"], check=True, capture_output=True)
                   result = subprocess.run(
-                      ["git", "diff", "--name-only", "--diff-filter=ACMRTUXB", base, head],
+                      ["git", "diff", "--name-status", "--find-renames", base, head],
                       check=True, capture_output=True, text=True,
                   )
-                  paths = [p for p in result.stdout.splitlines() if p]
+                  paths = []
+                  for line in result.stdout.splitlines():
+                      fields = line.split("\\t")
+                      if len(fields) != 2 or fields[0] not in ("A", "M"):
+                          raise RuntimeError(f"added/deleted/renamed/type-changed path requires full fallback: {line}")
+                      paths.append(fields[1])
                   if any(not Path(p).exists() for p in paths):
-                      raise RuntimeError("deleted or renamed path requires full fallback")
+                      raise RuntimeError("changed path is missing from the candidate checkout")
               except Exception as exc:
                   print(f"::warning::Unable to calculate a trustworthy changed-path set ({exc}); running full regression.")
                   force_full()
                   paths = []
 
-              if paths and not any(v == "true" for v in keys.values() if isinstance(v, str) and v != ""):
-                  pass
               if paths:
+                  if any(p.startswith("docs/") or p.endswith(".md") for p in paths):
+                      keys["docs_validation"] = "true"
                   broad = any(
                       p.startswith(".github/workflows/")
                       or p.startswith("scripts/")
@@ -135,7 +142,12 @@ jobs:
                       backend_test_paths = [p for p in backend_paths if p.startswith("backend/tests/") and p.endswith(".py")]
                       if backend_source or not backend_test_paths:
                           keys["backend_full"] = "true"
-                      elif any(not Path(p).exists() for p in backend_test_paths):
+                      elif any(
+                          not Path(p).exists() or not Path(p).name.startswith("test_")
+                          for p in backend_test_paths
+                      ):
+                          # conftest.py, helpers, fixtures and non-test support modules
+                          # can affect the entire suite; never pass them to pytest as tests.
                           keys["backend_full"] = "true"
                       if any("alembic" in p or "migration" in p or p.endswith("/models.py") for p in backend_paths):
                           keys["migrations"] = "true"
@@ -187,7 +199,11 @@ jobs:
                               keys["frontend_full"] = "true"
                           else:
                               keys["frontend_specs"] = " ".join(unique)
-                      if any(p.startswith(("frontend/src/", "frontend/public/", "frontend/angular.json", "frontend/tsconfig")) for p in frontend_paths):
+                      if any(
+                          p.startswith(("frontend/src/", "frontend/public/", "frontend/angular.json", "frontend/tsconfig"))
+                          or p in ("frontend/package.json", "frontend/package-lock.json")
+                          for p in frontend_paths
+                      ):
                           keys["frontend_build"] = "true"
                       if any(p in ("frontend/package.json", "frontend/package-lock.json", "frontend/.npmrc") for p in frontend_paths):
                           keys["frontend_audit"] = "true"
@@ -199,6 +215,24 @@ jobs:
           for key, value in keys.items():
               print(f"{key}={value}")
           PY
+
+  project-knowledge:
+    name: project-knowledge
+    needs: [detect-changes]
+    if: needs.detect-changes.outputs.docs_validation == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source SHA
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Validate project knowledge and CI regression tests
+        run: |
+          python scripts/validate_project_knowledge.py
+          python -m unittest discover -s tests -p 'test_project_knowledge_validator.py' -v
+          python -m unittest discover -s tests -p 'test_github_actions_slack_failure.py' -v
 
   backend-accounting:
     name: backend-accounting
@@ -283,11 +317,6 @@ jobs:
             exit 1
           fi
           python -m pytest -q "${files[@]}" --junitxml=test-results/pytest.xml
-      - name: Validate project knowledge and CI regression tests
-        run: |
-          python scripts/validate_project_knowledge.py
-          python -m unittest discover -s tests -p 'test_project_knowledge_validator.py' -v
-          python -m unittest discover -s tests -p 'test_github_actions_slack_failure.py' -v
       - name: Upload backend test results
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -496,6 +525,7 @@ jobs:
       - backend-dependency-audit
       - backend-container
       - authenticated-api-smoke
+      - project-knowledge
     steps:
       - name: Require every selected validation job to succeed
         env:
@@ -514,6 +544,8 @@ jobs:
           FRONTEND_AUDIT_REQUIRED: ${{ needs.detect-changes.outputs.frontend_audit }}
           API_SMOKE: ${{ needs.authenticated-api-smoke.result }}
           API_SMOKE_REQUIRED: ${{ needs.detect-changes.outputs.api_smoke }}
+          DOCS: ${{ needs.project-knowledge.result }}
+          DOCS_REQUIRED: ${{ needs.detect-changes.outputs.docs_validation }}
         run: |
           set -euo pipefail
           test "$DETECT" = "success" || { echo "::error::Change detection did not succeed: $DETECT"; exit 1; }
@@ -532,4 +564,5 @@ jobs:
           check_job frontend-production-build "$FRONTEND_BUILD" "$FRONTEND_BUILD_REQUIRED"
           check_job frontend-dependency-audit "$FRONTEND_AUDIT" "$FRONTEND_AUDIT_REQUIRED"
           check_job authenticated-api-smoke "$API_SMOKE" "$API_SMOKE_REQUIRED"
+          check_job project-knowledge "$DOCS" "$DOCS_REQUIRED"
           echo "All selected checks passed on the exact candidate SHA; unselected jobs are explicitly verified as skipped."
