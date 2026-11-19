@@ -25,7 +25,7 @@ from app.data_exchange import CsvValidationError, parse_import_csv
 from app.models import (
     AuditEvent, Business, BusinessSetting, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
     Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, PurchaseReceiptIdempotency, RecurringInvoiceSchedule,
-    SalesReturn, SalesReturnLine, StockMovement, Supplier,
+    CreditNote, SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
 from app.core_features_api import _day_bounds
 from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, apply_expense_visibility, authorize_membership
@@ -742,6 +742,139 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
         return ret
     ret = _commit(session, op)
     return _dict(ret, ("id", "invoice_id", "status", "total", "created_at"))
+
+
+@router.post("/sales-returns/{return_id}/credit-note", status_code=201)
+def issue_credit_note_for_return(
+    business_id: UUID,
+    return_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Issue one immutable credit note for an approved return; no AR or cash posting."""
+
+    def op():
+        _authorized(session, principal, business_id, owner_only=True)
+        ret = session.scalars(
+            select(SalesReturn).where(
+                SalesReturn.id == return_id,
+                SalesReturn.business_id == business_id,
+            ).with_for_update()
+        ).one_or_none()
+        if ret is None:
+            raise WorkflowError("Sales return not found in this business")
+
+        existing = session.scalars(select(CreditNote).where(
+            CreditNote.business_id == business_id,
+            CreditNote.sales_return_id == ret.id,
+        ).with_for_update()).one_or_none()
+        if existing is not None:
+            return existing
+        if ret.status != "approved":
+            raise WorkflowError("Only an approved sales return can be credited")
+
+        invoice = session.scalars(select(Invoice).where(
+            Invoice.id == ret.invoice_id,
+            Invoice.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if invoice is None or invoice.status != "issued":
+            raise WorkflowError("Credit note must reference an issued invoice")
+        if invoice.customer_id is None:
+            raise WorkflowError("Credit note requires an invoice linked to a customer")
+        if Decimal(str(invoice.tax_total or ZERO)) > ZERO:
+            raise WorkflowError(
+                "Credit note issuance for tax-bearing invoices is deferred until tax allocation is approved"
+            )
+
+        return_lines = session.scalars(select(SalesReturnLine).where(
+            SalesReturnLine.sales_return_id == ret.id,
+            SalesReturnLine.business_id == business_id,
+        ).order_by(SalesReturnLine.id)).all()
+        if not return_lines:
+            raise WorkflowError("An approved return must contain at least one line")
+        source_line_ids = {line.invoice_line_id for line in return_lines}
+        source_count = session.scalar(select(func.count(InvoiceLine.id)).where(
+            InvoiceLine.business_id == business_id,
+            InvoiceLine.invoice_id == invoice.id,
+            InvoiceLine.id.in_(source_line_ids),
+        ))
+        if int(source_count or 0) != len(source_line_ids):
+            raise WorkflowError("Every return line must reference the original invoice")
+
+        total = money(sum((Decimal(str(line.amount)) for line in return_lines), ZERO))
+        if total <= ZERO or money(Decimal(str(ret.total))) != total:
+            raise WorkflowError("Approved return total must reconcile to its persisted return lines")
+
+        note = CreditNote(
+            business_id=business_id,
+            sales_return_id=ret.id,
+            invoice_id=invoice.id,
+            customer_id=invoice.customer_id,
+            credit_note_number=f"CN-{ret.id.hex[:24].upper()}",
+            currency_code=invoice.currency_code,
+            total=total,
+            created_by_subject=principal.subject,
+        )
+        session.add(note)
+        session.flush()
+        session.add(AuditEvent(
+            business_id=business_id,
+            actor_subject=principal.subject,
+            action="credit_note.issued",
+            target_type="credit_note",
+            target_id=str(note.id),
+            change_summary=f"Credit note issued for approved sales return {ret.id}",
+        ))
+        session.flush()
+        return note
+
+    try:
+        note = _commit(session, op)
+    except HTTPException as exc:
+        if exc.status_code != 409:
+            raise
+        # A concurrent request may win the unique (business, return) constraint.
+        session.rollback()
+        existing = session.scalars(select(CreditNote).where(
+            CreditNote.business_id == business_id,
+            CreditNote.sales_return_id == return_id,
+        )).one_or_none()
+        if existing is None:
+            raise
+        note = existing
+
+    return _dict(note, (
+        "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
+        "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
+    ))
+
+
+@router.get("/credit-notes")
+def list_credit_notes(
+    business_id: UUID,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    customer_id: UUID | None = Query(default=None),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """List issued Stage-1 credit-note documents; does not imply applied credit or cash refund."""
+    _authorized(session, principal, business_id)
+    statement = select(CreditNote).where(CreditNote.business_id == business_id)
+    if customer_id is not None:
+        statement = statement.where(CreditNote.customer_id == customer_id)
+    notes = session.scalars(
+        statement.order_by(CreditNote.created_at.desc(), CreditNote.id.desc())
+        .limit(limit).offset(offset)
+    ).all()
+    return {
+        "items": [_dict(note, (
+            "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
+            "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
+        )) for note in notes],
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 @router.post("/recurring-invoices", status_code=201)
