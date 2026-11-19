@@ -136,7 +136,7 @@ jobs:
                       p for p in paths
                       if not p.startswith(known_prefixes)
                       and p not in known_root_files
-                      and not p.endswith(".md")
+
                   ]
                   if unknown:
                       print(f"::warning::Unknown changed paths require full regression: {unknown}")
