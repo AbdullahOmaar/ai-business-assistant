@@ -175,3 +175,84 @@ def test_receipt_history_and_activity_are_read_only_and_tenant_scoped():
     finally:
         _restore_test_identity(*previous)
         engine.dispose()
+
+
+def test_owner_cannot_update_draft_with_foreign_or_inactive_references_without_writes():
+    engine, business_id, _, _ = _sales_return_fixture()
+    previous = _configure_test_identity(engine)
+    try:
+        client = TestClient(app)
+        order_id, supplier_id, product_id = _draft_order(
+            engine, client, business_id, "PO-T39-REFERENCE-GUARDS"
+        )
+        with Session(engine) as session:
+            foreign_business = Business(name="T39 foreign update tenant", currency_code="EGP")
+            session.add(foreign_business)
+            session.flush()
+            foreign_supplier = Supplier(business_id=foreign_business.id, name="Foreign update supplier")
+            foreign_product = Product(
+                business_id=foreign_business.id, name="Foreign update product",
+                unit_price=Decimal("9.00"), is_stock_tracked=True,
+            )
+            inactive_supplier = Supplier(
+                business_id=business_id, name="Inactive update supplier", is_active=False
+            )
+            inactive_product = Product(
+                business_id=business_id, name="Inactive update product",
+                unit_price=Decimal("9.00"), is_stock_tracked=True, is_active=False,
+            )
+            session.add_all([foreign_supplier, foreign_product, inactive_supplier, inactive_product])
+            session.commit()
+            foreign_supplier_id, foreign_product_id = foreign_supplier.id, foreign_product.id
+            inactive_supplier_id, inactive_product_id = inactive_supplier.id, inactive_product.id
+
+        def persisted_state():
+            with Session(engine) as session:
+                order = session.get(PurchaseOrder, order_id)
+                lines = session.scalars(select(PurchaseOrderLine).where(
+                    PurchaseOrderLine.business_id == business_id,
+                    PurchaseOrderLine.purchase_order_id == order_id,
+                ).order_by(PurchaseOrderLine.id)).all()
+                movements = session.scalars(select(StockMovement.id).where(
+                    StockMovement.business_id == business_id,
+                    StockMovement.reference_type == "purchase_order",
+                    StockMovement.reference_id == order_id,
+                ).order_by(StockMovement.id)).all()
+                events = session.scalars(select(AuditEvent.id).where(
+                    AuditEvent.business_id == business_id,
+                    AuditEvent.target_type == "purchase_order",
+                    AuditEvent.target_id == str(order_id),
+                ).order_by(AuditEvent.id)).all()
+                return (
+                    (order.status, order.supplier_id, order.order_number,
+                     order.currency_code, str(order.total)),
+                    tuple((str(line.id), str(line.product_id), str(line.quantity),
+                           str(line.unit_cost), str(line.received_quantity)) for line in lines),
+                    tuple(str(item) for item in movements),
+                    tuple(str(item) for item in events),
+                )
+
+        cases = [
+            (foreign_supplier_id, product_id, "PO-T39-FOREIGN-SUPPLIER"),
+            (supplier_id, foreign_product_id, "PO-T39-FOREIGN-PRODUCT"),
+            (inactive_supplier_id, product_id, "PO-T39-INACTIVE-SUPPLIER"),
+            (supplier_id, inactive_product_id, "PO-T39-INACTIVE-PRODUCT"),
+        ]
+        url = f"/api/v1/businesses/{business_id}/purchase-orders/{order_id}"
+        for requested_supplier_id, requested_product_id, order_number in cases:
+            before = persisted_state()
+            response = client.put(url, json={
+                "supplier_id": str(requested_supplier_id),
+                "order_number": order_number,
+                "currency_code": "EGP",
+                "lines": [{
+                    "product_id": str(requested_product_id),
+                    "quantity": "1.000",
+                    "unit_cost": "1.00",
+                }],
+            })
+            assert response.status_code == 422, response.text
+            assert persisted_state() == before
+    finally:
+        _restore_test_identity(*previous)
+        engine.dispose()
