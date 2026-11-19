@@ -140,10 +140,20 @@ jobs:
                   if unknown:
                       print(f"::warning::Unknown changed paths require full regression: {unknown}")
                       force_full()
+                  ci_meta_paths = {
+                      "tests/test_ci_validation_scope.py",
+                      "tests/test_project_knowledge_validator.py",
+                      "tests/test_github_actions_slack_failure.py",
+                  }
+                  if any(p in ci_meta_paths for p in paths):
+                      # These tests validate CI/governance tooling, not application behavior.
+                      # Run them in the lightweight project-knowledge job, not app regressions.
+                      keys["docs_validation"] = "true"
+
                   broad = any(
                       p.startswith(".github/workflows/")
                       or p.startswith("scripts/")
-                      or p.startswith("tests/")
+                      or (p.startswith("tests/") and p not in ci_meta_paths)
                       or p in ("AGENTS.md", "TASKS.md", "pyproject.toml", "pytest.ini",
                                "requirements.txt", "package.json", "package-lock.json")
                       for p in paths

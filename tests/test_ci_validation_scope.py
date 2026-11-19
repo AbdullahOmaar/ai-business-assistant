@@ -127,6 +127,22 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
         plan = self.run_selector()
         self.assertEqual(plan["docs_validation"], "false")
 
+    def test_ci_meta_tests_run_without_application_regression(self) -> None:
+        for path in (
+            "tests/test_ci_validation_scope.py",
+            "tests/test_project_knowledge_validator.py",
+            "tests/test_github_actions_slack_failure.py",
+        ):
+            with self.subTest(path=path):
+                self.write(path, "def test_ci_meta():\\n    assert True\\n")
+                self.commit(f"update {path}")
+                plan = self.run_selector()
+                self.assertEqual(plan["docs_validation"], "true")
+                self.assertEqual(plan["backend_tests"], "false")
+                self.assertEqual(plan["frontend_tests"], "false")
+                self.assertEqual(plan["backend_container"], "false")
+                self.assertEqual(plan["frontend_build"], "false")
+
     def test_backend_test_module_is_targeted(self) -> None:
         self.write("backend/tests/test_api.py", "def test_targeted():\n    assert 2 == 2\n")
         self.commit("backend test module")
