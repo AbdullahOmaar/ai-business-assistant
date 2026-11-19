@@ -190,6 +190,17 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
         self.assertIn("test_t39_receipt_idempotency_postgres_schema.py", workflow)
         self.assertIn("Path(p).name in postgres_schema_tests", workflow)
 
+    def test_postgres_idempotency_module_selects_migrations(self) -> None:
+        self.write(
+            "backend/tests/test_t39_receipt_idempotency_postgres_schema.py",
+            "def test_targeted():\\n    assert True\\n",
+        )
+        self.commit("backend PostgreSQL idempotency test module")
+        plan = self.run_selector()
+        self.assertEqual(plan["backend_tests"], "true")
+        self.assertEqual(plan["backend_full"], "false")
+        self.assertEqual(plan["migrations"], "true")
+
     def test_backend_shared_test_helpers_run_full_suite(self) -> None:
         shared_modules = (
             "backend/tests/test_api.py",
