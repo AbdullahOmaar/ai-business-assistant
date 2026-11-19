@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, CreditNote, Customer, Invoice, InvoiceDetail, SalesReturn } from './api.service';
+import { LocalizationService } from './localization.service';
 
 type ReturnDraftLine = {
   invoiceLineId: string;
@@ -19,72 +20,68 @@ type ReturnDraftLine = {
       aria-labelledby="credit-note-heading">
       <header class="heading">
         <div>
-          <h2 id="credit-note-heading">{{ language === 'ar' ? 'مرتجعات العملاء والإشعارات الدائنة' : 'Customer returns & credit notes' }}</h2>
-          <p>{{ language === 'ar'
-            ? 'الإشعار الدائن مستند مستقل؛ لا يخصم المديونية ولا يثبت رد أموال نقدية.'
-            : 'A credit note is a separate document; it does not apply receivable credit or prove a cash refund.' }}</p>
+          <h2 id="credit-note-heading">{{ t('title') }}</h2>
+          <p>{{ t('description') }}</p>
         </div>
         <button type="button" (click)="refresh()" [disabled]="loading">
-          {{ loading ? (language === 'ar' ? 'جارٍ التحميل…' : 'Loading…') : (language === 'ar' ? 'تحديث' : 'Refresh') }}
+          {{ loading ? t('loading') : t('refresh') }}
         </button>
       </header>
 
       @if (message) { <p class="notice" role="status" aria-live="polite">{{ message }}</p> }
       @if (error) { <p class="error" role="alert">{{ error }}</p> }
       @if (loading && !returns.length && !notes.length) {
-        <p role="status">{{ language === 'ar' ? 'جارٍ تحميل البيانات…' : 'Loading records…' }}</p>
+        <p role="status">{{ t('loadingRecords') }}</p>
       }
 
-      <h3>{{ language === 'ar' ? 'إنشاء مسودة مرتجع' : 'Create a return draft' }}</h3>
+      <h3>{{ t('createReturnDraft') }}</h3>
       <form class="return-form" (ngSubmit)="createReturn()">
         <label>
-          {{ language === 'ar' ? 'الفاتورة الصادرة' : 'Issued invoice' }}
+          {{ t('issuedInvoice') }}
           <select name="returnInvoice" required [(ngModel)]="selectedInvoiceId"
             (ngModelChange)="onInvoiceSelected($event)" [disabled]="loading || creatingReturn">
-            <option value="">{{ language === 'ar' ? 'اختر فاتورة صادرة' : 'Choose an issued invoice' }}</option>
+            <option value="">{{ t('chooseInvoice') }}</option>
             @for (invoice of issuedInvoices; track invoice.id) {
               <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option>
             }
           </select>
         </label>
         <label>
-          {{ language === 'ar' ? 'سبب المرتجع (اختياري)' : 'Return reason (optional)' }}
+          {{ t('returnReason') }}
           <input name="returnReason" maxlength="500" [(ngModel)]="returnReason" [disabled]="creatingReturn">
         </label>
         @if (detailLoading) {
-          <p role="status">{{ language === 'ar' ? 'جارٍ تحميل بنود الفاتورة…' : 'Loading invoice lines…' }}</p>
+          <p role="status">{{ t('loadingInvoiceLines') }}</p>
         }
         @if (invoiceDetail) {
           <div class="return-lines">
             @for (line of returnLines; track line.invoiceLineId) {
               <label class="return-line">
-                <span>{{ line.description }} <small>({{ language === 'ar' ? 'الكمية بالفاتورة' : 'Invoiced qty' }}: {{ line.invoicedQuantity }})</small></span>
+                <span>{{ line.description }} <small>({{ t('quantityInInvoice') }}: {{ line.invoicedQuantity }})</small></span>
                 <input type="number" [name]="'returnQty' + line.invoiceLineId" min="0" [max]="line.invoicedQuantity"
                   step="0.001" [(ngModel)]="line.quantity" [disabled]="creatingReturn"
-                  [attr.aria-label]="(language === 'ar' ? 'كمية المرتجع: ' : 'Return quantity: ') + line.description">
+                  [attr.aria-label]="t('returnQuantity') + ': ' + line.description">
               </label>
             }
           </div>
-          <p class="footnote">{{ language === 'ar'
-            ? 'الخادم يحسب قيمة المرتجع من بيانات الفاتورة المحفوظة. اعتماد المرتجع وإصدار الإشعار الدائن عمليتان منفصلتان.'
-            : 'The server derives return amounts from persisted invoice data. Return approval and credit-note issuance are separate actions.' }}</p>
+          <p class="footnote">{{ t('serverCalculationNote') }}</p>
         }
         <button class="primary" type="submit"
           [disabled]="loading || creatingReturn || detailLoading || !invoiceDetail || !returnLines.length">
-          {{ creatingReturn ? (language === 'ar' ? 'جارٍ الحفظ…' : 'Saving…') : (language === 'ar' ? 'حفظ مسودة المرتجع' : 'Save return draft') }}
+          {{ creatingReturn ? t('saving') : t('saveDraft') }}
         </button>
       </form>
 
-      <h3>{{ language === 'ar' ? 'المرتجعات' : 'Sales returns' }}</h3>
+      <h3>{{ t('returns') }}</h3>
       @if (!loading && !returns.length) {
-        <p class="empty">{{ language === 'ar' ? 'لا توجد مرتجعات بعد.' : 'No returns yet.' }}</p>
+        <p class="empty">{{ t('noReturns') }}</p>
       }
       <div class="records">
         @for (ret of returns; track ret.id) {
           <article class="record">
             <div class="record-main">
-              <strong>{{ language === 'ar' ? 'مرتجع' : 'Return' }} · {{ shortId(ret.id) }}</strong>
-              <small>{{ language === 'ar' ? 'الفاتورة' : 'Invoice' }} · {{ invoiceNumber(ret.invoice_id) }}</small>
+              <strong>{{ t('return') }} · {{ shortId(ret.id) }}</strong>
+              <small>{{ t('invoice') }} · {{ invoiceNumber(ret.invoice_id) }}</small>
               @if (ret.reason) { <small>{{ ret.reason }}</small> }
               <small>{{ statusLabel(ret.status) }} · {{ ret.created_at | date:'short' }}</small>
             </div>
@@ -92,47 +89,45 @@ type ReturnDraftLine = {
             @if (ret.status === 'draft' && role === 'owner') {
               <button type="button" class="primary" (click)="approve(ret)"
                 [disabled]="loading || creatingReturn || actionId !== null">
-                {{ actionId === ret.id ? (language === 'ar' ? 'جارٍ الاعتماد…' : 'Approving…') : (language === 'ar' ? 'اعتماد المرتجع' : 'Approve return') }}
+                {{ actionId === ret.id ? t('approving') : t('approveReturn') }}
               </button>
             }
             @if (ret.status === 'approved') {
               @if (creditNoteForReturn(ret.id); as note) {
-                <span class="issued">{{ language === 'ar' ? 'صدر الإشعار' : 'Issued' }} · {{ note.credit_note_number }}</span>
+                <span class="issued">{{ t('issued') }} · {{ note.credit_note_number }}</span>
               } @else if (role === 'owner') {
                 <button type="button" class="primary" (click)="issue(ret)"
                   [disabled]="loading || actionId !== null">
-                  {{ actionId === ret.id ? (language === 'ar' ? 'جارٍ الإصدار…' : 'Issuing…') : (language === 'ar' ? 'إصدار إشعار دائن' : 'Issue credit note') }}
+                  {{ actionId === ret.id ? t('issuing') : t('issueCreditNote') }}
                 </button>
               } @else {
-                <span class="muted">{{ language === 'ar' ? 'إصدار الإشعار للمالك فقط' : 'Owner-only issuance' }}</span>
+                <span class="muted">{{ t('ownerOnlyIssuance') }}</span>
               }
             }
           </article>
         }
       </div>
 
-      <h3>{{ language === 'ar' ? 'الإشعارات الدائنة الصادرة' : 'Issued credit notes' }}</h3>
+      <h3>{{ t('issuedNotes') }}</h3>
       @if (!loading && !notes.length) {
-        <p class="empty">{{ language === 'ar' ? 'لا توجد إشعارات دائنة صادرة.' : 'No credit notes issued.' }}</p>
+        <p class="empty">{{ t('noNotes') }}</p>
       }
       <div class="records">
         @for (note of notes; track note.id) {
           <article class="record">
             <div class="record-main">
               <strong>{{ note.credit_note_number }}</strong>
-              <small>{{ language === 'ar' ? 'مرتجع' : 'Return' }} · {{ shortId(note.sales_return_id) }}</small>
-              <small>{{ language === 'ar' ? 'العميل' : 'Customer' }} · {{ customerName(note.customer_id) }}</small>
+              <small>{{ t('return') }} · {{ shortId(note.sales_return_id) }}</small>
+              <small>{{ t('customer') }} · {{ customerName(note.customer_id) }}</small>
               <small>{{ note.created_at | date:'short' }}</small>
             </div>
             <strong class="amount">{{ note.total }} {{ note.currency_code }}</strong>
-            <span class="issued">{{ language === 'ar' ? 'صادر' : 'Issued' }}</span>
+            <span class="issued">{{ t('issued') }}</span>
           </article>
         }
       </div>
 
-      <p class="footnote">{{ language === 'ar'
-        ? 'المرحلة الحالية تصدر المستند فقط. لا يتم تطبيق الرصيد على المديونية أو تسجيل رد نقدي. الفواتير ذات الضريبة موقوفة حتى اعتماد توزيع الضريبة.'
-        : 'This phase issues the document only. It does not apply credit to receivables or record a cash refund. Tax-bearing invoices remain blocked until tax allocation is approved.' }}</p>
+      <p class="footnote">{{ t('phaseFootnote') }}</p>
     </section>
   `,
   styles: [`
@@ -178,7 +173,14 @@ export class CreditNoteIssuanceComponent implements OnChanges {
   private refreshSequence = 0;
   private detailSequence = 0;
 
-  constructor(private readonly api: ApiService) {}
+  constructor(
+    private readonly api: ApiService,
+    private readonly localization: LocalizationService,
+  ) {}
+
+  t(key: string): string {
+    return this.localization.translate('creditNotes.' + key);
+  }
 
   get issuedInvoices(): Invoice[] {
     return this.invoices.filter(invoice => invoice.status === 'issued');
@@ -257,12 +259,12 @@ export class CreditNoteIssuanceComponent implements OnChanges {
       .map(line => ({ invoice_line_id: line.invoiceLineId, quantity: String(line.quantity).trim() }))
       .filter(line => line.quantity && Number(line.quantity) > 0);
     if (!lines.length || lines.some(line => !Number.isFinite(Number(line.quantity)))) {
-      this.error = this.language === 'ar' ? 'أدخل كمية مرتجع صحيحة لبند واحد على الأقل.' : 'Enter a valid return quantity for at least one line.';
+      this.error = this.t('validReturnQuantity');
       return;
     }
     const quantities = new Map(this.returnLines.map(line => [line.invoiceLineId, Number(line.invoicedQuantity)]));
     if (lines.some(line => Number(line.quantity) > (quantities.get(line.invoice_line_id) ?? 0))) {
-      this.error = this.language === 'ar' ? 'كمية المرتجع تتجاوز الكمية بالفاتورة.' : 'Return quantity exceeds the invoiced quantity.';
+      this.error = this.t('returnQuantityTooHigh');
       return;
     }
     this.creatingReturn = true;
@@ -278,7 +280,7 @@ export class CreditNoteIssuanceComponent implements OnChanges {
       this.invoiceDetail = null;
       this.returnLines = [];
       this.returnReason = '';
-      this.message = this.language === 'ar' ? 'تم حفظ مسودة المرتجع. يلزم اعتماد المالك قبل إصدار الإشعار.' : 'Return draft saved. An owner must approve it before credit-note issuance.';
+      this.message = this.t('draftSavedMessage');
       await this.refresh();
     } catch (error) {
       this.error = this.messageFor(error);
@@ -294,7 +296,7 @@ export class CreditNoteIssuanceComponent implements OnChanges {
     this.message = '';
     try {
       await this.api.approveSalesReturn(this.businessId, ret.id);
-      this.message = this.language === 'ar' ? 'تم اعتماد المرتجع.' : 'Return approved.';
+      this.message = this.t('returnApprovedMessage');
       await this.refresh();
     } catch (error) {
       this.error = this.messageFor(error);
@@ -310,7 +312,7 @@ export class CreditNoteIssuanceComponent implements OnChanges {
     this.message = '';
     try {
       await this.api.issueCreditNote(this.businessId, ret.id);
-      this.message = this.language === 'ar' ? 'تم إصدار الإشعار الدائن. لم يتم تطبيقه على المديونية أو رد أموال نقدية.' : 'Credit note issued. No receivable application or cash refund was recorded.';
+      this.message = this.t('creditNoteIssuedMessage');
       await this.refresh();
     } catch (error) {
       this.error = this.messageFor(error);
@@ -336,14 +338,13 @@ export class CreditNoteIssuanceComponent implements OnChanges {
   }
 
   statusLabel(status: SalesReturn['status']): string {
-    if (this.language === 'ar') {
-      return status === 'approved' ? 'معتمد' : status === 'rejected' ? 'مرفوض' : 'مسودة';
-    }
-    return status === 'approved' ? 'Approved' : status === 'rejected' ? 'Rejected' : 'Draft';
+    if (status === 'approved') return this.t('statusApproved');
+    if (status === 'rejected') return this.t('statusRejected');
+    return this.t('statusDraft');
   }
 
   private messageFor(error: unknown): string {
     if (error instanceof Error && error.message) return error.message;
-    return this.language === 'ar' ? 'تعذر تنفيذ العملية. حاول التحديث أو راجع صلاحياتك.' : 'The operation failed. Refresh or check your permissions.';
+    return this.t('errorGeneric');
   }
 }
