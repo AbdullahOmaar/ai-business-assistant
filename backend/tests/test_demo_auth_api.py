@@ -32,10 +32,17 @@ def test_public_demo_session_mints_custom_token_without_password(monkeypatch):
     monkeypatch.setenv("DEMO_LOGIN_ENABLED", "true")
     monkeypatch.setenv("DEMO_LOGIN_EMAIL", "demo@example.test")
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "aiba-test")
+    monkeypatch.setenv("DEMO_RATE_LIMIT_REDIS_URL", "https://redis.example.test")
+    monkeypatch.setenv("DEMO_RATE_LIMIT_REDIS_TOKEN", "test-token")
     monkeypatch.delenv("PLATFORM_SUPER_ADMIN_UIDS", raising=False)
     monkeypatch.setattr(demo_auth_api, "get_firebase_admin_app", lambda: object())
     monkeypatch.setattr(auth, "get_user_by_email", lambda _email, app: SimpleNamespace(uid="demo-uid"))
     monkeypatch.setattr(auth, "create_custom_token", lambda uid, app: b"one-time-custom-token")
+    class _RedisResponse:
+        def __enter__(self): return self
+        def __exit__(self, *_args): return False
+        def read(self): return b'{"result":1}'
+    monkeypatch.setattr(demo_auth_api, "urlopen", lambda *_args, **_kwargs: _RedisResponse())
 
     previous_factory = getattr(app.state, "session_factory", None)
     app.state.session_factory = lambda: _DemoSession()
@@ -74,3 +81,34 @@ def test_public_demo_session_rejects_platform_super_admin(monkeypatch):
             del app.state.session_factory
         else:
             app.state.session_factory = previous_factory
+
+
+
+def test_demo_session_fails_closed_when_shared_rate_limiter_is_not_configured(monkeypatch):
+    from app import demo_auth_api
+
+    monkeypatch.setenv("DEMO_LOGIN_ENABLED", "true")
+    monkeypatch.setenv("DEMO_LOGIN_EMAIL", "demo@example.test")
+    monkeypatch.delenv("DEMO_RATE_LIMIT_REDIS_URL", raising=False)
+    monkeypatch.delenv("DEMO_RATE_LIMIT_REDIS_TOKEN", raising=False)
+    response = TestClient(app).post("/api/v1/demo/session")
+    assert response.status_code == 503
+    assert "rate limiting is not configured" in response.json()["detail"]
+
+
+def test_demo_session_rate_limit_rejects_excess_requests_before_firebase(monkeypatch):
+    from app import demo_auth_api
+
+    monkeypatch.setenv("DEMO_LOGIN_ENABLED", "true")
+    monkeypatch.setenv("DEMO_LOGIN_EMAIL", "demo@example.test")
+    monkeypatch.setenv("DEMO_RATE_LIMIT_REDIS_URL", "https://redis.example.test")
+    monkeypatch.setenv("DEMO_RATE_LIMIT_REDIS_TOKEN", "test-token")
+    monkeypatch.setenv("DEMO_RATE_LIMIT_MAX_REQUESTS", "1")
+    class _RedisResponse:
+        def __enter__(self): return self
+        def __exit__(self, *_args): return False
+        def read(self): return b'{"result":2}'
+    monkeypatch.setattr(demo_auth_api, "urlopen", lambda *_args, **_kwargs: _RedisResponse())
+    response = TestClient(app).post("/api/v1/demo/session")
+    assert response.status_code == 429
+    assert response.headers["retry-after"] == "60"
