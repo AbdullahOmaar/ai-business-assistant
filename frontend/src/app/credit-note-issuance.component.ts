@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, Input, OnChanges, SimpleChanges } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, CreditNote, Invoice, InvoiceDetail, SalesReturn } from './api.service';
+import { ApiService, CreditNote, Customer, Invoice, InvoiceDetail, SalesReturn } from './api.service';
 
 type ReturnDraftLine = {
   invoiceLineId: string;
@@ -162,6 +162,7 @@ export class CreditNoteIssuanceComponent implements OnChanges {
   @Input() language: 'ar' | 'en' = 'ar';
 
   invoices: Invoice[] = [];
+  customers: Customer[] = [];
   returns: SalesReturn[] = [];
   notes: CreditNote[] = [];
   invoiceDetail: InvoiceDetail | null = null;
@@ -188,6 +189,7 @@ export class CreditNoteIssuanceComponent implements OnChanges {
       this.refreshSequence++;
       this.detailSequence++;
       this.invoices = [];
+      this.customers = [];
       this.returns = [];
       this.notes = [];
       this.invoiceDetail = null;
@@ -204,13 +206,15 @@ export class CreditNoteIssuanceComponent implements OnChanges {
     this.loading = true;
     this.error = '';
     try {
-      const [invoices, returns, notes] = await Promise.all([
+      const [invoices, customers, returns, notes] = await Promise.all([
         this.api.invoices(businessId, 0, 100),
+        this.api.customers(businessId, 0, 200),
         this.api.salesReturns(businessId),
         this.api.creditNotes(businessId),
       ]);
       if (sequence !== this.refreshSequence || businessId !== this.businessId) return;
       this.invoices = invoices;
+      this.customers = customers;
       this.returns = returns.items;
       this.notes = notes.items;
     } catch (error) {
@@ -324,7 +328,7 @@ export class CreditNoteIssuanceComponent implements OnChanges {
   }
 
   customerName(customerId: string): string {
-    return customerId ? this.notes.find(note => note.customer_id === customerId)?.customer_id ?? this.shortId(customerId) : '—';
+    return customerId ? this.customers.find(customer => customer.id === customerId)?.name ?? this.shortId(customerId) : '—';
   }
 
   shortId(value: string): string {
