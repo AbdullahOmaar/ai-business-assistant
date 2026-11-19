@@ -91,7 +91,9 @@ test('purchase line inputs preserve decimal strings and match backend precision 
   assert.ok(workspace.includes('[(ngModel)]="line.unit_cost"'));
   assert.ok(workspace.includes('isValidDecimal(line.quantity, 3, false)'));
   assert.ok(workspace.includes('isValidDecimal(line.unit_cost, 2, true)'));
-  assert.ok(workspace.includes("const scaled = BigInt(integer + fraction.padEnd(maxScale, '0'))"));
-  assert.ok(workspace.includes('integer.length + fraction.length > 14'));
+  assert.ok(workspace.includes("import { isValidPurchaseDecimalInput, normalizePurchaseDecimalInput } from './purchasing-decimal';"));
+  assert.ok(workspace.includes('quantity: normalizePurchaseDecimalInput(line.quantity)'));
+  assert.ok(workspace.includes('unit_cost: normalizePurchaseDecimalInput(line.unit_cost)'));
+  assert.ok(workspace.includes('return isValidPurchaseDecimalInput(value, maxScale, allowZero)'));
   assert.doesNotMatch(workspace, /Number\(line\.(?:quantity|unit_cost)\)/);
 });
