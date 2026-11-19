@@ -20,7 +20,7 @@ from app.firebase_auth import get_firebase_admin_app
 router = APIRouter(prefix="/api/v1/demo", tags=["demo access"])
 
 
-def _enforce_demo_rate_limit(request: Request, response: Response) -> None:
+def _enforce_demo_rate_limit(request: Request) -> None:
     """Apply an atomic shared Redis REST fixed-window limit before minting a token.
 
     The demo endpoint is serverless-safe: it never falls back to per-process memory.
@@ -92,7 +92,7 @@ def create_demo_session(request: Request, response: Response) -> dict[str, str]:
     if not email:
         raise HTTPException(status_code=503, detail="Demo access is not configured.")
 
-    _enforce_demo_rate_limit(request, response)
+    _enforce_demo_rate_limit(request)
 
     try:
         from firebase_admin import auth
