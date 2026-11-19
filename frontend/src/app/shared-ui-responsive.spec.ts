@@ -4,7 +4,9 @@ import test from 'node:test';
 
 const cardSurface = readFileSync(new URL('./shared/ui/aba-card.component.ts', import.meta.url), 'utf8');
 const designSystem = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
-const appTemplate = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const appTemplate = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8')
+  + '\n'
+  + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
 const employeePayroll = readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8');
 const platformAdmin = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const stateMessage = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
