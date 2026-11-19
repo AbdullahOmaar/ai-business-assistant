@@ -51,7 +51,9 @@ Preview builds must use the current shared development runtime configuration by 
 This 2026-11-15 decision supersedes the narrower 2026-11-14 Production-test-data wording and every older repository instruction that requires non-Production data solely for Preview login or routine application-data QA. It does not waive release gates, exact-head CI/review requirements, provider protections, schema/migration controls, or real-world financial/external-effect safeguards.
 
 
-## Owner-selected November delivery discipline — effective 2026-11-12 (supersedes conflicting rules below)
+## Owner-selected November delivery discipline — Owner reaffirmed 2026-11-19 (supersedes conflicting rules below)
+
+**Current active November branch (Owner confirmation, 2026-11-19):** `master/nov-2026-phase-1-runtime-qa`. This explicit Owner decision supersedes every historical reference below or in task snapshots to `master/nov-2026-phase-1-ux-foundation`. Continue on the existing runtime-qa branch; do not create, rename, delete or parallelize branches. Its current merge-base with main is verified and it is 0 commits behind main.
 
 The Owner requires meaningful product evolution, not a stream of cosmetic edits and tiny PRs.
 
