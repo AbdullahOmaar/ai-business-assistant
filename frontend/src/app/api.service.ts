@@ -716,8 +716,8 @@ export class ApiService {
       `/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns`, 'POST', body
     );
   }
-  approveSalesReturn(businessId: string, returnId: string): Promise<SalesReturn> {
-    return this.request<SalesReturn>(
+  approveSalesReturn(businessId: string, returnId: string): Promise<Pick<SalesReturn, 'id' | 'invoice_id' | 'status' | 'total' | 'created_at'>> {
+    return this.request<Pick<SalesReturn, 'id' | 'invoice_id' | 'status' | 'total' | 'created_at'>>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns/${encodeURIComponent(returnId)}/approve`,
       'POST', {}
     );
