@@ -7,6 +7,9 @@ const app = expandTranslationCalls(
   readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8')
   + '\n'
   + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8')
+
+  + '\n'
+  + readFileSync(new URL('./audit-events-workspace.component.ts', import.meta.url), 'utf8')
 );
 const component = expandTranslationCalls(readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8'));
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
