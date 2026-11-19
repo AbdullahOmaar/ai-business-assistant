@@ -38,3 +38,8 @@ API:
 ## Validation and release
 
 Required before merge: focused issuance tests, full backend/PostgreSQL migration checks, frontend tests/build, dependency audits, backend container/import, exact-head aggregate CI, diff/security review, migration/rollback review, and relevant UI acceptance. No production writes, live migration, merge, deployment, or version bump is authorized by the policy decision alone. Record unavailable checks as NOT RUN/BLOCKED; never infer a PASS.
+
+
+## Inventory boundary
+
+The existing sales-return approval workflow already records a stock movement for stock-tracked invoice lines when a return is approved. Stage 1 reuses that existing behavior; it does not add a second stock movement when the credit-note document is issued. Credit-note issuance writes only the credit-note record and its audit event. This does not authorize additional stock valuation/COGS or general-ledger postings.
