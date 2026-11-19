@@ -3,7 +3,11 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { expandDictionaryBackedProperties, expandTranslationCalls } from './localization-test-helpers.ts';
 
-const app = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const app = expandTranslationCalls(
+  readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8')
+  + '\n'
+  + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8')
+);
 const component = expandTranslationCalls(readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8'));
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const guide = expandDictionaryBackedProperties(readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8'));
