@@ -82,7 +82,9 @@ test('customer workspace covers server search, paginated list, detail and create
 });
 
 test('customer and product workspaces are mounted in the authenticated app shell', () => {
-  const shell = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+  const shell = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8')
+  + '\n'
+  + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
   assert.match(shell, /CustomerWorkspaceComponent/);
   assert.match(shell, /ProductWorkspaceComponent/);
   assert.match(shell, /<aba-customer-workspace/);
