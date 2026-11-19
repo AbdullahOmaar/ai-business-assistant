@@ -57,7 +57,7 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
 
     def run_selector(self, base: str | None = None) -> dict[str, str]:
         head = self.git("rev-parse", "HEAD")
-        output = self.root / "github-output.txt"
+        output = self.root.parent / f"{self.root.name}-github-output.txt"
         env = os.environ.copy()
         env.update({
             "GITHUB_OUTPUT": str(output),
@@ -95,6 +95,7 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
                 key, value = line.split("=", 1)
                 values[key] = value
             index += 1
+        output.unlink(missing_ok=True)
         return values
 
     def test_frontend_component_runs_its_spec_and_build(self) -> None:
