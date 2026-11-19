@@ -98,6 +98,13 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
         output.unlink(missing_ok=True)
         return values
 
+    def test_selector_and_backend_audit_verify_exact_candidate_sha(self) -> None:
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        detect_job = workflow.split("  detect-changes:", 1)[1].split("  project-knowledge:", 1)[0]
+        backend_audit = workflow.split("  backend-dependency-audit:", 1)[1].split("  backend-container:", 1)[0]
+        exact_sha_check = "test \\"$(git rev-parse HEAD)\\" = \\"${{ github.event.pull_request.head.sha || github.sha }}\\""
+        self.assertIn(exact_sha_check, detect_job)
+        self.assertIn(exact_sha_check, backend_audit)
     def test_frontend_component_runs_its_spec_and_build(self) -> None:
         self.write("frontend/src/app/customer-directory.component.ts", "export const value = 2;\n")
         self.commit("frontend component")
