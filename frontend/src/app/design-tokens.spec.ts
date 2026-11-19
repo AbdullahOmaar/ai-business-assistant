@@ -13,12 +13,13 @@ const componentPaths = [
 const componentSources = componentPaths.map(path =>
   readFileSync(new URL(path, import.meta.url), 'utf8'),
 );
-const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8')
+  + '\n'
+  + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
 const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const mobileHeaderSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
 const designSystemStyles = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
-const appStylesStart = appSource.lastIndexOf('styles: [`');
-const appStyles = appSource.slice(appStylesStart, appSource.indexOf('`]', appStylesStart));
+const appStyles = readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
 
 test('semantic design tokens are defined once and cover the shared UI foundation', () => {
   const definitions = [...styles.matchAll(/^\s*(--aba-[\w-]+)\s*:/gm)].map(match => match[1]);
