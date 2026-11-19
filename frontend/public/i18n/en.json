@@ -1138,7 +1138,7 @@
       "m_1a7j5yu": "Initial stock movement tracking and product CSV import.",
       "m_118l28j": "A mobile-friendly multi-line invoice draft editor.",
       "m_vj2szz": "Preview totals, discounts, and tax before saving.",
-      "v160_ledger": "Added a read-only inventory movement ledger with filters and pagination inside Products.",
+      "v160_ledger": "Version 1.6.0 adds a read-only inventory movement ledger with filters and pagination inside Products.",
       "v160_mobile": "Improved shared workspace cards, KPIs and form controls for a clearer mobile experience.",
       "v160_precision": "Improved exact decimal price and stock sorting, search context and customer/product editing."
     },
