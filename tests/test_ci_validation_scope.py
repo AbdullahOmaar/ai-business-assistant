@@ -243,6 +243,15 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
             self.assertEqual(plan[key], "true", key)
         self.assertEqual(plan["docs_validation"], "false")
 
+    def test_unknown_markdown_path_falls_back_to_full_regression(self) -> None:
+        self.write("infra/README.md", "unknown documentation path\\n")
+        self.commit("unknown markdown path")
+        plan = self.run_selector()
+        for key in ("backend_tests", "backend_full", "backend_container", "backend_audit",
+                    "migrations", "frontend_tests", "frontend_full", "frontend_build",
+                    "frontend_audit"):
+            self.assertEqual(plan[key], "true", key)
+        self.assertEqual(plan["docs_validation"], "false")
     def test_deleted_path_falls_back_to_full_regression(self) -> None:
         (self.root / "README.md").unlink()
         self.commit("delete path")
