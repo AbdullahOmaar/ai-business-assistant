@@ -3,11 +3,8 @@ import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { LocalizationService } from './localization.service';
 import type { AuditEvent } from './api.service';
-import {
-  AbaRecordTableColumn,
-  AbaRecordTableRow,
-  AbaRecordTableComponent,
-} from './shared/ui/aba-record-table.component';
+import { AbaRecordTableComponent } from './shared/ui/aba-record-table.component';
+import type { AbaRecordTableColumn, AbaRecordTableRow } from './shared/ui/aba-record-table.component';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
 import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
