@@ -201,7 +201,7 @@ export class InventoryMovementLedgerComponent {
   readonly movementType = signal<InventoryMovementType | ''>('');
   readonly supportsReferenceFilter = input(true);
   readonly referenceType = signal('');
-  readonly referenceTypes = ['invoice', 'invoice_void', 'purchase_order', 'sales_return', 'stock_count'];
+  readonly referenceTypes = ['product_opening', 'invoice', 'invoice_void', 'purchase_order', 'sales_return', 'stock_count'];
   readonly loading = signal(false);
   readonly hasMore = signal(false);
   readonly error = signal('');
