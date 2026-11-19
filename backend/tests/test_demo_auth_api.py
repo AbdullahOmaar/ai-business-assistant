@@ -66,7 +66,14 @@ def test_public_demo_session_rejects_platform_super_admin(monkeypatch):
     monkeypatch.setenv("DEMO_LOGIN_ENABLED", "true")
     monkeypatch.setenv("DEMO_LOGIN_EMAIL", "demo@example.test")
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "aiba-test")
+    monkeypatch.setenv("DEMO_RATE_LIMIT_REDIS_URL", "https://redis.example.test")
+    monkeypatch.setenv("DEMO_RATE_LIMIT_REDIS_TOKEN", "test-token")
     monkeypatch.setenv("PLATFORM_SUPER_ADMIN_UIDS", "firebase:aiba-test:demo-uid")
+    class _RedisResponse:
+        def __enter__(self): return self
+        def __exit__(self, *_args): return False
+        def read(self): return b'{"result":1}'
+    monkeypatch.setattr(demo_auth_api, "urlopen", lambda *_args, **_kwargs: _RedisResponse())
     monkeypatch.setattr(demo_auth_api, "get_firebase_admin_app", lambda: object())
     monkeypatch.setattr(auth, "get_user_by_email", lambda _email, app: SimpleNamespace(uid="demo-uid"))
 
