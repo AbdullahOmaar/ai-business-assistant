@@ -3948,7 +3948,26 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (this.business?.id === businessId) {
+        if (this.isTimeoutError(error)) {
+          // The import may or may not have completed: the request timed out
+          // after the server may have committed. Do not invite a blind
+          // retry; refresh the list so the user can see whether the rows
+          // landed.
+          this.error = this.t('ui.m_1y0hb3');
+          try {
+            const products = await this.api.products(businessId);
+            if (this.business?.id !== businessId) return;
+            this.setProductPage(products);
+            this.productWorkspace?.retry();
+            if (this.products.length) this.invoiceProductId = this.products[0].id;
+          } catch {
+            // Best-effort refresh: the unknown-outcome message already stands.
+          }
+        } else {
+          this.error = this.message(error);
+        }
+      }
     } finally {
       if (this.business?.id === businessId) this.importLoading = false;
     }
@@ -4037,7 +4056,28 @@ export class AppComponent implements OnInit, OnDestroy {
         }
       }
     } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
+      if (this.business?.id === businessId) {
+        if (this.isTimeoutError(error)) {
+          // The import may or may not have completed: the request timed out
+          // after the server may have committed. Do not invite a blind
+          // retry; refresh the list so the user can see whether the rows
+          // landed.
+          this.error = this.t('ui.m_iwxc3c');
+          try {
+            const customers = await this.api.customers(businessId);
+            if (this.business?.id !== businessId) return;
+            this.setCustomerPage(customers);
+            this.customerWorkspace?.retry();
+            if (!this.invoiceCustomerId && this.customers.length) {
+              this.invoiceCustomerId = this.customers[0].id;
+            }
+          } catch {
+            // Best-effort refresh: the unknown-outcome message already stands.
+          }
+        } else {
+          this.error = this.message(error);
+        }
+      }
     } finally {
       if (this.business?.id === businessId) this.customerImportLoading = false;
     }
@@ -4939,6 +4979,11 @@ export class AppComponent implements OnInit, OnDestroy {
 
   private lastErrorKind: 'session-expired' | 'access-denied' | null = null;
   private lastErrorMessage: string | null = null;
+
+  private isTimeoutError(error: unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error ?? '');
+    return /timed out/i.test(message);
+  }
 
   private message(error: unknown, context: 'auth' | 'api' = 'api'): string {
     const value = error as { code?: string; message?: string };

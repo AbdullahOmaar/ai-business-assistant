@@ -127,6 +127,12 @@ async def chat(
     supplier_count = session.scalar(select(func.count()).select_from(Supplier).where(
         Supplier.business_id == business_id, Supplier.is_active.is_(True)
     )) or 0
+    issued_invoice_count = session.scalar(select(func.count()).select_from(Invoice).where(
+        Invoice.business_id == business_id, Invoice.status == "issued"
+    )) or 0
+    draft_invoice_count = session.scalar(select(func.count()).select_from(Invoice).where(
+        Invoice.business_id == business_id, Invoice.status == "draft"
+    )) or 0
 
     source_records = {}
     invoice_rows = []
@@ -191,6 +197,15 @@ async def chat(
             "count", "how many", "customers", "products", "suppliers",
             "عدد", "العملاء", "المنتجات", "الموردين",
         ))
+        # A count question about invoices must be answered with a count, not
+        # the monetary total: "invoice"/"invoices" also match sales_intent,
+        # so this intent is checked before the money branches below.
+        invoice_count_intent = count_intent and any(term in message for term in (
+            "invoice", "invoices", "فاتورة", "فواتير",
+        ))
+        draft_invoice_intent = invoice_count_intent and any(term in message for term in (
+            "draft", "مسودة", "مسودات",
+        ))
         source_ids: list[str] = []
         sales_by_currency: dict[str, Decimal] = {}
         expenses_by_currency: dict[str, Decimal] = {}
@@ -207,7 +222,18 @@ async def chat(
                 for currency, amount in sorted(values.items())
             ) or "لا توجد سجلات في آخر 20 سجلًا محمّلًا"
 
-        if profit_intent:
+        if invoice_count_intent:
+            # Counts are full business totals, not the 20 most recent rows.
+            if draft_invoice_intent:
+                answer = (
+                    f"عدد الفواتير المسودة في {business_name}: {int(draft_invoice_count)} فاتورة."
+                )
+            else:
+                answer = (
+                    f"عدد الفواتير الصادرة في {business_name}: {int(issued_invoice_count)} فاتورة. "
+                    "هذا العدد يشمل كل الفواتير الصادرة المسجلة."
+                )
+        elif profit_intent:
             currencies = sorted(set(sales_by_currency) | set(expenses_by_currency))
             if currencies:
                 details = []
@@ -240,6 +266,7 @@ async def chat(
                 "الملخصات المالية تستخدم أحدث 20 فاتورة صادرة و20 مصروفًا فقط."
             )
         source_intent = (
+            "count" if invoice_count_intent else
             "profit" if profit_intent else
             "sales" if sales_intent else
             "expenses" if expense_intent else

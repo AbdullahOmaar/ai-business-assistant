@@ -674,6 +674,8 @@
     "m_r5bt5z": "Successfully imported {{row_count}} rows.",
     "m_1lap6fd": "Products were imported, but the list could not refresh. Do not import the file again; refresh the data first.",
     "m_l4fw90": "Customers were imported, but the list could not refresh. Do not import the file again; refresh the data first.",
+    "m_1y0hb3": "The import may or may not have completed — the request timed out. Check the product list before importing again; do not retry blindly.",
+    "m_iwxc3c": "The import may or may not have completed — the request timed out. Check the customer list before importing again; do not retry blindly.",
     "m_b4kbxp": "Product saved successfully.",
     "m_h29v8u": "The product was saved, but the list could not refresh. Do not add the product again; refresh the data first.",
     "m_1szpit2": "Enter valid discount and tax rates from 0 to 100.",
