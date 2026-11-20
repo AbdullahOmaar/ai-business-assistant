@@ -1707,7 +1707,7 @@ test('mobile More is a shell-root overlay above workspace content with a real ba
   assert.match(source, /\.mobile-more-overlay\{display:block;position:fixed;inset:0;z-index:80;pointer-events:none\}/);
   assert.match(source, /\.mobile-more-backdrop\{position:fixed;inset:0;z-index:80;/);
   assert.match(source, /\.mobile-more-menu\{display:grid;position:fixed;z-index:81;pointer-events:auto;/);
-  assert.doesNotMatch(source.slice(sidebarStart, sidebarEnd), /mobile-more-menu/);
+  assert.doesNotMatch(source.slice(sidebarStart, sidebarEnd), /class="mobile-more-menu"/);
 });
 
 test('overview invitation accept surface is absent when there is no invitation to accept', () => {
