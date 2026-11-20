@@ -47,8 +47,16 @@ test('payment state and progress require server-returned allocations and outstan
   assert.match(cardMarkup, /status-unpaid/);
 });
 
-test('invoice cards are the primary responsive layout rather than a desktop-only table replacement', () => {
-  assert.doesNotMatch(appSource, /invoice-table-wrap|invoice-table/);
+test('invoice cards remain the default while compact mode provides a sortable table and bounded pagination', () => {
+  assert.match(appSource, /invoiceDensity: 'comfortable' \| 'compact' = 'comfortable'/);
+  assert.match(appSource, /class="[^"]*invoice-density-toggle"/);
+  assert.match(appSource, /class="invoice-table-wrap"/);
+  assert.match(appSource, /class="invoice-table"/);
+  assert.match(appSource, /aria-sort/);
+  assert.match(appSource, /toggleInvoiceSort\('total'\)/);
+  assert.match(appSource, /invoice-pagination/);
+  assert.match(appSource, /invoicePageSize = 10/);
+  assert.match(appSource, /@for \(invoice of visibleInvoices; track invoice\.id\)/);
   assert.match(appSource, /\.invoice-cards\{display:grid;grid-template-columns:repeat\(auto-fit/);
   assert.match(appSource, /\.invoice-card \.invoice-actions button\{min-height:44px\}/);
   assert.match(appSource, /\.invoice-cards\{grid-template-columns:minmax\(0,1fr\)\}/);
@@ -65,15 +73,17 @@ test('Product and Service use a segmented toggle with no reorder controls or lar
 
 
 test('startup screen shows the Cairo-localized build date and time beneath release versions', () => {
-  assert.match(appSource, /class="splash-build-time"/);
+  assert.match(appSource, /class="splash-release-meta"[\s\S]*?class="version-pill splash-version"[\s\S]*?class="splash-build-time"/);
   assert.match(appSource, /Build date & time/);
+  assert.match(appSource, /@if \(loading && initialized\) \{ <div class="global-loading"/);
+  assert.match(appSource, /\.splash-release-meta\{display:grid;justify-items:center/);
   assert.match(appSource, /get buildTimeLabel\(\): string/);
   assert.match(appSource, /timeZone: 'Africa\/Cairo'/);
 });
 
 test('invoice search icon stays clear of search text in RTL and LTR', () => {
-  assert.match(appSource, /\.invoice-search input\{[^}]*padding-inline:42px 38px;appearance:none;-webkit-appearance:none;direction:inherit/);
-  assert.match(appSource, /\.invoice-search-icon\{[^}]*inset-inline-start:14px/);
+  assert.match(appSource, /\.invoice-controls \.invoice-search input\{[^}]*padding-inline-start:48px;padding-inline-end:42px;text-indent:0;text-align:start/);
+  assert.match(appSource, /\.invoice-search-icon\{[^}]*inset-inline-start:15px/);
   assert.match(appSource, /\.invoice-search input::-webkit-search-decoration/);
 });
 
@@ -113,4 +123,58 @@ test('invoice notes are hydrated for editing and submitted with the existing dra
   assert.match(editorSource, /name="invoiceNotes"/);
   assert.match(editorSource, /maxlength="2000"/);
   assert.match(editorSource, /notes: this\.notes/);
+});
+
+
+test('customer invoice shortcut resets compact pagination before applying its filter', () => {
+  const start = appSource.indexOf('showCustomerInvoices(customerId: string): void');
+  const end = appSource.indexOf('\n  }', start);
+  const handler = appSource.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(handler, /this\.invoicePageIndex = 0/);
+  assert.ok(handler.indexOf('this.invoicePageIndex = 0') < handler.indexOf('this.invoiceFilterCustomerId = customerId'));
+});
+
+
+test('invoice workspace has count-backed status chips and a compact three-up summary', () => {
+  assert.match(appSource, /class="invoice-summary-cards"/);
+  assert.match(appSource, /invoiceStatusCounts\.all/);
+  assert.match(appSource, /invoiceStatusCounts\.draft/);
+  assert.match(appSource, /invoiceStatusCounts\.issued/);
+  assert.match(appSource, /class="invoice-status-chips" role="group"/);
+  assert.match(appSource, /aria-pressed/);
+  assert.match(appSource, /setInvoiceStatusFilter\('void'\)/);
+  assert.match(appSource, /\.invoice-summary-cards\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
+  assert.match(appSource, /\.invoice-status-chips\{[^}]*flex-wrap:wrap/s);
+});
+
+test('invoice detail is a tenant-guarded read-only slide-over using persisted line and total fields', () => {
+  assert.match(appSource, /openInvoiceDetails\(invoice: Invoice, event\?: Event\)/);
+  assert.match(appSource, /this\.api\.invoiceDetail\(businessId, invoice\.id\)/);
+  assert.match(appSource, /this\.business\?\.id !== businessId/);
+  assert.match(appSource, /role="dialog" aria-modal="true"/);
+  assert.match(appSource, /class="invoice-detail-lines"/);
+  assert.match(appSource, /detail\.lines/);
+  assert.match(appSource, /detail\.subtotal/);
+  assert.match(appSource, /detail\.discount_total/);
+  assert.match(appSource, /detail\.tax_total/);
+  assert.match(appSource, /detail\.total/);
+  assert.match(appSource, /editInvoiceFromDetails\(\)/);
+  assert.match(appSource, /issueInvoiceFromDetails\(\)/);
+  assert.match(appSource, /payInvoiceFromDetails\(\)/);
+});
+
+test('invoice list uses the existing authenticated limit/offset endpoint without a contract extension', () => {
+  const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
+  assert.match(apiSource, /invoices\(businessId: string, offset = 0, limit = 100\)/);
+  assert.match(apiSource, /\?limit=\$\{limit\}&offset=\$\{offset\}/);
+  assert.match(appSource, /loadMoreInvoices\(\)/);
+});
+
+
+test('invoice tables and slide-over preserve explicit RTL/LTR direction and accessible dialog semantics', () => {
+  assert.match(appSource, /<table class="invoice-table" \[attr\.dir\]="language === 'ar' \? 'rtl' : 'ltr'"/);
+  assert.match(appSource, /class="invoice-detail-drawer" role="dialog" aria-modal="true"/);
+  assert.match(appSource, /aria-labelledby="invoice-detail-heading"/);
+  assert.match(appSource, /invoiceDetailCloseButton/);
 });

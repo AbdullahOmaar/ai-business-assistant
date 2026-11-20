@@ -7,7 +7,7 @@ const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts',
 
 test('print action is exposed only for issued invoices in the responsive invoice cards', () => {
   const containerStart = source.indexOf('class="invoice-cards"');
-  const loopStart = source.indexOf('@for (invoice of filteredInvoices; track invoice.id)', containerStart);
+  const loopStart = source.indexOf('@for (invoice of visibleInvoices; track invoice.id)', containerStart);
   const blockEnd = source.indexOf('</article>', loopStart);
   assert.ok(containerStart >= 0 && loopStart > containerStart && blockEnd > loopStart,
     'invoice card loop must exist inside the responsive card container');

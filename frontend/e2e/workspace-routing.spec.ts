@@ -169,3 +169,27 @@ test('STAFF direct access to an OWNER-only workspace route falls back to Overvie
   await expect(page.locator('.dashboard-period')).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+
+test('desktop navigation remains scroll-reachable at a 993px viewport height', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 993 });
+  const errors = await signInAt(page, '/workspace');
+  const navigation = page.locator('.sidebar-nav-scroll');
+  await expect(navigation).toBeVisible();
+
+  const dimensions = await navigation.evaluate(element => ({
+    scrollHeight: element.scrollHeight,
+    clientHeight: element.clientHeight,
+    overflowY: getComputedStyle(element).overflowY,
+  }));
+  expect(dimensions.overflowY).toBe('auto');
+  expect(dimensions.scrollHeight).toBeGreaterThan(dimensions.clientHeight);
+
+  await navigation.evaluate(element => { element.scrollTop = element.scrollHeight; });
+  const finalDestination = navigation.getByRole('button', { name: 'App guide & versions' });
+  await expect(finalDestination).toBeInViewport();
+  await finalDestination.click();
+  await expect(page).toHaveURL(/\/workspace\/release-guide$/);
+  await expect(finalDestination).toHaveAttribute('aria-current', 'page');
+  expect(errors).toEqual([]);
+});

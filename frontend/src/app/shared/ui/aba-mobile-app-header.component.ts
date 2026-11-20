@@ -26,6 +26,7 @@ import { LocalizationService } from '../../localization.service';
         <div class="header-actions">
           <button class="assistant-shortcut" type="button"
             [attr.aria-label]="t('ui.m_13ly4yi')"
+            [attr.title]="t('ui.m_13ly4yi')"
             (click)="assistantRequested.emit()">
             <span aria-hidden="true">✦</span>
             <span>{{ t('ui.m_1k5kzkx') }}</span>
@@ -38,6 +39,7 @@ import { LocalizationService } from '../../localization.service';
           </button>
           <button #profileTrigger class="profile-trigger" type="button"
             [attr.aria-label]="t('ui.m_1l0ize9')"
+            [attr.title]="t('ui.m_1l0ize9')"
             [attr.aria-expanded]="profileMenuOpen"
             [attr.aria-controls]="profileMenuOpen ? 'mobile-account-menu' : null"
             (click)="toggleProfileMenu()">

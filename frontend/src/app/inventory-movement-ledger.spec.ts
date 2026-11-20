@@ -165,3 +165,10 @@ test('loading, empty, error, retry and keyboard-accessible controls are present'
   assert.match(component, /prefers-reduced-motion:reduce/);
   assert.match(component, /aria-label/);
 });
+
+
+test('stock movement quantities are isolated from surrounding RTL labels in cards and table rows', () => {
+  assert.match(component, /<bdi dir="ltr">\{\{ formatQuantity\(movement\.quantity_delta\) \}\}<\/bdi>/);
+  assert.match(component, /inventory-ledger__table-quantity[^>]*><bdi dir="ltr">/);
+  assert.match(component, /inventory-ledger__table-quantity\{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate\}/);
+});

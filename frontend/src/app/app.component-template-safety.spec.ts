@@ -34,13 +34,16 @@ test('workspace shell imports every tenant guard helper used by its async views'
 });
 
 
+
 test('mobile More menu has a correctly delimited active-class attribute', () => {
-  const line = source.split('\n').find((value) => value.includes('class="nav-item mobile-more"'));
-  assert.ok(line, 'mobile More button must exist');
-  assert.ok(line.includes('[class.active]="mobileMoreOpen || isMobileMoreTab(tab)"'));
+  const buttonStart = source.indexOf('<button #mobileMoreTrigger class="nav-item mobile-more"');
+  const buttonEnd = source.indexOf('>', buttonStart);
+  const button = source.slice(buttonStart, buttonEnd);
+  assert.ok(buttonStart >= 0 && buttonEnd > buttonStart, 'mobile More button must exist');
+  assert.match(button, /\[class\.active\]="mobileMoreOpen \|\| isMobileMoreTab\(tab\)"/);
+  assert.match(button, /\[attr\.aria-label\]=/);
   assert.match(source, /isMobileMoreTab\(tab: Tab\): boolean/);
-  assert.ok(line.includes('[attr.aria-label]'));
-  assert.equal(line.includes('isMobileMoreTab(tab)""'), false);
+  assert.doesNotMatch(button, /isMobileMoreTab\(tab\)""/);
 });
 
 const authSource = expandTranslationCalls(readFileSync(new URL('./auth.service.ts', import.meta.url), 'utf8'));
@@ -252,36 +255,35 @@ test('workspace switch clears pending product and customer CSV imports', () => {
   }
 });
 
-test('sidebar and More navigation reuse the central workspace visibility policy', () => {
+
+test('desktop sidebar and mobile More share the role-filtered workspace catalogue', () => {
   const sidebarStart = source.indexOf('<aside class="sidebar"');
   const sidebarEnd = source.indexOf('</aside>', sidebarStart);
   const sidebar = source.slice(sidebarStart, sidebarEnd);
   assert.ok(sidebarStart >= 0 && sidebarEnd > sidebarStart);
   assert.doesNotMatch(sidebar, /@if \(business\?\.role === 'owner'\)/);
   assert.doesNotMatch(sidebar, /@if \(platformAdminAvailable\)/);
-  for (const tab of ['employees', 'payments', 'taxes', 'audit', 'health', 'platform-admin']) {
-    assert.ok(sidebar.includes(`canAccessTab('${tab}')`), tab);
-  }
+  assert.match(sidebar, /@for \(group of desktopNavigationGroups; track group\.id\)/);
   assert.match(source, /canAccessWorkspaceTab\(tab, this\.business\?\.role, this\.platformAdminAvailable\)/);
   assert.match(source, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
   assert.match(source, /get mobileMoreGroups\(\): readonly/);
+  assert.match(source, /get desktopNavigationGroups\(\): readonly/);
   assert.match(source, /modules: accessibleModules\.filter\(module => module\.mobileGroup === group\.id\)/);
 });
 
-test('mobile More navigation renders grouped destinations from the shared catalogue', () => {
+
+test('mobile More navigation renders grouped destinations from the shared catalogue without a sections search', () => {
   const menuStart = source.indexOf('<nav #mobileMoreMenu id="mobile-more-menu"');
   const menuEnd = source.indexOf('</nav>', menuStart);
   const menu = source.slice(menuStart, menuEnd);
   assert.ok(menuStart >= 0 && menuEnd > menuStart);
   assert.doesNotMatch(menu, /role="menu(?:item)?"/);
-  assert.match(menu, /@for \(group of filteredMobileMoreGroups; track group\.id\)/);
+  assert.doesNotMatch(menu, /mobile-more-search|mobileMoreSearch|type="search"/);
+  assert.match(menu, /@for \(group of mobileMoreGroups; track group\.id\)/);
   assert.match(menu, /@for \(module of group\.modules; track module\.tab\)/);
   assert.match(menu, /module\.icon/);
   assert.match(menu, /t\(module\.titleKey\)/);
-  assert.match(menu, /tab === module\.tab \? 'page' : null/);
-  assert.match(source, /WORKSPACE_MODULE_GROUPS/);
-  assert.match(source, /max-height:min\(70dvh,560px\);overflow-y:auto;overscroll-behavior:contain/);
-  assert.match(source, /border-inline-start:3px solid var\(--aba-color-nav-accent,#5eead4\)/);
+  assert.doesNotMatch(source, /filteredMobileMoreGroups|mobileMoreSearch/);
 });
 
 test('workspace empty states use the shared accessible state component', () => {
@@ -391,26 +393,17 @@ test('shared card hosts own card surface styling and projected KPI styles live i
 });
 
 
-test('owner-only sidebar destinations use complete, accessible mobile-secondary navigation markup', () => {
-  assert.equal(source.includes('<button ?'), false,
-    'incomplete property bindings must never be emitted in a navigation button');
 
-  for (const tab of ['taxes', 'employees', 'audit', 'payments', 'health']) {
-    const marker = `@if (canAccessTab('${tab}'))`;
-    const start = source.indexOf(marker);
-    assert.ok(start >= 0, `${tab} must keep its existing role visibility guard`);
-    const end = source.indexOf('}', start);
-    const markup = source.slice(start, end + 1);
-    assert.match(markup, /<button class="nav-item mobile-extra"/,
-      `${tab} must remain in the More navigation on narrow screens`);
-    assert.match(markup, /\[attr\.aria-label\]=/);
-    assert.match(markup, /\[attr\.title\]=/);
-    assert.match(markup, /\[class\.active\]=/);
-    assert.match(markup, /\[attr\.aria-current\]=/);
-    assert.ok(markup.includes(`setTab('${tab}')`));
-  }
+test('owner-only destinations remain in the shared role-filtered desktop and mobile navigation groups', () => {
+  assert.equal(source.includes('<button ?'), false);
+  assert.match(source, /get homeModuleCards\(\): readonly WorkspaceModuleCard\[\]/);
+  assert.match(source, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
+  assert.match(source, /get desktopNavigationGroups\(\): readonly/);
+  assert.match(source, /get mobileMoreGroups\(\): readonly/);
+  assert.match(source, /@for \(group of desktopNavigationGroups; track group\.id\)/);
+  assert.match(source, /@for \(group of mobileMoreGroups; track group\.id\)/);
+  assert.match(source, /canAccessWorkspaceTab\(tab, this\.business\?\.role, this\.platformAdminAvailable\)/);
 });
-
 
 test('payment feedback uses the shared state component and distinguishes each outcome', () => {
   assert.match(source, /<aba-state-message \[kind\]="paymentMessageKind" \[description\]="paymentMessage" \/>/);
@@ -917,24 +910,30 @@ test('invoice drafts are available to workspace members while issue and void rem
   assert.match(toolbar, /<aba-invoice-draft-editor/);
   assert.match(toolbar, /\(saveDraft\)="saveInvoiceDraft\(\$event\)"/);
 
-  const rowStart = source.indexOf('@for (invoice of filteredInvoices', filterStart);
-  const rowEnd = source.indexOf('</tr>', rowStart);
-  const row = source.slice(rowStart, rowEnd);
-  assert.ok(rowStart >= 0 && rowEnd > rowStart);
-  const draftStart = row.indexOf("@if (invoice.status === 'draft')");
-  const issuedStart = row.indexOf("@else if (invoice.status === 'issued')", draftStart);
-  const draft = row.slice(draftStart, issuedStart);
-  const issued = row.slice(issuedStart);
-  assert.ok(draftStart >= 0 && issuedStart > draftStart);
-  const draftOwnerGuard = draft.indexOf("@if (business?.role === 'owner')");
-  assert.ok(draftOwnerGuard >= 0, 'draft issue and void actions must be inside the owner guard');
-  assert.ok(draft.indexOf('editInvoice(invoice)') < draftOwnerGuard, 'workspace members retain draft editing');
-  assert.ok(draft.indexOf('issueInvoice(invoice)') > draftOwnerGuard, 'issuing is owner-only');
-  assert.ok(draft.indexOf('requestInvoiceVoid(invoice, $event)') > draftOwnerGuard, 'voiding is owner-only');
-  const issuedOwnerGuard = issued.indexOf("@if (business?.role === 'owner')");
-  assert.ok(issuedOwnerGuard >= 0, 'issued invoice void action must be owner-only');
-  assert.ok(issued.indexOf('printInvoice(invoice)') < issuedOwnerGuard, 'workspace members retain invoice printing');
-  assert.ok(issued.indexOf('requestInvoiceVoid(invoice, $event)') > issuedOwnerGuard, 'issued invoice voiding is owner-only');
+  const tableLoopStart = source.indexOf('@for (invoice of visibleInvoices; track invoice.id)', filterStart);
+  const tableRowEnd = source.indexOf('</tr>', tableLoopStart);
+  const tableRow = source.slice(tableLoopStart, tableRowEnd);
+  assert.ok(tableLoopStart >= 0 && tableRowEnd > tableLoopStart);
+  const cardContainerStart = source.indexOf('class="invoice-cards"', tableRowEnd);
+  const cardLoopStart = source.indexOf('@for (invoice of visibleInvoices; track invoice.id)', cardContainerStart);
+  const cardEnd = source.indexOf('</article>', cardLoopStart);
+  const card = source.slice(cardLoopStart, cardEnd);
+  assert.ok(cardContainerStart >= 0 && cardLoopStart > cardContainerStart && cardEnd > cardLoopStart);
+  for (const [surface, markup] of [['compact table', tableRow], ['comfortable cards', card]] as const) {
+    const draftStart = markup.indexOf("@if (invoice.status === 'draft')");
+    const issuedStart = markup.indexOf("@else if (invoice.status === 'issued')", draftStart);
+    const draft = markup.slice(draftStart, issuedStart), issued = markup.slice(issuedStart);
+    assert.ok(draftStart >= 0 && issuedStart > draftStart, surface + ' separates draft and issued actions');
+    const draftOwnerGuard = draft.indexOf("@if (business?.role === 'owner')");
+    assert.ok(draftOwnerGuard >= 0, surface + ': draft issue and void remain owner-only');
+    assert.ok(draft.indexOf('editInvoice(invoice)') < draftOwnerGuard);
+    assert.ok(draft.indexOf('issueInvoice(invoice)') > draftOwnerGuard);
+    assert.ok(draft.indexOf('requestInvoiceVoid(invoice, $event)') > draftOwnerGuard);
+    const issuedOwnerGuard = issued.indexOf("@if (business?.role === 'owner')");
+    assert.ok(issuedOwnerGuard >= 0, surface + ': issued void remains owner-only');
+    assert.ok(issued.indexOf('printInvoice(invoice)') < issuedOwnerGuard);
+    assert.ok(issued.indexOf('requestInvoiceVoid(invoice, $event)') > issuedOwnerGuard);
+  }
 
   const saveStart = source.indexOf('async saveInvoiceDraft(payload: InvoiceDraftPayload): Promise<void>');
   const saveEnd = source.indexOf('async refreshInvoiceDraftStatus(): Promise<void>', saveStart);
@@ -992,8 +991,8 @@ test('owner-only notification and recurring creation controls stay hidden from s
 });
 
 test('CSV import preview and write controls are owner-only without restricting member record creation', () => {
-  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <details class="aba-record-secondary">[\s\S]*?<section abaCard class="csv-import-panel" \[attr\.aria-label\]="t\('استيراد العملاء من CSV', 'CSV customer import'\)"/);
-  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <details class="aba-record-secondary">[\s\S]*?<section abaCard class="csv-import-panel" \[attr\.aria-label\]="t\('استيراد المنتجات من CSV', 'CSV product import'\)"/);
+  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <details class="aba-record-secondary csv-disclosure">[\s\S]*?<section abaCard class="csv-import-panel" \[attr\.aria-label\]="t\('استيراد العملاء من CSV', 'CSV customer import'\)"/);
+  assert.match(source, /@if \(business\?\.role === 'owner'\) \{ <details class="aba-record-secondary csv-disclosure">[\s\S]*?<section abaCard class="csv-import-panel" \[attr\.aria-label\]="t\('استيراد المنتجات من CSV', 'CSV product import'\)"/);
   assert.match(source, /CSV imports are available to workspace owners only/);
   const methods = [
     ['async onImportFileSelected(event: Event)', 'async previewProductImport()'],
