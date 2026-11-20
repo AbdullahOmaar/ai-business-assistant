@@ -908,8 +908,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               </section>
               @if (selectedInvoiceForDetails) {
                 <div class="invoice-detail-backdrop" role="presentation" (click)="closeInvoiceDetails()"></div>
-                <aside class="invoice-detail-drawer" role="dialog" aria-modal="true"
-                  aria-labelledby="invoice-detail-heading" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
+                <aside #invoiceDetailDrawer class="invoice-detail-drawer" role="dialog" aria-modal="true" tabindex="-1"
+                  aria-labelledby="invoice-detail-heading" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'"
+                  (keydown)="handleInvoiceDetailKeydown($event)">
                   <header class="invoice-detail-header">
                     <div><span class="invoice-detail-eyebrow">{{ t('app.invoiceList.detailTitle') }}</span>
                       <h2 id="invoice-detail-heading"><bdi dir="ltr">{{ selectedInvoiceDetail?.invoice_number || selectedInvoiceForDetails.invoice_number }}</bdi></h2></div>
@@ -1690,6 +1691,33 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     } finally {
       if (requestVersion === this.invoiceDetailRequestVersion) this.invoiceDetailLoading = false;
+    }
+  }
+
+  handleInvoiceDetailKeydown(event: KeyboardEvent): void {
+    if (!this.selectedInvoiceForDetails || event.key !== 'Tab') return;
+    const drawer = this.invoiceDetailDrawer?.nativeElement;
+    if (!drawer) return;
+    const focusable = Array.from(drawer.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )).filter(element => element.getAttribute('aria-hidden') !== 'true' && element.getClientRects().length > 0);
+    if (!focusable.length) {
+      event.preventDefault();
+      drawer.focus();
+      return;
+    }
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (!drawer.contains(active)) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    } else if (event.shiftKey && (active === first || active === drawer)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
     }
   }
 
