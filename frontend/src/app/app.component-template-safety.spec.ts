@@ -46,6 +46,8 @@ test('mobile More menu has a correctly delimited active-class attribute', () => 
   assert.doesNotMatch(button, /isMobileMoreTab\(tab\)""/);
 });
 
+const authSource = expandTranslationCalls(readFileSync(new URL('./auth.service.ts', import.meta.url), 'utf8'));
+
 test('startup config fetch has a bounded wait and allows retry after failure', () => {
   assert.match(authSource, /new AbortController\(\)/);
   assert.match(authSource, /10_000/);

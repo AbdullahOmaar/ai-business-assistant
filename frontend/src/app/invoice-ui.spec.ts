@@ -49,7 +49,7 @@ test('payment state and progress require server-returned allocations and outstan
 
 test('invoice cards remain the default while compact mode provides a sortable table and bounded pagination', () => {
   assert.match(appSource, /invoiceDensity: 'comfortable' \| 'compact' = 'comfortable'/);
-  assert.match(appSource, /class="invoice-density-toggle"/);
+  assert.match(appSource, /class="[^"]*invoice-density-toggle"/);
   assert.match(appSource, /class="invoice-table-wrap"/);
   assert.match(appSource, /class="invoice-table"/);
   assert.match(appSource, /aria-sort/);

@@ -176,8 +176,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             </div>
             @if (mobileMoreOpen) {
             <nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('ui.m_1c7twvy')">
-              @if (mobileMoreGroups.length) {
-                @for (group of mobileMoreGroups; track group.id) {
+              @for (group of mobileMoreGroups; track group.id) {
                 <section class="mobile-more-group" [attr.aria-labelledby]="'mobile-more-' + group.id + '-heading'">
                   <h3 [id]="'mobile-more-' + group.id + '-heading'">{{ t(group.titleKey) }}</h3>
                   @for (module of group.modules; track module.tab) {
@@ -188,9 +187,6 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                 </section>
                 }
-              } @else {
-                <p class="mobile-more-empty" role="status">{{ t('ui.m_ehdjlq') }}</p>
-              }
               <div class="mobile-more-actions">
                 <button class="nav-item mobile-menu-action" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</span></button>
                 <button class="nav-item mobile-menu-action" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t('ui.m_r2b303') }}</span></button>

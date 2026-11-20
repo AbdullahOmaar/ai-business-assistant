@@ -19,7 +19,7 @@ const catalogue = readFileSync(new URL('./workspace-module-catalog.ts', import.m
 
 test('employee and payroll UI is wired to the owner-only workspace tab on desktop and mobile', () => {
   assert.match(app, /type Tab = [^;]*'employees'/);
-  assert.match(app, /canAccessTab\('employees'\)/);
+  assert.match(catalogue, /tab: 'employees', mobileGroup: 'team-admin'/);
   assert.match(app, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
   assert.match(app, /get mobileMoreGroups\(\): readonly/);
   assert.match(access, /'employees'/);
