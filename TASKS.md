@@ -4597,3 +4597,19 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Runtime qualification:** migration 0009 was applied to Production on 2026-11-20 at 09:28 EET and verified by Alembic revision `0009_demo_rate_limit_counters`; the table exists. No live row growth or storage growth has been observed/reported yet.
 - **Status:** FOLLOW-UP / NOT IMPLEMENTED. This remains an unresolved follow-up, not an accepted risk. Evaluate bounded retention or cleanup in a separately reviewed task before enabling sustained public demo traffic.
 - **Acceptance:** define retention semantics, cleanup strategy and index/storage impact; test concurrency and cleanup safety; keep rate limiting fail-closed.
+
+
+## Release status — PR #407 production deployment handoff — 2026-11-20
+
+- **Merge:** PR [#407](https://github.com/AbdullahOmaar/ai-business-assistant/pull/407) was squash-merged to `main` as `f95180e42c5c38b83f98e25505a43ea0e755234e` on 2026-11-20. The required GitHub Actions workflow passed all 10 jobs on the exact PR candidate SHA `d8d45c34ed4ee64c956bc8cdbfba4fcfb0aa3514` (workflow run [#3683](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44696832128)). The merge-SHA combined status separately reports a legacy SemaphoreCI failure; SemaphoreCI is inactive/non-authoritative under the current CI policy and is not represented as green.
+- **WEB production:** READY / Current on merge SHA `f95180e42c5c38b83f98e25505a43ea0e755234e` (verified deployment status).
+- **API production:** still serves commit `560f3b402bfd265f8509dcbbdd1ed5988e72efbe` (API version `1.5.0`). The PR #407 merge did not complete the API release because its merge title lacked the API release marker. This documentation commit carries `[release-api]` and is intended to trigger the API production build; **API deployment/promotion is NOT YET VERIFIED and must not be reported complete** until the resulting production deployment SHA/status is observed.
+- **Production migrations:** revisions `0008_credit_notes` and `0009_demo_rate_limit_counters` were applied on 2026-11-20 at 09:28 EET; production Alembic revision was verified as `0009_demo_rate_limit_counters`.
+- **Open follow-ups:** [#408 — floor cumulative return allocations at prior approved amount](https://github.com/AbdullahOmaar/ai-business-assistant/issues/408); [#402 — rendered/mobile/accessibility acceptance](https://github.com/AbdullahOmaar/ai-business-assistant/issues/402); [#79 — Credit Notes Stage 2/3](https://github.com/AbdullahOmaar/ai-business-assistant/issues/79). These remain open; Stage 2/3 remain deferred and are not authorized by the Stage 1 issuance approval.
+- **Acceptance not run:** post-deploy runtime journey checks, production-rendered visual checks, installed/mobile acceptance and accessibility/screen-reader/forced-colors/200% zoom checks remain **NOT RUN**. A successful build/deployment status does not satisfy these gates.
+
+### Vercel release-marker convention
+
+- The API and WEB Vercel projects use an Ignored Build Step keyed to the latest commit message. A release-affecting commit or final merge title must contain the matching literal marker: `[release-api]` for API changes, `[release-web]` for WEB changes, or both when both projects must build.
+- The configured step exits non-zero when its matching marker is present (allowing Vercel to build); without the marker it exits zero and Vercel skips/cancels the deployment. Therefore **include the required marker in the final squash-merge title as well as the release commit message**. A marker buried only in a PR body or an earlier commit is insufficient when the Vercel step inspects `git log -1 --pretty=%B`.
+- This is a deployment-coupling requirement, not proof of release completion. Always verify the resulting project deployment is READY/Current on the intended commit and then run the applicable post-deploy acceptance checks.
