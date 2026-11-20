@@ -1,0 +1,50 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
+
+const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const snapshotSource = readFileSync(new URL('./payment-retry-snapshot.ts', import.meta.url), 'utf8');
+
+function methodBetween(startMarker: string, endMarker: string): string {
+  const start = source.indexOf(startMarker);
+  const end = source.indexOf(endMarker, start);
+  assert.ok(start >= 0 && end > start, `Unable to locate method: ${startMarker}`);
+  return source.slice(start, end);
+}
+
+test('payment retry uses the same immutable snapshot and idempotency key after uncertain outcomes', () => {
+  const payment = methodBetween('async createPayment(): Promise<void>', 'useAssistantSuggestion(');
+  const save = payment.indexOf('this.paymentRetryVault.save(authUid, retrySnapshot)');
+  const request = payment.indexOf('await this.api.createPayment(businessId, requestPayload)');
+  assert.ok(save >= 0 && request > save);
+  assert.match(payment, /this\.paymentRetryVault\.get\(authUid, businessId\)/);
+  assert.match(payment, /paymentRequestFromRetrySnapshot\(retrySnapshot\)/);
+  assert.match(payment, /error instanceof ApiRequestError && error\.definitiveNoWrite/);
+  assert.match(payment, /createPaymentRetrySnapshot\(businessId/);
+  assert.match(snapshotSource, /idempotency_key/);
+  assert.match(snapshotSource, /deepFreeze\(/);
+  assert.match(snapshotSource, /Object\.freeze\(value\)/);
+});
+
+test('retry state is restored only for the same authenticated user and workspace', () => {
+  assert.match(source, /this\.paymentRetryVault\.get\(this\.currentAuthUid, id\)/);
+  assert.match(source, /paymentRetryPending \|\| paymentForm\.valid/);
+  assert.match(source, /paymentRetryPending\) \{ <p class="footnote"/);
+  const switchMethod = methodBetween('async switchBusiness(id: string)', 'private readonly workspaceLoadGuard');
+  assert.match(switchMethod, /this\.paymentRetryPending/);
+});
+
+test('payment form details are locked while an uncertain request is pending', () => {
+  assert.match(source, /\[disabled\]="paymentRetryPending"/);
+  assert.match(source, /paymentLoading \? t\('جارٍ التسجيل…'/);
+  assert.match(source, /paymentRetryPending \? t\('إعادة المحاولة بنفس الدفعة'/);
+});
+
+test('numeric payment form values are normalized before creating the retry snapshot', () => {
+  const payment = methodBetween('async createPayment(): Promise<void>', 'useAssistantSuggestion(');
+  assert.match(payment, /const amount = String\(this\.paymentAmount \?\? ''\)\.trim\(\)/);
+  assert.match(payment, /const allocation = String\(this\.paymentAllocationAmount \?\? ''\)\.trim\(\)/);
+  assert.match(payment, /amount,\s*currency_code:/);
+  assert.match(payment, /amount: allocation/);
+});

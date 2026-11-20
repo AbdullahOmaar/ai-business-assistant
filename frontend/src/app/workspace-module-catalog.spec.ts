@@ -1,0 +1,135 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import test from 'node:test';
+import { filterWorkspaceModules, selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS } from './workspace-module-catalog.ts';
+import { canAccessWorkspaceTab, isMobileMoreTab } from './module-access.ts';
+
+const appDirectory = dirname(fileURLToPath(import.meta.url));
+
+function flattenTranslations(
+  value: Record<string, unknown>,
+  prefix = '',
+  result: Record<string, string> = {},
+): Record<string, string> {
+  for (const [key, entry] of Object.entries(value)) {
+    const translationKey = prefix ? `${prefix}.${key}` : key;
+    if (entry && typeof entry === 'object' && !Array.isArray(entry)) {
+      flattenTranslations(entry as Record<string, unknown>, translationKey, result);
+    } else if (typeof entry === 'string') {
+      result[translationKey] = entry;
+    }
+  }
+  return result;
+}
+
+const dictionaries = {
+  ar: flattenTranslations(JSON.parse(readFileSync(resolve(appDirectory, '../../public/i18n/ar.json'), 'utf8'))),
+  en: flattenTranslations(JSON.parse(readFileSync(resolve(appDirectory, '../../public/i18n/en.json'), 'utf8'))),
+};
+
+const translate = (locale: 'ar' | 'en') => (key: string): string => dictionaries[locale][key] ?? key;
+
+const visibleModules = (role: string, platformAdminAvailable: boolean) =>
+  WORKSPACE_MODULE_CATALOG.filter(module => canAccessWorkspaceTab(module.tab, role, platformAdminAvailable));
+
+test('the Home launcher catalogue has one unique entry for every existing workspace tab', () => {
+  const tabs = WORKSPACE_MODULE_CATALOG.map(module => module.tab);
+  assert.equal(tabs.length, 20);
+  assert.equal(new Set(tabs).size, tabs.length, 'module destinations must not be duplicated');
+  for (const module of WORKSPACE_MODULE_CATALOG) {
+    for (const locale of ['ar', 'en'] as const) {
+      assert.ok(translate(locale)(module.titleKey).trim(), `${module.tab} needs a ${locale} title`);
+      assert.ok(translate(locale)(module.descriptionKey).trim(), `${module.tab} needs a ${locale} description`);
+    }
+  }
+});
+
+test('workspace OWNER module count follows the central permission catalogue', () => {
+  assert.equal(visibleModules('owner', false).length, 19);
+  assert.equal(visibleModules('owner', true).length, 20);
+  for (const tab of ['payments', 'employees', 'taxes', 'audit', 'integrity', 'health'] as const) {
+    assert.ok(visibleModules('owner', false).some(module => module.tab === tab), tab);
+  }
+});
+
+test('STAFF sees ordinary modules only and cannot discover owner-only modules through Home cards', () => {
+  const staffModules = visibleModules('staff', false);
+  assert.equal(staffModules.length, 12);
+  for (const tab of ['payments', 'employees', 'taxes', 'audit', 'integrity', 'health', 'platform-admin'] as const) {
+    assert.equal(staffModules.some(module => module.tab === tab), false, tab);
+  }
+  assert.ok(staffModules.some(module => module.tab === 'customers'));
+  assert.ok(staffModules.some(module => module.tab === 'products'));
+});
+
+test('platform admin is listed only when its explicit availability flag is true', () => {
+  assert.equal(visibleModules('owner', false).some(module => module.tab === 'platform-admin'), false);
+  assert.equal(visibleModules('staff', true).some(module => module.tab === 'platform-admin'), true);
+});
+
+test('the More menu groups every secondary destination once and keeps dock destinations out', () => {
+  const primaryTabs = ['overview', 'customers', 'invoices'];
+  const secondaryModules = WORKSPACE_MODULE_CATALOG.filter(module => module.mobileGroup);
+  assert.equal(secondaryModules.length, 17);
+  assert.equal(WORKSPACE_MODULE_CATALOG.filter(module => !module.mobileGroup).length, 3);
+  for (const tab of primaryTabs) {
+    assert.equal(WORKSPACE_MODULE_CATALOG.find(module => module.tab === tab)?.mobileGroup, undefined);
+  }
+  for (const group of WORKSPACE_MODULE_GROUPS) {
+    assert.ok(secondaryModules.some(module => module.mobileGroup === group.id), group.id);
+  }
+  assert.equal(new Set(secondaryModules.map(module => module.tab)).size, 17);
+});
+
+test('catalogue grouping and the mobile More active-state policy stay in sync', () => {
+  for (const module of WORKSPACE_MODULE_CATALOG) {
+    assert.equal(isMobileMoreTab(module.tab), Boolean(module.mobileGroup), module.tab);
+  }
+});
+
+test('More menu visibility is derived from the same role policy as the Home catalogue', () => {
+  const secondaryCount = (role: string, platformAdminAvailable: boolean) =>
+    visibleModules(role, platformAdminAvailable).filter(module => module.mobileGroup).length;
+  assert.equal(secondaryCount('staff', false), 9);
+  assert.equal(secondaryCount('owner', false), 16);
+  assert.equal(secondaryCount('owner', true), 17);
+});
+
+test('Home quick access returns only the five key modules in product-defined order', () => {
+  const selected = selectHomeQuickAccessModules(WORKSPACE_MODULE_CATALOG);
+  assert.deepEqual(selected.map(module => module.tab), [
+    'invoices',
+    'customers',
+    'products',
+    'expenses',
+    'reports',
+  ]);
+  assert.equal(selected.length, 5);
+  assert.ok(selected.every(module => WORKSPACE_MODULE_CATALOG.some(item => item === module)));
+});
+
+test('Home quick access preserves role filtering and does not mutate its input', () => {
+  const accessible = WORKSPACE_MODULE_CATALOG.filter(module =>
+    ['customers', 'expenses', 'audit', 'platform-admin'].includes(module.tab),
+  );
+  const originalOrder = accessible.map(module => module.tab);
+  const selected = selectHomeQuickAccessModules(accessible);
+  assert.deepEqual(selected.map(module => module.tab), ['customers', 'expenses']);
+  assert.deepEqual(accessible.map(module => module.tab), originalOrder);
+  assert.ok(selected.every(module => accessible.includes(module)));
+});
+
+
+test('bilingual module search filters names and descriptions without expanding role access', () => {
+  const ownerModules = visibleModules('owner', false);
+  const staffModules = visibleModules('staff', false);
+
+  assert.deepEqual(filterWorkspaceModules(ownerModules, 'المنتجات', 'ar-EG', translate('ar')).map(module => module.tab), ['products']);
+  assert.deepEqual(filterWorkspaceModules(ownerModules, 'inventory', 'en', translate('en')).map(module => module.tab), ['products']);
+  assert.deepEqual(filterWorkspaceModules(staffModules, 'tax summary', 'en', translate('en')), []);
+  assert.deepEqual(filterWorkspaceModules(staffModules, 'employees', 'en', translate('en')), []);
+  assert.deepEqual(filterWorkspaceModules(staffModules, 'customers', 'en', translate('en')).map(module => module.tab), ['customers']);
+  assert.equal(filterWorkspaceModules(staffModules, '   ', 'en', translate('en')), staffModules);
+});

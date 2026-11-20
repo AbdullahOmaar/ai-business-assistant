@@ -1,0 +1,133 @@
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import test from 'node:test';
+import { expandTranslationCalls } from './localization-test-helpers.ts';
+const component=readFileSync(new URL('./shared/ui/aba-record-table.component.ts',import.meta.url),'utf8');
+const css=readFileSync(new URL('../design-system.css',import.meta.url),'utf8');
+const appRaw=readFileSync(new URL('./app.component.ts',import.meta.url),'utf8')+'\n'+readFileSync(new URL('./app.component.css',import.meta.url),'utf8');
+const app=expandTranslationCalls(appRaw);
+const customerDirectory=readFileSync(new URL('./customer-directory.component.ts',import.meta.url),'utf8');
+const productCatalog=readFileSync(new URL('./product-catalog.component.ts',import.meta.url),'utf8');
+const customerWorkspace=readFileSync(new URL('./customer-workspace.component.ts',import.meta.url),'utf8');
+const productWorkspace=readFileSync(new URL('./product-workspace.component.ts',import.meta.url),'utf8');
+const purchasingWorkspace=readFileSync(new URL('./purchasing-workspace.component.ts',import.meta.url),'utf8');
+test('shared record table exposes semantic columns and stable row actions',()=>{
+  assert.match(component,/<table>/);assert.match(component,/<caption class="aba-record-table__visually-hidden">/);
+  assert.match(component,/<th scope="col" \[attr\.aria-sort\]="sortAria\(column\.key\)"/);assert.match(component,/<th scope="row"/);
+  assert.match(component,/\[attr\.data-label\]="column\.label"/);
+  assert.match(component,/\[attr\.aria-label\]="actionAriaLabel\(row,action\)"/);
+  assert.match(component,/actionAriaLabel\(row:AbaRecordTableRow,action:AbaRecordTableAction\)/);
+  assert.match(component,/rowAction\.emit\(\{rowId,actionId,anchor\}\)/);
+});
+test('record table includes loading and empty recovery states',()=>{
+  assert.match(component,/kind="loading"/);assert.match(component,/kind="empty"/);assert.match(component,/rows\(\)\.length/);
+});
+test('phone layout renders labeled record cards with touch-sized row actions',()=>{
+  assert.match(css,/\.aba-record-table tbody tr\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css,/\.aba-record-table tbody :is\(td,th\)::before\{content:attr\(data-label\)/);
+  assert.match(css,/\.aba-record-table tbody :is\(td,th\)\.aba-record-table__primary-cell/);
+  assert.match(css,/\.aba-record-table table\{display:block;min-width:0/);
+  assert.match(css,/\.aba-record-table__action\{[^}]*min-height:44px/);
+});
+test('Customers, Products and Purchasing use dedicated workspaces while Suppliers retain the shared record contract',()=>{
+  assert.match(app,/<aba-customer-workspace/);assert.match(customerWorkspace,/<aba-customer-directory[\s\S]*?\[customers\]="customers\(\)"/);
+  assert.doesNotMatch(app,/customerTableRows|customerTableColumns/);
+  assert.match(app,/<aba-product-workspace/);assert.match(productWorkspace,/<aba-product-catalog[\s\S]*?\[products\]="products\(\)"/);
+  assert.doesNotMatch(app,/productTableRows|productTableColumns/);
+  assert.ok(app.includes('[rows]="supplierTableRows"'));
+  assert.match(app,/<aba-purchasing-workspace/);
+  assert.ok(purchasingWorkspace.includes('this.api.purchaseOrders'));
+  assert.ok(purchasingWorkspace.includes('this.api.purchaseOrderDetail'));
+  assert.ok(purchasingWorkspace.includes('this.api.purchaseOrderReceipts'));
+  assert.ok(purchasingWorkspace.includes('this.api.purchaseOrderActivity'));
+  assert.ok(purchasingWorkspace.includes('this.api.approvePurchaseOrder'));
+  assert.ok(purchasingWorkspace.includes('this.api.receivePurchaseOrder'));
+});
+
+test('record table labels and loading states follow the selected app locale',()=>{
+  assert.ok(app.includes('Loading customers') || app.includes('Loading suppliers'));
+  assert.ok(purchasingWorkspace.includes("t('loading')"));
+  assert.ok(purchasingWorkspace.includes("this.localization.translate('purchasingWorkspace.' + key)"));
+  assert.match(component, /resolvedActionsHeading/);
+  assert.match(component, /this\.localization\.translate\('ui\.actions'\)/);
+  assert.match(customerDirectory, /t\('customerDirectory\.m_/);
+  assert.match(productCatalog, /t\('productCatalog\.m_/);
+  assert.match(appRaw, /t\('ui\.m_/);
+  assert.match(customerDirectory, /customerDirectory\.m_/);
+  assert.match(productCatalog, /productCatalog\.m_/);
+});
+
+test('record dates remain localized after moving legacy lists into tables', () => {
+  for (const fragment of [
+    'formatRecordDate(item.received_at)',
+    'formatRecordDate(item.incurred_at)',
+    'formatRecordDate(item.next_run_at)',
+    'formatRecordDate(item.scheduled_at)',
+    "formatRecordDate(item.created_at,'short')",
+    "formatRecordDate(invoice.due_date,'date')",
+    'map((event,index)=>({',
+    'event.source_id',
+    "event.invoice_id||''",
+    'event.occurred_at',
+  ]) assert.ok(app.includes(fragment), 'missing localized date or stable key: '+fragment);
+});
+
+
+test('customer directory exposes only supported customer details and existing navigation actions', () => {
+  assert.doesNotMatch(customerDirectory, /customerInvoiceCount|invoiceCount/);
+  assert.match(customerDirectory, /customer\.name/);
+  assert.match(customerDirectory, /customer\.email/);
+  assert.match(customerDirectory, /customer\.phone/);
+  assert.match(customerDirectory, /emitAction\(customer\.id, 'invoices'/);
+  assert.match(customerDirectory, /emitAction\(customer\.id, 'statement'/);
+  assert.match(app, /item\.allocations\.length/);
+});
+
+
+test('shared motion uses short purposeful feedback and honors reduced-motion preferences',()=>{
+  assert.match(css,/--aiba-motion-fast:/);
+  assert.match(css,/--aiba-motion-standard:/);
+  assert.match(css,/--aiba-motion-standard-duration: 190ms/);
+  assert.match(css,/transition-duration: var\(--aiba-motion-standard-duration\)/);
+  assert.match(css,/transition-timing-function: var\(--aiba-motion-standard-easing\)/);
+  assert.match(css,/--aiba-motion-spring:/);
+  assert.match(css,/@media \(prefers-reduced-motion: no-preference\)/);
+  assert.match(css,/\.nav-item\.active \.nav-icon/);
+  assert.match(css,/\.home-shortcut-link:active/);
+  assert.match(css,/@media \(hover: hover\) and \(pointer: fine\)/);
+  assert.match(css,/aiba-motion-menu-enter/);
+  assert.match(css,/animation: none !important/);
+});
+
+
+test('mobile record cards surface primary fields before secondary date metadata', () => {
+  assert.match(css, /\.aba-record-table tbody :is\(td,th\)\.aba-record-table__primary-cell\{grid-column:1\/-1;order:-1;/);
+
+  const contracts = [
+    ['expenseTableColumns', 'date', 'description'],
+    ['auditTableColumns', 'date', 'action'],
+    ['customerStatementTableColumns', 'date', 'event'],
+  ];
+
+  for (const [getter, dateKey, primaryKey] of contracts) {
+    const start = app.indexOf('get ' + getter);
+    assert.ok(start >= 0, 'missing column contract: ' + getter);
+    const next = app.indexOf('\n  get ', start + 4);
+    const block = app.slice(start, next < 0 ? app.length : next);
+    const datePosition = block.indexOf("key:'" + dateKey + "'");
+    const primaryPosition = block.indexOf("key:'" + primaryKey + "'");
+    assert.ok(datePosition >= 0 && primaryPosition > datePosition, 'expected date-first source order: ' + getter);
+    assert.match(block.slice(primaryPosition, primaryPosition + 100), /primary:true/);
+  }
+});
+
+
+test('shared record tables sort locally with keyboard-accessible, semantic direction feedback',()=>{
+  assert.match(component, /\[attr\.aria-sort\]="sortAria\(column\.key\)"/);
+  assert.match(component, /\(click\)="toggleSort\(column\)"/);
+  assert.match(component, /\[attr\.aria-pressed\]="isSortActive\(column\.key\)"/);
+  assert.match(component, /get sortedRows\(\)/);
+  assert.match(component, /isSortActive\(key:string\):boolean/);
+  assert.match(component, /new Intl\.Collator\(undefined,\{numeric:true,sensitivity:'base'\}\)/);
+  assert.match(component, /this\.sortDirection==='asc'\?result:-result/);
+});

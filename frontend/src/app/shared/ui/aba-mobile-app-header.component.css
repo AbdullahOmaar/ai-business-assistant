@@ -1,0 +1,263 @@
+:host {
+  display: none;
+  min-width: 0;
+  position: relative;
+}
+
+.mobile-app-header {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  width: 100%;
+  min-width: 0;
+  margin-block: 0 10px;
+  padding: 8px 10px;
+  overflow: visible;
+  border: 1px solid var(--aba-color-border, #e5eaf1);
+  border-radius: 16px;
+  background: var(--aba-color-surface, #ffffff);
+  box-shadow: var(--aba-shadow-card, 0 1px 2px rgb(15 23 42 / 4%));
+  color: var(--aba-color-text-primary, #172033);
+}
+.page-context,
+.header-actions,
+.brand-button,
+.workspace-copy {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+.page-context { gap: 8px; }
+.brand-button {
+  display: grid;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--aba-color-border, #e5eaf1);
+  border-radius: 12px;
+  background: var(--aba-color-surface-subtle, #f8fafc);
+  color: inherit;
+}
+.brand-mark {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border-radius: 9px;
+  background: var(--aba-color-primary-soft, #ecfdf5);
+  color: var(--aba-color-primary-strong, #115e59);
+  font-size: 15px;
+  font-weight: 900;
+}
+.page-copy { flex: 1 1 auto; min-width: 0; }
+.greeting { display: none; }
+.page-copy h1 {
+  display: block;
+  min-width: 0;
+  margin: 0;
+  overflow: visible;
+  white-space: normal;
+  -webkit-box-orient: initial;
+  -webkit-line-clamp: unset;
+  text-overflow: clip;
+  color: var(--aba-color-text-primary, #172033);
+  font-size: clamp(16px, 4.5vw, 19px);
+  font-weight: 800;
+  line-height: 1.35;
+  letter-spacing: -.02em;
+  overflow-wrap: anywhere;
+}
+.header-actions { flex: 0 0 auto; gap: 4px; }
+.icon-button,
+.profile-trigger {
+  display: grid;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
+  place-items: center;
+  padding: 0;
+  border: 1px solid var(--aba-color-border, #e5eaf1);
+  border-radius: 12px;
+  background: var(--aba-color-surface, #ffffff);
+  color: var(--aba-color-text-primary, #172033);
+  font-size: 20px;
+}
+.profile-avatar {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--aba-color-primary-soft, #ecfdf5);
+  color: var(--aba-color-primary-strong, #115e59);
+  font-size: 13px;
+  font-weight: 800;
+}
+.workspace-context {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 9px;
+  border: 1px solid var(--aba-color-border, #e5eaf1);
+  border-radius: 11px;
+  background: var(--aba-color-surface-subtle, #f8fafc);
+}
+.workspace-copy { display: grid; align-items: start; gap: 1px; }
+.context-label {
+  color: var(--aba-color-text-secondary, #5d6878);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.workspace-copy strong {
+  display: -webkit-box;
+  min-width: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow-wrap: anywhere;
+  color: var(--aba-color-text-primary, #172033);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.workspace-switch { display: block; min-width: 0; }
+.workspace-switch select {
+  width: 100%;
+  max-width: 124px;
+  min-width: 78px;
+  min-height: 44px;
+  padding: 6px 7px;
+  border-color: var(--aba-color-border, #e5eaf1);
+  border-radius: 10px;
+  background: var(--aba-color-surface, #ffffff);
+  color: var(--aba-color-text-primary, #172033);
+  font-size: 12px;
+  font-weight: 700;
+}
+.assistant-shortcut {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-width: 44px;
+  min-height: 44px;
+  max-width: 120px;
+  padding: 6px 8px;
+  border: 1px solid var(--aba-color-info-border, #bfdbfe);
+  border-radius: 11px;
+  background: var(--aba-color-info-soft, #eff6ff);
+  color: var(--aba-color-info-text, #1e40af);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+.assistant-shortcut span:first-child { font-size: 14px; }
+.account-menu {
+  position: absolute;
+  z-index: var(--aba-z-index-dropdown, 40);
+  inset-block-start: calc(100% + 6px);
+  inset-inline-end: 10px;
+  display: grid;
+  gap: 7px;
+  width: min(260px, calc(100vw - 48px));
+  padding: 11px;
+  border: 1px solid var(--aba-color-border, #e5eaf1);
+  border-radius: 14px;
+  background: var(--aba-color-surface, #ffffff);
+  box-shadow: var(--aba-shadow-popover, 0 12px 32px rgb(15 23 42 / 12%));
+}
+.account-email {
+  margin: 0;
+  padding: 4px 5px 9px;
+  border-bottom: 1px solid var(--aba-color-border-subtle, #eef2f7);
+  color: var(--aba-color-text-secondary, #5d6878);
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  text-align: start;
+}
+.account-action {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--aba-color-surface-subtle, #f8fafc);
+  color: var(--aba-color-text-primary, #172033);
+  font-size: 12px;
+  font-weight: 700;
+  text-align: start;
+}
+.sign-out-action {
+  color: var(--aba-color-danger-text, #991b1b);
+  background: var(--aba-color-danger-soft, #fef2f2);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+@media (max-width: 760px) {
+  :host { display: block; }
+}
+@media (max-width: 380px) {
+  .mobile-app-header { gap: 7px; padding: 7px 8px; }
+  .page-context { gap: 6px; }
+  .header-actions { gap: 3px; }
+  .workspace-context { gap: 6px; padding: 6px 8px; }
+  .workspace-copy strong { font-size: 12px; }
+  .assistant-shortcut { width: 44px; max-width: 44px; padding: 0; }
+  .assistant-shortcut span:last-child { display: none; }
+  .page-copy h1 { font-size: 16px; }
+}
+
+/* Arabic connected-script headings use natural tracking; avoid Latin-style negative letter spacing. */
+.mobile-app-header[dir="rtl"] .page-copy h1 { letter-spacing: normal; }
+
+/* Keep short English page titles intact beside the three fixed mobile actions. */
+@media (max-width: 420px) {
+  .page-copy h1 { font-size: 16px; }
+}
+
+/* Consistent keyboard and touch feedback for every mobile header action. */
+.mobile-app-header :is(button, select):focus-visible {
+  outline: 3px solid var(--aba-color-focus-ring, #2563eb);
+  outline-offset: 2px;
+  position: relative;
+  z-index: 1;
+}
+.mobile-app-header button:not(:disabled) {
+  cursor: pointer;
+  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+  touch-action: manipulation;
+}
+.mobile-app-header button:not(:disabled):active { transform: scale(.97); }
+.mobile-app-header button:not(:disabled):hover {
+  border-color: var(--aba-color-primary-border, #99f6e4);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mobile-app-header button:not(:disabled) { transition: none; }
+  .mobile-app-header button:not(:disabled):active { transform: none; }
+}
+
+/* Icon-only actions retain an accessible name and a visible interactive surface. */
+.header-actions :is(.icon-button,.profile-trigger){background:var(--aba-color-surface-subtle,#f8fafc);border-color:var(--aba-color-border,#e5eaf1)}
+.header-actions :is(.icon-button,.profile-trigger):hover{background:var(--aba-color-surface-hover,#f1f5f9);border-color:var(--aba-color-primary-border,#99f6e4)}
+@media(max-width:480px){
+  .assistant-shortcut{width:44px;max-width:44px;padding:0}
+  .assistant-shortcut span:last-child{display:none}
+  .page-copy h1{font-size:16px;line-height:1.25}
+}

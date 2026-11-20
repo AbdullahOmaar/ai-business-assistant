@@ -1,0 +1,164 @@
+# AIBA Design System
+
+**Status:** Approved visual direction — Project Master decision, 11 November 2026  
+**Scope:** Presentation layer only. This document does not change API contracts, authorization, tenant rules, financial semantics, stock behavior, or persistence.
+
+## 1. Visual direction
+
+AIBA uses an **Arabic-first, modern business workspace** visual language:
+
+- Calm light workspace surfaces framed by a deep navy navigation system.
+- Teal is the primary action and active-state color; blue is reserved for focus and neutral informational feedback.
+- Dense business information is grouped into clear cards and compact, readable tables rather than decorative dashboards.
+- RTL and LTR share the same components. Layout uses logical CSS properties so direction changes do not require duplicate styles.
+- Inter / system UI is the Latin stack; Arabic uses the system Arabic fallback. There is no remote font dependency.
+
+## 2. Color foundations
+
+| Role | Value | Usage |
+|---|---|---|
+| Brand | `#0F766E` | Primary actions, active emphasis |
+| Brand strong | `#115E59` | Hover and high-emphasis text |
+| Brand bright | `#0D9488` | Restrained brand gradient highlight |
+| Brand soft | `#ECFDF5` | Selected/soft brand surfaces |
+| Navigation | `#101B2C` | Main navigation shell |
+| Navigation raised | `#1B2D42` | Raised navigation surfaces |
+| Page | `#F4F7FB` | Application canvas |
+| Surface | `#FFFFFF` | Cards, dialogs and controls |
+| Surface tint | `#F6FAFB` | Forms and filter bands |
+| Text | `#172033` | Primary text |
+| Muted | `#5F6E83` | Supporting text and placeholders; contrast-safe on the page surface |
+| Border | `#E2E8F0` | Separation and control outlines |
+| Focus | `#2563EB` | Visible keyboard focus |
+| Success / warning / error | Existing semantic palette | Status only; never color-only meaning |
+
+This preserves the existing AIBA teal/navy identity and improves separation, contrast and surface hierarchy. Status colors remain semantic; business state labels remain visible text.
+
+## 3. Typography
+
+| Token | Size | Intended use |
+|---|---:|---|
+| `--aiba-text-xs` | 12px | Metadata, helper text |
+| `--aiba-text-sm` | 13px | Labels, table cells, actions |
+| `--aiba-text-md` | 14px | Default controls and body copy |
+| `--aiba-text-lg` | 16px | Card and section subheads |
+| `--aiba-text-xl` | 19px | Emphasized values |
+| `--aiba-heading-sm` | 22px | Compact section heading |
+| `--aiba-heading-md` | 28px | Page heading |
+| `--aiba-heading-lg` | 32px | Large desktop heading |
+
+Body line-height is 1.5; supporting copy uses 1.65. Numeric values use tabular numerals where already represented as numeric data. No font is fetched remotely.
+
+## 4. Spacing and shape
+
+Spacing uses a 4px base scale: 4, 8, 12, 16, 20, 24, 32, 40 and 48px.
+
+- Controls: 11px radius; 44px standard minimum height; 48px for text-entry fields.
+- Cards: 16px radius; larger page panels: 20px radius.
+- Pills: fully rounded, used for counts, versions and compact statuses only.
+- Elevation is quiet: a fine border plus low-opacity shadow. Hover adds a small lift, not a large animation.
+
+## 5. Component contracts
+
+### Buttons
+- Primary: teal gradient, white text, 44px minimum height; used for the main action in a section.
+- Secondary: white surface, neutral border, ink text; used for cancel, navigation and supporting actions.
+- Destructive actions retain their existing danger classes and copy. Disabled states reduce emphasis and prevent hover lift.
+- Focus is always visible; hover is not the only feedback.
+
+### Fields and forms
+- Persistent labels remain the source of field meaning; placeholders are examples only.
+- Shared form layouts cover expenses, payments, invoice drafts, employee/payroll, Platform Admin status/role forms and the assistant composer.
+- Text, date, number, select and textarea controls share height, radius, border and focus treatment.
+- Invalid fields use the existing `aria-invalid` contract and inline error copy. The design layer does not alter validation rules or submission behavior.
+- Inline forms flow into a responsive grid; stacked forms retain a single vertical rhythm.
+- Checkbox/radio controls retain native semantics with the AIBA accent color.
+
+### Filters
+- Search, select and period controls sit in a shared tinted filter surface.
+- The same layout contract covers invoice and statement filters, employee tools, Platform Admin filters and audit filters.
+- Search fields may grow; select controls remain shrink-safe.
+- On phones, filters become a single vertical stack with full-width actions. Clearing filters remains the responsibility of each feature.
+
+### Cards and metrics
+- Shared card surfaces use the same border, radius, padding and shadow.
+- Home KPIs and Platform Admin metrics, permission cards, detail panels and empty states use the same surface geometry.
+- KPI values are visually prominent but remain separated by currency and the existing server-provided meaning. No new sums, ratios or client calculations are introduced.
+- Empty, loading, warning and error states keep their semantic state components.
+
+### Tables
+- Tables use a quiet header tint, clear row separators, and a restrained hover state.
+- Table wrappers preserve keyboard focus and horizontal touch scrolling when a table has more columns than the viewport.
+- Numeric values remain tabular; no columns, data or totals are changed.
+
+## 6. Reference screen: Home / Dashboard
+
+The Home screen is the first complete implementation of this direction:
+
+1. A dark navy-to-teal reporting-period hero with clear period/date/timezone metadata.
+2. Four currency-separated KPI cards with stronger hierarchy and consistent surface geometry.
+3. A distinct metric-meaning note that preserves the existing difference between invoiced sales, collected payments, expenses and outstanding balances.
+4. Quick Access as touch-friendly action cards.
+5. The existing module directory remains available under its current disclosure and permission-aware catalog.
+
+No data, navigation, permissions, API requests or business meaning is altered by this screen treatment.
+
+## 7. Responsive and accessibility rules
+
+- Desktop: multi-column KPI and form layouts; card content stays shrink-safe.
+- Tablet: KPI cards flow to two columns; forms and filter groups reflow rather than overflow.
+- Mobile (760px and below): single-column forms, stacked filters, compact hero metadata, and touch-friendly controls.
+- Narrow mobile (380px and below): KPI and quick-access cards retain two columns with shrink-safe content, compact padding and readable labels; verify at 320px.
+- RTL/LTR: use logical properties (`margin-inline`, `padding-inline`, `border-inline`) and keep identifiers, dates and currency codes directionally isolated where the data already uses `bdi`.
+- Reduced motion and forced-colors modes retain their native accessibility behavior.
+
+## 8. Implementation boundaries
+
+This design layer is loaded after the current base stylesheet through Angular's global style list. The T18 mobile shell/dock and shared responsive design changes are consolidated in PR #374; `frontend/src/styles.css` remains unchanged.
+
+The design layer must not:
+- Introduce new API fields or change request/response payloads.
+- Add, remove or reorder accounting, invoice, payment, stock or payroll actions.
+- Change permission visibility or tenant scoping.
+- Add fake sample business data or client-side calculations.
+- Replace feature-specific validation, loading, retry or uncertain-write behavior.
+
+The CSS and source-level checks verify the visual contract. They do not replace rendered Preview review on desktop and mobile.
+
+
+## 9. Follow-up review hardening — 2026-11-11
+
+The post-merge review identified two valid presentation defects and the follow-up addresses them:
+- Primary button gradient stops now use the darker brand-strong and brand tokens. White labels are checked against the WCAG AA 4.5:1 normal-text contrast threshold at both stops.
+- KPI Angular hosts are layout-only at every breakpoint, including an explicit zero-padding reset at ≤380px. The inner `.aba-metric-card` component owns the single border, surface, radius, padding and shadow, avoiding nested card frames and preserving content width on phones. The regression test inspects every matching host rule, including responsive overrides.
+
+The browser-smoke artifact now retains full-page references and adds true 844px viewport captures at 320px / 390px RTL and 390px LTR. Full-page screenshots are not used to judge fixed-position navigation overlap because fixed elements are anchored to the viewport during full-page capture.
+
+These changes are frontend presentation and test evidence only. No business logic, APIs, authorization, database, financial meaning or production data is changed.
+
+## 10. T18 mobile usability closeout — 2026-11-11
+
+- The Home hierarchy remains reporting period → currency-separated activity KPIs → compact metric-meaning note → Quick Access → permission-aware module directory. The note is intentionally subordinate; the invoice, collection, expense and outstanding-balance definitions remain visible and are not combined into a new total.
+- Fixed mobile dock clearance and safe-area scroll runway are handled by the separate active T18 work package in PR #374; that work owns the application shell and dock-specific browser assertion. This shared-surface batch does not alter shell padding or dock geometry.
+- Shared section-heading actions and state-message actions keep a minimum 44px target. Filter/search groups collapse to one column at narrow widths; fields and action controls remain full width and keyboard reachable.
+- Invoice records already have a responsive card presentation. Wider statement/audit tables retain all columns in a touch-scrollable region, with visible focus, contained horizontal overscroll, sticky headings and a sticky first column. Do not hide business or financial fields to make a table appear to fit.
+- Screenshot acceptance uses viewport captures, not only full-page snapshots, because fixed navigation is anchored to the viewport. Capture 320 / 360 / 390 / 412 / 430 / 700 / 768 / 1280px where the route supports them, in RTL and LTR; annotate any unavailable direction/width explicitly.
+- Automated layout assertions do not replace physical Android Chrome installed-PWA, screen-reader, high-contrast or 200% zoom acceptance. Those remain separate evidence items.
+
+
+
+## Keyboard navigation — workspace entry
+
+- Every authenticated workspace state exposes a localized skip link: “تخطي إلى المحتوى الرئيسي” / “Skip to main content”.
+- The link is hidden from the visual flow until keyboard focus, then appears above the workspace shell with a 44px minimum target.
+- The destination is the main content landmark, focusable programmatically with `tabindex="-1"`; the skip link is not rendered during startup, setup or startup-failure states where that landmark does not exist.
+- The transition respects `prefers-reduced-motion`. This is a keyboard-navigation aid and does not alter routes, authorization, or feature behavior.
+- Source-level regression coverage lives in `frontend/src/app/design-system.spec.ts`; rendered keyboard and screen-reader verification remains a separate acceptance gate.
+
+
+## 11. Mobile dock scroll clearance — 2026-11-11
+
+- At viewports up to 760px, the workspace main region reserves a 132px bottom scroll runway plus the device safe-area inset, so the final content and keyboard-focused controls can be scrolled clear of the fixed mobile dock.
+- The mobile navigation container also reserves the bottom safe-area inset; common interactive elements keep a 12px scroll margin.
+- This is a presentation/scrolling adjustment only. It does not change tab visibility, navigation order, role checks, data, API behavior or financial meaning.
+- Source regression coverage asserts the mobile breakpoint, main-region clearance and safe-area-aware navigation padding. Rendered viewport and physical Android verification remain separate acceptance items.

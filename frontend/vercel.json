@@ -1,0 +1,9 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "buildCommand": "node scripts/write-build-info.mjs && ng build",
+  "outputDirectory": "dist/ai-business-assistant/browser",
+  "rewrites": [
+    { "source": "/workspace", "destination": "/" },
+    { "source": "/workspace/:path*", "destination": "/" }
+  ]
+}
