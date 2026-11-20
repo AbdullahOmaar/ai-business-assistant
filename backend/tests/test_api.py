@@ -121,6 +121,7 @@ def test_two_draft_returns_cannot_overreturn_when_approved_sequentially():
     previous_factory, previous_resolver = _configure_test_identity(engine)
     client = TestClient(app)
     payload = {
+        "reason": "test return",
         "invoice_id": str(invoice_id),
         "lines": [{"invoice_line_id": str(line_id), "quantity": "0.750"}],
     }
@@ -151,7 +152,7 @@ def test_sales_return_amount_respects_invoice_level_discount():
     try:
         created = client.post(
             f"/api/v1/businesses/{business_id}/sales-returns",
-            json={"invoice_id": str(invoice_id), "lines": [{"invoice_line_id": str(line_id), "quantity": "1.000"}]},
+            json={"reason": "test return", "invoice_id": str(invoice_id), "lines": [{"invoice_line_id": str(line_id), "quantity": "1.000"}]},
         )
         assert created.status_code == 201
         assert created.json()["total"] == "5.00"
@@ -171,7 +172,7 @@ def test_fully_discounted_invoice_cannot_be_refunded_at_gross_line_value():
     try:
         created = client.post(
             f"/api/v1/businesses/{business_id}/sales-returns",
-            json={"invoice_id": str(invoice_id), "lines": [{"invoice_line_id": str(line_id), "quantity": "1.000"}]},
+            json={"reason": "test return", "invoice_id": str(invoice_id), "lines": [{"invoice_line_id": str(line_id), "quantity": "1.000"}]},
         )
         assert created.status_code == 201
         assert created.json()["total"] == "0.00"
@@ -229,7 +230,7 @@ def test_sales_return_discount_allocation_reconciles_real_invoice_total():
         assert invoice["total"] == "0.02"
         created_return = client.post(
             f"/api/v1/businesses/{business_id}/sales-returns",
-            json={"invoice_id": str(invoice_id), "lines": [
+            json={"reason": "test return", "invoice_id": str(invoice_id), "lines": [
                 {"invoice_line_id": line["id"], "quantity": "0.500"} for line in invoice["lines"]
             ]},
         )
@@ -254,6 +255,7 @@ def test_duplicate_lines_in_one_return_cannot_exceed_invoiced_quantity():
     previous_factory, previous_resolver = _configure_test_identity(engine)
     client = TestClient(app)
     payload = {
+        "reason": "test return",
         "invoice_id": str(invoice_id),
         "lines": [
             {"invoice_line_id": str(line_id), "quantity": "0.600"},
@@ -328,7 +330,8 @@ def test_concurrent_postgres_return_approvals_cannot_overreturn():
         identity_configured = True
         client = TestClient(app)
         payload = {
-            "invoice_id": str(invoice_id),
+            "reason": "test return",
+        "invoice_id": str(invoice_id),
             "lines": [{"invoice_line_id": str(line_id), "quantity": "0.750"}],
         }
         first = client.post(f"/api/v1/businesses/{business_id}/sales-returns", json=payload)
@@ -422,6 +425,7 @@ def test_partial_returns_cannot_refund_more_than_rounded_invoice_line():
     previous_factory, previous_resolver = _configure_test_identity(engine)
     client = TestClient(app)
     payload = {
+        "reason": "test return",
         "invoice_id": str(invoice_id),
         "lines": [{"invoice_line_id": str(line_id), "quantity": "0.500"}],
     }
@@ -1490,7 +1494,8 @@ def test_owner_can_record_and_idempotently_replay_payment_via_api():
         "currency_code": "EGP",
         "idempotency_key": "owner-api-payment-replay",
         "customer_id": str(customer_id),
-        "allocations": [{"invoice_id": str(invoice_id), "amount": "5.00"}],
+        "allocations": [{"reason": "test return",
+        "invoice_id": str(invoice_id), "amount": "5.00"}],
         "method": "cash",
         "reference": "API regression",
     }
@@ -1666,7 +1671,8 @@ def test_payment_idempotency_reuse_with_changed_payload_has_no_api_side_effects(
         "currency_code": "EGP",
         "idempotency_key": "same-key-changed-api-payload",
         "customer_id": str(customer_id),
-        "allocations": [{"invoice_id": str(invoice_id), "amount": "5.00"}],
+        "allocations": [{"reason": "test return",
+        "invoice_id": str(invoice_id), "amount": "5.00"}],
         "method": "cash",
         "reference": "API idempotency regression",
     }
