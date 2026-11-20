@@ -4587,3 +4587,13 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - Root component size is now 262,105 bytes (317,642 baseline); stylesheet and audit view are separate artifacts.
 - **Exact-head CI:** run [#44577925196](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44577925196) SUCCESS on `de715347f8e2fa0b153d1ae21bb1b8c0decad366`; frontend **568 passed**, build PASS, backend **336 passed / 23 warnings**, migrations/schema drift, API smoke, container/import, dependency audits, project knowledge and all-checks-passed SUCCESS.
 - Status: slice 2 verified; BUG-07 remains in progress for additional bounded extractions.
+
+
+## P2 follow-up — demo rate-limit counter retention — 2026-11-20
+
+- **Finding:** `demo_rate_limit_counters` has no TTL, expiry, or pruning path. Distinct client-IP hashes can therefore leave persistent rows indefinitely.
+- **Evidence:** Codex review on PR #407, inline finding [P2 — Expire persisted demo rate-limit counters](https://github.com/AbdullahOmaar/ai-business-assistant/pull/407#discussion_r4639485639).
+- **Scope:** documentation/tracking only. No application code, model, migration, or database change is included in this follow-up.
+- **Runtime qualification:** migration/table is not deployed to Production yet; actual Production growth, request volume, and storage impact have not been measured.
+- **Status:** FOLLOW-UP / NOT IMPLEMENTED. Evaluate bounded retention or cleanup in a separately reviewed task before enabling sustained public demo traffic.
+- **Acceptance:** define retention semantics, cleanup strategy and index/storage impact; test concurrency and cleanup safety; keep rate limiting fail-closed.
