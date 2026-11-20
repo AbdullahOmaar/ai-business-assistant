@@ -24,7 +24,7 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   assert.match(source, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 
   const moreStart = source.indexOf('id="mobile-more-menu"');
-  const moreEnd = source.indexOf('          <div class="sidebar-bottom"', moreStart);
+  const moreEnd = source.indexOf('</nav>', moreStart) + '</nav>'.length;
   assert.ok(moreStart >= 0 && moreEnd > moreStart);
   const moreMenu = source.slice(moreStart, moreEnd);
   assert.match(moreMenu, /@for \(group of mobileMoreGroups; track group\.id\)/);
@@ -52,7 +52,7 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
 
 test('mobile More keeps grouped destinations and no longer renders a sections search control', () => {
   const moreStart = source.indexOf('id="mobile-more-menu"');
-  const moreEnd = source.indexOf('          <div class="sidebar-bottom"', moreStart);
+  const moreEnd = source.indexOf('</nav>', moreStart) + '</nav>'.length;
   assert.ok(moreStart >= 0 && moreEnd > moreStart);
   const menu = source.slice(moreStart, moreEnd);
   assert.doesNotMatch(menu, /mobile-more-search|mobileMoreSearch|type="search"/);

@@ -1697,13 +1697,17 @@ test('inventory movement API uses authenticated tenant-scoped GET with bounded r
 });
 
 
-test('mobile More opens above workspace content without removing its grouped destinations', () => {
-  const sidebarStart = source.indexOf('<aside class="sidebar" [class.mobile-more-open]="mobileMoreOpen"');
+test('mobile More is a shell-root overlay above workspace content with a real backdrop', () => {
+  const sidebarStart = source.indexOf('<aside class="sidebar"');
   const sidebarEnd = source.indexOf('</aside>', sidebarStart);
-  assert.ok(sidebarStart >= 0 && sidebarEnd > sidebarStart);
-  const sidebar = source.slice(sidebarStart, sidebarEnd);
-  assert.match(sidebar, /\[class\.mobile-more-open\]="mobileMoreOpen"/);
-  assert.match(globalStyles, /@media \(max-width: 760px\) \{\s*:root body \.shell \.sidebar\.mobile-more-open \{\s*z-index: 60;/);
+  const overlayStart = source.indexOf('<div class="mobile-more-overlay">');
+  assert.ok(sidebarStart >= 0 && sidebarEnd > sidebarStart && overlayStart > sidebarEnd);
+  const overlay = source.slice(overlayStart, source.indexOf('<nav #mobileMoreMenu', overlayStart));
+  assert.match(overlay, /mobile-more-backdrop/);
+  assert.match(source, /\.mobile-more-overlay\{display:block;position:fixed;inset:0;z-index:80;pointer-events:none\}/);
+  assert.match(source, /\.mobile-more-backdrop\{position:fixed;inset:0;z-index:80;/);
+  assert.match(source, /\.mobile-more-menu\{display:grid;position:fixed;z-index:81;pointer-events:auto;/);
+  assert.doesNotMatch(source.slice(sidebarStart, sidebarEnd), /mobile-more-menu/);
 });
 
 test('overview invitation accept surface is absent when there is no invitation to accept', () => {

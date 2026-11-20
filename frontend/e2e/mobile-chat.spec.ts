@@ -1452,12 +1452,18 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   await expect(menu.locator('input[type="search"]')).toHaveCount(0);
   const menuHitTest = await menu.evaluate(element => {
     const rect = element.getBoundingClientRect();
-    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + Math.min(32, rect.height / 2));
-    return Boolean(hit && element.contains(hit));
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    return Boolean(hit && hit.closest('.mobile-more-menu') === element);
   });
-  expect(menuHitTest).toBe(true);
-  const menuSidebarZIndex = await menu.evaluate(element => Number.parseInt(getComputedStyle(element.parentElement!).zIndex, 10));
-  expect(menuSidebarZIndex).toBeGreaterThanOrEqual(60);
+  expect(menuHitTest, 'the visible More sheet must win the actual viewport paint-order hit test').toBe(true);
+  const menuOverlay = await menu.evaluate(element => ({
+    inSidebar: Boolean(element.closest('aside.sidebar')),
+    overlayZIndex: Number.parseInt(getComputedStyle(element.closest('.mobile-more-overlay')!).zIndex, 10),
+    menuZIndex: Number.parseInt(getComputedStyle(element).zIndex, 10),
+  }));
+  expect(menuOverlay.inSidebar).toBe(false);
+  expect(menuOverlay.overlayZIndex).toBeGreaterThanOrEqual(80);
+  expect(menuOverlay.menuZIndex).toBeGreaterThan(menuOverlay.overlayZIndex);
 
   // Keep the menu's keyboard-inset layout covered independently of a removed search field.
   await page.locator('.shell').evaluate(shell => {
@@ -1474,17 +1480,15 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
       bottom: Number.parseFloat(getComputedStyle(element).bottom),
       bottomGap: window.innerHeight - rect.bottom,
       top: rect.top,
-      sidebarBottom: Number.parseFloat(getComputedStyle(element.parentElement!).bottom),
-      sidebarPointerEvents: getComputedStyle(element.parentElement!).pointerEvents,
+      overlayPointerEvents: getComputedStyle(element.closest('.mobile-more-overlay')!).pointerEvents,
     };
   });
   // The blurred sidebar is the fixed-position containing block: apply the
   // keyboard inset to the dock once, then leave the menu offset dock-relative.
-  expect(keyboardMenuLayout.bottom).toBe(88);
+  expect(keyboardMenuLayout.bottom).toBe(388);
   expect(keyboardMenuLayout.bottomGap).toBeGreaterThanOrEqual(388);
   expect(keyboardMenuLayout.top).toBeGreaterThanOrEqual(0);
-  expect(keyboardMenuLayout.sidebarBottom).toBe(300);
-  expect(keyboardMenuLayout.sidebarPointerEvents).toBe('auto');
+  expect(keyboardMenuLayout.overlayPointerEvents).toBe('none');
   await keyboardProductAction.click();
   await expect(menu).toHaveCount(0);
   await expect(page.getByRole('heading', { name: /Products & inventory/ })).toBeVisible();

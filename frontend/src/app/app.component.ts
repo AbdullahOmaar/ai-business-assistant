@@ -143,7 +143,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           }
         </main>
       } @else {
-        <aside class="sidebar" [class.mobile-more-open]="mobileMoreOpen" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2')">
+        <aside class="sidebar" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2')">
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>{{ t('common.app_title') }}</span></a>
           <nav class="sidebar-nav-scroll" [attr.aria-label]="t('ui.m_criw1m')">
             <div class="desktop-sidebar-groups">
@@ -174,7 +174,13 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('ui.m_dh4eov') }}</span>
               </button>
             </div>
-            @if (mobileMoreOpen) {
+          </nav>
+          <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('ui.m_17dx7ed') }}<small>{{ t('ui.m_ab5ft9') }}</small></div>
+        
+        </aside>
+        @if (mobileMoreOpen) {
+          <div class="mobile-more-overlay">
+            <button class="mobile-more-backdrop" type="button" aria-label="Close menu" (click)="closeMobileMoreOnEscape()"></button>
             <nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('ui.m_1c7twvy')">
               @for (group of mobileMoreGroups; track group.id) {
                 <section class="mobile-more-group" [attr.aria-labelledby]="'mobile-more-' + group.id + '-heading'">
@@ -192,12 +198,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <button class="nav-item mobile-menu-action" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t('ui.m_r2b303') }}</span></button>
               </div>
             </nav>
-          }
-          
-          </nav>
-          <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('ui.m_17dx7ed') }}<small>{{ t('ui.m_ab5ft9') }}</small></div>
-        
-        </aside>
+          </div>
+        }
+
         <main class="main" id="main-content" tabindex="-1">
           @if (!isInstalled) {
             <section class="mobile-install-card" [attr.aria-label]="t('ui.m_1ig5s72')">
