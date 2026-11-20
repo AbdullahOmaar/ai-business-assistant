@@ -61,7 +61,7 @@ The backend uses environment configuration. Relevant settings include:
 - `CORS_ALLOWED_ORIGINS`: comma-separated exact frontend origins permitted by CORS.
 - `OPENAI_API_KEY`: backend-only key for generative assistant behavior, when configured.
 - `DEMO_LOGIN_ENABLED` and `DEMO_LOGIN_EMAIL`: demo-session bootstrap remains disabled unless explicitly enabled and a demo identity is configured.
-- `DEMO_RATE_LIMIT_REDIS_URL` and `DEMO_RATE_LIMIT_REDIS_TOKEN`: required HTTPS Redis REST endpoint and server-side bearer token whenever demo login is enabled. The demo session endpoint uses an atomic Redis fixed-window counter and fails closed with HTTP 503 if this shared limiter is missing or unavailable; it never falls back to per-process memory.
+- The demo session endpoint enforces an atomic fixed-window rate limit stored in the existing application database (table `demo_rate_limit_counters`, migration `0009_demo_rate_limit_counters`). No extra service or account is required: a single `INSERT ... ON CONFLICT` upsert synchronizes all serverless instances, and the endpoint fails closed with HTTP 503 if the database-backed limiter is unavailable or misconfigured; it never falls back to per-process memory.
 - `DEMO_RATE_LIMIT_MAX_REQUESTS`: optional integer from 1 to 100; defaults to 5 requests per client IP in a window.
 - `DEMO_RATE_LIMIT_WINDOW_SECONDS`: optional integer from 1 to 3600; defaults to 60 seconds. Excess requests receive HTTP 429 with `Retry-After`.
 
