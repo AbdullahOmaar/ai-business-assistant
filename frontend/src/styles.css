@@ -740,3 +740,21 @@ aba-metric-card.metric-card-action:active .aba-metric-card {
   .dashboard-action { transition: none; }
   .dashboard-action:hover { transform: none; }
 }
+
+
+/* P1 acceptance follow-up: keep the More sheet above the dashboard stacking context. */
+@media (max-width: 760px) {
+  :root body .shell .sidebar.mobile-more-open {
+    z-index: 60;
+  }
+}
+
+/* The invoice toolbar contains a single compact primary action until the editor opens. */
+@media (min-width: 761px) {
+  :root body .shell .invoice-toolbar > .invoice-create-button {
+    flex: 0 0 auto;
+    width: fit-content;
+    min-height: 44px;
+    align-self: flex-start;
+  }
+}

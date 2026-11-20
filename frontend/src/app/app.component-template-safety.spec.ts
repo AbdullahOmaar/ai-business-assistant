@@ -25,6 +25,7 @@ const purchasingWorkspaceSource = expandTranslationCalls(readFileSync(new URL('.
 const customerEditorSource = expandTranslationCalls(readFileSync(new URL('./customer-editor.component.ts', import.meta.url), 'utf8'));
 const auditLabelsSource = expandTranslationCalls(readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8'));
 const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
+const workspaceInvitationsSource = readFileSync(new URL('./workspace-invitations.component.ts', import.meta.url), 'utf8');
 
 test('workspace shell imports every tenant guard helper used by its async views', () => {
   assert.match(workspaceLoadGuardSource, /export function isCurrentTenantRequest/);
@@ -1693,4 +1694,23 @@ test('inventory movement API uses authenticated tenant-scoped GET with bounded r
   assert.match(method, /Math\.max\(0, offset\)/);
   assert.match(method, /request<StockMovementPage>/);
   assert.doesNotMatch(method, /'POST'|'PUT'|'PATCH'|'DELETE'/);
+});
+
+
+test('mobile More opens above workspace content without removing its grouped destinations', () => {
+  const sidebarStart = source.indexOf('<aside class="sidebar" [class.mobile-more-open]="mobileMoreOpen"');
+  const sidebarEnd = source.indexOf('</aside>', sidebarStart);
+  assert.ok(sidebarStart >= 0 && sidebarEnd > sidebarStart);
+  const sidebar = source.slice(sidebarStart, sidebarEnd);
+  assert.match(sidebar, /\[class\.mobile-more-open\]="mobileMoreOpen"/);
+  assert.match(globalStyles, /@media \(max-width: 760px\) \{\s*:root body \.shell \.sidebar\.mobile-more-open \{\s*z-index: 60;/);
+});
+
+test('overview invitation accept surface is absent when there is no invitation to accept', () => {
+  assert.match(workspaceInvitationsSource, /@if \(mode === 'manage' \|\| acceptVisible \|\| error \|\| success\) \{\s*<section class="team-card"/);
+  assert.match(workspaceInvitationsSource, /this\.acceptVisible = Boolean\(this\.inviteToken\) \|\| !this\.businessId/);
+});
+
+test('desktop invoice create action stays content-sized instead of stretching the toolbar', () => {
+  assert.match(globalStyles, /@media \(min-width: 761px\) \{\s*:root body \.shell \.invoice-toolbar > \.invoice-create-button \{\s*flex: 0 0 auto;\s*width: fit-content;\s*min-height: 44px;\s*align-self: flex-start;/);
 });

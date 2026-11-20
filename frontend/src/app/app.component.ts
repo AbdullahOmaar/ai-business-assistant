@@ -143,7 +143,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           }
         </main>
       } @else {
-        <aside class="sidebar" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2')">
+        <aside class="sidebar" [class.mobile-more-open]="mobileMoreOpen" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2')">
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>{{ t('common.app_title') }}</span></a>
           <nav class="sidebar-nav-scroll" [attr.aria-label]="t('ui.m_criw1m')">
             <div class="desktop-sidebar-groups">

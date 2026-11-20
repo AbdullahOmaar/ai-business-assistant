@@ -56,6 +56,7 @@ test('mobile More keeps grouped destinations and no longer renders a sections se
   assert.ok(moreStart >= 0 && moreEnd > moreStart);
   const menu = source.slice(moreStart, moreEnd);
   assert.doesNotMatch(menu, /mobile-more-search|mobileMoreSearch|type="search"/);
+  assert.doesNotMatch(menu, /ابحث باسم القسم أو وصفه/);
   assert.match(menu, /@for \(group of mobileMoreGroups; track group\.id\)/);
   assert.match(menu, /@for \(module of group\.modules; track module\.tab\)/);
   assert.match(source, /get mobileMoreGroups\(\): readonly/);

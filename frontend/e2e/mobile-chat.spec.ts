@@ -1448,9 +1448,18 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
     await expect(menu.getByRole('button', { name: available })).toBeVisible();
   }
 
-  // Focusing More search opens the virtual keyboard on phones. Keep the
-  // dock/menu above that keyboard so filtered destinations remain tappable.
-  await menu.getByRole('searchbox', { name: /Search sections/ }).fill('Products & inventory');
+  // More is navigation-only: the owner-requested sections search is absent.
+  await expect(menu.locator('input[type="search"]')).toHaveCount(0);
+  const menuHitTest = await menu.evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + Math.min(32, rect.height / 2));
+    return Boolean(hit && element.contains(hit));
+  });
+  expect(menuHitTest).toBe(true);
+  const menuSidebarZIndex = await menu.evaluate(element => Number.parseInt(getComputedStyle(element.parentElement!).zIndex, 10));
+  expect(menuSidebarZIndex).toBeGreaterThanOrEqual(60);
+
+  // Keep the menu's keyboard-inset layout covered independently of a removed search field.
   await page.locator('.shell').evaluate(shell => {
     shell.classList.add('keyboard-open');
     document.documentElement.style.setProperty('--aba-keyboard-inset', '300px');
