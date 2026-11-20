@@ -18,11 +18,10 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
 
   const mobileSidebarStyles = source.slice(mobileSidebarStart, mobileItemsStart);
   assert.match(mobileSidebarStyles, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
-  assert.match(
-    source,
-    /\.sidebar>\.mobile-extra,\.sidebar>\.platform-admin-nav\{display:none\}/,
-    'non-primary sections, including the desktop admin link, must not create a fifth mobile slot',
-  );
+  assert.match(source, /class="mobile-dock-items"/);
+  assert.match(source, /\.mobile-dock-items\{display:contents\}/);
+  assert.match(source, /\.desktop-sidebar-groups\{display:none\}/);
+  assert.match(source, /grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
 
   const moreStart = source.indexOf('id="mobile-more-menu"');
   const moreEnd = source.indexOf('          <div class="sidebar-bottom"', moreStart);
@@ -33,11 +32,13 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   assert.match(moreMenu, /selectMobileMoreTab\(module\.tab\)/);
   assert.match(catalogueSource, /tab: 'platform-admin', mobileGroup: 'team-admin'/);
   assert.match(moduleAccessSource, /if \(tab === 'platform-admin'\) return platformAdminAvailable;/);
-  assert.match(
-    source,
-    /class="nav-item platform-admin-nav".{0,500}setTab\('platform-admin'\)/s,
-    'the existing desktop Platform Admin destination must remain available',
-  );
+  assert.match(source, /get primaryNavigationModules/);
+  assert.match(source, /\['overview', 'invoices', 'customers'\]/);
+  assert.match(source, /@for \(module of primaryNavigationModules; track module\.tab\)/);
+  assert.match(source, /get desktopNavigationGroups/);
+  assert.match(source, /@for \(group of desktopNavigationGroups; track group\.id\)/);
+  assert.match(source, /setTab\(module\.tab\)/);
+  assert.match(catalogueSource, /tab: 'platform-admin', mobileGroup: 'team-admin'/);
 
   assert.ok(
     source.includes('[class.active]="mobileMoreOpen || isMobileMoreTab(tab)"'),
@@ -77,4 +78,17 @@ test('Home module directory exposes bilingual search and a localized empty state
   assert.match(home, /@for \(module of filteredHomeModuleCards; track module\.tab\)/);
   assert.match(home, /module-directory-empty" role="status"/);
   assert.match(source, /filterWorkspaceModules\(\s*this\.homeModuleCards,\s*this\.homeModuleSearch/);
+});
+
+
+test('desktop navigation groups every authorized destination and scrolls independently of the fixed shell', () => {
+  assert.match(source, /<nav class="sidebar-nav-scroll"/);
+  assert.match(source, /get desktopNavigationGroups/);
+  assert.match(source, /accessibleModules\.filter\(module => coreTabs\.has\(module\.tab\)\)/);
+  assert.match(source, /WORKSPACE_MODULE_GROUPS\.map\(group =>/);
+  assert.match(source, /modules: accessibleModules\.filter\(module => module\.mobileGroup === group\.id\)/);
+  assert.match(source, /\.sidebar-nav-scroll\{[^}]*min-height:0;[^}]*overflow-y:auto/s);
+  assert.match(source, /overscroll-behavior:contain/);
+  assert.match(source, /@media\(max-width:760px\)\{\s*\.sidebar-nav-scroll\{display:contents\}/);
+  assert.match(source, /class="desktop-nav-group-label"/);
 });

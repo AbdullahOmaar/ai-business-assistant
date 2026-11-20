@@ -1674,6 +1674,23 @@
       "allocated": "مخصصة",
       "unallocated": "غير مخصصة"
     },
+    "invoiceList": {
+      "invoiceNumber": "الفاتورة",
+      "customer": "العميل",
+      "date": "التاريخ",
+      "status": "الحالة",
+      "total": "الإجمالي",
+      "actions": "الإجراءات",
+      "table": "جدول الفواتير المختصر",
+      "compact": "جدول مختصر",
+      "cards": "بطاقات",
+      "previous": "السابق",
+      "next": "التالي",
+      "page": "صفحة",
+      "of": "من",
+      "showing": "عرض",
+      "pagination": "صفحات الفواتير"
+    },
     "currencyName": {
       "egp": "الجنيه المصري",
       "usd": "الدولار الأمريكي",

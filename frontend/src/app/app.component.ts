@@ -10,6 +10,7 @@ import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { auditActionLabel as formatAuditActionLabel, auditTargetLabel as formatAuditTargetLabel } from './audit-labels';
 import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers, firstRecordPage, mergeRecordPage } from './record-filters';
+import { paginateInvoiceRecords, sortInvoiceRecords, type InvoiceSortDirection, type InvoiceSortKey } from './invoice-list';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { ReleaseGuideComponent } from './release-guide.component';
@@ -140,30 +141,38 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           }
         </main>
       } @else {
-        <aside class="sidebar" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2')">
+        <aside class="sidebar" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2)">
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>{{ t('common.app_title') }}</span></a>
-          <p class="nav-label">{{ t('ui.m_criw1m') }}</p>
-          <button class="nav-item" [attr.aria-label]="t('ui.m_1sgyd06')" [attr.title]="t('ui.m_1sgyd06')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('ui.m_1sgyd06') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1k2jewg')" [attr.title]="t('ui.m_1k2jewg')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('ui.m_1k2jewg') }}</span></button>
-          @if (canAccessTab('taxes')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_17hm8dv')" [attr.title]="t('ui.m_17hm8dv')" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('ui.m_17hm8dv') }}</span></button> }
-          <button class="nav-item" [attr.aria-label]="t('ui.m_1h7f08p')" [attr.title]="t('ui.m_1h7f08p')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('ui.m_1h7f08p') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_xpe4pk')" [attr.title]="t('ui.m_xpe4pk')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('ui.m_xpe4pk') }}</span></button>
-          <button class="nav-item" [attr.aria-label]="t('ui.m_tvy79l')" [attr.title]="t('ui.m_tvy79l')" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('ui.m_tvy79l') }}</span></button>
-          @if (canAccessTab('employees')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1whxhp7')" [attr.title]="t('ui.m_1whxhp7')" [class.active]="tab === 'employees'" [attr.aria-current]="tab === 'employees' ? 'page' : null" (click)="setTab('employees')"><span class="nav-icon" aria-hidden="true">♙</span><span>{{ t('ui.m_1whxhp7') }}</span></button> }
-          @if (canAccessTab('team')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('catalog.team.title')" [attr.title]="t('catalog.team.title')" [class.active]="tab === 'team'" [attr.aria-current]="tab === 'team' ? 'page' : null" (click)="setTab('team')"><span class="nav-icon" aria-hidden="true">♧</span><span>{{ t('catalog.team.title') }}</span></button> }
-          @if (canAccessTab('platform-admin')) { <button class="nav-item platform-admin-nav" [attr.aria-label]="t('ui.m_1gkme2m')" [attr.title]="t('ui.m_1gkme2m')" [class.active]="tab === 'platform-admin'" [attr.aria-current]="tab === 'platform-admin' ? 'page' : null" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('ui.m_1gkme2m') }}</span></button> }
-@if (canAccessTab('audit')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_hd46sj')" [attr.title]="t('ui.m_hd46sj')" [class.active]="tab === 'audit'" [attr.aria-current]="tab === 'audit' ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('ui.m_hd46sj') }}</span></button> }
-                    @if (canAccessTab('payments')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_14ms9re')" [attr.title]="t('ui.m_14ms9re')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('ui.m_14ms9re') }}</span></button> }
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_l71hva')" [attr.title]="t('ui.m_l71hva')" [class.active]="tab === 'expenses'" [attr.aria-current]="tab === 'expenses' ? 'page' : null" (click)="setTab('expenses')"><span class="nav-icon expense-icon" aria-hidden="true">−</span><span>{{ t('ui.m_l71hva') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_vlrg7')" [attr.title]="t('ui.m_vlrg7')" [class.active]="tab === 'notifications'" [attr.aria-current]="tab === 'notifications' ? 'page' : null" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t('ui.m_vlrg7') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1yzd6rs')" [attr.title]="t('ui.m_1yzd6rs')" [class.active]="tab === 'suppliers'" [attr.aria-current]="tab === 'suppliers' ? 'page' : null" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('ui.m_1yzd6rs') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_s8z24b')" [attr.title]="t('ui.m_s8z24b')" [class.active]="tab === 'purchases'" [attr.aria-current]="tab === 'purchases' ? 'page' : null" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('ui.m_s8z24b') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_11lck86')" [attr.title]="t('ui.m_11lck86')" [class.active]="tab === 'recurring'" [attr.aria-current]="tab === 'recurring' ? 'page' : null" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('ui.m_ccqp2u') }}</span></button>
-          @if (canAccessTab('health')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_18z2l5z')" [attr.title]="t('ui.m_18z2l5z')" [class.active]="tab === 'health'" [attr.aria-current]="tab === 'health' ? 'page' : null" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('ui.m_3lp8ed') }}</span></button> }
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_dzn3ev')" [attr.title]="t('ui.m_dzn3ev')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('ui.m_dzn3ev') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_a3qirn')" [attr.title]="t('ui.m_a3qirn')" [class.active]="tab === 'release-guide'" [attr.aria-current]="tab === 'release-guide' ? 'page' : null" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('ui.m_a3qirn') }}</span></button>
-          <button #mobileMoreTrigger class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t('ui.m_nxf6ap')" [attr.aria-expanded]="mobileMoreOpen" [attr.aria-controls]="mobileMoreOpen ? 'mobile-more-menu' : null" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('ui.m_dh4eov') }}</span></button>
-          @if (mobileMoreOpen) {
+          <nav class="sidebar-nav-scroll" [attr.aria-label]="t('ui.m_criw1m')">
+            <div class="desktop-sidebar-groups">
+              @for (group of desktopNavigationGroups; track group.id) {
+                <section class="desktop-nav-group" [attr.aria-labelledby]="'desktop-nav-' + group.id">
+                  <h2 class="desktop-nav-group-label" [id]="'desktop-nav-' + group.id">{{ t(group.titleKey) }}</h2>
+                  @for (module of group.modules; track module.tab) {
+                    <button class="nav-item" type="button" [attr.aria-label]="t(module.titleKey)" [attr.title]="t(module.titleKey)"
+                      [class.active]="tab === module.tab" [attr.aria-current]="tab === module.tab ? 'page' : null"
+                      (click)="setTab(module.tab)">
+                      <span class="nav-icon" aria-hidden="true">{{ module.icon }}</span><span>{{ t(module.titleKey) }}</span>
+                    </button>
+                  }
+                </section>
+              }
+            </div>
+            <div class="mobile-dock-items">
+              @for (module of primaryNavigationModules; track module.tab) {
+                <button class="nav-item" type="button" [attr.aria-label]="t(module.titleKey)" [attr.title]="t(module.titleKey)"
+                  [class.active]="tab === module.tab" [attr.aria-current]="tab === module.tab ? 'page' : null"
+                  (click)="setTab(module.tab)">
+                  <span class="nav-icon" aria-hidden="true">{{ module.icon }}</span><span>{{ t(module.titleKey) }}</span>
+                </button>
+              }
+              <button #mobileMoreTrigger class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)"
+                [attr.aria-label]="t('ui.m_nxf6ap')" [attr.title]="t('ui.m_nxf6ap')" [attr.aria-expanded]="mobileMoreOpen"
+                [attr.aria-controls]="mobileMoreOpen ? 'mobile-more-menu' : null" (click)="toggleMobileMore()">
+                <span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('ui.m_dh4eov') }}</span>
+              </button>
+            </div>
+            @if (mobileMoreOpen) {
             <nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('ui.m_1c7twvy')">
               <label class="mobile-more-search">
                 <span class="sr-only">{{ t('ui.m_1eu8swe') }}</span>
@@ -193,7 +202,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               </div>
             </nav>
           }
+          
+          </nav>
           <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('ui.m_17dx7ed') }}<small>{{ t('ui.m_ab5ft9') }}</small></div>
+        
         </aside>
         <main class="main" id="main-content" tabindex="-1">
           @if (!isInstalled) {
@@ -580,7 +592,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ui.m_1lifkl9')" [description]="t('ui.m_15gmqko')" />
                 @if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('ui.m_p4xhry') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span>{{ t('ui.m_p4xhry') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
                   <h3>{{ t('ui.m_p4xhry') }}</h3>
                   <p>{{ t('ui.m_1239wd4') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1m32l6p')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
@@ -669,7 +681,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   </div>
                 </details>
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('ui.m_1wgx28b') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_ps78ce')">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span>{{ t('ui.m_1wgx28b') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_ps78ce')">
                   <h3>{{ t('ui.m_1wgx28b') }}</h3>
                   <p>{{ t('ui.m_1kaqi1p') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1yr2ptt')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
@@ -708,7 +720,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'invoices') {
               <section abaCard class="panel">
-                <aba-section-header id="invoices-section-heading" tabindex="-1" [title]=" t('ui.m_5lvhyt') " [description]=" t('ui.m_61q6l7') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('ui.m_pe8fvb') }}</span></aba-section-header>
+                <div id="invoices-section-heading" class="invoice-list-meta" tabindex="-1" aria-labelledby="invoices-section-title"><h2 id="invoices-section-title" class="sr-only">{{ t('ui.m_5lvhyt') }}</h2><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('ui.m_pe8fvb') }}</span></div>
                 <div class="invoice-toolbar">
                   @if (invoiceCreateOpen) {
                     <section class="invoice-create-panel" [attr.aria-label]="t('ui.m_h8xosr')">
@@ -736,10 +748,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <div class="invoice-controls">
                   <label class="invoice-search">
                     <svg class="invoice-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                    <input name="invoiceSearch" type="search" [attr.aria-label]="t('ui.m_qwjq9v')" [placeholder]="t('ui.m_2onysz')" [(ngModel)]="invoiceSearch">
+                    <input name="invoiceSearch" type="search" [attr.aria-label]="t('ui.m_qwjq9v')" [placeholder]="t('ui.m_2onysz')" [(ngModel)]="invoiceSearch" (ngModelChange)="invoicePageIndex = 0">
                   </label>
                   <label class="invoice-filter"><span>{{ t('ui.m_jnmvwl') }}</span>
-                    <select name="invoiceStatusFilter" [attr.aria-label]="t('ui.m_1v8j5sa')" [(ngModel)]="invoiceStatusFilter">
+                    <select name="invoiceStatusFilter" [attr.aria-label]="t('ui.m_1v8j5sa')" [(ngModel)]="invoiceStatusFilter" (ngModelChange)="invoicePageIndex = 0">
                       <option value="all">{{ t('ui.m_1cyu9lp') }}</option>
                       <option value="draft">{{ t('ui.m_1vbs2bw') }}</option>
                       <option value="issued">{{ t('ui.m_7bugfd') }}</option>
@@ -747,7 +759,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     </select>
                   </label>
                   <label class="invoice-filter"><span>{{ t('ui.m_ubgrc2') }}</span>
-                    <select name="invoiceFilterCustomer" [attr.aria-label]="t('ui.m_1k3k63e')" [(ngModel)]="invoiceFilterCustomerId">
+                    <select name="invoiceFilterCustomer" [attr.aria-label]="t('ui.m_1k3k63e')" [(ngModel)]="invoiceFilterCustomerId" (ngModelChange)="invoicePageIndex = 0">
                       <option value="">{{ t('ui.m_1c6r7y7') }}</option>
                       @for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }
                     </select>
@@ -758,6 +770,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     </button>
                   }
                   @if (business?.role === 'owner') { <button class="secondary invoice-export" type="button" (click)="exportCurrentList()" [disabled]="!filteredInvoices.length">{{ t('ui.m_nbsw3y') }}</button> }
+                  <button class="secondary invoice-density-toggle" type="button" [attr.aria-pressed]="invoiceDensity === 'compact'" (click)="toggleInvoiceDensity()">{{ invoiceDensity === 'compact' ? t('app.invoiceList.cards') : t('app.invoiceList.compact') }}</button>
                 </div>
                 @if (loading && !invoices.length) {
                   <p class="invoice-list-state" role="status" aria-live="polite">{{ t('ui.m_x2q4oa') }}</p>
@@ -766,8 +779,48 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 } @else if (!filteredInvoices.length) {
                   <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId) ? t('ui.m_1rrfha5') : t('ui.m_1ehm2eq')" />
                 } @else {
+                  @if (invoiceDensity === 'compact') {
+                    <div class="invoice-table-wrap" role="region" tabindex="0" [attr.aria-label]="t('app.invoiceList.table')">
+                      <table class="invoice-table">
+                        <thead><tr>
+                          <th scope="col" [attr.aria-sort]="invoiceSortAria('invoice_number')"><button type="button" class="invoice-sort-button" (click)="toggleInvoiceSort('invoice_number')">{{ t('app.invoiceList.invoiceNumber') }} <span aria-hidden="true">{{ invoiceSortIndicator('invoice_number') }}</span></button></th>
+                          <th scope="col" [attr.aria-sort]="invoiceSortAria('customer')"><button type="button" class="invoice-sort-button" (click)="toggleInvoiceSort('customer')">{{ t('app.invoiceList.customer') }} <span aria-hidden="true">{{ invoiceSortIndicator('customer') }}</span></button></th>
+                          <th scope="col" [attr.aria-sort]="invoiceSortAria('issue_date')"><button type="button" class="invoice-sort-button" (click)="toggleInvoiceSort('issue_date')">{{ t('app.invoiceList.date') }} <span aria-hidden="true">{{ invoiceSortIndicator('issue_date') }}</span></button></th>
+                          <th scope="col" [attr.aria-sort]="invoiceSortAria('status')"><button type="button" class="invoice-sort-button" (click)="toggleInvoiceSort('status')">{{ t('app.invoiceList.status') }} <span aria-hidden="true">{{ invoiceSortIndicator('status') }}</span></button></th>
+                          <th scope="col" [attr.aria-sort]="invoiceSortAria('total')"><button type="button" class="invoice-sort-button" (click)="toggleInvoiceSort('total')">{{ t('app.invoiceList.total') }} <span aria-hidden="true">{{ invoiceSortIndicator('total') }}</span></button></th>
+                          <th scope="col">{{ t('app.invoiceList.actions') }}</th>
+                        </tr></thead>
+                        <tbody>
+                          @for (invoice of visibleInvoices; track invoice.id) {
+                            <tr>
+                              <td><bdi dir="ltr">{{ invoice.invoice_number }}</bdi></td>
+                              <td>{{ customerNameForInvoice(invoice.customer_id) }}</td>
+                              <td><bdi dir="ltr">{{ invoice.issue_date ? formatRecordDate(invoice.issue_date, 'date') : (invoice.created_at ? formatRecordDate(invoice.created_at, 'date') : '—') }}</bdi></td>
+                              <td><span class="invoice-status-badge" [class.status-draft]="invoiceCardStatusTone(invoice) === 'draft'" [class.status-issued]="invoiceCardStatusTone(invoice) === 'issued'" [class.status-void]="invoiceCardStatusTone(invoice) === 'void'" [class.status-paid]="invoiceCardStatusTone(invoice) === 'paid'" [class.status-partial]="invoiceCardStatusTone(invoice) === 'partial'" [class.status-unpaid]="invoiceCardStatusTone(invoice) === 'unpaid'">{{ invoiceCardStatusLabel(invoice) }}</span></td>
+                              <td class="invoice-table-total"><bdi dir="ltr">{{ formatNumber(invoice.total) }} {{ invoice.currency_code }}</bdi></td>
+                              <td class="invoice-table-actions"><div class="invoice-compact-actions">
+                                @if (invoice.status === 'draft') {
+                                  <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('ui.m_s21yyp') }}</button>
+                                  @if (business?.role === 'owner') {
+                                    <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('ui.m_ninief') }}</button>
+                                    <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('ui.m_lnwycg') }}</button>
+                                  }
+                                } @else if (invoice.status === 'issued') {
+                                  <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('ui.m_qskvru') }}</button>
+                                  @if (business?.role === 'owner') {
+                                    @if (hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('ui.m_1r6bzbj') }}</button> }
+                                    <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('ui.m_lnwycg') }}</button>
+                                  }
+                                }
+                              </div></td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  } @else {
                   <div class="invoice-cards">
-                    @for (invoice of filteredInvoices; track invoice.id) {
+                    @for (invoice of visibleInvoices; track invoice.id) {
                       <article class="invoice-card">
                         <header class="invoice-card-header">
                           <div class="invoice-card-customer">
@@ -839,6 +892,17 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       </article>
                     }
                   </div>
+                  }
+                }
+                @if (filteredInvoices.length > invoicePageSize) {
+                  <nav class="invoice-pagination" [attr.aria-label]="t('app.invoiceList.pagination')">
+                    <span>{{ t('app.invoiceList.showing') }} {{ invoicePageStart }}–{{ invoicePageEnd }} {{ t('app.invoiceList.of') }} {{ filteredInvoices.length }}</span>
+                    <div class="invoice-pagination-controls">
+                      <button class="secondary" type="button" (click)="changeInvoicePage(-1)" [disabled]="invoicePageIndex === 0">{{ t('app.invoiceList.previous') }}</button>
+                      <span aria-live="polite">{{ t('app.invoiceList.page') }} {{ invoicePageIndex + 1 }} {{ t('app.invoiceList.of') }} {{ invoicePageCount }}</span>
+                      <button class="secondary" type="button" (click)="changeInvoicePage(1)" [disabled]="invoicePageIndex + 1 >= invoicePageCount">{{ t('app.invoiceList.next') }}</button>
+                    </div>
+                  </nav>
                 }
                 @if (invoicesHasMore) { <button class="secondary" type="button" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore">{{ invoicesLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_14d2jh7') }}</button> }
                 <p class="footnote">{{ t('ui.m_lpprue') }}</p>
@@ -1196,6 +1260,11 @@ export class AppComponent implements OnInit, OnDestroy {
   recurringSearch = '';
   notificationSearch = '';
   invoiceStatusFilter: 'all' | 'draft' | 'issued' | 'void' = 'all';
+  invoiceDensity: 'comfortable' | 'compact' = 'comfortable';
+  invoiceSortKey: InvoiceSortKey = 'issue_date';
+  invoiceSortDirection: InvoiceSortDirection = 'desc';
+  invoicePageIndex = 0;
+  readonly invoicePageSize = 10;
   payments: Payment[] = [];
   expenses: Expense[] = [];
   suppliers: Supplier[] = [];
@@ -1497,7 +1566,48 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredInvoices(): Invoice[] {
-    return filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId, status => this.invoiceStatusLabel(status), id => this.customerNameForInvoice(id), this.localization.locale);
+    const filtered = filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId,
+      status => this.invoiceStatusLabel(status), id => this.customerNameForInvoice(id), this.localization.locale);
+    return sortInvoiceRecords(filtered, this.invoiceSortKey, this.invoiceSortDirection,
+      id => this.customerNameForInvoice(id), this.localization.locale);
+  }
+
+  get visibleInvoices(): Invoice[] {
+    return paginateInvoiceRecords(this.filteredInvoices, this.invoicePageIndex, this.invoicePageSize).items;
+  }
+
+  get invoicePageCount(): number {
+    return paginateInvoiceRecords(this.filteredInvoices, this.invoicePageIndex, this.invoicePageSize).pageCount;
+  }
+
+  get invoicePageStart(): number {
+    return paginateInvoiceRecords(this.filteredInvoices, this.invoicePageIndex, this.invoicePageSize).start;
+  }
+
+  get invoicePageEnd(): number {
+    return paginateInvoiceRecords(this.filteredInvoices, this.invoicePageIndex, this.invoicePageSize).end;
+  }
+
+  invoiceSortAria(key: InvoiceSortKey): 'ascending' | 'descending' | 'none' {
+    return this.invoiceSortKey !== key ? 'none' : this.invoiceSortDirection === 'asc' ? 'ascending' : 'descending';
+  }
+
+  invoiceSortIndicator(key: InvoiceSortKey): string {
+    return this.invoiceSortKey !== key ? '↕' : this.invoiceSortDirection === 'asc' ? '↑' : '↓';
+  }
+
+  toggleInvoiceSort(key: InvoiceSortKey): void {
+    if (this.invoiceSortKey === key) this.invoiceSortDirection = this.invoiceSortDirection === 'asc' ? 'desc' : 'asc';
+    else { this.invoiceSortKey = key; this.invoiceSortDirection = key === 'issue_date' ? 'desc' : 'asc'; }
+    this.invoicePageIndex = 0;
+  }
+
+  toggleInvoiceDensity(): void {
+    this.invoiceDensity = this.invoiceDensity === 'compact' ? 'comfortable' : 'compact';
+  }
+
+  changeInvoicePage(delta: number): void {
+    this.invoicePageIndex = Math.max(0, Math.min(this.invoicePageCount - 1, this.invoicePageIndex + delta));
   }
 
   get filteredSuppliers(): Supplier[] {
@@ -2294,6 +2404,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const page = firstRecordPage(items, WORKSPACE_RECORD_PAGE_SIZE);
     this.invoiceListLoadGuard.invalidate();
     this.invoices = page.records;
+    this.invoicePageIndex = 0;
     this.invoiceOffset = page.nextOffset;
     this.invoicesHasMore = page.hasMore;
     this.invoicesLoadingMore = false;
@@ -3325,6 +3436,31 @@ export class AppComponent implements OnInit, OnDestroy {
         modules: accessibleModules.filter(module => module.mobileGroup === group.id),
       }))
       .filter(group => group.modules.length > 0);
+  }
+
+  /** The mobile dock and desktop core group share the same role-filtered catalogue icons and order. */
+  get primaryNavigationModules(): readonly WorkspaceModuleCard[] {
+    const byTab = new Map(this.homeModuleCards.map(module => [module.tab, module] as const));
+    return (['overview', 'invoices', 'customers'] as const).flatMap(tab => {
+      const module = byTab.get(tab);
+      return module ? [module] : [];
+    });
+  }
+
+  /** Desktop navigation mirrors the mobile More taxonomy while retaining the three primary dock destinations. */
+  get desktopNavigationGroups(): readonly { id: string; titleKey: string; modules: readonly WorkspaceModuleCard[] }[] {
+    const accessibleModules = this.homeModuleCards;
+    return [
+      {
+        id: 'workspace-core',
+        titleKey: 'ui.m_criw1m',
+        modules: this.primaryNavigationModules,
+      },
+      ...WORKSPACE_MODULE_GROUPS.map(group => ({
+        ...group,
+        modules: accessibleModules.filter(module => module.mobileGroup === group.id),
+      })),
+    ].filter(group => group.modules.length > 0);
   }
 
   isMobileMoreTab(tab: Tab): boolean {

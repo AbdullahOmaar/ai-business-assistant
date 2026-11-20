@@ -160,3 +160,17 @@ test('mobile page title stays compact beside fixed actions on narrow phone width
 test('Arabic mobile page titles preserve natural connected-script letter spacing', () => {
   assert.match(styles, /\.mobile-app-header\[dir="rtl"\] \.page-copy h1 \{ letter-spacing: normal; \}/);
 });
+
+
+test('icon-only assistant, notification and profile controls expose names and visible affordance', () => {
+  assert.match(source, /class="assistant-shortcut"[\s\S]*?\[attr.aria-label\]="t\('ui.m_13ly4yi'\)"[\s\S]*?\[attr.title\]="t\('ui.m_13ly4yi'\)"/);
+  assert.match(source, /class="icon-button notification-button"[\s\S]*?\[attr.aria-label\]="t\('ui.m_vlrg7'\)"[\s\S]*?\[attr.title\]="t\('ui.m_vlrg7'\)"/);
+  assert.match(source, /class="profile-trigger"[\s\S]*?\[attr.aria-label\]="t\('ui.m_1l0ize9'\)"[\s\S]*?\[attr.title\]="t\('ui.m_1l0ize9'\)"/);
+  assert.match(styles, /\.header-actions :is\(\.icon-button,\.profile-trigger\):hover/);
+});
+
+test('mobile page titles wrap instead of being ellipsized beside fixed header actions', () => {
+  assert.match(styles, /\.page-copy h1 \{[\s\S]*?overflow: visible;[\s\S]*?white-space: normal;[\s\S]*?-webkit-line-clamp: unset;/);
+  assert.match(styles, /@media\(max-width:480px\)\{[\s\S]*?\.assistant-shortcut\{width:44px;max-width:44px;padding:0\}/);
+  assert.match(styles, /\.assistant-shortcut span:last-child\{display:none\}/);
+});

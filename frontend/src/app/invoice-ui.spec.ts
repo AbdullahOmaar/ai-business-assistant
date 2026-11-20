@@ -47,8 +47,16 @@ test('payment state and progress require server-returned allocations and outstan
   assert.match(cardMarkup, /status-unpaid/);
 });
 
-test('invoice cards are the primary responsive layout rather than a desktop-only table replacement', () => {
-  assert.doesNotMatch(appSource, /invoice-table-wrap|invoice-table/);
+test('invoice cards remain the default while compact mode provides a sortable table and bounded pagination', () => {
+  assert.match(appSource, /invoiceDensity: 'comfortable' \| 'compact' = 'comfortable'/);
+  assert.match(appSource, /class="invoice-density-toggle"/);
+  assert.match(appSource, /class="invoice-table-wrap"/);
+  assert.match(appSource, /class="invoice-table"/);
+  assert.match(appSource, /aria-sort/);
+  assert.match(appSource, /toggleInvoiceSort\('total'\)/);
+  assert.match(appSource, /invoice-pagination/);
+  assert.match(appSource, /invoicePageSize = 10/);
+  assert.match(appSource, /@for \(invoice of visibleInvoices; track invoice\.id\)/);
   assert.match(appSource, /\.invoice-cards\{display:grid;grid-template-columns:repeat\(auto-fit/);
   assert.match(appSource, /\.invoice-card \.invoice-actions button\{min-height:44px\}/);
   assert.match(appSource, /\.invoice-cards\{grid-template-columns:minmax\(0,1fr\)\}/);
@@ -72,7 +80,7 @@ test('startup screen shows the Cairo-localized build date and time beneath relea
 });
 
 test('invoice search icon stays clear of search text in RTL and LTR', () => {
-  assert.match(appSource, /\.invoice-search input\{[^}]*padding-inline:42px 38px;appearance:none;-webkit-appearance:none;direction:inherit/);
+  assert.match(appSource, /\.invoice-controls \.invoice-search input\{[^}]*padding-inline-start:48px;padding-inline-end:42px;text-indent:0;text-align:start/);
   assert.match(appSource, /\.invoice-search-icon\{[^}]*inset-inline-start:14px/);
   assert.match(appSource, /\.invoice-search input::-webkit-search-decoration/);
 });

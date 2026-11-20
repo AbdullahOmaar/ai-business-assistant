@@ -1674,6 +1674,23 @@
       "allocated": "Allocated",
       "unallocated": "Unallocated"
     },
+    "invoiceList": {
+      "invoiceNumber": "Invoice",
+      "customer": "Customer",
+      "date": "Date",
+      "status": "Status",
+      "total": "Total",
+      "actions": "Actions",
+      "table": "Compact invoice table",
+      "compact": "Compact table",
+      "cards": "Cards",
+      "previous": "Previous",
+      "next": "Next",
+      "page": "Page",
+      "of": "of",
+      "showing": "Showing",
+      "pagination": "Invoice pagination"
+    },
     "currencyName": {
       "egp": "Egyptian Pound",
       "usd": "US Dollar",

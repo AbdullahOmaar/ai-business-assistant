@@ -295,3 +295,90 @@
     }
 
   
+
+/* P1 UX: keep every desktop destination reachable in a short viewport. */
+.sidebar{min-height:0;overflow:hidden;padding-block:20px}
+.sidebar .brand{flex:0 0 auto;padding-bottom:18px}
+.sidebar-nav-scroll{display:flex;flex:1 1 auto;flex-direction:column;gap:12px;min-height:0;overflow-x:hidden;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:var(--aba-color-nav-border,#334155) transparent}
+.desktop-sidebar-groups{display:grid;gap:14px;min-width:0}
+.desktop-nav-group{display:grid;gap:3px;min-width:0}
+.desktop-nav-group-label{margin:4px 10px 5px;color:var(--aba-color-nav-muted,#9ca3af);font-size:10px;font-weight:800;line-height:1.5;letter-spacing:.04em;text-align:start}
+.desktop-sidebar-groups .nav-item{min-height:42px;margin:0;padding:7px 10px}
+.desktop-sidebar-groups .nav-icon{background:var(--aba-color-nav-surface-raised,#1e293b);color:var(--aba-color-nav-text,#cbd5e1)}
+.desktop-sidebar-groups .nav-item.active .nav-icon{background:#ffffff24;color:var(--aba-color-text-inverse,#fff)}
+.mobile-dock-items{display:none}
+.sidebar .sidebar-bottom{flex:0 0 auto}
+
+/* Invoice compact mode: sortable columns, bounded pages and the existing action semantics. */
+.invoice-list-meta{display:flex;align-items:center;justify-content:flex-end;min-height:24px;margin-block-end:6px}
+.invoice-density-toggle[aria-pressed="true"]{border-color:var(--aba-color-primary-border,#99f6e4);background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59)}
+.invoice-table-wrap{width:100%;max-width:100%;overflow:auto;-webkit-overflow-scrolling:touch;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px}
+.invoice-table{width:100%;min-width:880px;border-collapse:separate;border-spacing:0;background:var(--aba-color-surface,#fff)}
+.invoice-table th,.invoice-table td{padding:9px 10px;border-bottom:1px solid var(--aba-color-border-subtle,#eef2f7);text-align:start;vertical-align:middle;white-space:nowrap}
+.invoice-table th{position:sticky;top:0;z-index:1;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#5d6878);font-size:11px}
+.invoice-table th button{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:4px 6px;border:0;border-radius:7px;background:transparent;color:inherit;font:inherit;font-weight:750;text-align:start;cursor:pointer}
+.invoice-table th button:hover{background:var(--aba-color-surface-hover,#f1f5f9);color:var(--aba-color-text-primary,#172033)}
+.invoice-table th button:focus-visible{outline:3px solid var(--aba-color-focus-ring,#2563eb);outline-offset:2px}
+.invoice-table th button span{color:var(--aba-color-primary-strong,#115e59);font-size:14px}
+.invoice-table tbody tr:last-child td{border-bottom:0}
+.invoice-table tbody tr:hover{background:var(--aba-color-surface-subtle,#f8fafc)}
+.invoice-table-total{font-variant-numeric:tabular-nums;font-weight:750}
+.invoice-table-actions{white-space:normal}
+.invoice-compact-actions{display:flex;flex-wrap:wrap;gap:5px;min-width:180px}
+.invoice-compact-actions button{min-height:36px;padding:6px 9px}
+.invoice-pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-block:12px;color:var(--aba-color-text-secondary,#5d6878);font-size:12px}
+.invoice-pagination-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.invoice-pagination-controls button{min-height:40px}
+.invoice-pagination-controls span{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+/* CSV import disclosures share one restrained, token-based surface. */
+.csv-disclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:44px;padding:9px 13px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:12px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-primary,#172033);font-size:13px;font-weight:700;cursor:pointer;list-style:none}
+.csv-disclosure>summary::-webkit-details-marker{display:none}
+.csv-disclosure>summary::after{content:"⌄";color:var(--aba-color-text-secondary,#5d6878);font-size:16px;transition:transform 140ms ease}
+.csv-disclosure[open]>summary{border-end-start-radius:0;border-end-end-radius:0}
+.csv-disclosure[open]>summary::after{transform:rotate(180deg)}
+.csv-disclosure .aba-record-secondary__body{padding:12px;border:1px solid var(--aba-color-border,#e5eaf1);border-top:0;border-end-start-radius:12px;border-end-end-radius:12px;background:var(--aba-color-surface,#fff)}
+.csv-import-panel{gap:12px;margin:0;padding:14px;border-color:var(--aba-color-border,#e5eaf1);border-radius:12px;background:var(--aba-color-surface-subtle,#f8fafc);box-shadow:none}
+
+/* Consistent numeric rhythm and search-icon clearance in both writing directions. */
+.invoice-controls .invoice-search input{box-sizing:border-box;padding-inline-start:48px;padding-inline-end:42px;text-indent:0;text-align:start}
+.invoice-search-icon{inset-inline-start:15px;inset-inline-end:auto;pointer-events:none}
+.invoice-table :is(td,th),.invoice-table-total{font-variant-numeric:tabular-nums}
+
+@media(max-width:760px){
+  .sidebar-nav-scroll{display:contents}
+  .desktop-sidebar-groups{display:none}
+  .mobile-dock-items{display:contents}
+  .main,.shell.english .main{padding-top:calc(12px + env(safe-area-inset-top,0px))}
+  .topbar{display:none!important}
+  .invoice-controls{grid-template-columns:minmax(0,1fr);align-items:stretch;gap:9px;margin-block:10px}
+  .invoice-density-toggle,.invoice-export,.invoice-load-more-customers{width:100%;min-height:44px}
+  .invoice-pagination{align-items:stretch}
+  .invoice-pagination-controls{justify-content:space-between}
+  .invoice-pagination-controls button{flex:1 1 0}
+  .invoice-list-meta{min-height:20px;margin-block-end:4px}
+  .csv-disclosure .aba-record-secondary__body{padding:9px}
+}
+@media(prefers-reduced-motion:reduce){.csv-disclosure>summary::after{transition:none}}
+
+/* Keep the invoice toolbar balanced when the optional customer, export and density actions are present. */
+.invoice-controls{grid-template-columns:minmax(220px,1fr) minmax(130px,170px) minmax(170px,230px) auto auto auto}
+@media(max-width:1050px){
+  .invoice-controls{grid-template-columns:minmax(0,1fr) minmax(130px,170px) minmax(170px,220px)}
+  .invoice-export,.invoice-load-more-customers,.invoice-density-toggle{grid-column:1/-1;justify-self:end}
+}
+@media(max-width:760px){
+  .invoice-controls{grid-template-columns:minmax(0,1fr)}
+  .invoice-export,.invoice-load-more-customers,.invoice-density-toggle{grid-column:auto;justify-self:stretch}
+}
+
+/* Six-column desktop toolbar; filters and secondary actions stack cleanly at tablet widths. */
+.invoice-controls{grid-template-columns:minmax(220px,1fr) minmax(130px,170px) minmax(170px,230px) auto auto auto}
+@media(max-width:1050px){
+  .invoice-controls{grid-template-columns:minmax(0,1fr) minmax(130px,170px) minmax(170px,220px)}
+  .invoice-export,.invoice-load-more-customers,.invoice-density-toggle{grid-column:1/-1;justify-self:end}
+}
+@media(max-width:760px){
+  .invoice-controls{grid-template-columns:minmax(0,1fr)}
+  .invoice-export,.invoice-load-more-customers,.invoice-density-toggle{grid-column:auto;justify-self:stretch}
+}
