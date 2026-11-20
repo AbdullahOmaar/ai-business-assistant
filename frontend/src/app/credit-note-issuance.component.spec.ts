@@ -33,6 +33,32 @@ test('invoice workspace mounts the stage-one workflow and API client uses the sc
 });
 
 
+test('return reason is required before save and legacy drafts without a reason are blocked from approval and issuance', () => {
+  // Empty or whitespace-only reasons are rejected before any API call.
+  assert.match(component, /const reason = this\.returnReason\.trim\(\);/);
+  assert.match(component, /if \(!reason\) \{\s*this\.returnReasonError = this\.t\('returnReasonRequired'\);\s*return;\s*\}/);
+  assert.ok(component.indexOf("this.t('returnReasonRequired')") < component.indexOf('this.api.createSalesReturn('));
+  // The trimmed reason is sent; the old trim-or-undefined escape is gone.
+  assert.match(component, /\n        reason,\n/);
+  assert.doesNotMatch(component, /this\.returnReason\.trim\(\) \|\| undefined/);
+  // The field is marked required, capped at 500 and announces its error accessibly.
+  assert.match(component, /name="returnReason" maxlength="500" required/);
+  assert.match(component, /role="alert"/);
+  assert.match(component, /aria-describedby="return-reason-error"/);
+  assert.match(component, /\(ngModelChange\)="returnReasonError = ''"/);
+  // Legacy drafts with no saved reason stay visible but cannot be approved or issued.
+  const legacyGuard = /if \(!ret\.reason \|\| !ret\.reason\.trim\(\)\) \{\s*this\.error = this\.t\('returnReasonMissingForDraft'\);\s*return;\s*\}/g;
+  assert.equal((component.match(legacyGuard) || []).length, 2);
+  assert.ok(component.indexOf("approve(ret: SalesReturn)") < component.indexOf('this.api.approveSalesReturn('));
+  // Both dictionaries carry the required keys and no longer label the field optional.
+  for (const lang of ['ar', 'en']) {
+    const dict = JSON.parse(readFileSync(new URL(`../../public/i18n/${lang}.json`, import.meta.url), 'utf8'));
+    assert.ok(dict.creditNotes.returnReasonRequired);
+    assert.ok(dict.creditNotes.returnReasonMissingForDraft);
+    assert.doesNotMatch(dict.creditNotes.returnReason, /\(اختياري\)|\(optional\)/i);
+  }
+});
+
 test('invoice, return and issued-note histories expose explicit pagination controls', () => {
   assert.match(component, /\(click\)="loadMoreInvoices\(\)"/);
   assert.match(component, /\(click\)="loadMoreReturns\(\)"/);
