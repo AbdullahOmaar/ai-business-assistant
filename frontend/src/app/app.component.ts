@@ -1482,6 +1482,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   showCustomerInvoices(customerId: string): void {
+    this.invoicePageIndex = 0;
     this.invoiceFilterCustomerId = customerId;
     this.setTab('invoices');
   }

@@ -124,3 +124,13 @@ test('invoice notes are hydrated for editing and submitted with the existing dra
   assert.match(editorSource, /maxlength="2000"/);
   assert.match(editorSource, /notes: this\.notes/);
 });
+
+
+test('customer invoice shortcut resets compact pagination before applying its filter', () => {
+  const start = appSource.indexOf('showCustomerInvoices(customerId: string): void');
+  const end = appSource.indexOf('\n  }', start);
+  const handler = appSource.slice(start, end);
+  assert.ok(start >= 0 && end > start);
+  assert.match(handler, /this\.invoicePageIndex = 0/);
+  assert.ok(handler.indexOf('this.invoicePageIndex = 0') < handler.indexOf('this.invoiceFilterCustomerId = customerId'));
+});
