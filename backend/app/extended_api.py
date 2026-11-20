@@ -644,7 +644,7 @@ def post_sales_return(business_id: UUID, body: ReturnInput,
         if invoice is None:
             raise WorkflowError("Issued invoice not found in this business")
         ret = SalesReturn(business_id=business_id, invoice_id=invoice.id,
-                          status="draft", reason=body.reason, total=ZERO)
+                          status="draft", reason=(body.reason.strip() if body.reason else body.reason), total=ZERO)
         session.add(ret)
         session.flush()
         discount_allocation_lines = session.scalars(select(InvoiceLine).where(
@@ -702,6 +702,8 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
         ).with_for_update()).one_or_none()
         if invoice is None or invoice.status != "issued":
             raise WorkflowError("Sales return must reference an issued invoice")
+        if not (ret.reason or "").strip():
+            raise WorkflowError("A return reason is required before approval")
         lines = session.scalars(select(SalesReturnLine).where(
             SalesReturnLine.sales_return_id == ret.id, SalesReturnLine.business_id == business_id,
         )).all()
@@ -811,6 +813,8 @@ def issue_credit_note_for_return(
             return existing
         if ret.status != "approved":
             raise WorkflowError("Only an approved sales return can be credited")
+        if not (ret.reason or "").strip():
+            raise WorkflowError("A return reason is required before credit note issuance")
 
         invoice = session.scalars(select(Invoice).where(
             Invoice.id == ret.invoice_id,
