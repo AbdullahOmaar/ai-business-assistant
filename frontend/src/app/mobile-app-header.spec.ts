@@ -163,9 +163,9 @@ test('Arabic mobile page titles preserve natural connected-script letter spacing
 
 
 test('icon-only assistant, notification and profile controls expose names and visible affordance', () => {
-  assert.match(source, /class="assistant-shortcut"[\s\S]*?\[attr.aria-label\][\s\S]*?\[attr.title\]/);
-  assert.match(source, /class="icon-button notification-button"[\s\S]*?\[attr.aria-label\][\s\S]*?\[attr.title\]/);
-  assert.match(source, /class="profile-trigger"[\s\S]*?\[attr.aria-label\][\s\S]*?\[attr.title\]/);
+  assert.match(source, /class="assistant-shortcut"[\s\S]*?\[attr.aria-label\]="t\('افتح المساعد الذكي', 'Open AI assistant'\)"[\s\S]*?\[attr.title\]="t\('افتح المساعد الذكي', 'Open AI assistant'\)"/);
+  assert.match(source, /class="icon-button notification-button"[\s\S]*?\[attr.aria-label\]="t\('الإشعارات', 'Notifications'\)"[\s\S]*?\[attr.title\]="t\('الإشعارات', 'Notifications'\)"/);
+  assert.match(source, /class="profile-trigger"[\s\S]*?\[attr.aria-label\]="t\('خيارات الحساب', 'Account options'\)"[\s\S]*?\[attr.title\]="t\('خيارات الحساب', 'Account options'\)"/);
   assert.match(styles, /\.header-actions :is\(\.icon-button,\.profile-trigger\):hover/);
 });
 

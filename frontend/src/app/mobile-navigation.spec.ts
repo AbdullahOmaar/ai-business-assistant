@@ -27,7 +27,7 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   const moreEnd = source.indexOf('          <div class="sidebar-bottom"', moreStart);
   assert.ok(moreStart >= 0 && moreEnd > moreStart);
   const moreMenu = source.slice(moreStart, moreEnd);
-  assert.match(moreMenu, /@for \(group of filteredMobileMoreGroups; track group\.id\)/);
+  assert.match(moreMenu, /@for \(group of mobileMoreGroups; track group\.id\)/);
   assert.match(moreMenu, /@for \(module of group\.modules; track module\.tab\)/);
   assert.match(moreMenu, /selectMobileMoreTab\(module\.tab\)/);
   assert.match(catalogueSource, /tab: 'platform-admin', mobileGroup: 'team-admin'/);
@@ -35,12 +35,9 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   assert.match(source, /get primaryNavigationModules/);
   assert.match(source, /\['overview', 'invoices', 'customers'\]/);
   assert.match(source, /@for \(module of primaryNavigationModules; track module\.tab\)/);
-  assert.match(source, /get primaryNavigationModules/);
-  assert.match(source, /\['overview', 'invoices', 'customers'\]/);
-  assert.match(source, /@for \(module of primaryNavigationModules; track module\.tab\)/);
-  assert.match(source, /setTab\('platform-admin'\)/);
-  assert.match(source, /@if \(canAccessTab\('platform-admin'\)\)/);
-  assert.match(source, /@if \(canAccessTab\('employees'\)\)/);
+  assert.match(source, /get desktopNavigationGroups/);
+  assert.match(source, /@for \(group of desktopNavigationGroups; track group\.id\)/);
+  assert.match(source, /setTab\(module\.tab\)/);
   assert.match(catalogueSource, /tab: 'platform-admin', mobileGroup: 'team-admin'/);
 
   assert.ok(
@@ -52,22 +49,18 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
 });
 
 
-test('mobile More navigation provides localized search over authorized destinations', () => {
+
+test('mobile More keeps grouped destinations and no longer renders a sections search control', () => {
   const moreStart = source.indexOf('id="mobile-more-menu"');
   const moreEnd = source.indexOf('          <div class="sidebar-bottom"', moreStart);
   assert.ok(moreStart >= 0 && moreEnd > moreStart);
   const menu = source.slice(moreStart, moreEnd);
-
-  assert.match(menu, /<input type="search" name="mobileMoreSearch"/);
-  assert.match(menu, /\[\(ngModel\)\]="mobileMoreSearch"/);
-  assert.match(menu, /\[attr\.aria-label\]="t\('البحث في الأقسام', 'Search sections'\)"/);
-  assert.match(menu, /@for \(group of filteredMobileMoreGroups; track group\.id\)/);
-  assert.match(menu, /mobile-more-empty" role="status"/);
-  assert.match(source, /get filteredMobileMoreGroups\(\)/);
-  assert.match(source, /module\.descriptionKey/);
-  assert.match(source, /mobileMoreSearch = ''/);
+  assert.doesNotMatch(menu, /mobile-more-search|mobileMoreSearch|type="search"/);
+  assert.match(menu, /@for \(group of mobileMoreGroups; track group\.id\)/);
+  assert.match(menu, /@for \(module of group\.modules; track module\.tab\)/);
+  assert.match(source, /get mobileMoreGroups\(\): readonly/);
+  assert.doesNotMatch(source, /filteredMobileMoreGroups|mobileMoreSearch/);
 });
-
 
 test('Home module directory exposes bilingual search and a localized empty state', () => {
   const homeStart = source.indexOf('class="module-directory-disclosure"');
@@ -84,16 +77,13 @@ test('Home module directory exposes bilingual search and a localized empty state
 });
 
 
-test('desktop navigation groups every catalogue destination and scrolls independently of the fixed shell', () => {
-  assert.match(source, /<div class="sidebar-nav-scroll">/);
-  assert.match(source, /class="desktop-sidebar-groups"/);
-  assert.match(source, /class="desktop-nav-group"/);
-  for (const tab of ['overview', 'invoices', 'customers', 'products', 'suppliers', 'purchases', 'reports', 'taxes', 'payments', 'expenses', 'recurring', 'employees', 'team', 'platform-admin', 'audit', 'integrity', 'notifications', 'health', 'assistant', 'release-guide']) {
-    assert.ok(source.includes("setTab('" + tab + "')"), 'desktop navigation must retain ' + tab);
-  }
-  assert.equal((source.match(/class="desktop-nav-group"/g) || []).length, 6,
-    'desktop navigation must mirror the five More groups plus the core group');
-  assert.match(source, /@if \(canAccessTab\('integrity'\)\)/);
+test('desktop navigation groups every authorized destination and scrolls independently of the fixed shell', () => {
+  assert.match(source, /<nav class="sidebar-nav-scroll"/);
+  assert.match(source, /get desktopNavigationGroups/);
+  assert.match(source, /const accessibleModules = this\.homeModuleCards/);
+  assert.match(source, /modules: this\.primaryNavigationModules/);
+  assert.match(source, /WORKSPACE_MODULE_GROUPS\.map\(group =>/);
+  assert.match(source, /modules: accessibleModules\.filter\(module => module\.mobileGroup === group\.id\)/);
   assert.match(source, /\.sidebar-nav-scroll\{[^}]*min-height:0;[^}]*overflow-y:auto/s);
   assert.match(source, /overscroll-behavior:contain/);
   assert.match(source, /@media\(max-width:760px\)\{\s*\.sidebar-nav-scroll\{display:contents\}/);

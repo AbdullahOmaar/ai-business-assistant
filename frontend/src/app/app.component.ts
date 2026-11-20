@@ -53,7 +53,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
         <a class="skip-link" href="#main-content">{{ t('ui.m_1561v1f') }}</a>
       }
-      @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('ui.m_1rza5t5') }}</span></div> }
+      @if (loading && initialized) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('ui.m_1rza5t5') }}</span></div> }
       @if (appUpdateAvailable) {
         <aside class="app-update-notice" role="status" aria-live="polite">
           <span>{{ t('ui.m_4cplhg') }}</span>
@@ -63,8 +63,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       @if (!initialized) {
         <main class="auth-card" role="status" aria-live="polite">
           <div class="brand-mark">A</div>
-          <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
-          <small class="splash-build-time">{{ t('ui.m_1y28k2h') }} {{ buildTimeLabel }}</small>
+          <div class="splash-release-meta">
+            <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
+            <small class="splash-build-time">{{ t('ui.m_1y28k2h') }} {{ buildTimeLabel }}</small>
+          </div>
           <h1>{{ t('ui.m_1dygc0g') }}</h1>
           <p class="muted">{{ t('ui.m_1uzdlys') }}</p>
         </main>
@@ -143,47 +145,21 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       } @else {
         <aside class="sidebar" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2')">
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>{{ t('common.app_title') }}</span></a>
-          <div class="sidebar-nav-scroll">
+          <nav class="sidebar-nav-scroll" [attr.aria-label]="t('ui.m_criw1m')">
             <div class="desktop-sidebar-groups">
-                <section class="desktop-nav-group" aria-labelledby="desktop-nav-core">
-                  <p class="nav-label desktop-nav-group-label" id="desktop-nav-core">{{ t('ui.m_criw1m') }}</p>
-                  <button class="nav-item" [attr.aria-label]="t('ui.m_1sgyd06')" [attr.title]="t('ui.m_1sgyd06')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('ui.m_1sgyd06') }}</span></button>
-                  <button class="nav-item" [attr.aria-label]="t('ui.m_1h7f08p')" [attr.title]="t('ui.m_1h7f08p')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('ui.m_1h7f08p') }}</span></button>
-                  <button class="nav-item" [attr.aria-label]="t('ui.m_tvy79l')" [attr.title]="t('ui.m_tvy79l')" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('ui.m_tvy79l') }}</span></button>
+              @for (group of desktopNavigationGroups; track group.id) {
+                <section class="desktop-nav-group" [attr.aria-labelledby]="'desktop-nav-' + group.id">
+                  <h2 class="desktop-nav-group-label" [id]="'desktop-nav-' + group.id">{{ t(group.titleKey) }}</h2>
+                  @for (module of group.modules; track module.tab) {
+                    <button class="nav-item" type="button" [attr.aria-label]="t(module.titleKey)" [attr.title]="t(module.titleKey)"
+                      [class.active]="tab === module.tab" [attr.aria-current]="tab === module.tab ? 'page' : null"
+                      (click)="setTab(module.tab)">
+                      <span class="nav-icon" aria-hidden="true">{{ module.icon }}</span><span>{{ t(module.titleKey) }}</span>
+                    </button>
+                  }
                 </section>
-                <section class="desktop-nav-group" aria-labelledby="desktop-nav-products-purchasing">
-                  <h2 class="desktop-nav-group-label" id="desktop-nav-products-purchasing">{{ t('catalog.m_1341u8e') }}</h2>
-                  <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_xpe4pk')" [attr.title]="t('ui.m_xpe4pk')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('ui.m_xpe4pk') }}</span></button>
-                  <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1yzd6rs')" [attr.title]="t('ui.m_1yzd6rs')" [class.active]="tab === 'suppliers'" [attr.aria-current]="tab === 'suppliers' ? 'page' : null" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('ui.m_1yzd6rs') }}</span></button>
-                  <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_s8z24b')" [attr.title]="t('ui.m_s8z24b')" [class.active]="tab === 'purchases'" [attr.aria-current]="tab === 'purchases' ? 'page' : null" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('ui.m_s8z24b') }}</span></button>
-                </section>
-                <section class="desktop-nav-group" aria-labelledby="desktop-nav-finance-reports">
-                  <h2 class="desktop-nav-group-label" id="desktop-nav-finance-reports">{{ t('catalog.m_2h49lq') }}</h2>
-                  <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1k2jewg')" [attr.title]="t('ui.m_1k2jewg')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('ui.m_1k2jewg') }}</span></button>
-                  @if (canAccessTab('taxes')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_17hm8dv')" [attr.title]="t('ui.m_17hm8dv')" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('ui.m_17hm8dv') }}</span></button> }
-                  @if (canAccessTab('payments')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_14ms9re')" [attr.title]="t('ui.m_14ms9re')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('ui.m_14ms9re') }}</span></button> }
-                  <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_l71hva')" [attr.title]="t('ui.m_l71hva')" [class.active]="tab === 'expenses'" [attr.aria-current]="tab === 'expenses' ? 'page' : null" (click)="setTab('expenses')"><span class="nav-icon expense-icon" aria-hidden="true">−</span><span>{{ t('ui.m_l71hva') }}</span></button>
-                  <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_11lck86')" [attr.title]="t('ui.m_11lck86')" [class.active]="tab === 'recurring'" [attr.aria-current]="tab === 'recurring' ? 'page' : null" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('ui.m_ccqp2u') }}</span></button>
-                </section>
-                <section class="desktop-nav-group" aria-labelledby="desktop-nav-team-admin">
-                  <h2 class="desktop-nav-group-label" id="desktop-nav-team-admin">{{ t('catalog.m_8ogsj9') }}</h2>
-                  @if (canAccessTab('employees')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1whxhp7')" [attr.title]="t('ui.m_1whxhp7')" [class.active]="tab === 'employees'" [attr.aria-current]="tab === 'employees' ? 'page' : null" (click)="setTab('employees')"><span class="nav-icon" aria-hidden="true">♙</span><span>{{ t('ui.m_1whxhp7') }}</span></button> }
-                  @if (canAccessTab('team')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('catalog.team.title')" [attr.title]="t('catalog.team.title')" [class.active]="tab === 'team'" [attr.aria-current]="tab === 'team' ? 'page' : null" (click)="setTab('team')"><span class="nav-icon" aria-hidden="true">♧</span><span>{{ t('catalog.team.title') }}</span></button> }
-                  @if (canAccessTab('platform-admin')) { <button class="nav-item platform-admin-nav" [attr.aria-label]="t('ui.m_1gkme2m')" [attr.title]="t('ui.m_1gkme2m')" [class.active]="tab === 'platform-admin'" [attr.aria-current]="tab === 'platform-admin' ? 'page' : null" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('ui.m_1gkme2m') }}</span></button> }
-                </section>
-                <section class="desktop-nav-group" aria-labelledby="desktop-nav-monitoring-operations">
-                  <h2 class="desktop-nav-group-label" id="desktop-nav-monitoring-operations">{{ t('catalog.m_lkukj5') }}</h2>
-                  @if (canAccessTab('audit')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_hd46sj')" [attr.title]="t('ui.m_hd46sj')" [class.active]="tab === 'audit'" [attr.aria-current]="tab === 'audit' ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('ui.m_hd46sj') }}</span></button> }
-                  @if (canAccessTab('integrity')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('catalog.m_shdbnl')" [attr.title]="t('catalog.m_shdbnl')" [class.active]="tab === 'integrity'" [attr.aria-current]="tab === 'integrity' ? 'page' : null" (click)="setTab('integrity')"><span class="nav-icon" aria-hidden="true">⚑</span><span>{{ t('catalog.m_shdbnl') }}</span></button> }
-                  <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_vlrg7')" [attr.title]="t('ui.m_vlrg7')" [class.active]="tab === 'notifications'" [attr.aria-current]="tab === 'notifications' ? 'page' : null" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t('ui.m_vlrg7') }}</span></button>
-                  @if (canAccessTab('health')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_18z2l5z')" [attr.title]="t('ui.m_18z2l5z')" [class.active]="tab === 'health'" [attr.aria-current]="tab === 'health' ? 'page' : null" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('ui.m_3lp8ed') }}</span></button> }
-                </section>
-                <section class="desktop-nav-group" aria-labelledby="desktop-nav-assistant-tools">
-                  <h2 class="desktop-nav-group-label" id="desktop-nav-assistant-tools">{{ t('catalog.m_18paotq') }}</h2>
-                  <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_dzn3ev')" [attr.title]="t('ui.m_dzn3ev')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('ui.m_dzn3ev') }}</span></button>
-                  <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_a3qirn')" [attr.title]="t('ui.m_a3qirn')" [class.active]="tab === 'release-guide'" [attr.aria-current]="tab === 'release-guide' ? 'page' : null" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('ui.m_a3qirn') }}</span></button>
-                </section>
-              </div>
+              }
+            </div>
             <div class="mobile-dock-items">
               @for (module of primaryNavigationModules; track module.tab) {
                 <button class="nav-item" type="button" [attr.aria-label]="t(module.titleKey)" [attr.title]="t(module.titleKey)"
@@ -192,19 +168,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <span class="nav-icon" aria-hidden="true">{{ module.icon }}</span><span>{{ t(module.titleKey) }}</span>
                 </button>
               }
-              <button #mobileMoreTrigger class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t('ui.m_nxf6ap')" [attr.title]="t('ui.m_nxf6ap')" [attr.aria-expanded]="mobileMoreOpen" [attr.aria-controls]="mobileMoreOpen ? 'mobile-more-menu' : null" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('ui.m_dh4eov') }}</span></button>
+              <button #mobileMoreTrigger class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)"
+                [attr.aria-label]="t('ui.m_nxf6ap')" [attr.title]="t('ui.m_nxf6ap')" [attr.aria-expanded]="mobileMoreOpen"
+                [attr.aria-controls]="mobileMoreOpen ? 'mobile-more-menu' : null" (click)="toggleMobileMore()">
+                <span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('ui.m_dh4eov') }}</span>
+              </button>
             </div>
             @if (mobileMoreOpen) {
             <nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('ui.m_1c7twvy')">
-              <label class="mobile-more-search">
-                <span class="sr-only">{{ t('ui.m_1eu8swe') }}</span>
-                <input type="search" name="mobileMoreSearch" autocomplete="off" enterkeyhint="search"
-                  [attr.aria-label]="t('ui.m_1eu8swe')"
-                  [placeholder]="t('ui.m_1uhhx5z')"
-                  [(ngModel)]="mobileMoreSearch" />
-              </label>
-              @if (filteredMobileMoreGroups.length) {
-                @for (group of filteredMobileMoreGroups; track group.id) {
+              @for (group of mobileMoreGroups; track group.id) {
                 <section class="mobile-more-group" [attr.aria-labelledby]="'mobile-more-' + group.id + '-heading'">
                   <h3 [id]="'mobile-more-' + group.id + '-heading'">{{ t(group.titleKey) }}</h3>
                   @for (module of group.modules; track module.tab) {
@@ -215,9 +187,6 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                 </section>
                 }
-              } @else {
-                <p class="mobile-more-empty" role="status">{{ t('ui.m_ehdjlq') }}</p>
-              }
               <div class="mobile-more-actions">
                 <button class="nav-item mobile-menu-action" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</span></button>
                 <button class="nav-item mobile-menu-action" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t('ui.m_r2b303') }}</span></button>
@@ -225,11 +194,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             </nav>
           }
           
-          
-          
-          </div>
+          </nav>
           <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('ui.m_17dx7ed') }}<small>{{ t('ui.m_ab5ft9') }}</small></div>
-        
         
         </aside>
         <main class="main" id="main-content" tabindex="-1">
@@ -617,7 +583,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ui.m_1lifkl9')" [description]="t('ui.m_15gmqko')" />
                 @if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('ui.m_p4xhry') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span>{{ t('ui.m_p4xhry') }}</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
                   <h3>{{ t('ui.m_p4xhry') }}</h3>
                   <p>{{ t('ui.m_1239wd4') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1m32l6p')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
@@ -706,7 +672,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   </div>
                 </details>
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('ui.m_1wgx28b') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_ps78ce')">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span>{{ t('ui.m_1wgx28b') }}</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_ps78ce')">
                   <h3>{{ t('ui.m_1wgx28b') }}</h3>
                   <p>{{ t('ui.m_1kaqi1p') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1yr2ptt')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
@@ -1412,7 +1378,6 @@ export class AppComponent implements OnInit, OnDestroy {
   chatCopyStatus: { index: number; success: boolean } | null = null;
   keyboardOpen = false;
   mobileMoreOpen = false;
-  mobileMoreSearch = '';
   homeModuleSearch = '';
   @ViewChild('mobileMoreTrigger') private mobileMoreTrigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('mobileMoreMenu') private mobileMoreMenu?: ElementRef<HTMLElement>;
@@ -2654,7 +2619,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
   toggleMobileMore(): void {
-    if (this.mobileMoreOpen) this.mobileMoreSearch = '';
     this.mobileMoreOpen = !this.mobileMoreOpen;
   }
 
@@ -2699,13 +2663,11 @@ export class AppComponent implements OnInit, OnDestroy {
   closeMobileMoreOnEscape(): void {
     if (!this.mobileMoreOpen) return;
     this.mobileMoreOpen = false;
-    this.mobileMoreSearch = '';
     this.mobileMoreTrigger?.nativeElement.focus();
   }
 
   /** Restore keyboard focus to the More trigger after a secondary destination is selected. */
   selectMobileMoreTab(tab: Tab): void {
-    this.mobileMoreSearch = '';
     this.setTab(tab);
     this.mobileMoreTrigger?.nativeElement.focus();
   }
@@ -2718,7 +2680,6 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.mobileMoreTrigger?.nativeElement.contains(target)
       || this.mobileMoreMenu?.nativeElement.contains(target)) return;
     this.mobileMoreOpen = false;
-    this.mobileMoreSearch = '';
   }
 
   async installApp(): Promise<void> {
@@ -3472,25 +3433,24 @@ export class AppComponent implements OnInit, OnDestroy {
     });
   }
 
-  isMobileMoreTab(tab: Tab): boolean {
-    return isMobileMoreTabValue(tab);
+  /** Desktop navigation mirrors the mobile More taxonomy while retaining the three primary dock destinations. */
+  get desktopNavigationGroups(): readonly { id: string; titleKey: string; modules: readonly WorkspaceModuleCard[] }[] {
+    const accessibleModules = this.homeModuleCards;
+    return [
+      {
+        id: 'workspace-core',
+        titleKey: 'ui.m_criw1m',
+        modules: this.primaryNavigationModules,
+      },
+      ...WORKSPACE_MODULE_GROUPS.map(group => ({
+        ...group,
+        modules: accessibleModules.filter(module => module.mobileGroup === group.id),
+      })),
+    ].filter(group => group.modules.length > 0);
   }
 
-  /** Search only the already-authorized mobile destinations; this is navigation UX, not access control. */
-  get filteredMobileMoreGroups(): readonly (WorkspaceModuleGroup & { modules: readonly WorkspaceModuleCard[] })[] {
-    const query = this.mobileMoreSearch.trim().normalize('NFKC').toLocaleLowerCase(this.localization.locale);
-    if (!query) return this.mobileMoreGroups;
-    return this.mobileMoreGroups.map(group => {
-      const locale = this.language === 'ar' ? 'ar-EG' : 'en';
-      const groupMatches = this.t(group.titleKey).normalize('NFKC').toLocaleLowerCase(locale).includes(query);
-      const modules = groupMatches ? group.modules : filterWorkspaceModules(
-        group.modules,
-        this.mobileMoreSearch,
-        locale,
-        key => this.t(key),
-      );
-      return { ...group, modules };
-    }).filter(group => group.modules.length > 0);
+  isMobileMoreTab(tab: Tab): boolean {
+    return isMobileMoreTabValue(tab);
   }
 
   setTab(tab: Tab): void {

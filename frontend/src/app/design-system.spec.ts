@@ -192,14 +192,10 @@ test('tablet workspace navigation uses a compact rail without removing accessibl
   const moreMenuStart = app.indexOf('<nav #mobileMoreMenu', sidebarStart);
   assert.ok(sidebarStart >= 0 && moreMenuStart > sidebarStart, 'the workspace sidebar navigation must exist');
   const sidebarMarkup = app.slice(sidebarStart, moreMenuStart);
-  const navigationButtons = [...sidebarMarkup.matchAll(/<button class="nav-item[^"]*"[^>]*>/g)];
-  assert.ok(navigationButtons.length >= 10, 'the compact rail must preserve the existing workspace module set');
-  for (const [index, match] of navigationButtons.entries()) {
-    assert.match(match[0], /\[attr\.aria-label\]=/,
-      'workspace navigation item ' + index + ' must retain an accessible name');
-    if (!match[0].includes('class="nav-item mobile-more"')) {
-      assert.match(match[0], /\[attr\.title\]=/,
-        'workspace navigation item ' + index + ' must retain its native tooltip');
-    }
-  }
+  assert.match(sidebarMarkup, /class="sidebar-nav-scroll"/);
+  assert.match(sidebarMarkup, /@for \(group of desktopNavigationGroups; track group\.id\)/);
+  assert.match(sidebarMarkup, /@for \(module of group\.modules; track module\.tab\)/);
+  assert.match(sidebarMarkup, /\[attr\.aria-label\]="t\(module\.titleKey\)"/);
+  assert.match(sidebarMarkup, /\[attr\.title\]="t\(module\.titleKey\)"/);
+  assert.match(sidebarMarkup, /\(click\)="setTab\(module\.tab\)"/);
 });

@@ -73,15 +73,17 @@ test('Product and Service use a segmented toggle with no reorder controls or lar
 
 
 test('startup screen shows the Cairo-localized build date and time beneath release versions', () => {
-  assert.match(appSource, /class="splash-build-time"/);
+  assert.match(appSource, /class="splash-release-meta"[\s\S]*?class="version-pill splash-version"[\s\S]*?class="splash-build-time"/);
   assert.match(appSource, /Build date & time/);
+  assert.match(appSource, /@if \(loading && initialized\) \{ <div class="global-loading"/);
+  assert.match(appSource, /\.splash-release-meta\{display:grid;justify-items:center/);
   assert.match(appSource, /get buildTimeLabel\(\): string/);
   assert.match(appSource, /timeZone: 'Africa\/Cairo'/);
 });
 
 test('invoice search icon stays clear of search text in RTL and LTR', () => {
   assert.match(appSource, /\.invoice-controls \.invoice-search input\{[^}]*padding-inline-start:48px;padding-inline-end:42px;text-indent:0;text-align:start/);
-  assert.match(appSource, /\.invoice-search-icon\{[^}]*inset-inline-start:14px/);
+  assert.match(appSource, /\.invoice-search-icon\{[^}]*inset-inline-start:15px/);
   assert.match(appSource, /\.invoice-search input::-webkit-search-decoration/);
 });
 

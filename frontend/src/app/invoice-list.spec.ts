@@ -42,3 +42,9 @@ test('invoice pagination clamps indexes and reports empty and final-page ranges'
   assert.deepEqual([lastPage.pageIndex, lastPage.start, lastPage.end], [1, 3, 3]);
   assert.deepEqual(paginateInvoiceRecords([], 0, 10), { items: [], pageIndex: 0, pageCount: 1, start: 0, end: 0 });
 });
+
+
+test('invoice sorting covers every visible sortable column', () => {
+  const byStatus = sortInvoiceRecords(records, 'status', 'asc', () => '', 'en');
+  assert.deepEqual(byStatus.map(item => item.id), ['a', 'b', 'c']);
+});
