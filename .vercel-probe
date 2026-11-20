@@ -1,0 +1,3 @@
+Temporary Vercel auto-build probe.
+Base: ac27afd3457674d09d9ad1b234f05f6c7930ec54
+Purpose: verify Git branch Preview auto-build detection.
