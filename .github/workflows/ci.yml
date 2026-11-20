@@ -356,7 +356,7 @@ jobs:
                   time.sleep(2)
           PY
       - name: Apply migrations and check schema drift
-        if: needs.detect-changes.outputs.migrations == 'true'
+        if: needs.detect-changes.outputs.migrations == 'true' || needs.detect-changes.outputs.backend_full == 'true'
         working-directory: backend
         run: |
           python -m alembic upgrade head
