@@ -51,8 +51,11 @@ type ReturnDraftLine = {
         }
         <label>
           {{ t('returnReason') }}
-          <input name="returnReason" maxlength="500" [(ngModel)]="returnReason" [disabled]="creatingReturn">
+          <input name="returnReason" maxlength="500" required [(ngModel)]="returnReason" [disabled]="creatingReturn"
+            (ngModelChange)="returnReasonError = ''" [attr.aria-invalid]="returnReasonError ? 'true' : null"
+            aria-describedby="return-reason-error">
         </label>
+        @if (returnReasonError) { <p class="error" id="return-reason-error" role="alert">{{ returnReasonError }}</p> }
         @if (detailLoading) {
           <p role="status">{{ t('loadingInvoiceLines') }}</p>
         }
@@ -173,6 +176,7 @@ export class CreditNoteIssuanceComponent implements OnChanges {
   returnLines: ReturnDraftLine[] = [];
   selectedInvoiceId = '';
   returnReason = '';
+  returnReasonError = '';
   loading = false;
   detailLoading = false;
   creatingReturn = false;
@@ -343,6 +347,11 @@ export class CreditNoteIssuanceComponent implements OnChanges {
 
   async createReturn(): Promise<void> {
     if (!this.businessId || !this.invoiceDetail || this.creatingReturn) return;
+    const reason = this.returnReason.trim();
+    if (!reason) {
+      this.returnReasonError = this.t('returnReasonRequired');
+      return;
+    }
     const lines = this.returnLines
       .map(line => ({ invoice_line_id: line.invoiceLineId, quantity: String(line.quantity).trim() }))
       .filter(line => line.quantity && Number(line.quantity) > 0);
@@ -361,13 +370,14 @@ export class CreditNoteIssuanceComponent implements OnChanges {
     try {
       await this.api.createSalesReturn(this.businessId, {
         invoice_id: this.invoiceDetail.id,
-        reason: this.returnReason.trim() || undefined,
+        reason,
         lines,
       });
       this.selectedInvoiceId = '';
       this.invoiceDetail = null;
       this.returnLines = [];
       this.returnReason = '';
+      this.returnReasonError = '';
       this.message = this.t('draftSavedMessage');
       await this.refresh();
     } catch (error) {
@@ -379,6 +389,10 @@ export class CreditNoteIssuanceComponent implements OnChanges {
 
   async approve(ret: SalesReturn): Promise<void> {
     if (this.role !== 'owner' || this.actionId || ret.status !== 'draft') return;
+    if (!ret.reason || !ret.reason.trim()) {
+      this.error = this.t('returnReasonMissingForDraft');
+      return;
+    }
     this.actionId = ret.id;
     this.error = '';
     this.message = '';
@@ -395,6 +409,10 @@ export class CreditNoteIssuanceComponent implements OnChanges {
 
   async issue(ret: SalesReturn): Promise<void> {
     if (this.role !== 'owner' || this.actionId || ret.status !== 'approved' || this.creditNoteForReturn(ret.id)) return;
+    if (!ret.reason || !ret.reason.trim()) {
+      this.error = this.t('returnReasonMissingForDraft');
+      return;
+    }
     this.actionId = ret.id;
     this.error = '';
     this.message = '';
