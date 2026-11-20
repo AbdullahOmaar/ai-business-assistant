@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { LocalizationService } from './localization.service';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, ApiRequestError, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
+import { ApiService, ApiRequestError, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, InvoiceDetail, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
 import { createServiceWorkerUpdateHandler } from './service-worker-update';
 import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
@@ -10,6 +10,7 @@ import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { auditActionLabel as formatAuditActionLabel, auditTargetLabel as formatAuditTargetLabel } from './audit-labels';
 import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers, firstRecordPage, mergeRecordPage } from './record-filters';
+import { countInvoiceStatuses, paginateInvoiceRecords, sortInvoiceRecords, type InvoiceSortDirection, type InvoiceSortKey, type InvoiceStatusCounts } from './invoice-list';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
 import { ReleaseGuideComponent } from './release-guide.component';
@@ -52,7 +53,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
         <a class="skip-link" href="#main-content">{{ t('ui.m_1561v1f') }}</a>
       }
-      @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('ui.m_1rza5t5') }}</span></div> }
+      @if (loading && initialized) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('ui.m_1rza5t5') }}</span></div> }
       @if (appUpdateAvailable) {
         <aside class="app-update-notice" role="status" aria-live="polite">
           <span>{{ t('ui.m_4cplhg') }}</span>
@@ -62,8 +63,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       @if (!initialized) {
         <main class="auth-card" role="status" aria-live="polite">
           <div class="brand-mark">A</div>
-          <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
-          <small class="splash-build-time">{{ t('ui.m_1y28k2h') }} {{ buildTimeLabel }}</small>
+          <div class="splash-release-meta">
+            <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
+            <small class="splash-build-time">{{ t('ui.m_1y28k2h') }} {{ buildTimeLabel }}</small>
+          </div>
           <h1>{{ t('ui.m_1dygc0g') }}</h1>
           <p class="muted">{{ t('ui.m_1uzdlys') }}</p>
         </main>
@@ -142,38 +145,44 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       } @else {
         <aside class="sidebar" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2')">
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>{{ t('common.app_title') }}</span></a>
-          <p class="nav-label">{{ t('ui.m_criw1m') }}</p>
-          <button class="nav-item" [attr.aria-label]="t('ui.m_1sgyd06')" [attr.title]="t('ui.m_1sgyd06')" [class.active]="tab === 'overview'" [attr.aria-current]="tab === 'overview' ? 'page' : null" (click)="setTab('overview')"><span class="nav-icon overview-icon" aria-hidden="true">⌂</span><span>{{ t('ui.m_1sgyd06') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1k2jewg')" [attr.title]="t('ui.m_1k2jewg')" [class.active]="tab === 'reports'" [attr.aria-current]="tab === 'reports' ? 'page' : null" (click)="setTab('reports')"><span class="nav-icon" aria-hidden="true">∑</span><span>{{ t('ui.m_1k2jewg') }}</span></button>
-          @if (canAccessTab('taxes')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_17hm8dv')" [attr.title]="t('ui.m_17hm8dv')" [class.active]="tab === 'taxes'" [attr.aria-current]="tab === 'taxes' ? 'page' : null" (click)="setTab('taxes')"><span class="nav-icon" aria-hidden="true">%</span><span>{{ t('ui.m_17hm8dv') }}</span></button> }
-          <button class="nav-item" [attr.aria-label]="t('ui.m_1h7f08p')" [attr.title]="t('ui.m_1h7f08p')" [class.active]="tab === 'invoices'" [attr.aria-current]="tab === 'invoices' ? 'page' : null" (click)="setTab('invoices')"><span class="nav-icon invoices-icon" aria-hidden="true">▤</span><span>{{ t('ui.m_1h7f08p') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_xpe4pk')" [attr.title]="t('ui.m_xpe4pk')" [class.active]="tab === 'products'" [attr.aria-current]="tab === 'products' ? 'page' : null" (click)="setTab('products')"><span class="nav-icon products-icon" aria-hidden="true">◇</span><span>{{ t('ui.m_xpe4pk') }}</span></button>
-          <button class="nav-item" [attr.aria-label]="t('ui.m_tvy79l')" [attr.title]="t('ui.m_tvy79l')" [class.active]="tab === 'customers'" [attr.aria-current]="tab === 'customers' ? 'page' : null" (click)="setTab('customers')"><span class="nav-icon customers-icon" aria-hidden="true">♧</span><span>{{ t('ui.m_tvy79l') }}</span></button>
-          @if (canAccessTab('employees')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1whxhp7')" [attr.title]="t('ui.m_1whxhp7')" [class.active]="tab === 'employees'" [attr.aria-current]="tab === 'employees' ? 'page' : null" (click)="setTab('employees')"><span class="nav-icon" aria-hidden="true">♙</span><span>{{ t('ui.m_1whxhp7') }}</span></button> }
-          @if (canAccessTab('team')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('catalog.team.title')" [attr.title]="t('catalog.team.title')" [class.active]="tab === 'team'" [attr.aria-current]="tab === 'team' ? 'page' : null" (click)="setTab('team')"><span class="nav-icon" aria-hidden="true">♧</span><span>{{ t('catalog.team.title') }}</span></button> }
-          @if (canAccessTab('platform-admin')) { <button class="nav-item platform-admin-nav" [attr.aria-label]="t('ui.m_1gkme2m')" [attr.title]="t('ui.m_1gkme2m')" [class.active]="tab === 'platform-admin'" [attr.aria-current]="tab === 'platform-admin' ? 'page' : null" (click)="setTab('platform-admin')"><span class="nav-icon" aria-hidden="true">◇</span><span>{{ t('ui.m_1gkme2m') }}</span></button> }
-@if (canAccessTab('audit')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_hd46sj')" [attr.title]="t('ui.m_hd46sj')" [class.active]="tab === 'audit'" [attr.aria-current]="tab === 'audit' ? 'page' : null" (click)="setTab('audit')"><span class="nav-icon" aria-hidden="true">◷</span><span>{{ t('ui.m_hd46sj') }}</span></button> }
-                    @if (canAccessTab('payments')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_14ms9re')" [attr.title]="t('ui.m_14ms9re')" [class.active]="tab === 'payments'" [attr.aria-current]="tab === 'payments' ? 'page' : null" (click)="setTab('payments')"><span class="nav-icon payments-icon" aria-hidden="true">↗</span><span>{{ t('ui.m_14ms9re') }}</span></button> }
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_l71hva')" [attr.title]="t('ui.m_l71hva')" [class.active]="tab === 'expenses'" [attr.aria-current]="tab === 'expenses' ? 'page' : null" (click)="setTab('expenses')"><span class="nav-icon expense-icon" aria-hidden="true">−</span><span>{{ t('ui.m_l71hva') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_vlrg7')" [attr.title]="t('ui.m_vlrg7')" [class.active]="tab === 'notifications'" [attr.aria-current]="tab === 'notifications' ? 'page' : null" (click)="setTab('notifications')"><span class="nav-icon" aria-hidden="true">♢</span><span>{{ t('ui.m_vlrg7') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_1yzd6rs')" [attr.title]="t('ui.m_1yzd6rs')" [class.active]="tab === 'suppliers'" [attr.aria-current]="tab === 'suppliers' ? 'page' : null" (click)="setTab('suppliers')"><span class="nav-icon" aria-hidden="true">▣</span><span>{{ t('ui.m_1yzd6rs') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_s8z24b')" [attr.title]="t('ui.m_s8z24b')" [class.active]="tab === 'purchases'" [attr.aria-current]="tab === 'purchases' ? 'page' : null" (click)="setTab('purchases')"><span class="nav-icon" aria-hidden="true">⇩</span><span>{{ t('ui.m_s8z24b') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_11lck86')" [attr.title]="t('ui.m_11lck86')" [class.active]="tab === 'recurring'" [attr.aria-current]="tab === 'recurring' ? 'page' : null" (click)="setTab('recurring')"><span class="nav-icon" aria-hidden="true">↻</span><span>{{ t('ui.m_ccqp2u') }}</span></button>
-          @if (canAccessTab('health')) { <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_18z2l5z')" [attr.title]="t('ui.m_18z2l5z')" [class.active]="tab === 'health'" [attr.aria-current]="tab === 'health' ? 'page' : null" (click)="setTab('health')"><span class="nav-icon" aria-hidden="true">♥</span><span>{{ t('ui.m_3lp8ed') }}</span></button> }
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_dzn3ev')" [attr.title]="t('ui.m_dzn3ev')" [class.active]="tab === 'assistant'" [attr.aria-current]="tab === 'assistant' ? 'page' : null" (click)="setTab('assistant')"><span class="nav-icon assistant-icon" aria-hidden="true">✦</span><span>{{ t('ui.m_dzn3ev') }}</span></button>
-          <button class="nav-item mobile-extra" [attr.aria-label]="t('ui.m_a3qirn')" [attr.title]="t('ui.m_a3qirn')" [class.active]="tab === 'release-guide'" [attr.aria-current]="tab === 'release-guide' ? 'page' : null" (click)="setTab('release-guide')"><span class="nav-icon" aria-hidden="true">ⓘ</span><span>{{ t('ui.m_a3qirn') }}</span></button>
-          <button #mobileMoreTrigger class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)" [attr.aria-label]="t('ui.m_nxf6ap')" [attr.aria-expanded]="mobileMoreOpen" [attr.aria-controls]="mobileMoreOpen ? 'mobile-more-menu' : null" (click)="toggleMobileMore()"><span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('ui.m_dh4eov') }}</span></button>
-          @if (mobileMoreOpen) {
+          <nav class="sidebar-nav-scroll" [attr.aria-label]="t('ui.m_criw1m')">
+            <div class="desktop-sidebar-groups">
+              @for (group of desktopNavigationGroups; track group.id) {
+                <section class="desktop-nav-group" [attr.aria-labelledby]="'desktop-nav-' + group.id">
+                  <h2 class="desktop-nav-group-label" [id]="'desktop-nav-' + group.id">{{ t(group.titleKey) }}</h2>
+                  @for (module of group.modules; track module.tab) {
+                    <button class="nav-item" type="button" [attr.aria-label]="t(module.titleKey)" [attr.title]="t(module.titleKey)"
+                      [class.active]="tab === module.tab" [attr.aria-current]="tab === module.tab ? 'page' : null"
+                      (click)="setTab(module.tab)">
+                      <span class="nav-icon" aria-hidden="true">{{ module.icon }}</span><span>{{ t(module.titleKey) }}</span>
+                    </button>
+                  }
+                </section>
+              }
+            </div>
+            <div class="mobile-dock-items">
+              @for (module of primaryNavigationModules; track module.tab) {
+                <button class="nav-item" type="button" [attr.aria-label]="t(module.titleKey)" [attr.title]="t(module.titleKey)"
+                  [class.active]="tab === module.tab" [attr.aria-current]="tab === module.tab ? 'page' : null"
+                  (click)="setTab(module.tab)">
+                  <span class="nav-icon" aria-hidden="true">{{ module.icon }}</span><span>{{ t(module.titleKey) }}</span>
+                </button>
+              }
+              <button #mobileMoreTrigger class="nav-item mobile-more" type="button" [class.active]="mobileMoreOpen || isMobileMoreTab(tab)"
+                [attr.aria-label]="t('ui.m_nxf6ap')" [attr.title]="t('ui.m_nxf6ap')" [attr.aria-expanded]="mobileMoreOpen"
+                [attr.aria-controls]="mobileMoreOpen ? 'mobile-more-menu' : null" (click)="toggleMobileMore()">
+                <span class="nav-icon" aria-hidden="true">•••</span><span>{{ t('ui.m_dh4eov') }}</span>
+              </button>
+            </div>
+          </nav>
+          <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('ui.m_17dx7ed') }}<small>{{ t('ui.m_ab5ft9') }}</small></div>
+        
+        </aside>
+        @if (mobileMoreOpen) {
+          <div class="mobile-more-overlay">
+            <button class="mobile-more-backdrop" type="button" aria-label="Close menu" (click)="closeMobileMoreOnEscape()"></button>
             <nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('ui.m_1c7twvy')">
-              <label class="mobile-more-search">
-                <span class="sr-only">{{ t('ui.m_1eu8swe') }}</span>
-                <input type="search" name="mobileMoreSearch" autocomplete="off" enterkeyhint="search"
-                  [attr.aria-label]="t('ui.m_1eu8swe')"
-                  [placeholder]="t('ui.m_1uhhx5z')"
-                  [(ngModel)]="mobileMoreSearch" />
-              </label>
-              @if (filteredMobileMoreGroups.length) {
-                @for (group of filteredMobileMoreGroups; track group.id) {
+              @for (group of mobileMoreGroups; track group.id) {
                 <section class="mobile-more-group" [attr.aria-labelledby]="'mobile-more-' + group.id + '-heading'">
                   <h3 [id]="'mobile-more-' + group.id + '-heading'">{{ t(group.titleKey) }}</h3>
                   @for (module of group.modules; track module.tab) {
@@ -184,17 +193,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                 </section>
                 }
-              } @else {
-                <p class="mobile-more-empty" role="status">{{ t('ui.m_ehdjlq') }}</p>
-              }
               <div class="mobile-more-actions">
                 <button class="nav-item mobile-menu-action" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</span></button>
                 <button class="nav-item mobile-menu-action" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t('ui.m_r2b303') }}</span></button>
               </div>
             </nav>
-          }
-          <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('ui.m_17dx7ed') }}<small>{{ t('ui.m_ab5ft9') }}</small></div>
-        </aside>
+          </div>
+        }
+
         <main class="main" id="main-content" tabindex="-1">
           @if (!isInstalled) {
             <section class="mobile-install-card" [attr.aria-label]="t('ui.m_1ig5s72')">
@@ -580,7 +586,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ui.m_1lifkl9')" [description]="t('ui.m_15gmqko')" />
                 @if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('ui.m_p4xhry') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span>{{ t('ui.m_p4xhry') }}</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
                   <h3>{{ t('ui.m_p4xhry') }}</h3>
                   <p>{{ t('ui.m_1239wd4') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1m32l6p')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
@@ -669,7 +675,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   </div>
                 </details>
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary"><summary><span>{{ t('ui.m_1wgx28b') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_ps78ce')">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span>{{ t('ui.m_1wgx28b') }}</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_ps78ce')">
                   <h3>{{ t('ui.m_1wgx28b') }}</h3>
                   <p>{{ t('ui.m_1kaqi1p') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1yr2ptt')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
@@ -708,7 +714,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'invoices') {
               <section abaCard class="panel">
-                <aba-section-header id="invoices-section-heading" tabindex="-1" [title]=" t('ui.m_5lvhyt') " [description]=" t('ui.m_61q6l7') "><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('ui.m_pe8fvb') }}</span></aba-section-header>
+                <div id="invoices-section-heading" class="invoice-list-meta" tabindex="-1" aria-labelledby="invoices-section-title"><h2 id="invoices-section-title" class="sr-only">{{ t('ui.m_5lvhyt') }}</h2><span class="count">{{ filteredInvoices.length }} / {{ invoices.length }} {{ t('ui.m_pe8fvb') }}</span></div>
                 <div class="invoice-toolbar">
                   @if (invoiceCreateOpen) {
                     <section class="invoice-create-panel" [attr.aria-label]="t('ui.m_h8xosr')">
@@ -733,21 +739,24 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                 </div>
                 @if (invoiceMessage) { <aba-state-message [kind]="invoiceMessageKind" [description]="invoiceMessage" /> }
+                <div class="invoice-summary-cards" [attr.aria-label]="t('app.invoiceList.summaryLabel')">
+                  <article class="invoice-summary-card"><span>{{ t('app.invoiceList.summaryAll') }}</span><strong>{{ invoiceStatusCounts.all }}</strong></article>
+                  <article class="invoice-summary-card"><span>{{ t('app.invoiceList.summaryDraft') }}</span><strong>{{ invoiceStatusCounts.draft }}</strong></article>
+                  <article class="invoice-summary-card"><span>{{ t('app.invoiceList.summaryIssued') }}</span><strong>{{ invoiceStatusCounts.issued }}</strong></article>
+                </div>
                 <div class="invoice-controls">
                   <label class="invoice-search">
                     <svg class="invoice-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                    <input name="invoiceSearch" type="search" [attr.aria-label]="t('ui.m_qwjq9v')" [placeholder]="t('ui.m_2onysz')" [(ngModel)]="invoiceSearch">
+                    <input name="invoiceSearch" type="search" [attr.aria-label]="t('ui.m_qwjq9v')" [placeholder]="t('ui.m_2onysz')" [(ngModel)]="invoiceSearch" (ngModelChange)="invoicePageIndex = 0">
                   </label>
-                  <label class="invoice-filter"><span>{{ t('ui.m_jnmvwl') }}</span>
-                    <select name="invoiceStatusFilter" [attr.aria-label]="t('ui.m_1v8j5sa')" [(ngModel)]="invoiceStatusFilter">
-                      <option value="all">{{ t('ui.m_1cyu9lp') }}</option>
-                      <option value="draft">{{ t('ui.m_1vbs2bw') }}</option>
-                      <option value="issued">{{ t('ui.m_7bugfd') }}</option>
-                      <option value="void">{{ t('ui.m_1a2uk7t') }}</option>
-                    </select>
-                  </label>
+                  <div class="invoice-status-chips" role="group" [attr.aria-label]="t('app.invoiceList.statusFilters')">
+                    <button type="button" class="invoice-status-chip" [class.active]="invoiceStatusFilter === 'all'" [attr.aria-pressed]="invoiceStatusFilter === 'all'" (click)="setInvoiceStatusFilter('all')">{{ t('ui.m_1cyu9lp') }} <span>{{ invoiceStatusCounts.all }}</span></button>
+                    <button type="button" class="invoice-status-chip" [class.active]="invoiceStatusFilter === 'draft'" [attr.aria-pressed]="invoiceStatusFilter === 'draft'" (click)="setInvoiceStatusFilter('draft')">{{ t('ui.m_1vbs2bw') }} <span>{{ invoiceStatusCounts.draft }}</span></button>
+                    <button type="button" class="invoice-status-chip" [class.active]="invoiceStatusFilter === 'issued'" [attr.aria-pressed]="invoiceStatusFilter === 'issued'" (click)="setInvoiceStatusFilter('issued')">{{ t('ui.m_7bugfd') }} <span>{{ invoiceStatusCounts.issued }}</span></button>
+                    <button type="button" class="invoice-status-chip" [class.active]="invoiceStatusFilter === 'void'" [attr.aria-pressed]="invoiceStatusFilter === 'void'" (click)="setInvoiceStatusFilter('void')">{{ t('ui.m_1a2uk7t') }} <span>{{ invoiceStatusCounts.void }}</span></button>
+                  </div>
                   <label class="invoice-filter"><span>{{ t('ui.m_ubgrc2') }}</span>
-                    <select name="invoiceFilterCustomer" [attr.aria-label]="t('ui.m_1k3k63e')" [(ngModel)]="invoiceFilterCustomerId">
+                    <select name="invoiceFilterCustomer" [attr.aria-label]="t('ui.m_1k3k63e')" [(ngModel)]="invoiceFilterCustomerId" (ngModelChange)="invoicePageIndex = 0">
                       <option value="">{{ t('ui.m_1c6r7y7') }}</option>
                       @for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }
                     </select>
@@ -758,6 +767,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     </button>
                   }
                   @if (business?.role === 'owner') { <button class="secondary invoice-export" type="button" (click)="exportCurrentList()" [disabled]="!filteredInvoices.length">{{ t('ui.m_nbsw3y') }}</button> }
+                  <button class="secondary invoice-density-toggle" type="button" [attr.aria-pressed]="invoiceDensity === 'compact'" (click)="toggleInvoiceDensity()">{{ invoiceDensity === 'compact' ? t('app.invoiceList.cards') : t('app.invoiceList.compact') }}</button>
                 </div>
                 @if (loading && !invoices.length) {
                   <p class="invoice-list-state" role="status" aria-live="polite">{{ t('ui.m_x2q4oa') }}</p>
@@ -766,8 +776,49 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 } @else if (!filteredInvoices.length) {
                   <aba-state-message kind="empty" [description]="(invoiceSearch || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId) ? t('ui.m_1rrfha5') : t('ui.m_1ehm2eq')" />
                 } @else {
+                  @if (invoiceDensity === 'compact') {
+                    <div class="invoice-table-wrap" role="region" tabindex="0" [attr.aria-label]="t('app.invoiceList.table')">
+                      <table class="invoice-table" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
+                        <thead><tr>
+                          <th scope="col" [attr.aria-sort]="invoiceSortAria('invoice_number')"><button type="button" class="invoice-sort-button" (click)="toggleInvoiceSort('invoice_number')">{{ t('app.invoiceList.invoiceNumber') }} <span aria-hidden="true">{{ invoiceSortIndicator('invoice_number') }}</span></button></th>
+                          <th scope="col" [attr.aria-sort]="invoiceSortAria('customer')"><button type="button" class="invoice-sort-button" (click)="toggleInvoiceSort('customer')">{{ t('app.invoiceList.customer') }} <span aria-hidden="true">{{ invoiceSortIndicator('customer') }}</span></button></th>
+                          <th scope="col" [attr.aria-sort]="invoiceSortAria('issue_date')"><button type="button" class="invoice-sort-button" (click)="toggleInvoiceSort('issue_date')">{{ t('app.invoiceList.date') }} <span aria-hidden="true">{{ invoiceSortIndicator('issue_date') }}</span></button></th>
+                          <th scope="col" [attr.aria-sort]="invoiceSortAria('status')"><button type="button" class="invoice-sort-button" (click)="toggleInvoiceSort('status')">{{ t('app.invoiceList.status') }} <span aria-hidden="true">{{ invoiceSortIndicator('status') }}</span></button></th>
+                          <th scope="col" [attr.aria-sort]="invoiceSortAria('total')"><button type="button" class="invoice-sort-button" (click)="toggleInvoiceSort('total')">{{ t('app.invoiceList.total') }} <span aria-hidden="true">{{ invoiceSortIndicator('total') }}</span></button></th>
+                          <th scope="col">{{ t('app.invoiceList.actions') }}</th>
+                        </tr></thead>
+                        <tbody>
+                          @for (invoice of visibleInvoices; track invoice.id) {
+                            <tr>
+                              <td><bdi dir="ltr">{{ invoice.invoice_number }}</bdi></td>
+                              <td>{{ customerNameForInvoice(invoice.customer_id) }}</td>
+                              <td><bdi dir="ltr">{{ invoice.issue_date ? formatRecordDate(invoice.issue_date, 'date') : (invoice.created_at ? formatRecordDate(invoice.created_at, 'date') : '—') }}</bdi></td>
+                              <td><span class="invoice-status-badge" [class.status-draft]="invoiceCardStatusTone(invoice) === 'draft'" [class.status-issued]="invoiceCardStatusTone(invoice) === 'issued'" [class.status-void]="invoiceCardStatusTone(invoice) === 'void'" [class.status-paid]="invoiceCardStatusTone(invoice) === 'paid'" [class.status-partial]="invoiceCardStatusTone(invoice) === 'partial'" [class.status-unpaid]="invoiceCardStatusTone(invoice) === 'unpaid'">{{ invoiceCardStatusLabel(invoice) }}</span></td>
+                              <td class="invoice-table-total"><bdi dir="ltr">{{ formatNumber(invoice.total) }} {{ invoice.currency_code }}</bdi></td>
+                              <td class="invoice-table-actions"><div class="invoice-compact-actions">
+                                <button class="secondary" type="button" (click)="openInvoiceDetails(invoice, $event)">{{ t('app.invoiceList.viewDetails') }}</button>
+                                @if (invoice.status === 'draft') {
+                                  <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('ui.m_s21yyp') }}</button>
+                                  @if (business?.role === 'owner') {
+                                    <button class="secondary" type="button" (click)="issueInvoice(invoice)" [disabled]="loading">{{ t('ui.m_ninief') }}</button>
+                                    <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('ui.m_lnwycg') }}</button>
+                                  }
+                                } @else if (invoice.status === 'issued') {
+                                  <button class="secondary" type="button" (click)="printInvoice(invoice)" [disabled]="loading">{{ t('ui.m_qskvru') }}</button>
+                                  @if (business?.role === 'owner') {
+                                    @if (hasOutstandingBalance(invoice)) { <button class="secondary" type="button" (click)="payInvoice(invoice)" [disabled]="loading">{{ t('ui.m_1r6bzbj') }}</button> }
+                                    <button class="secondary danger" type="button" (click)="requestInvoiceVoid(invoice, $event)" [disabled]="loading">{{ t('ui.m_lnwycg') }}</button>
+                                  }
+                                }
+                              </div></td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  } @else {
                   <div class="invoice-cards">
-                    @for (invoice of filteredInvoices; track invoice.id) {
+                    @for (invoice of visibleInvoices; track invoice.id) {
                       <article class="invoice-card">
                         <header class="invoice-card-header">
                           <div class="invoice-card-customer">
@@ -822,6 +873,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                           </div>
                         }
                         <div class="invoice-actions">
+                          <button class="secondary" type="button" (click)="openInvoiceDetails(invoice, $event)">{{ t('app.invoiceList.viewDetails') }}</button>
                           @if (invoice.status === 'draft') {
                             <button class="secondary" type="button" (click)="editInvoice(invoice)" [disabled]="loading">{{ t('ui.m_s21yyp') }}</button>
                             @if (business?.role === 'owner') {
@@ -839,10 +891,85 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       </article>
                     }
                   </div>
+                  }
+                }
+                @if (filteredInvoices.length > invoicePageSize) {
+                  <nav class="invoice-pagination" [attr.aria-label]="t('app.invoiceList.pagination')">
+                    <span>{{ t('app.invoiceList.showing') }} {{ invoicePageStart }}–{{ invoicePageEnd }} {{ t('app.invoiceList.of') }} {{ filteredInvoices.length }}</span>
+                    <div class="invoice-pagination-controls">
+                      <button class="secondary" type="button" (click)="changeInvoicePage(-1)" [disabled]="invoicePageIndex === 0">{{ t('app.invoiceList.previous') }}</button>
+                      <span aria-live="polite">{{ t('app.invoiceList.page') }} {{ invoicePageIndex + 1 }} {{ t('app.invoiceList.of') }} {{ invoicePageCount }}</span>
+                      <button class="secondary" type="button" (click)="changeInvoicePage(1)" [disabled]="invoicePageIndex + 1 >= invoicePageCount">{{ t('app.invoiceList.next') }}</button>
+                    </div>
+                  </nav>
                 }
                 @if (invoicesHasMore) { <button class="secondary" type="button" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore">{{ invoicesLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_14d2jh7') }}</button> }
                 <p class="footnote">{{ t('ui.m_lpprue') }}</p>
               </section>
+              @if (selectedInvoiceForDetails) {
+                <div class="invoice-detail-backdrop" role="presentation" (click)="closeInvoiceDetails()"></div>
+                <aside #invoiceDetailDrawer class="invoice-detail-drawer" role="dialog" aria-modal="true" tabindex="-1"
+                  aria-labelledby="invoice-detail-heading" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'"
+                  (keydown)="handleInvoiceDetailKeydown($event)">
+                  <header class="invoice-detail-header">
+                    <div><span class="invoice-detail-eyebrow">{{ t('app.invoiceList.detailTitle') }}</span>
+                      <h2 id="invoice-detail-heading"><bdi dir="ltr">{{ selectedInvoiceDetail?.invoice_number || selectedInvoiceForDetails.invoice_number }}</bdi></h2></div>
+                    <button #invoiceDetailClose class="icon-button invoice-detail-close" type="button"
+                      [attr.aria-label]="t('app.invoiceList.close')" [attr.title]="t('app.invoiceList.close')"
+                      (click)="closeInvoiceDetails()">×</button>
+                  </header>
+                  @if (invoiceDetailLoading) {
+                    <aba-state-message kind="loading" [description]="t('app.invoiceList.loadingDetails')" />
+                  } @else if (invoiceDetailError) {
+                    <aba-state-message kind="error" [description]="invoiceDetailError" />
+                  } @else if (selectedInvoiceDetail; as detail) {
+                    <div class="invoice-detail-meta">
+                      <div><span>{{ t('app.invoiceList.customer') }}</span><strong>{{ customerNameForInvoice(detail.customer_id) }}</strong></div>
+                      <div><span>{{ t('app.invoiceList.date') }}</span><strong><bdi dir="ltr">{{ detail.issue_date ? formatRecordDate(detail.issue_date, 'date') : (detail.created_at ? formatRecordDate(detail.created_at, 'date') : '—') }}</bdi></strong></div>
+                      <div><span>{{ t('app.invoiceList.status') }}</span><strong class="invoice-status-badge"
+                        [class.status-draft]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'draft'"
+                        [class.status-issued]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'issued'"
+                        [class.status-void]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'void'"
+                        [class.status-paid]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'paid'"
+                        [class.status-partial]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'partial'"
+                        [class.status-unpaid]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'unpaid'">{{ invoiceCardStatusLabel(selectedInvoiceForDetails!) }}</strong></div>
+                    </div>
+                    <div class="invoice-detail-lines-wrap">
+                      <table class="invoice-detail-lines" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
+                        <thead><tr><th scope="col">{{ t('app.invoiceList.lineItem') }}</th><th scope="col">{{ t('app.invoiceList.quantity') }}</th><th scope="col">{{ t('app.invoiceList.unitPrice') }}</th><th scope="col">{{ t('app.invoiceList.lineTotal') }}</th></tr></thead>
+                        <tbody>@for (line of detail.lines; track line.id) {
+                          <tr><td>{{ line.description }}</td><td><bdi dir="ltr">{{ formatNumber(line.quantity) }}</bdi></td>
+                            <td><bdi dir="ltr">{{ formatNumber(line.unit_price) }} {{ detail.currency_code }}</bdi></td>
+                            <td><bdi dir="ltr">{{ formatNumber(line.line_total) }} {{ detail.currency_code }}</bdi></td></tr>
+                        }</tbody>
+                      </table>
+                    </div>
+                    <dl class="invoice-detail-totals">
+                      <div><dt>{{ t('app.invoiceList.subtotal') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.subtotal ?? '0') }} {{ detail.currency_code }}</bdi></dd></div>
+                      <div><dt>{{ t('app.invoiceList.discount') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.discount_total ?? '0') }} {{ detail.currency_code }}</bdi></dd></div>
+                      <div><dt>{{ t('app.invoiceList.tax') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.tax_total ?? '0') }} {{ detail.currency_code }}</bdi></dd></div>
+                      <div class="invoice-detail-grand-total"><dt>{{ t('app.invoiceList.total') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.total) }} {{ detail.currency_code }}</bdi></dd></div>
+                    </dl>
+                    @if (detail.notes) { <section class="invoice-detail-notes"><h3>{{ t('app.invoiceList.notes') }}</h3><p>{{ detail.notes }}</p></section> }
+                    <footer class="invoice-detail-actions">
+                      @if (detail.status === 'draft') {
+                        <button class="primary" type="button" (click)="editInvoiceFromDetails()">{{ t('ui.m_s21yyp') }}</button>
+                        @if (business?.role === 'owner') {
+                          <button class="secondary" type="button" (click)="issueInvoiceFromDetails()">{{ t('ui.m_ninief') }}</button>
+                          <button class="secondary danger" type="button" (click)="voidInvoiceFromDetails($event)">{{ t('ui.m_lnwycg') }}</button>
+                        }
+                      } @else if (detail.status === 'issued') {
+                        @if (business?.role === 'owner' && hasOutstandingBalance(selectedInvoiceForDetails!)) {
+                          <button class="primary" type="button" (click)="payInvoiceFromDetails()">{{ t('ui.m_1r6bzbj') }}</button>
+                        }
+                        <button class="secondary" type="button" (click)="printInvoiceFromDetails()">{{ t('ui.m_qskvru') }}</button>
+                        @if (business?.role === 'owner') { <button class="secondary danger" type="button" (click)="voidInvoiceFromDetails($event)">{{ t('ui.m_lnwycg') }}</button> }
+                      }
+                      <button class="secondary" type="button" (click)="closeInvoiceDetails()">{{ t('app.invoiceList.close') }}</button>
+                    </footer>
+                  }
+                </aside>
+              }
             }
 
             @if (tab === 'payments' && business?.role !== 'owner') {
@@ -1196,6 +1323,17 @@ export class AppComponent implements OnInit, OnDestroy {
   recurringSearch = '';
   notificationSearch = '';
   invoiceStatusFilter: 'all' | 'draft' | 'issued' | 'void' = 'all';
+  invoiceDensity: 'comfortable' | 'compact' = 'comfortable';
+  invoiceSortKey: InvoiceSortKey = 'issue_date';
+  invoiceSortDirection: InvoiceSortDirection = 'desc';
+  invoicePageIndex = 0;
+  readonly invoicePageSize = 10;
+  selectedInvoiceForDetails: Invoice | null = null;
+  selectedInvoiceDetail: InvoiceDetail | null = null;
+  invoiceDetailLoading = false;
+  invoiceDetailError = '';
+  private invoiceDetailRequestVersion = 0;
+  private invoiceDetailTrigger: HTMLElement | null = null;
   payments: Payment[] = [];
   expenses: Expense[] = [];
   suppliers: Supplier[] = [];
@@ -1318,10 +1456,11 @@ export class AppComponent implements OnInit, OnDestroy {
   chatCopyStatus: { index: number; success: boolean } | null = null;
   keyboardOpen = false;
   mobileMoreOpen = false;
-  mobileMoreSearch = '';
   homeModuleSearch = '';
   @ViewChild('mobileMoreTrigger') private mobileMoreTrigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('mobileMoreMenu') private mobileMoreMenu?: ElementRef<HTMLElement>;
+  @ViewChild('invoiceDetailClose') private invoiceDetailCloseButton?: ElementRef<HTMLButtonElement>;
+  @ViewChild('invoiceDetailDrawer') invoiceDetailDrawer?: ElementRef<HTMLElement>;
   @ViewChild('chatLog') private chatLog?: ElementRef<HTMLElement>;
   isInstalled = false;
   installHelp = false;
@@ -1423,6 +1562,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   showCustomerInvoices(customerId: string): void {
+    this.invoicePageIndex = 0;
     this.invoiceFilterCustomerId = customerId;
     this.setTab('invoices');
   }
@@ -1497,7 +1637,151 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   get filteredInvoices(): Invoice[] {
-    return filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId, status => this.invoiceStatusLabel(status), id => this.customerNameForInvoice(id), this.localization.locale);
+    const filtered = filterInvoices(this.invoices, this.invoiceSearch, this.invoiceStatusFilter, this.invoiceFilterCustomerId,
+      status => this.invoiceStatusLabel(status), id => this.customerNameForInvoice(id), this.localization.locale);
+    return sortInvoiceRecords(filtered, this.invoiceSortKey, this.invoiceSortDirection,
+      id => this.customerNameForInvoice(id), this.localization.locale);
+  }
+
+  get visibleInvoices(): Invoice[] {
+    return paginateInvoiceRecords(this.filteredInvoices, this.invoicePageIndex, this.invoicePageSize).items;
+  }
+
+  get invoicePageCount(): number {
+    return paginateInvoiceRecords(this.filteredInvoices, this.invoicePageIndex, this.invoicePageSize).pageCount;
+  }
+
+  get invoicePageStart(): number {
+    return paginateInvoiceRecords(this.filteredInvoices, this.invoicePageIndex, this.invoicePageSize).start;
+  }
+
+  get invoicePageEnd(): number {
+    return paginateInvoiceRecords(this.filteredInvoices, this.invoicePageIndex, this.invoicePageSize).end;
+  }
+
+  get invoiceStatusCounts(): InvoiceStatusCounts {
+    const matching = filterInvoices(this.invoices, this.invoiceSearch, 'all', this.invoiceFilterCustomerId,
+      status => this.invoiceStatusLabel(status), id => this.customerNameForInvoice(id), this.localization.locale);
+    return countInvoiceStatuses(matching);
+  }
+
+  setInvoiceStatusFilter(status: 'all' | 'draft' | 'issued' | 'void'): void {
+    this.invoiceStatusFilter = status;
+    this.invoicePageIndex = 0;
+  }
+
+  async openInvoiceDetails(invoice: Invoice, event?: Event): Promise<void> {
+    const businessId = this.business?.id;
+    if (!businessId) return;
+    const requestVersion = ++this.invoiceDetailRequestVersion;
+    const trigger = event?.currentTarget;
+    this.invoiceDetailTrigger = trigger instanceof HTMLElement ? trigger : null;
+    this.selectedInvoiceForDetails = invoice;
+    this.selectedInvoiceDetail = null;
+    this.invoiceDetailError = '';
+    this.invoiceDetailLoading = true;
+    setTimeout(() => this.invoiceDetailCloseButton?.nativeElement.focus(), 0);
+    try {
+      const detail = await this.api.invoiceDetail(businessId, invoice.id);
+      if (requestVersion !== this.invoiceDetailRequestVersion || this.business?.id !== businessId
+        || this.selectedInvoiceForDetails?.id !== invoice.id) return;
+      this.selectedInvoiceDetail = detail;
+    } catch (error) {
+      if (requestVersion === this.invoiceDetailRequestVersion && this.business?.id === businessId) {
+        this.invoiceDetailError = this.message(error);
+      }
+    } finally {
+      if (requestVersion === this.invoiceDetailRequestVersion) this.invoiceDetailLoading = false;
+    }
+  }
+
+  handleInvoiceDetailKeydown(event: KeyboardEvent): void {
+    if (!this.selectedInvoiceForDetails || event.key !== 'Tab') return;
+    const drawer = this.invoiceDetailDrawer?.nativeElement;
+    if (!drawer) return;
+    const focusable: HTMLElement[] = Array.from(drawer.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )).filter((element: HTMLElement) => element.getAttribute('aria-hidden') !== 'true' && element.getClientRects().length > 0);
+    if (!focusable.length) {
+      event.preventDefault();
+      drawer.focus();
+      return;
+    }
+    const first: HTMLElement = focusable[0];
+    const last: HTMLElement = focusable[focusable.length - 1];
+    const active = document.activeElement;
+    if (!drawer.contains(active)) {
+      event.preventDefault();
+      (event.shiftKey ? last : first).focus();
+    } else if (event.shiftKey && (active === first || active === drawer)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  closeInvoiceDetails(restoreFocus = true): void {
+    const trigger = this.invoiceDetailTrigger;
+    this.invoiceDetailRequestVersion += 1;
+    this.selectedInvoiceForDetails = null;
+    this.selectedInvoiceDetail = null;
+    this.invoiceDetailLoading = false;
+    this.invoiceDetailError = '';
+    this.invoiceDetailTrigger = null;
+    if (restoreFocus) queueMicrotask(() => { if (trigger?.isConnected) trigger.focus(); });
+  }
+
+  editInvoiceFromDetails(): void {
+    const invoice = this.selectedInvoiceForDetails;
+    this.closeInvoiceDetails(false);
+    if (invoice) void this.editInvoice(invoice);
+  }
+
+  issueInvoiceFromDetails(): void {
+    const invoice = this.selectedInvoiceForDetails;
+    this.closeInvoiceDetails(false);
+    if (invoice) void this.issueInvoice(invoice);
+  }
+
+  payInvoiceFromDetails(): void {
+    const invoice = this.selectedInvoiceForDetails;
+    this.closeInvoiceDetails(false);
+    if (invoice) this.payInvoice(invoice);
+  }
+
+  printInvoiceFromDetails(): void {
+    const invoice = this.selectedInvoiceForDetails;
+    this.closeInvoiceDetails(false);
+    if (invoice) void this.printInvoice(invoice);
+  }
+
+  voidInvoiceFromDetails(event: MouseEvent): void {
+    const invoice = this.selectedInvoiceForDetails;
+    if (invoice) this.requestInvoiceVoid(invoice, event);
+  }
+
+  invoiceSortAria(key: InvoiceSortKey): 'ascending' | 'descending' | 'none' {
+    return this.invoiceSortKey !== key ? 'none' : this.invoiceSortDirection === 'asc' ? 'ascending' : 'descending';
+  }
+
+  invoiceSortIndicator(key: InvoiceSortKey): string {
+    return this.invoiceSortKey !== key ? '↕' : this.invoiceSortDirection === 'asc' ? '↑' : '↓';
+  }
+
+  toggleInvoiceSort(key: InvoiceSortKey): void {
+    if (this.invoiceSortKey === key) this.invoiceSortDirection = this.invoiceSortDirection === 'asc' ? 'desc' : 'asc';
+    else { this.invoiceSortKey = key; this.invoiceSortDirection = key === 'issue_date' ? 'desc' : 'asc'; }
+    this.invoicePageIndex = 0;
+  }
+
+  toggleInvoiceDensity(): void {
+    this.invoiceDensity = this.invoiceDensity === 'compact' ? 'comfortable' : 'compact';
+  }
+
+  changeInvoicePage(delta: number): void {
+    this.invoicePageIndex = Math.max(0, Math.min(this.invoicePageCount - 1, this.invoicePageIndex + delta));
   }
 
   get filteredSuppliers(): Supplier[] {
@@ -1965,6 +2249,7 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   private clearWorkspaceData(): void {
+    this.closeInvoiceDetails(false);
     this.invoiceSaveGuard.invalidate();
     this.invoiceEditRequestGuard.invalidate();
     this.invoiceMutationGuard.invalidate();
@@ -2294,6 +2579,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const page = firstRecordPage(items, WORKSPACE_RECORD_PAGE_SIZE);
     this.invoiceListLoadGuard.invalidate();
     this.invoices = page.records;
+    this.invoicePageIndex = 0;
     this.invoiceOffset = page.nextOffset;
     this.invoicesHasMore = page.hasMore;
     this.invoicesLoadingMore = false;
@@ -2518,7 +2804,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
   toggleMobileMore(): void {
-    if (this.mobileMoreOpen) this.mobileMoreSearch = '';
     this.mobileMoreOpen = !this.mobileMoreOpen;
   }
 
@@ -2561,15 +2846,17 @@ export class AppComponent implements OnInit, OnDestroy {
 
   @HostListener('document:keydown.escape')
   closeMobileMoreOnEscape(): void {
+    if (this.selectedInvoiceForDetails) {
+      this.closeInvoiceDetails();
+      return;
+    }
     if (!this.mobileMoreOpen) return;
     this.mobileMoreOpen = false;
-    this.mobileMoreSearch = '';
     this.mobileMoreTrigger?.nativeElement.focus();
   }
 
   /** Restore keyboard focus to the More trigger after a secondary destination is selected. */
   selectMobileMoreTab(tab: Tab): void {
-    this.mobileMoreSearch = '';
     this.setTab(tab);
     this.mobileMoreTrigger?.nativeElement.focus();
   }
@@ -2582,7 +2869,6 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.mobileMoreTrigger?.nativeElement.contains(target)
       || this.mobileMoreMenu?.nativeElement.contains(target)) return;
     this.mobileMoreOpen = false;
-    this.mobileMoreSearch = '';
   }
 
   async installApp(): Promise<void> {
@@ -3327,25 +3613,33 @@ export class AppComponent implements OnInit, OnDestroy {
       .filter(group => group.modules.length > 0);
   }
 
-  isMobileMoreTab(tab: Tab): boolean {
-    return isMobileMoreTabValue(tab);
+  /** The mobile dock and desktop core group share the same role-filtered catalogue icons and order. */
+  get primaryNavigationModules(): readonly WorkspaceModuleCard[] {
+    const byTab = new Map(this.homeModuleCards.map(module => [module.tab, module] as const));
+    return (['overview', 'invoices', 'customers'] as const).flatMap(tab => {
+      const module = byTab.get(tab);
+      return module ? [module] : [];
+    });
   }
 
-  /** Search only the already-authorized mobile destinations; this is navigation UX, not access control. */
-  get filteredMobileMoreGroups(): readonly (WorkspaceModuleGroup & { modules: readonly WorkspaceModuleCard[] })[] {
-    const query = this.mobileMoreSearch.trim().normalize('NFKC').toLocaleLowerCase(this.localization.locale);
-    if (!query) return this.mobileMoreGroups;
-    return this.mobileMoreGroups.map(group => {
-      const locale = this.language === 'ar' ? 'ar-EG' : 'en';
-      const groupMatches = this.t(group.titleKey).normalize('NFKC').toLocaleLowerCase(locale).includes(query);
-      const modules = groupMatches ? group.modules : filterWorkspaceModules(
-        group.modules,
-        this.mobileMoreSearch,
-        locale,
-        key => this.t(key),
-      );
-      return { ...group, modules };
-    }).filter(group => group.modules.length > 0);
+  /** Desktop navigation mirrors the mobile More taxonomy while retaining the three primary dock destinations. */
+  get desktopNavigationGroups(): readonly { id: string; titleKey: string; modules: readonly WorkspaceModuleCard[] }[] {
+    const accessibleModules = this.homeModuleCards;
+    return [
+      {
+        id: 'workspace-core',
+        titleKey: 'ui.m_criw1m',
+        modules: this.primaryNavigationModules,
+      },
+      ...WORKSPACE_MODULE_GROUPS.map(group => ({
+        ...group,
+        modules: accessibleModules.filter(module => module.mobileGroup === group.id),
+      })),
+    ].filter(group => group.modules.length > 0);
+  }
+
+  isMobileMoreTab(tab: Tab): boolean {
+    return isMobileMoreTabValue(tab);
   }
 
   setTab(tab: Tab): void {
@@ -3355,6 +3649,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.mobileMoreOpen = false;
       return;
     }
+    if (tab !== 'invoices' && this.selectedInvoiceForDetails) this.closeInvoiceDetails(false);
     if (this.operationsMessageTab && this.operationsMessageTab !== tab) {
       this.operationsMessage = '';
       this.operationsMessageTab = null;
@@ -4215,6 +4510,7 @@ export class AppComponent implements OnInit, OnDestroy {
       if (!isCurrent()) return;
       this.pendingInvoiceVoid = null;
       this.confirmationReturnFocus = null;
+      if (this.selectedInvoiceForDetails?.id === invoice.id) this.closeInvoiceDetails(false);
       if (this.editingInvoiceId === invoice.id) this.cancelInvoiceEdit();
       this.invoiceMessage = this.t('ui.m_15f0lzn');
       try {

@@ -362,7 +362,7 @@ test('switching workspaces clears a pending purchase approval confirmation', asy
   await page.locator('.workspace-bar select').selectOption('business-b', { force: true });
   await expect(page.locator('#workspace-current-name')).toHaveText('Beta Retail');
   await expect(page.locator('.pw__confirm')).toHaveCount(0);
-  await page.getByRole('button', { name: 'Home', exact: true }).click();
+  await page.locator('.desktop-sidebar-groups').getByRole('button', { name: 'Overview', exact: true }).click();
   await openPurchases(page, false);
   expect(harness.apiRequests.filter(item => item.method === 'POST' && item.path.endsWith('/approve'))).toHaveLength(0);
   expect(harness.uncaughtErrors).toEqual([]);

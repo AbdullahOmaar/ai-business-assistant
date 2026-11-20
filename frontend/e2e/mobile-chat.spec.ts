@@ -248,6 +248,22 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({ items: [], total: 0, offset: 0 }) });
       return;
     }
+    // The products destination mounts the inventory movement ledger and the
+    // invoices destination mounts credit-note issuance; both legitimately
+    // read these tenant-scoped lists. Answer with realistic empty pages so
+    // the destinations render without an error state.
+    if (path === '/api/v1/businesses/business-1/inventory/movements' && request.method() === 'GET') {
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({ items: [], limit: 50, offset: 0, has_more: false }) });
+      return;
+    }
+    if (path === '/api/v1/businesses/business-1/sales-returns' && request.method() === 'GET') {
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({ items: [], limit: 100, offset: 0 }) });
+      return;
+    }
+    if (path === '/api/v1/businesses/business-1/credit-notes' && request.method() === 'GET') {
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({ items: [], limit: 100, offset: 0 }) });
+      return;
+    }
     if (path === '/api/v1/businesses/business-1/reports/data-integrity' && request.method() === 'GET') {
       const emptyFinding = { total: 0, items: [] };
       await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({
@@ -429,7 +445,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         headerControlHeights: Array.from(document.querySelectorAll(
           '.mobile-app-header .brand-button, .mobile-app-header .assistant-shortcut, .mobile-app-header .icon-button, .mobile-app-header .profile-trigger'
         )).map(control => control.getBoundingClientRect().height),
-        dockItemHeights: Array.from(document.querySelectorAll('.sidebar > .nav-item'))
+        dockItemHeights: Array.from(document.querySelectorAll('.sidebar .mobile-dock-items > .nav-item'))
           .filter(item => getComputedStyle(item).display !== 'none')
           .map(item => item.getBoundingClientRect().height),
         dockHeight: document.querySelector('.sidebar')?.getBoundingClientRect().height ?? 0,
@@ -698,11 +714,14 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
 
     for (const destination of routeDestinations) {
       const expectedTitle = language === 'ar' ? destination.titleAr : destination.titleEn;
-      const homeNavLabel = language === 'ar' ? 'الرئيسية' : 'Home';
+      const homeNavLabel = language === 'ar' ? 'الرئيسية' : 'Overview';
       const homeHeading = language === 'ar' ? 'الرئيسية' : 'Overview';
       const cardLabel = language === 'ar' ? ('cardAr' in destination ? destination.cardAr : destination.titleAr)
         : ('cardEn' in destination ? destination.cardEn : destination.titleEn);
-      const homeButton = page.locator('.sidebar').getByRole('button', { name: homeNavLabel, exact: true });
+      // The overview nav-item is titled 'Overview' in English since the
+      // catalogue-driven nav (#412). The dock and the desktop groups each
+      // render it, so take the visible one.
+      const homeButton = page.locator('.sidebar button.nav-item:visible').filter({ hasText: homeNavLabel });
       await homeButton.focus();
       await expect(homeButton).toBeFocused();
       await page.keyboard.press('Enter');
@@ -734,7 +753,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       await expect(routeSkeletons, destination.tab + ' loading skeleton').toHaveCount(0, { timeout: 15_000 });
       await expect.poll(() => pendingWorkspaceRequests.size, { timeout: 15_000 })
         .toBe(0);
-      await expect(page.locator('.main .panel:visible, .main [aria-label="Purchase order workspace"]:visible, .main .aba-state-message--empty:visible, .main .aba-state-message--info:visible').first(),
+      await expect(page.locator('.main .panel:visible, .main [aria-label="Purchase order workspace"]:visible, .main .aba-state-message--empty:visible, .main .aba-state-message--info:visible, .main .pw__state:visible').first(),
         destination.tab + ' rendered content or empty state').toBeVisible();
       await expect(page.locator('[role="alert"]:visible'), destination.tab + ' rendered error state')
         .toHaveCount(0);
@@ -831,7 +850,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   };
 
   const assertTabletRail = async (language: 'ar' | 'en') => {
-    const homeLabel = language === 'ar' ? 'الرئيسية' : 'Home';
+    const homeLabel = language === 'ar' ? 'الرئيسية' : 'Overview';
     const homeHeading = language === 'ar' ? 'الرئيسية' : 'Overview';
     const direction = language === 'ar' ? 'rtl' : 'ltr';
 
@@ -1380,6 +1399,31 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
       });
       return;
     }
+    // Staff may read the inventory ledger, sales returns and credit notes of
+    // their own business (owner-only applies to issuance and mutations).
+    // Answer these legitimate tenant reads with realistic empty pages so
+    // they do not fall through to the unexpected-request catch-all below.
+    if (path === '/api/v1/businesses/staff-business-1/inventory/movements' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200, headers: corsHeaders,
+        body: JSON.stringify({ items: [], limit: 50, offset: 0, has_more: false }),
+      });
+      return;
+    }
+    if (path === '/api/v1/businesses/staff-business-1/sales-returns' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200, headers: corsHeaders,
+        body: JSON.stringify({ items: [], limit: 100, offset: 0 }),
+      });
+      return;
+    }
+    if (path === '/api/v1/businesses/staff-business-1/credit-notes' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200, headers: corsHeaders,
+        body: JSON.stringify({ items: [], limit: 100, offset: 0 }),
+      });
+      return;
+    }
     unexpectedRequests.push(request.method() + ' ' + path);
     await route.fulfill({ status: 404, headers: corsHeaders, body: JSON.stringify({ detail: 'Unexpected mocked API request.' }) });
   });
@@ -1448,9 +1492,24 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
     await expect(menu.getByRole('button', { name: available })).toBeVisible();
   }
 
-  // Focusing More search opens the virtual keyboard on phones. Keep the
-  // dock/menu above that keyboard so filtered destinations remain tappable.
-  await menu.getByRole('searchbox', { name: /Search sections/ }).fill('Products & inventory');
+  // More is navigation-only: the owner-requested sections search is absent.
+  await expect(menu.locator('input[type="search"]')).toHaveCount(0);
+  const menuHitTest = await menu.evaluate(element => {
+    const rect = element.getBoundingClientRect();
+    const hit = document.elementFromPoint(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    return Boolean(hit && hit.closest('.mobile-more-menu') === element);
+  });
+  expect(menuHitTest, 'the visible More sheet must win the actual viewport paint-order hit test').toBe(true);
+  const menuOverlay = await menu.evaluate(element => ({
+    inSidebar: Boolean(element.closest('aside.sidebar')),
+    overlayZIndex: Number.parseInt(getComputedStyle(element.closest('.mobile-more-overlay')!).zIndex, 10),
+    menuZIndex: Number.parseInt(getComputedStyle(element).zIndex, 10),
+  }));
+  expect(menuOverlay.inSidebar).toBe(false);
+  expect(menuOverlay.overlayZIndex).toBeGreaterThanOrEqual(80);
+  expect(menuOverlay.menuZIndex).toBeGreaterThan(menuOverlay.overlayZIndex);
+
+  // Keep the menu's keyboard-inset layout covered independently of a removed search field.
   await page.locator('.shell').evaluate(shell => {
     shell.classList.add('keyboard-open');
     document.documentElement.style.setProperty('--aba-keyboard-inset', '300px');
@@ -1465,17 +1524,15 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
       bottom: Number.parseFloat(getComputedStyle(element).bottom),
       bottomGap: window.innerHeight - rect.bottom,
       top: rect.top,
-      sidebarBottom: Number.parseFloat(getComputedStyle(element.parentElement!).bottom),
-      sidebarPointerEvents: getComputedStyle(element.parentElement!).pointerEvents,
+      overlayPointerEvents: getComputedStyle(element.closest('.mobile-more-overlay')!).pointerEvents,
     };
   });
   // The blurred sidebar is the fixed-position containing block: apply the
   // keyboard inset to the dock once, then leave the menu offset dock-relative.
-  expect(keyboardMenuLayout.bottom).toBe(88);
+  expect(keyboardMenuLayout.bottom).toBe(388);
   expect(keyboardMenuLayout.bottomGap).toBeGreaterThanOrEqual(388);
   expect(keyboardMenuLayout.top).toBeGreaterThanOrEqual(0);
-  expect(keyboardMenuLayout.sidebarBottom).toBe(300);
-  expect(keyboardMenuLayout.sidebarPointerEvents).toBe('auto');
+  expect(keyboardMenuLayout.overlayPointerEvents).toBe('none');
   await keyboardProductAction.click();
   await expect(menu).toHaveCount(0);
   await expect(page.getByRole('heading', { name: /Products & inventory/ })).toBeVisible();

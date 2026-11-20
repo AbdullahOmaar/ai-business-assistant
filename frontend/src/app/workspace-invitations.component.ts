@@ -10,6 +10,7 @@ import type { BusinessInvitation, BusinessInvitationCreated } from './api.servic
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
+        @if (mode === 'manage' || acceptVisible || error || success) {
     <section class="team-card" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
       @if (mode === 'manage') {
         <header class="team-heading">
@@ -53,6 +54,7 @@ import type { BusinessInvitation, BusinessInvitationCreated } from './api.servic
       @if (error) { <p class="feedback error" role="alert">{{ error }}</p> }
       @if (success) { <p class="feedback success" role="status">{{ success }}</p> }
     </section>
+    }
   `,
   styles: [`
     :host{display:block}.team-card{background:var(--aba-color-surface,#fff);border:1px solid var(--aba-color-border,#e5eaf1);border-radius:18px;padding:clamp(16px,3vw,24px);color:var(--aba-color-text-primary,#172033);box-shadow:var(--aba-shadow-card,0 2px 8px #00000008)}

@@ -14,6 +14,7 @@ const app = expandTranslationCalls(
 const workspace = expandTranslationCalls(readFileSync(new URL('./product-workspace.component.ts', import.meta.url), 'utf8'));
 const workspaceSource = readFileSync(new URL('./product-workspace.component.ts', import.meta.url), 'utf8');
 const productEditor = readFileSync(new URL('./product-editor.component.ts', import.meta.url), 'utf8');
+const productProfile = readFileSync(new URL('./product-profile.component.ts', import.meta.url), 'utf8');
 
 test('Products uses a dedicated catalogue presentation, not the shared generic record table', () => {
   assert.match(component, /selector: 'aba-product-catalog'/);
@@ -121,4 +122,12 @@ test('empty product catalogue uses a no-products state instead of a detail-selec
   assert.ok(workspaceSource.includes("[emptyTitle]=\"t('ui.m_12dkqai')\""));
   assert.ok(workspaceSource.includes('[emptyDescription]="\'\'"'));
   assert.doesNotMatch(workspaceSource, /productProfile\.emptyTitle/);
+});
+
+
+test('stock quantities use one LTR-isolated, tabular numeric treatment across catalogue and profile', () => {
+  assert.match(component, /product\.stock_quantity \?\? '—'/);
+  assert.match(component, /<bdi dir="ltr">\{\{ product\.stock_quantity \?\? '—' \}\}<\/bdi>/);
+  assert.match(productProfile, /class="product-profile__stock"[^>]*>@if \(record\.is_stock_tracked\) \{ <bdi dir="ltr">/);
+  assert.match(productProfile, /product-profile__stock bdi\{font-variant-numeric:tabular-nums/);
 });

@@ -149,7 +149,7 @@ test('applies an initial workspace deep link after authentication and business r
 test('browser Back and Forward restore the matching workspace destination', async ({ page }) => {
   const errors = await signInAt(page, '/workspace');
   await expect(page.locator('.dashboard-period')).toBeVisible();
-  await page.locator('button.nav-item').filter({ hasText: 'Customers' }).click();
+  await page.locator('.desktop-sidebar-groups button.nav-item').filter({ hasText: 'Customers' }).click();
   await expect(page).toHaveURL(/\/workspace\/customers$/);
   await expect(page.locator('.customer-directory')).toBeVisible();
 
@@ -167,5 +167,29 @@ test('STAFF direct access to an OWNER-only workspace route falls back to Overvie
   const errors = await signInAt(page, '/workspace/payments', 'staff');
   await expect(page).toHaveURL(/\/workspace$/);
   await expect(page.locator('.dashboard-period')).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
+
+test('desktop navigation remains scroll-reachable at a 993px viewport height', async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 993 });
+  const errors = await signInAt(page, '/workspace');
+  const navigation = page.locator('.sidebar-nav-scroll');
+  await expect(navigation).toBeVisible();
+
+  const dimensions = await navigation.evaluate(element => ({
+    scrollHeight: element.scrollHeight,
+    clientHeight: element.clientHeight,
+    overflowY: getComputedStyle(element).overflowY,
+  }));
+  expect(dimensions.overflowY).toBe('auto');
+  expect(dimensions.scrollHeight).toBeGreaterThan(dimensions.clientHeight);
+
+  await navigation.evaluate(element => { element.scrollTop = element.scrollHeight; });
+  const finalDestination = navigation.getByRole('button', { name: 'App guide & versions' });
+  await expect(finalDestination).toBeInViewport();
+  await finalDestination.click();
+  await expect(page).toHaveURL(/\/workspace\/release-guide$/);
+  await expect(finalDestination).toHaveAttribute('aria-current', 'page');
   expect(errors).toEqual([]);
 });

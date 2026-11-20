@@ -93,7 +93,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
                 <span class="inventory-ledger__type">{{ typeLabel(movement.movement_type) }}</span>
               </div>
               <div class="inventory-ledger__quantity" [class.inventory-ledger__quantity--negative]="isNegative(movement.quantity_delta)" [class.inventory-ledger__quantity--positive]="!isNegative(movement.quantity_delta)">
-                {{ formatQuantity(movement.quantity_delta) }} <small>{{ movement.product.unit || copy().unit }}</small>
+                <bdi dir="ltr">{{ formatQuantity(movement.quantity_delta) }}</bdi> <small>{{ movement.product.unit || copy().unit }}</small>
               </div>
               <p class="inventory-ledger__reason">{{ movement.reason || copy().noReason }}</p>
               @if (movement.reference_type) { <p class="inventory-ledger__reference">{{ copy().reference }}: {{ referenceTypeLabel(movement.reference_type) }}</p> }
@@ -121,7 +121,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
                   <td><time [attr.datetime]="movement.created_at">{{ formatDate(movement.created_at) }}</time></td>
                   <td><strong>{{ movement.product.name }}</strong>@if (movement.product.sku) { <small>{{ movement.product.sku }}</small> }</td>
                   <td>{{ typeLabel(movement.movement_type) }}</td>
-                  <td class="inventory-ledger__table-quantity" [class.inventory-ledger__quantity--negative]="isNegative(movement.quantity_delta)" [class.inventory-ledger__quantity--positive]="!isNegative(movement.quantity_delta)">{{ formatQuantity(movement.quantity_delta) }} {{ movement.product.unit || copy().unit }}</td>
+                  <td class="inventory-ledger__table-quantity" [class.inventory-ledger__quantity--negative]="isNegative(movement.quantity_delta)" [class.inventory-ledger__quantity--positive]="!isNegative(movement.quantity_delta)"><bdi dir="ltr">{{ formatQuantity(movement.quantity_delta) }}</bdi> {{ movement.product.unit || copy().unit }}</td>
                   <td>{{ movement.reason || copy().noReason }}</td>
                   <td>{{ movement.reference_type ? referenceTypeLabel(movement.reference_type) : '—' }}</td>
                 </tr>
@@ -162,7 +162,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
     .inventory-ledger__card-top,.inventory-ledger__meta,.inventory-ledger__footer{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
     .inventory-ledger__card-top strong{overflow-wrap:anywhere}
     .inventory-ledger__type{padding:4px 8px;border-radius:999px;background:var(--aiba-soft,#f1f5f9);font-size:11px}
-    .inventory-ledger__quantity{font-size:20px;font-weight:850;font-variant-numeric:tabular-nums;direction:ltr;text-align:start}
+    .inventory-ledger__quantity{font-size:20px;font-weight:850;font-variant-numeric:tabular-nums;direction:ltr;text-align:start;unicode-bidi:isolate}.inventory-ledger__table-quantity{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
     .inventory-ledger__quantity small{font-size:11px;font-weight:600;color:var(--aiba-muted,#64748b)}
     .inventory-ledger__quantity--negative{color:var(--aiba-danger,#b91c1c)}
     .inventory-ledger__quantity--positive{color:var(--aiba-success,#15803d)}

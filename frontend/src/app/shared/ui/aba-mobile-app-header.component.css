@@ -54,12 +54,14 @@
 .page-copy { flex: 1 1 auto; min-width: 0; }
 .greeting { display: none; }
 .page-copy h1 {
-  display: -webkit-box;
+  display: block;
   min-width: 0;
   margin: 0;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  overflow: visible;
+  white-space: normal;
+  -webkit-box-orient: initial;
+  -webkit-line-clamp: unset;
+  text-overflow: clip;
   color: var(--aba-color-text-primary, #172033);
   font-size: clamp(16px, 4.5vw, 19px);
   font-weight: 800;
@@ -249,4 +251,13 @@
 @media (prefers-reduced-motion: reduce) {
   .mobile-app-header button:not(:disabled) { transition: none; }
   .mobile-app-header button:not(:disabled):active { transform: none; }
+}
+
+/* Icon-only actions retain an accessible name and a visible interactive surface. */
+.header-actions :is(.icon-button,.profile-trigger){background:var(--aba-color-surface-subtle,#f8fafc);border-color:var(--aba-color-border,#e5eaf1)}
+.header-actions :is(.icon-button,.profile-trigger):hover{background:var(--aba-color-surface-hover,#f1f5f9);border-color:var(--aba-color-primary-border,#99f6e4)}
+@media(max-width:480px){
+  .assistant-shortcut{width:44px;max-width:44px;padding:0}
+  .assistant-shortcut span:last-child{display:none}
+  .page-copy h1{font-size:16px;line-height:1.25}
 }

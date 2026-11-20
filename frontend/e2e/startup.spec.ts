@@ -277,3 +277,62 @@ test('fails closed when API base URL contains only whitespace', async ({ page })
   await expect(page.getByRole('heading', { name: /اربط مساحة عملك الآمنة|Connect your secure workspace/ })).toBeVisible({ timeout: 20_000 });
   await expect(page.locator('input[type="email"], input[type="password"]')).toHaveCount(0);
 });
+
+
+test('opening release metadata stays aligned inside the splash card in RTL and LTR without a floating loading label', async ({ page }) => {
+  const holdSplash = async (targetPage: typeof page, language: 'ar' | 'en') => {
+    let releaseConfig!: () => void;
+    const configGate = new Promise<void>(resolve => { releaseConfig = resolve; });
+    await targetPage.addInitScript((locale: string) => {
+      window.localStorage.setItem('aba-language', locale);
+    }, language);
+    await targetPage.route('**/runtime-config.json', async route => {
+      await configGate;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          apiBaseUrl: '',
+          firebase: { apiKey: '', authDomain: '', projectId: '', appId: '' },
+        }),
+      });
+    });
+
+    await targetPage.goto('/');
+    const card = targetPage.locator('.auth-card');
+    const releaseMeta = card.locator('.splash-release-meta');
+    await expect(card).toBeVisible({ timeout: 20_000 });
+    await expect(releaseMeta).toBeVisible();
+    await expect(releaseMeta.locator('.splash-version')).toBeVisible();
+    await expect(releaseMeta.locator('.splash-build-time')).toBeVisible();
+    await expect(targetPage.locator('.shell')).toHaveAttribute('dir', language === 'ar' ? 'rtl' : 'ltr');
+    await expect(targetPage.locator('.global-loading')).toHaveCount(0);
+    await expect(targetPage.locator('.loading-label')).toHaveCount(0);
+
+    const layout = await releaseMeta.evaluate(element => {
+      const version = element.querySelector('.splash-version')?.getBoundingClientRect();
+      const buildTime = element.querySelector('.splash-build-time')?.getBoundingClientRect();
+      if (!version || !buildTime) return null;
+      return {
+        versionCenter: version.left + version.width / 2,
+        buildCenter: buildTime.left + buildTime.width / 2,
+        versionBottom: version.bottom,
+        buildTop: buildTime.top,
+      };
+    });
+    expect(layout).not.toBeNull();
+    expect(Math.abs(layout!.versionCenter - layout!.buildCenter)).toBeLessThan(2);
+    expect(layout!.buildTop).toBeGreaterThanOrEqual(layout!.versionBottom - 1);
+
+    releaseConfig();
+    await expect(targetPage.locator('.setup-card')).toBeVisible({ timeout: 20_000 });
+  };
+
+  await holdSplash(page, 'ar');
+  const ltrPage = await page.context().newPage();
+  try {
+    await holdSplash(ltrPage, 'en');
+  } finally {
+    await ltrPage.close();
+  }
+});

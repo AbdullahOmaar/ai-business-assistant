@@ -19,7 +19,7 @@ const catalogue = readFileSync(new URL('./workspace-module-catalog.ts', import.m
 
 test('employee and payroll UI is wired to the owner-only workspace tab on desktop and mobile', () => {
   assert.match(app, /type Tab = [^;]*'employees'/);
-  assert.match(app, /canAccessTab\('employees'\)/);
+  assert.match(catalogue, /tab: 'employees', mobileGroup: 'team-admin'/);
   assert.match(app, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
   assert.match(app, /get mobileMoreGroups\(\): readonly/);
   assert.match(access, /'employees'/);
@@ -28,7 +28,9 @@ test('employee and payroll UI is wired to the owner-only workspace tab on deskto
   assert.match(app, /canAccessTab\(tab: Tab\): boolean/);
   assert.match(app, /canAccessWorkspaceTab\(tab, this\.business\?\.role, this\.platformAdminAvailable\)/);
   assert.match(app, /if \(!this\.canAccessTab\(tab\)\)/);
-  assert.match(app, /@if \(canAccessTab\('employees'\)\)/);
+  assert.match(app, /get desktopNavigationGroups\(\): readonly/);
+  assert.match(app, /get mobileMoreGroups\(\): readonly/);
+  assert.match(app, /modules: accessibleModules\.filter\(module => module\.mobileGroup === group\.id\)/);
   assert.match(app, /<aba-employee-payroll \[businessId\]="business\.id"/);
 });
 
