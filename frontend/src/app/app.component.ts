@@ -225,7 +225,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             </nav>
           }
           
-          </nav>
+          
           
           </div>
           <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('ui.m_17dx7ed') }}<small>{{ t('ui.m_ab5ft9') }}</small></div>

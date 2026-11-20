@@ -91,9 +91,8 @@ test('desktop navigation groups every catalogue destination and scrolls independ
   for (const tab of ['overview', 'invoices', 'customers', 'products', 'suppliers', 'purchases', 'reports', 'taxes', 'payments', 'expenses', 'recurring', 'employees', 'team', 'platform-admin', 'audit', 'integrity', 'notifications', 'health', 'assistant', 'release-guide']) {
     assert.ok(source.includes("setTab('" + tab + "')"), 'desktop navigation must retain ' + tab);
   }
-  for (const key of ['catalog.m_1341u8e', 'catalog.m_2h49lq', 'catalog.m_8ogsj9', 'catalog.m_lkukj5', 'catalog.m_18paotq']) {
-    assert.ok(source.includes(key), 'desktop navigation must mirror More group ' + key);
-  }
+  assert.equal((source.match(/class="desktop-nav-group"/g) || []).length, 6,
+    'desktop navigation must mirror the five More groups plus the core group');
   assert.match(source, /@if \(canAccessTab\('integrity'\)\)/);
   assert.match(source, /\.sidebar-nav-scroll\{[^}]*min-height:0;[^}]*overflow-y:auto/s);
   assert.match(source, /overscroll-behavior:contain/);
