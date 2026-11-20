@@ -1697,6 +1697,34 @@ test('inventory movement API uses authenticated tenant-scoped GET with bounded r
 });
 
 
+test('invoice detail drawer traps Tab navigation, closes on Escape and restores its opener focus', () => {
+  const drawerStart = source.indexOf('<aside #invoiceDetailDrawer class="invoice-detail-drawer"');
+  const drawerEnd = source.indexOf('</aside>', drawerStart);
+  const drawer = source.slice(drawerStart, drawerEnd);
+  assert.ok(drawerStart >= 0 && drawerEnd > drawerStart);
+  assert.match(drawer, /role="dialog" aria-modal="true" tabindex="-1"/);
+  assert.match(drawer, /\(keydown\)="handleInvoiceDetailKeydown\(\$event\)"/);
+
+  const trapStart = source.indexOf('handleInvoiceDetailKeydown(event: KeyboardEvent): void');
+  const trapEnd = source.indexOf('closeInvoiceDetails(restoreFocus = true): void', trapStart);
+  const trap = source.slice(trapStart, trapEnd);
+  assert.match(trap, /event\.key !== 'Tab'/);
+  assert.match(trap, /querySelectorAll<HTMLElement>/);
+  assert.match(trap, /event\.shiftKey \? last : first/);
+  assert.match(trap, /event\.shiftKey && \(active === first \|\| active === drawer\)/);
+  assert.match(trap, /!event\.shiftKey && active === last/);
+  assert.match(trap, /event\.preventDefault\(\)/);
+
+  const escapeHandler = source.slice(source.indexOf("@HostListener('document:keydown.escape')"),
+    source.indexOf('selectMobileMoreTab(', source.indexOf("@HostListener('document:keydown.escape')")));
+  assert.match(escapeHandler, /if \(this\.selectedInvoiceForDetails\)\s*\{\s*this\.closeInvoiceDetails\(\)/);
+  const closeStart = source.indexOf('closeInvoiceDetails(restoreFocus = true): void');
+  const closeEnd = source.indexOf('editInvoiceFromDetails(): void', closeStart);
+  const close = source.slice(closeStart, closeEnd);
+  assert.match(close, /const trigger = this\.invoiceDetailTrigger/);
+  assert.match(close, /if \(restoreFocus\) queueMicrotask\(\(\) => \{ if \(trigger\?\.isConnected\) trigger\.focus\(\); \}\)/);
+});
+
 test('mobile More is a shell-root overlay above workspace content with a real backdrop', () => {
   const sidebarStart = source.indexOf('<aside class="sidebar"');
   const sidebarEnd = source.indexOf('</aside>', sidebarStart);
