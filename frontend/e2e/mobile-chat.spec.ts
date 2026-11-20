@@ -248,6 +248,22 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({ items: [], total: 0, offset: 0 }) });
       return;
     }
+    // The products destination mounts the inventory movement ledger and the
+    // invoices destination mounts credit-note issuance; both legitimately
+    // read these tenant-scoped lists. Answer with realistic empty pages so
+    // the destinations render without an error state.
+    if (path === '/api/v1/businesses/business-1/inventory/movements' && request.method() === 'GET') {
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({ items: [], limit: 50, offset: 0, has_more: false }) });
+      return;
+    }
+    if (path === '/api/v1/businesses/business-1/sales-returns' && request.method() === 'GET') {
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({ items: [], limit: 100, offset: 0 }) });
+      return;
+    }
+    if (path === '/api/v1/businesses/business-1/credit-notes' && request.method() === 'GET') {
+      await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({ items: [], limit: 100, offset: 0 }) });
+      return;
+    }
     if (path === '/api/v1/businesses/business-1/reports/data-integrity' && request.method() === 'GET') {
       const emptyFinding = { total: 0, items: [] };
       await route.fulfill({ status: 200, headers: corsHeaders, body: JSON.stringify({
@@ -429,7 +445,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
         headerControlHeights: Array.from(document.querySelectorAll(
           '.mobile-app-header .brand-button, .mobile-app-header .assistant-shortcut, .mobile-app-header .icon-button, .mobile-app-header .profile-trigger'
         )).map(control => control.getBoundingClientRect().height),
-        dockItemHeights: Array.from(document.querySelectorAll('.sidebar > .nav-item'))
+        dockItemHeights: Array.from(document.querySelectorAll('.sidebar .mobile-dock-items > .nav-item'))
           .filter(item => getComputedStyle(item).display !== 'none')
           .map(item => item.getBoundingClientRect().height),
         dockHeight: document.querySelector('.sidebar')?.getBoundingClientRect().height ?? 0,
@@ -698,11 +714,14 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
 
     for (const destination of routeDestinations) {
       const expectedTitle = language === 'ar' ? destination.titleAr : destination.titleEn;
-      const homeNavLabel = language === 'ar' ? 'الرئيسية' : 'Home';
+      const homeNavLabel = language === 'ar' ? 'الرئيسية' : 'Overview';
       const homeHeading = language === 'ar' ? 'الرئيسية' : 'Overview';
       const cardLabel = language === 'ar' ? ('cardAr' in destination ? destination.cardAr : destination.titleAr)
         : ('cardEn' in destination ? destination.cardEn : destination.titleEn);
-      const homeButton = page.locator('.sidebar').getByRole('button', { name: homeNavLabel, exact: true });
+      // The overview nav-item is titled 'Overview' in English since the
+      // catalogue-driven nav (#412). The dock and the desktop groups each
+      // render it, so take the visible one.
+      const homeButton = page.locator('.sidebar button.nav-item:visible').filter({ hasText: homeNavLabel });
       await homeButton.focus();
       await expect(homeButton).toBeFocused();
       await page.keyboard.press('Enter');
@@ -734,7 +753,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
       await expect(routeSkeletons, destination.tab + ' loading skeleton').toHaveCount(0, { timeout: 15_000 });
       await expect.poll(() => pendingWorkspaceRequests.size, { timeout: 15_000 })
         .toBe(0);
-      await expect(page.locator('.main .panel:visible, .main [aria-label="Purchase order workspace"]:visible, .main .aba-state-message--empty:visible, .main .aba-state-message--info:visible').first(),
+      await expect(page.locator('.main .panel:visible, .main [aria-label="Purchase order workspace"]:visible, .main .aba-state-message--empty:visible, .main .aba-state-message--info:visible, .main .pw__state:visible').first(),
         destination.tab + ' rendered content or empty state').toBeVisible();
       await expect(page.locator('[role="alert"]:visible'), destination.tab + ' rendered error state')
         .toHaveCount(0);
@@ -831,7 +850,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
   };
 
   const assertTabletRail = async (language: 'ar' | 'en') => {
-    const homeLabel = language === 'ar' ? 'الرئيسية' : 'Home';
+    const homeLabel = language === 'ar' ? 'الرئيسية' : 'Overview';
     const homeHeading = language === 'ar' ? 'الرئيسية' : 'Overview';
     const direction = language === 'ar' ? 'rtl' : 'ltr';
 
@@ -1377,6 +1396,31 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
           name: 'STAFF QA Customer', email: null, phone: null,
           created_at: '2026-11-12T00:00:00+00:00',
         }]),
+      });
+      return;
+    }
+    // Staff may read the inventory ledger, sales returns and credit notes of
+    // their own business (owner-only applies to issuance and mutations).
+    // Answer these legitimate tenant reads with realistic empty pages so
+    // they do not fall through to the unexpected-request catch-all below.
+    if (path === '/api/v1/businesses/staff-business-1/inventory/movements' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200, headers: corsHeaders,
+        body: JSON.stringify({ items: [], limit: 50, offset: 0, has_more: false }),
+      });
+      return;
+    }
+    if (path === '/api/v1/businesses/staff-business-1/sales-returns' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200, headers: corsHeaders,
+        body: JSON.stringify({ items: [], limit: 100, offset: 0 }),
+      });
+      return;
+    }
+    if (path === '/api/v1/businesses/staff-business-1/credit-notes' && request.method() === 'GET') {
+      await route.fulfill({
+        status: 200, headers: corsHeaders,
+        body: JSON.stringify({ items: [], limit: 100, offset: 0 }),
       });
       return;
     }

@@ -11,6 +11,9 @@ const adminSubject = `firebase:${projectId}:${adminUid}`;
 const idToken = 'eyJhbGciOiJub25lIiwidHlwIjoiSldUIn0.eyJhdWQiOiJtb2NrLXByb2plY3QiLCJpc3MiOiJodHRwczovL3NlY3VyZXRva2VuLmdvb2dsZS5jb20vbW9jay1wcm9qZWN0Iiwic3ViIjoiYm9vdHN0cmFwLWFkbWluLXVpZCIsInVpZCI6ImJvb3RzdHJhcC1hZG1pbi11aWQiLCJleHAiOjQ5MDAwMDAwMDB9.signature';
 
 test('signed-in platform admin can browse users, search exactly, and grant a delegated role without a workspace', async ({ page }) => {
+  // 120s: the test captures 5 views x 5 widths x 2 languages (50 viewports).
+  // It takes ~18s alone but exceeds the 30s default under parallel load.
+  test.setTimeout(120_000);
   const uncaughtErrors: string[] = [];
   const apiRequests: Array<{ url: string; method: string; authorization?: string; body?: unknown }> = [];
   const authRequests: Array<{ url: string; body?: unknown }> = [];
@@ -394,7 +397,7 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
 
   // A failed refresh after access revocation must not leave previously loaded
   // platform metrics or runtime health displayed as if they were current.
-  await page.getByRole('button', { name: /Overview|نظرة عامة/ }).click();
+  await page.locator('.section-nav').getByRole('button', { name: /Overview|نظرة عامة/ }).click();
   await expect(page.getByText('Member identities')).toBeVisible();
   await expect(page.getByText('Healthy').first()).toBeVisible();
 
@@ -480,7 +483,7 @@ test('signed-in platform admin can browse users, search exactly, and grant a del
     for (const view of adminViews) await captureAdminViewport(view, 'ar', width);
   }
   // The compact invoice summary belongs to Overview, not the Users directory.
-  await page.getByRole('button', { name: /Overview|نظرة عامة/ }).click();
+  await page.locator('.section-nav').getByRole('button', { name: /Overview|نظرة عامة/ }).click();
   await expect(page.getByRole('heading', { name: /Admin center|مركز الإدارة/ })).toBeVisible();
   for (const width of [360, 390, 430]) {
     await page.setViewportSize({ width, height: 844 });

@@ -149,7 +149,7 @@ test('applies an initial workspace deep link after authentication and business r
 test('browser Back and Forward restore the matching workspace destination', async ({ page }) => {
   const errors = await signInAt(page, '/workspace');
   await expect(page.locator('.dashboard-period')).toBeVisible();
-  await page.locator('button.nav-item').filter({ hasText: 'Customers' }).click();
+  await page.locator('.desktop-sidebar-groups button.nav-item').filter({ hasText: 'Customers' }).click();
   await expect(page).toHaveURL(/\/workspace\/customers$/);
   await expect(page.locator('.customer-directory')).toBeVisible();
 
