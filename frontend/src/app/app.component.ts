@@ -3529,6 +3529,17 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
+  onWorkspaceCustomerSaved(customer: Customer): void {
+    // Upsert the server-returned record so the invoice picker reflects it immediately
+    // without a workspace reload. Preserve the loaded page, the pagination cursor and
+    // the currently selected customer; never apply a record to another business.
+    if (!this.business) return;
+    const exists = this.customers.some(item => item.id === customer.id);
+    this.customers = exists
+      ? this.customers.map(item => (item.id === customer.id ? customer : item))
+      : [customer, ...this.customers];
+  }
+
   async createCustomer(): Promise<void> {
     if (!this.business) return;
     const businessId = this.business.id;
