@@ -607,7 +607,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   [role]="business.role === 'owner' ? 'owner' : 'staff'"
                   [locale]="language"
                   (invoicesRequested)="createInvoiceForCustomer($event)"
-                  (statementRequested)="openCustomerStatementById($event)" />
+                  (statementRequested)="openCustomerStatementById($event)"
+                  (customerSaved)="onWorkspaceCustomerSaved($event)" />
                 @if (statementVisible) {
                   <section abaCard class="panel statement-panel">
                     <aba-section-header [level]="3" [title]="t('ui.m_152dm1w') + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t('ui.m_ysb7zm')">
