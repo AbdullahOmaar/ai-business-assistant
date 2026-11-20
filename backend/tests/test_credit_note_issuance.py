@@ -1,6 +1,6 @@
 """Stage-1 credit-note issuance regressions: immutable, owner-only, no AR/cash side effects."""
 from decimal import Decimal
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi import HTTPException
@@ -8,7 +8,15 @@ from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
-from app.extended_api import issue_credit_note_for_return, list_credit_notes, list_sales_returns
+from app.extended_api import (
+    ReturnInput,
+    ReturnLineInput,
+    approve_sales_return,
+    issue_credit_note_for_return,
+    list_credit_notes,
+    list_sales_returns,
+    post_sales_return,
+)
 from app.models import (
     AuditEvent,
     Base,
@@ -142,6 +150,85 @@ def test_owner_issues_one_immutable_credit_note_without_ar_or_cash_side_effects(
         assert session.scalar(select(func.count()).select_from(PaymentAllocation)) == 0
 
 
+def test_partial_returns_allocate_discounted_cents_cumulatively(credit_note_workspace):
+    engine, business_id = credit_note_workspace
+    principal = AuthenticatedPrincipal(subject="credit-owner")
+    with Session(engine) as session:
+        customer = Customer(business_id=business_id, name="Fractional return customer")
+        session.add(customer)
+        session.flush()
+        invoice = Invoice(
+            business_id=business_id,
+            customer_id=customer.id,
+            invoice_number=f"INV-{uuid4().hex[:10]}",
+            status="issued",
+            currency_code="USD",
+            subtotal=Decimal("0.03"),
+            tax_total=Decimal("0.00"),
+            discount_total=Decimal("0.02"),
+            total=Decimal("0.01"),
+        )
+        session.add(invoice)
+        session.flush()
+        invoice_line = InvoiceLine(
+            business_id=business_id,
+            invoice_id=invoice.id,
+            product_id=None,
+            description="Three units with one cent net value",
+            quantity=Decimal("3.000"),
+            unit_price=Decimal("0.01"),
+            line_total=Decimal("0.03"),
+        )
+        session.add(invoice_line)
+        session.commit()
+
+        approved_returns = []
+        allocated_amounts = []
+        for _ in range(3):
+            draft = post_sales_return(
+                business_id=business_id,
+                body=ReturnInput(
+                    invoice_id=invoice.id,
+                    reason="Separate one-unit return",
+                    lines=[ReturnLineInput(
+                        invoice_line_id=invoice_line.id,
+                        quantity=Decimal("1.000"),
+                    )],
+                ),
+                session=session,
+                principal=principal,
+            )
+            approved = approve_sales_return(
+                business_id=business_id,
+                return_id=UUID(draft["id"]),
+                session=session,
+                principal=principal,
+            )
+            approved_returns.append(approved)
+            persisted_line = session.scalar(select(SalesReturnLine).where(
+                SalesReturnLine.sales_return_id == UUID(draft["id"]),
+            ))
+            allocated_amounts.append(Decimal(str(persisted_line.amount)))
+            assert Decimal(approved["total"]) == Decimal(str(persisted_line.amount))
+            assert approved["currency_code"] == "USD"
+
+        # Independent per-return rounding would produce 0.00 + 0.00 + 0.00.
+        # Cumulative allocation assigns the single available cent exactly once.
+        assert allocated_amounts == [
+            Decimal("0.00"), Decimal("0.01"), Decimal("0.00"),
+        ]
+        assert sum(allocated_amounts, Decimal("0.00")) == Decimal("0.01")
+
+        issued = issue_credit_note_for_return(
+            business_id=business_id,
+            return_id=UUID(approved_returns[1]["id"]),
+            session=session,
+            principal=principal,
+        )
+        assert Decimal(issued["total"]) == Decimal("0.01")
+        assert issued["currency_code"] == "USD"
+
+
 def test_credit_note_requires_approved_return_and_creates_no_audit_on_rejection(credit_note_workspace):
     engine, business_id = credit_note_workspace
     with Session(engine) as session:
@@ -239,6 +326,15 @@ def test_credit_note_listing_is_business_scoped_and_does_not_claim_application_o
             session=session,
             principal=principal,
         )
+        return_page = list_sales_returns(
+            business_id=business_id,
+            limit=20,
+            offset=0,
+            status=None,
+            session=session,
+            principal=principal,
+        )
+        assert return_page["items"][0]["currency_code"] == "EGP"
         page = list_credit_notes(
             business_id=business_id,
             limit=20,

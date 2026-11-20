@@ -91,7 +91,7 @@ type ReturnDraftLine = {
               @if (ret.reason) { <small>{{ ret.reason }}</small> }
               <small>{{ statusLabel(ret.status) }} · {{ formatDate(ret.created_at) }}</small>
             </div>
-            <strong class="amount">{{ ret.total }}</strong>
+            <strong class="amount">{{ ret.total }} {{ ret.currency_code }}</strong>
             @if (ret.status === 'draft' && role === 'owner') {
               <button type="button" class="primary" (click)="approve(ret)"
                 [disabled]="loading || creatingReturn || actionId !== null">

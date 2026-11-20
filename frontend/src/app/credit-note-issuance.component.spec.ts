@@ -15,6 +15,8 @@ test('Stage 1 UI supports return draft, owner approval, and owner-only credit-no
   assert.match(component, /creditNoteForReturn\(ret\.id\)/);
   assert.match(component, /this\.api\.salesReturns\(businessId, undefined, 0, this\.pageSize\)/);
   assert.match(component, /this\.api\.creditNotes\(businessId, 0, this\.pageSize\)/);
+  assert.match(component, /ret\.total }} {{ ret\.currency_code/);
+  assert.match(api, /reason: string \| null; total: string; currency_code: string; created_at: string;/);
 });
 
 test('Stage 1 UI does not expose receivable application or cash refund controls', () => {

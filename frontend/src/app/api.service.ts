@@ -38,7 +38,7 @@ export interface InvoiceDetail extends Invoice {
 }
 export interface SalesReturn {
   id: string; business_id: string; invoice_id: string; status: 'draft' | 'approved' | 'rejected';
-  reason: string | null; total: string; created_at: string;
+  reason: string | null; total: string; currency_code: string; created_at: string;
 }
 export interface CreditNote {
   id: string; business_id: string; sales_return_id: string; invoice_id: string; customer_id: string;

@@ -4594,6 +4594,6 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - **Finding:** `demo_rate_limit_counters` has no TTL, expiry, or pruning path. Distinct client-IP hashes can therefore leave persistent rows indefinitely.
 - **Evidence:** Codex review on PR #407, inline finding [P2 — Expire persisted demo rate-limit counters](https://github.com/AbdullahOmaar/ai-business-assistant/pull/407#discussion_r4639485639).
 - **Scope:** documentation/tracking only. No application code, model, migration, or database change is included in this follow-up.
-- **Runtime qualification:** migration/table is not deployed to Production yet; actual Production growth, request volume, and storage impact have not been measured.
-- **Status:** FOLLOW-UP / NOT IMPLEMENTED. Evaluate bounded retention or cleanup in a separately reviewed task before enabling sustained public demo traffic.
+- **Runtime qualification:** migration 0009 was applied to Production on 2026-11-20 at 09:28 EET and verified by Alembic revision `0009_demo_rate_limit_counters`; the table exists. No live row growth or storage growth has been observed/reported yet.
+- **Status:** FOLLOW-UP / NOT IMPLEMENTED. This remains an unresolved follow-up, not an accepted risk. Evaluate bounded retention or cleanup in a separately reviewed task before enabling sustained public demo traffic.
 - **Acceptance:** define retention semantics, cleanup strategy and index/storage impact; test concurrency and cleanup safety; keep rate limiting fail-closed.

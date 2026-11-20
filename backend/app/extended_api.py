@@ -622,10 +622,25 @@ def list_sales_returns(
         statement.order_by(SalesReturn.created_at.desc(), SalesReturn.id.desc())
         .limit(limit).offset(offset)
     ).all()
+    invoice_currency_by_id = {}
+    if returns:
+        source_invoices = session.scalars(select(Invoice).where(
+            Invoice.id.in_([item.invoice_id for item in returns]),
+            Invoice.business_id == business_id,
+        )).all()
+        invoice_currency_by_id = {
+            str(invoice.id): invoice.currency_code for invoice in source_invoices
+        }
     return {
-        "items": [_dict(item, (
-            "id", "business_id", "invoice_id", "status", "reason", "total", "created_at",
-        )) for item in returns],
+        "items": [
+            {
+                **_dict(item, (
+                    "id", "business_id", "invoice_id", "status", "reason", "total", "created_at",
+                )),
+                "currency_code": invoice_currency_by_id.get(str(item.invoice_id)),
+            }
+            for item in returns
+        ],
         "limit": limit,
         "offset": offset,
     }
@@ -683,7 +698,13 @@ def post_sales_return(business_id: UUID, body: ReturnInput,
         session.flush()
         return ret
     ret = _commit(session, op)
-    return _dict(ret, ("id", "business_id", "invoice_id", "status", "reason", "total", "created_at"))
+    currency_code = session.scalar(select(Invoice.currency_code).where(
+        Invoice.id == ret.invoice_id, Invoice.business_id == business_id,
+    ))
+    return {
+        **_dict(ret, ("id", "business_id", "invoice_id", "status", "reason", "total", "created_at")),
+        "currency_code": currency_code,
+    }
 
 
 @router.post("/sales-returns/{return_id}/approve")
@@ -706,17 +727,16 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
             raise WorkflowError("A return reason is required before approval")
         lines = session.scalars(select(SalesReturnLine).where(
             SalesReturnLine.sales_return_id == ret.id, SalesReturnLine.business_id == business_id,
-        )).all()
+        ).order_by(SalesReturnLine.id)).all()
 
         # Group duplicate line entries and lock the invoice header first. Concurrent
         # approvals for the same invoice then serialize before checking approved returns.
         requested_by_line: dict[UUID, dict[str, Decimal]] = {}
         for returned in lines:
             requested = requested_by_line.setdefault(
-                returned.invoice_line_id, {"quantity": ZERO, "amount": ZERO}
+                returned.invoice_line_id, {"quantity": ZERO}
             )
             requested["quantity"] += returned.quantity
-            requested["amount"] += returned.amount
 
         discount_allocation_lines = session.scalars(select(InvoiceLine).where(
             InvoiceLine.invoice_id == invoice.id,
@@ -749,19 +769,41 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
                 SalesReturnLine.business_id == business_id,
                 SalesReturn.status == "approved",
             ))
+            invoiced_amount = discounted_return_line_total(
+                invoice_subtotal=invoice.subtotal,
+                invoice_discount_total=invoice.discount_total,
+                invoice_lines=[(str(row.id), row.line_total) for row in discount_allocation_lines],
+                target_line_id=str(invoice_line.id),
+            )
+            previous_quantity = Decimal(str(previously_returned_quantity or 0))
+            previous_amount = Decimal(str(previously_returned_amount or 0))
+            cumulative_amount = money(
+                invoiced_amount * (previous_quantity + requested["quantity"]) / invoice_line.quantity
+            )
+            allocated_amount = cumulative_amount - previous_amount
             try:
                 validate_return_amount(
-                    invoiced_amount=discounted_return_line_total(
-                        invoice_subtotal=invoice.subtotal,
-                        invoice_discount_total=invoice.discount_total,
-                        invoice_lines=[(str(row.id), row.line_total) for row in discount_allocation_lines],
-                        target_line_id=str(invoice_line.id),
-                    ),
-                    previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
-                    requested_return_amount=requested["amount"],
+                    invoiced_amount=invoiced_amount,
+                    previously_returned_amount=previous_amount,
+                    requested_return_amount=allocated_amount,
                 )
             except ValueError as exc:
                 raise WorkflowError(str(exc)) from exc
+
+            # Allocate rounded cents against cumulative approved quantity, not each
+            # return independently. The final approved return reconciles exactly
+            # to the discounted source-line amount even for sub-cent unit shares.
+            running_quantity = previous_quantity
+            running_amount = previous_amount
+            for returned_line in (
+                row for row in lines if row.invoice_line_id == invoice_line_id
+            ):
+                running_quantity += returned_line.quantity
+                next_cumulative_amount = money(
+                    invoiced_amount * running_quantity / invoice_line.quantity
+                )
+                returned_line.amount = next_cumulative_amount - running_amount
+                running_amount = next_cumulative_amount
             invoice_lines[invoice_line_id] = invoice_line
 
         for returned in lines:
@@ -776,13 +818,20 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
                         movement_type="return", quantity_delta=returned.quantity,
                         reason=f"Approved sales return {ret.id}", reference_type="sales_return",
                         reference_id=ret.id, created_by_subject=principal.subject))
+        ret.total = sum((returned.amount for returned in lines), ZERO)
         ret.status = "approved"
         session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
             action="sales_return.approved", target_type="sales_return", target_id=str(ret.id)))
         session.flush()
         return ret
     ret = _commit(session, op)
-    return _dict(ret, ("id", "invoice_id", "status", "total", "created_at"))
+    currency_code = session.scalar(select(Invoice.currency_code).where(
+        Invoice.id == ret.invoice_id, Invoice.business_id == business_id,
+    ))
+    return {
+        **_dict(ret, ("id", "invoice_id", "status", "total", "created_at")),
+        "currency_code": currency_code,
+    }
 
 
 @router.post("/sales-returns/{return_id}/credit-note", status_code=201)

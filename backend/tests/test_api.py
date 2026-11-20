@@ -442,8 +442,8 @@ def test_partial_returns_cannot_refund_more_than_rounded_invoice_line():
             )
             for response in created
         ]
-        assert [response.status_code for response in approvals] == [200, 200, 422]
-        assert "return amount exceeds" in approvals[2].json()["detail"]
+        assert [response.status_code for response in approvals] == [200, 200, 200]
+        assert Decimal(approvals[2].json()["total"]) == Decimal("0.01")
 
         with Session(engine) as session:
             total_approved = session.scalar(
