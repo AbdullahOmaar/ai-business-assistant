@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import re
 from datetime import date
 from decimal import Decimal
 from typing import Literal
@@ -197,10 +198,41 @@ async def chat(
             "count", "how many", "customers", "products", "suppliers",
             "عدد", "العملاء", "المنتجات", "الموردين",
         ))
+        # An invoice COUNT needs an explicit count phrase, not a bare entity
+        # noun: "customers"/"العملاء" (and products/suppliers) are directory
+        # words, so a money/profit question that merely mentions invoices
+        # ("total invoices for my customers", "إجمالي فواتير العملاء") must
+        # not be hijacked into a count answer.
+        # Count phrases match as whole words only: a plain substring would
+        # also match "count" inside "account"/"discount"/"accounting" and
+        # "كم" inside "حكم"/"كمية"/"كمبيوتر", hijacking money questions
+        # ("discount on invoices", "invoices per account") into a count.
+        # English phrases use regex word boundaries (including "counts").
+        # The Arabic count word (عدد / أعداد) matches as a standalone token
+        # with an optional common prefix (ال, و, ب, ل, وال, بال, لل), so
+        # "العدد", "وعدد", "بعدد" and "أعداد" all count; it is still a token
+        # match, not a substring, so "معدد" does not match. A prefixed or
+        # plural form is a count even with a money word present ("العدد
+        # الإجمالي للفواتير" asks for a count).
+        # "كم" is ambiguous (how many / how much): it counts a question only
+        # when no money word is present ("كم إجمالي الفواتير" asks for a
+        # total, not a count). "كم" stays exact (optionally "وكم"): "بكم"
+        # is a price question ("for how much"), not a count.
+        money_word = any(term in message for term in (
+            "إجمالي", "مجموع", "قيمة", "مبلغ", "ربح", "مبيعات",
+            "total", "amount", "value", "profit",
+        ))
+        arabic_count_word = re.compile(r"^(?:ال|و|ب|ل|وال|بال|لل)?(?:عدد|أعداد)$")
+        tokens = re.findall(r"\w+", message)
+        explicit_count_phrase = (
+            re.search(r"\b(?:counts?|how many|number of)\b", message) is not None
+            or any(arabic_count_word.match(token) for token in tokens)
+            or (any(token in ("كم", "وكم") for token in tokens) and not money_word)
+        )
         # A count question about invoices must be answered with a count, not
         # the monetary total: "invoice"/"invoices" also match sales_intent,
         # so this intent is checked before the money branches below.
-        invoice_count_intent = count_intent and any(term in message for term in (
+        invoice_count_intent = explicit_count_phrase and any(term in message for term in (
             "invoice", "invoices", "فاتورة", "فواتير",
         ))
         draft_invoice_intent = invoice_count_intent and any(term in message for term in (
