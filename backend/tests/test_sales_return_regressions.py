@@ -74,7 +74,8 @@ def _issued_invoice(session, business_id, principal, quantity=Decimal("5")):
 def _draft_return(session, business_id, invoice_id, invoice_line_id, quantity):
     ret = SalesReturn(
         business_id=business_id, invoice_id=invoice_id,
-        status="draft", total=Decimal(str(quantity)) * Decimal("10.00"),
+        status="draft", reason="customer return",
+        total=Decimal(str(quantity)) * Decimal("10.00"),
     )
     session.add(ret)
     session.flush()
