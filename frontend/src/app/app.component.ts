@@ -53,7 +53,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
         <a class="skip-link" href="#main-content">{{ t('ui.m_1561v1f') }}</a>
       }
-      @if (loading) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('ui.m_1rza5t5') }}</span></div> }
+      @if (loading && initialized) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('ui.m_1rza5t5') }}</span></div> }
       @if (appUpdateAvailable) {
         <aside class="app-update-notice" role="status" aria-live="polite">
           <span>{{ t('ui.m_4cplhg') }}</span>
@@ -63,8 +63,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       @if (!initialized) {
         <main class="auth-card" role="status" aria-live="polite">
           <div class="brand-mark">A</div>
-          <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
-          <small class="splash-build-time">{{ t('ui.m_1y28k2h') }} {{ buildTimeLabel }}</small>
+          <div class="splash-release-meta">
+            <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
+            <small class="splash-build-time">{{ t('ui.m_1y28k2h') }} {{ buildTimeLabel }}</small>
+          </div>
           <h1>{{ t('ui.m_1dygc0g') }}</h1>
           <p class="muted">{{ t('ui.m_1uzdlys') }}</p>
         </main>
@@ -141,7 +143,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           }
         </main>
       } @else {
-        <aside class="sidebar" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2)">
+        <aside class="sidebar" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2')">
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>{{ t('common.app_title') }}</span></a>
           <nav class="sidebar-nav-scroll" [attr.aria-label]="t('ui.m_criw1m')">
             <div class="desktop-sidebar-groups">
@@ -174,15 +176,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             </div>
             @if (mobileMoreOpen) {
             <nav #mobileMoreMenu id="mobile-more-menu" class="mobile-more-menu" [attr.aria-label]="t('ui.m_1c7twvy')">
-              <label class="mobile-more-search">
-                <span class="sr-only">{{ t('ui.m_1eu8swe') }}</span>
-                <input type="search" name="mobileMoreSearch" autocomplete="off" enterkeyhint="search"
-                  [attr.aria-label]="t('ui.m_1eu8swe')"
-                  [placeholder]="t('ui.m_1uhhx5z')"
-                  [(ngModel)]="mobileMoreSearch" />
-              </label>
-              @if (filteredMobileMoreGroups.length) {
-                @for (group of filteredMobileMoreGroups; track group.id) {
+              @if (mobileMoreGroups.length) {
+                @for (group of mobileMoreGroups; track group.id) {
                 <section class="mobile-more-group" [attr.aria-labelledby]="'mobile-more-' + group.id + '-heading'">
                   <h3 [id]="'mobile-more-' + group.id + '-heading'">{{ t(group.titleKey) }}</h3>
                   @for (module of group.modules; track module.tab) {
@@ -592,7 +587,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ui.m_1lifkl9')" [description]="t('ui.m_15gmqko')" />
                 @if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span>{{ t('ui.m_p4xhry') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span>{{ t('ui.m_p4xhry') }}</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
                   <h3>{{ t('ui.m_p4xhry') }}</h3>
                   <p>{{ t('ui.m_1239wd4') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1m32l6p')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
@@ -681,7 +676,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   </div>
                 </details>
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span>{{ t('ui.m_1wgx28b') }}</span><span aria-hidden="true">⌄</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_ps78ce')">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span>{{ t('ui.m_1wgx28b') }}</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_ps78ce')">
                   <h3>{{ t('ui.m_1wgx28b') }}</h3>
                   <p>{{ t('ui.m_1kaqi1p') }}</p>
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1yr2ptt')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
@@ -1387,7 +1382,6 @@ export class AppComponent implements OnInit, OnDestroy {
   chatCopyStatus: { index: number; success: boolean } | null = null;
   keyboardOpen = false;
   mobileMoreOpen = false;
-  mobileMoreSearch = '';
   homeModuleSearch = '';
   @ViewChild('mobileMoreTrigger') private mobileMoreTrigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('mobileMoreMenu') private mobileMoreMenu?: ElementRef<HTMLElement>;
@@ -2629,7 +2623,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
   toggleMobileMore(): void {
-    if (this.mobileMoreOpen) this.mobileMoreSearch = '';
     this.mobileMoreOpen = !this.mobileMoreOpen;
   }
 
@@ -2674,13 +2667,11 @@ export class AppComponent implements OnInit, OnDestroy {
   closeMobileMoreOnEscape(): void {
     if (!this.mobileMoreOpen) return;
     this.mobileMoreOpen = false;
-    this.mobileMoreSearch = '';
     this.mobileMoreTrigger?.nativeElement.focus();
   }
 
   /** Restore keyboard focus to the More trigger after a secondary destination is selected. */
   selectMobileMoreTab(tab: Tab): void {
-    this.mobileMoreSearch = '';
     this.setTab(tab);
     this.mobileMoreTrigger?.nativeElement.focus();
   }
@@ -2693,7 +2684,6 @@ export class AppComponent implements OnInit, OnDestroy {
     if (this.mobileMoreTrigger?.nativeElement.contains(target)
       || this.mobileMoreMenu?.nativeElement.contains(target)) return;
     this.mobileMoreOpen = false;
-    this.mobileMoreSearch = '';
   }
 
   async installApp(): Promise<void> {
@@ -3465,23 +3455,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
   isMobileMoreTab(tab: Tab): boolean {
     return isMobileMoreTabValue(tab);
-  }
-
-  /** Search only the already-authorized mobile destinations; this is navigation UX, not access control. */
-  get filteredMobileMoreGroups(): readonly (WorkspaceModuleGroup & { modules: readonly WorkspaceModuleCard[] })[] {
-    const query = this.mobileMoreSearch.trim().normalize('NFKC').toLocaleLowerCase(this.localization.locale);
-    if (!query) return this.mobileMoreGroups;
-    return this.mobileMoreGroups.map(group => {
-      const locale = this.language === 'ar' ? 'ar-EG' : 'en';
-      const groupMatches = this.t(group.titleKey).normalize('NFKC').toLocaleLowerCase(locale).includes(query);
-      const modules = groupMatches ? group.modules : filterWorkspaceModules(
-        group.modules,
-        this.mobileMoreSearch,
-        locale,
-        key => this.t(key),
-      );
-      return { ...group, modules };
-    }).filter(group => group.modules.length > 0);
   }
 
   setTab(tab: Tab): void {
