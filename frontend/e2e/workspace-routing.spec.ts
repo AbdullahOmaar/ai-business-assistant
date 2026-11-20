@@ -189,7 +189,7 @@ test('desktop navigation remains scroll-reachable at a 993px viewport height', a
   const finalDestination = navigation.getByRole('button', { name: 'App guide & versions' });
   await expect(finalDestination).toBeInViewport();
   await finalDestination.click();
-  await expect(page).toHaveURL(/\\/workspace\\/release-guide$/);
+  await expect(page).toHaveURL(/\/workspace\/release-guide$/);
   await expect(finalDestination).toHaveAttribute('aria-current', 'page');
   expect(errors).toEqual([]);
 });
