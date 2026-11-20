@@ -5,13 +5,11 @@ single-use Firebase custom token for one explicitly configured demo identity.
 It is disabled unless DEMO_LOGIN_ENABLED=true and DEMO_LOGIN_EMAIL is set.
 """
 import hashlib
-import json
 import os
-from urllib.error import URLError
-from urllib.request import Request as UrlRequest, urlopen
+import time
 
 from fastapi import APIRouter, HTTPException, Request, Response
-from sqlalchemy import select
+from sqlalchemy import select, text
 
 from app.models import PlatformRoleGrant
 
@@ -21,22 +19,29 @@ router = APIRouter(prefix="/api/v1/demo", tags=["demo access"])
 
 
 def _enforce_demo_rate_limit(request: Request) -> None:
-    """Apply an atomic shared Redis REST fixed-window limit before minting a token.
+    """Apply an atomic shared PostgreSQL fixed-window limit before minting a token.
 
-    The demo endpoint is serverless-safe: it never falls back to per-process memory.
-    If the shared limiter is unavailable or misconfigured, demo login fails closed.
+    The counter lives in the existing application database (table
+    demo_rate_limit_counters, migration 0009): no extra service or account.
+    The demo endpoint is serverless-safe: it never falls back to per-process
+    memory. If the shared limiter store is unavailable or misconfigured, demo
+    login fails closed.
+
+    A single INSERT ... ON CONFLICT upsert is the atomic synchronization point
+    across serverless instances. The CASE expressions keep the stored window
+    monotonic, so a late concurrent request cannot move the window backwards
+    (semantically identical to GREATEST, and portable to SQLite for tests).
     """
-    redis_url = os.getenv("DEMO_RATE_LIMIT_REDIS_URL", "").strip()
-    redis_token = os.getenv("DEMO_RATE_LIMIT_REDIS_TOKEN", "").strip()
-    if not redis_url.startswith("https://") or not redis_token:
-        raise HTTPException(status_code=503, detail="Demo access rate limiting is not configured.")
-
     try:
         limit = int(os.getenv("DEMO_RATE_LIMIT_MAX_REQUESTS", "5"))
         window_seconds = int(os.getenv("DEMO_RATE_LIMIT_WINDOW_SECONDS", "60"))
     except ValueError as exc:
         raise HTTPException(status_code=503, detail="Demo access rate limiting is not configured.") from exc
     if not 1 <= limit <= 100 or not 1 <= window_seconds <= 3600:
+        raise HTTPException(status_code=503, detail="Demo access rate limiting is not configured.")
+
+    factory = getattr(request.app.state, "session_factory", None)
+    if factory is None:
         raise HTTPException(status_code=503, detail="Demo access rate limiting is not configured.")
 
     # Vercel supplies x-real-ip at the edge; do not trust arbitrary X-Forwarded-For chains.
@@ -46,36 +51,41 @@ def _enforce_demo_rate_limit(request: Request) -> None:
     if not client_ip:
         client_ip = "unknown"
     identity = hashlib.sha256(client_ip.encode("utf-8")).hexdigest()
-    key = f"aiba:demo-session:{identity}"
-    script = (
-        "local current=redis.call('INCR',KEYS[1]); "
-        "if current==1 then redis.call('PEXPIRE',KEYS[1],ARGV[1]) end; "
-        "return current"
-    )
-    payload = json.dumps([
-        "EVAL", script, "1", key, str(window_seconds * 1000),
-    ]).encode("utf-8")
-    outbound = UrlRequest(
-        redis_url,
-        data=payload,
-        headers={
-            "Authorization": f"Bearer {redis_token}",
-            "Content-Type": "application/json",
-        },
-        method="POST",
+
+    # Fixed window aligned to Unix time; Retry-After is computed from the
+    # actual end of the current window with the same clock.
+    now_epoch = int(time.time())
+    window_start = (now_epoch // window_seconds) * window_seconds
+    retry_after = max(1, window_start + window_seconds - now_epoch)
+
+    upsert = text(
+        "INSERT INTO demo_rate_limit_counters (key_hash, window_start_epoch, request_count, updated_at)"
+        " VALUES (:key_hash, :window_start, 1, CURRENT_TIMESTAMP)"
+        " ON CONFLICT (key_hash) DO UPDATE SET"
+        " window_start_epoch = CASE"
+        " WHEN excluded.window_start_epoch > demo_rate_limit_counters.window_start_epoch"
+        " THEN excluded.window_start_epoch"
+        " ELSE demo_rate_limit_counters.window_start_epoch END,"
+        " request_count = CASE"
+        " WHEN excluded.window_start_epoch > demo_rate_limit_counters.window_start_epoch THEN 1"
+        " ELSE demo_rate_limit_counters.request_count + 1 END,"
+        " updated_at = CURRENT_TIMESTAMP"
+        " RETURNING request_count"
     )
     try:
-        with urlopen(outbound, timeout=2.5) as result:
-            body = json.loads(result.read().decode("utf-8"))
-        count = int(body["result"])
-    except (URLError, TimeoutError, ValueError, KeyError, TypeError, OSError) as exc:
+        with factory() as session:
+            count = session.execute(upsert, {"key_hash": identity, "window_start": window_start}).scalar_one()
+            session.commit()
+    except HTTPException:
+        raise
+    except Exception as exc:
         raise HTTPException(status_code=503, detail="Demo access rate limiting is temporarily unavailable.") from exc
 
-    if count > limit:
+    if int(count) > limit:
         raise HTTPException(
             status_code=429,
             detail="Demo access request limit reached. Try again later.",
-            headers={"Retry-After": str(window_seconds)},
+            headers={"Retry-After": str(retry_after)},
         )
 
 
