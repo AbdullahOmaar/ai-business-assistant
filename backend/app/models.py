@@ -9,6 +9,7 @@ from enum import Enum
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    BigInteger,
     Boolean,
     JSON,
     CheckConstraint,
@@ -17,6 +18,7 @@ from sqlalchemy import (
     ForeignKey,
     ForeignKeyConstraint,
     Index,
+    Integer,
     Numeric,
     String,
     UniqueConstraint,
@@ -24,6 +26,7 @@ from sqlalchemy import (
     func,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
+import sqlalchemy as sa
 
 
 class Base(DeclarativeBase):
@@ -879,4 +882,25 @@ class PayrollRecord(Base):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class DemoRateLimitCounter(Base):
+    """Shared fixed-window counters for public demo rate limiting."""
+
+    __tablename__ = "demo_rate_limit_counters"
+    __table_args__ = (
+        CheckConstraint(
+            "request_count > 0",
+            name="ck_demo_rate_limit_count_positive",
+        ),
+    )
+
+    key_hash: Mapped[str] = mapped_column(String(64), primary_key=True, nullable=False)
+    window_start_epoch: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    request_count: Mapped[int] = mapped_column(Integer, nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=sa.text("CURRENT_TIMESTAMP"),
     )
