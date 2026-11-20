@@ -12,6 +12,7 @@ import {
 } from './api.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { LocalizationService } from './localization.service';
+import { isValidPurchaseDecimalInput, normalizePurchaseDecimalInput } from './purchasing-decimal';
 
 type PurchasingContext = { businessId: string; userId: string; role: 'owner' | 'staff' };
 type PurchaseDraftLine = { product_id: string; quantity: string; unit_cost: string };
@@ -25,7 +26,7 @@ type PurchaseAction = 'approve' | 'cancel';
   imports: [FormsModule],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
-    <section class="purchasing-workspace" [attr.dir]="language() === 'ar' ? 'rtl' : 'ltr'" aria-label="Purchase order workspace">
+    <section class="purchasing-workspace" [attr.dir]="language() === 'ar' ? 'rtl' : 'ltr'" [attr.aria-label]="t('title')">
       <header class="pw__heading">
         <div>
           <p class="pw__eyebrow">{{ t('title') }}</p>
@@ -108,10 +109,10 @@ type PurchaseAction = 'approve' | 'cancel';
                   </select>
                 </label>
                 <label>{{ t('quantity') }}
-                  <input [name]="'quantity-' + $index" type="number" min="0.001" step="0.001" required [(ngModel)]="line.quantity" [disabled]="saving()" />
+                  <input [name]="'quantity-' + $index" type="text" inputmode="decimal" autocomplete="off" required [(ngModel)]="line.quantity" [disabled]="saving()" />
                 </label>
                 <label>{{ t('unitCost') }}
-                  <input [name]="'cost-' + $index" type="number" min="0" step="0.01" required [(ngModel)]="line.unit_cost" [disabled]="saving()" />
+                  <input [name]="'cost-' + $index" type="text" inputmode="decimal" autocomplete="off" required [(ngModel)]="line.unit_cost" [disabled]="saving()" />
                 </label>
                 <button class="pw__remove" type="button" (click)="removeLine($index)" [disabled]="saving() || formLines.length <= 1" [attr.aria-label]="t('removeLine')">×</button>
               </div>
@@ -378,6 +379,12 @@ export class PurchasingWorkspaceComponent {
 
   private emptyLine(): PurchaseDraftLine { return { product_id: '', quantity: '1', unit_cost: '0' }; }
   readValue(event: Event): string { return (event.target as HTMLInputElement).value; }
+
+  /** Validate API Decimal constraints and localized keyboard input without Number coercion. */
+  isValidDecimal(value: string, maxScale: number, allowZero: boolean): boolean {
+    return isValidPurchaseDecimalInput(value, maxScale, allowZero);
+  }
+
   hasRemaining(line: PurchaseOrderDetail['lines'][number]): boolean { return Number(line.remaining_quantity) > 0; }
 
   supplierName(id: string): string { return this.suppliers().find(supplier => supplier.id === id)?.name || id; }
@@ -533,7 +540,7 @@ export class PurchasingWorkspaceComponent {
   async saveDraft(): Promise<void> {
     if (this.mode() !== 'create' && this.mode() !== 'edit') return;
     if (this.mode() === 'edit' && !this.isOwner()) return;
-    const lines = this.formLines.map(line => ({ product_id: line.product_id, quantity: String(line.quantity).trim(), unit_cost: String(line.unit_cost).trim() }));
+    const lines = this.formLines.map(line => ({ product_id: line.product_id, quantity: normalizePurchaseDecimalInput(line.quantity), unit_cost: normalizePurchaseDecimalInput(line.unit_cost) }));
     if (!this.draft.order_number.trim() || !this.draft.supplier_id) {
       this.formError.set(this.t('invalidOrder'));
       return;
@@ -541,8 +548,8 @@ export class PurchasingWorkspaceComponent {
     const validProducts = new Set(this.stockProducts().map(product => product.id));
     if (!lines.length || lines.some(line =>
       !validProducts.has(line.product_id)
-      || !Number.isFinite(Number(line.quantity)) || Number(line.quantity) <= 0
-      || !Number.isFinite(Number(line.unit_cost)) || Number(line.unit_cost) < 0
+      || !this.isValidDecimal(line.quantity, 3, false)
+      || !this.isValidDecimal(line.unit_cost, 2, true)
     )) {
       this.formError.set(this.t('invalidLines'));
       return;

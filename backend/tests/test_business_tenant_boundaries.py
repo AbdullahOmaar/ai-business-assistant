@@ -849,13 +849,23 @@ def test_tax_summary_keeps_currencies_separate_and_is_workspace_scoped():
     try:
         business_id = uuid4()
         with app.state.session_factory() as session:
-            session.add(Business(id=business_id, name="Tax workspace", currency_code="EGP"))
+            session.add(Business(
+                id=business_id, name="Tax workspace", currency_code="EGP",
+                timezone="America/Los_Angeles",
+            ))
             session.flush()
             session.add(BusinessMembership(business_id=business_id, user_subject="tax-owner", role=MembershipRole.OWNER))
             session.add_all([
                 Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-1", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 5, tzinfo=timezone.utc), subtotal=Decimal("100.00"), tax_total=Decimal("14.00"), discount_total=Decimal("0.00"), total=Decimal("114.00")),
                 Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-2", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 15, tzinfo=timezone.utc), subtotal=Decimal("50.00"), tax_total=Decimal("7.00"), discount_total=Decimal("0.00"), total=Decimal("57.00")),
                 Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-USD-1", status="issued", currency_code="USD", issue_date=datetime(2026, 10, 10, tzinfo=timezone.utc), subtotal=Decimal("20.00"), tax_total=Decimal("3.00"), discount_total=Decimal("0.00"), total=Decimal("23.00")),
+                # America/Los_Angeles local October boundaries (UTC-07:00):
+                # Sep 30 23:59 local must be excluded; Oct 1 00:00 must be included.
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-START-BEFORE", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, 6, 59, tzinfo=timezone.utc), subtotal=Decimal("100.00"), tax_total=Decimal("100.00"), discount_total=Decimal("0.00"), total=Decimal("200.00")),
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-START-BOUNDARY", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, 7, 0, tzinfo=timezone.utc), subtotal=Decimal("2.00"), tax_total=Decimal("2.00"), discount_total=Decimal("0.00"), total=Decimal("4.00")),
+                # Oct 31 23:59 local must be included; Nov 1 00:00 must be excluded.
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-END-BEFORE", status="issued", currency_code="EGP", issue_date=datetime(2026, 11, 1, 6, 59, tzinfo=timezone.utc), subtotal=Decimal("4.00"), tax_total=Decimal("4.00"), discount_total=Decimal("0.00"), total=Decimal("8.00")),
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-END-BOUNDARY", status="issued", currency_code="EGP", issue_date=datetime(2026, 11, 1, 7, 0, tzinfo=timezone.utc), subtotal=Decimal("8.00"), tax_total=Decimal("8.00"), discount_total=Decimal("0.00"), total=Decimal("16.00")),
             ])
             session.commit()
         client = TestClient(app)
@@ -863,8 +873,8 @@ def test_tax_summary_keeps_currencies_separate_and_is_workspace_scoped():
         assert response.status_code == 200, response.text
         payload = response.json()
         totals = {row["currency_code"]: row for row in payload["currencies"]}
-        assert totals["EGP"]["tax_total"] == "21.00"
-        assert totals["EGP"]["invoice_count"] == 2
+        assert totals["EGP"]["tax_total"] == "27.00"
+        assert totals["EGP"]["invoice_count"] == 4
         assert totals["USD"]["tax_total"] == "3.00"
         assert totals["USD"]["invoice_count"] == 1
         assert payload["limitations"]

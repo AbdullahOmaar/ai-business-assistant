@@ -1140,7 +1140,10 @@
       "m_vj2szz": "Preview totals, discounts, and tax before saving.",
       "v160_ledger": "Version 1.6.0 adds a read-only inventory movement ledger with filters and pagination inside Products.",
       "v160_mobile": "Improved shared workspace cards, KPIs and form controls for a clearer mobile experience.",
-      "v160_precision": "Improved exact decimal price and stock sorting, search context and customer/product editing."
+      "v160_precision": "Improved exact decimal price and stock sorting, search context and customer/product editing.",
+      "v161_purchasing": "Version 1.6.1 preserves purchase quantity and unit-cost decimal strings and validates them against the API precision limits.",
+      "v161_inventory": "Version 1.6.1 adds product-opening balance as a filterable inventory movement reference.",
+      "v161_credit_notes": "Version 1.6.1 adds return drafts, owner approval and owner-only issuance of a separate credit-note document. It does not apply credit to receivables or record cash refunds; tax-bearing invoices remain blocked until tax allocation is approved."
     },
     "catalog": {
       "m_aba150_title": "Workspace and purchasing workflows",
@@ -1282,7 +1285,8 @@
       "m_1lj8xv7": "Press Enter to send and Shift + Enter for a new line, with a visible character counter and a 2,000-character limit.",
       "m_12vb645": "Review activity entries available to workspace owners; action and target labels use the selected language.",
       "m_hnk1p9": "A separate area for authorized platform administrators.",
-      "v160_title": "Inventory ledger and mobile experience update"
+      "v160_title": "Inventory ledger and mobile experience update",
+      "v161_title": "Returns, credit notes, purchasing and inventory improvements"
     }
   },
   "catalog": {
@@ -1889,6 +1893,7 @@
     "referenceType": "Reference type",
     "allReferences": "All references",
     "referenceTypes": {
+      "product_opening": "Product opening balance",
       "invoice": "Sales invoice",
       "invoice_void": "Invoice reversal",
       "purchase_order": "Purchase order",
@@ -1914,5 +1919,48 @@
       "loading": "Preparing your demo workspace…",
       "note": "Shared synthetic data — create, edit and explore freely"
     }
+  },
+  "creditNotes": {
+    "title": "Customer returns & credit notes",
+    "description": "A credit note is a separate document; it does not apply receivable credit or prove a cash refund.",
+    "loading": "Loading…",
+    "refresh": "Refresh",
+    "loadingRecords": "Loading records…",
+    "createReturnDraft": "Create a return draft",
+    "issuedInvoice": "Issued invoice",
+    "chooseInvoice": "Choose an issued invoice",
+    "returnReason": "Return reason *",
+    "returnReasonRequired": "Return reason is required. Enter a reason before saving.",
+    "returnReasonMissingForDraft": "This draft has no saved reason. A return reason is required before approval or issuance.",
+    "loadingInvoiceLines": "Loading invoice lines…",
+    "quantityInInvoice": "Invoiced qty",
+    "returnQuantity": "Return quantity",
+    "serverCalculationNote": "The server derives return amounts from persisted invoice data. Return approval and credit-note issuance are separate actions.",
+    "saving": "Saving…",
+    "saveDraft": "Save return draft",
+    "returns": "Sales returns",
+    "noReturns": "No returns yet.",
+    "return": "Return",
+    "invoice": "Invoice",
+    "approving": "Approving…",
+    "approveReturn": "Approve return",
+    "issued": "Issued",
+    "issuing": "Issuing…",
+    "issueCreditNote": "Issue credit note",
+    "ownerOnlyIssuance": "Owner-only issuance",
+    "issuedNotes": "Issued credit notes",
+    "noNotes": "No credit notes issued.",
+    "customer": "Customer",
+    "phaseFootnote": "This phase issues the document only. It does not apply credit to receivables or record a cash refund. Tax-bearing invoices remain blocked until tax allocation is approved.",
+    "validReturnQuantity": "Enter a valid return quantity for at least one line.",
+    "returnQuantityTooHigh": "Return quantity exceeds the invoiced quantity.",
+    "draftSavedMessage": "Return draft saved. An owner must approve it before credit-note issuance.",
+    "returnApprovedMessage": "Return approved.",
+    "creditNoteIssuedMessage": "Credit note issued. No receivable application or cash refund was recorded.",
+    "statusApproved": "Approved",
+    "statusRejected": "Rejected",
+    "statusDraft": "Draft",
+    "errorGeneric": "The operation failed. Refresh or check your permissions.",
+    "loadMore": "Load more"
   }
 }

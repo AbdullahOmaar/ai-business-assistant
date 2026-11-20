@@ -61,7 +61,7 @@ test('reference filter is enabled only with the authenticated API adapter contra
 });
 
 test('reference filters use only reference types observed in backend stock events', () => {
-  for (const type of ['invoice', 'invoice_void', 'purchase_order', 'sales_return', 'stock_count']) {
+  for (const type of ['product_opening', 'invoice', 'invoice_void', 'purchase_order', 'sales_return', 'stock_count']) {
     assert.ok(component.includes(`'${type}'`));
   }
   assert.match(component, /setReferenceType\(value: string\)/);
@@ -106,6 +106,8 @@ test('quantity formatting preserves arbitrary decimal precision without JS Numbe
 test('reference labels are dictionary-backed and include stock count in both locales', () => {
   assert.ok(component.includes("'stock_count'"));
   assert.ok(component.includes("this.t('referenceTypes.' + type)"));
+  assert.equal(ar.inventoryLedger.referenceTypes.product_opening, 'إضافة رصيد افتتاحي');
+  assert.equal(en.inventoryLedger.referenceTypes.product_opening, 'Product opening balance');
   assert.equal(ar.inventoryLedger.referenceTypes.stock_count, 'جرد مخزون');
   assert.equal(en.inventoryLedger.referenceTypes.stock_count, 'Stock count');
   assert.equal(ar.inventoryLedger.referenceType, 'نوع المرجع');

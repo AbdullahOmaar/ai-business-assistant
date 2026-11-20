@@ -210,3 +210,11 @@ After authorization and all gates:
 This procedure is mandatory for Master, Chat 1–5, QA, integration contributors and external AI agents. The task owner prepares the packet; the accountable maintainer/Project Master validates the evidence and records the full diff self-review; QA contributors may add test evidence; only the authorized owner grants reserved approvals. Review requirements for controlled/security/architecture changes and Project Knowledge publication follow `AGENTS.md` and `docs/project-knowledge/04_KNOWLEDGE_GOVERNANCE_AND_CHANGELOG.md`; maintainer self-review does not replace any applicable independent non-author review or authorized approval. Formal provider-enforced branch protections must be honored and never bypassed. Do not infer a separate approval-count requirement unless it is observable in the current ruleset.
 
 **Non-negotiable:** this fast path is an orchestration optimization, not a gate reduction. It never waives exact-SHA checks, provider-enforced review/protection, the approved CI transition policy and exact-SHA requirements, standing MASTER delegation and reserved Owner approvals, security/privacy controls, migration approval, backup/restore evidence, or production verification.
+
+
+## Owner reconfirmation — direct Production development environment — 2026-11-20
+
+- At 09:09 EET on 2026-11-20, the Owner reconfirmed that the currently deployed Production provider environment is the active development environment for this pre-release phase, and that direct work against it is permitted.
+- Separate Preview projects or dedicated QA infrastructure are not prerequisites for this development workflow. Use the existing Production environment for development and validation with synthetic identities and synthetic records only.
+- This reconfirms the Owner decision documented on 2026-11-15; it does not authorize real-customer data, real financial effects, external messages, destructive operations, credential/security changes, or non-additive migrations.
+- This development-environment authorization is not itself a merge or deployment instruction and does not waive applicable CI, review, recovery, or release gates.

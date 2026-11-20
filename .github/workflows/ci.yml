@@ -193,6 +193,13 @@ jobs:
                           keys["backend_full"] = "true"
                       if any("alembic" in p or "migration" in p or p.endswith("/models.py") for p in backend_paths):
                           keys["migrations"] = "true"
+                      # These focused test modules connect directly to disposable PostgreSQL.
+                      postgres_schema_tests = {
+                          "test_t39_inventory_movements_api.py",
+                          "test_t39_receipt_idempotency_postgres_schema.py",
+                      }
+                      if any(Path(p).name in postgres_schema_tests for p in backend_test_paths):
+                          keys["migrations"] = "true"
                       if any(p.startswith("backend/app/") or p in ("backend/Dockerfile", "backend/requirements.txt") for p in backend_paths):
                           keys["backend_container"] = "true"
                       if "backend/requirements.txt" in backend_paths:
@@ -368,7 +375,7 @@ jobs:
           CHANGED_TESTS: ${{ needs.detect-changes.outputs.backend_tests == 'true' && needs.detect-changes.outputs.backend_full != 'true' && 'targeted' || 'none' }}
         run: |
           mkdir -p test-results
-          mapfile -t files < <(git diff --name-only "${{ github.event.pull_request.base.sha || github.event.before }}" "${{ github.event.pull_request.head.sha || github.sha }}" -- 'backend/tests/*.py' || true)
+          mapfile -t files < <(git diff --name-only "${{ github.event.pull_request.base.sha || github.event.before }}" "${{ github.event.pull_request.head.sha || github.sha }}" -- 'backend/tests/*.py' | sed 's#^backend/##' || true)
           if [ "${#files[@]}" -eq 0 ]; then
             echo "::error::No safe backend test selection was available."
             exit 1

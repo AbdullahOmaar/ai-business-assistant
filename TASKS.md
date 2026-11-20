@@ -4485,3 +4485,115 @@ The direct webhook endpoint uses a GitLab Pipeline Trigger Token as a bearer cre
 - T42 remains PARTIALLY COMPLETE. T39 remains PARTIALLY COMPLETE; T37 financial semantics remain DRAFT / NOT APPROVED. T45 remains NOT STARTED / NOT ACTIVE and read-only discovery only until its explicit activation gates pass.
 - Notion T18, T39 and T42 records and PR #401 description were refreshed with current exact-head evidence. No backend runtime, financial semantics, schema/migration, live DB, production data or external messaging changed.
 - This TASKS documentation update advances the PR head; exact-head GitHub Actions and a matching Preview must be re-established for the resulting SHA. Keep PR #401 Draft until required acceptance evidence is recorded.
+
+
+## BUG-01 — tax report uses business-local IANA date boundaries — 2026-11-19
+
+- **Branch:** `master/nov-2026-phase-1-runtime-qa`; implementation parent `1df9afd2e170bd83dccfad17471681ddf8fe9623`.
+- **Source change:** `backend/app/extended_api.py` now reads the authorized business timezone and reuses the existing `_day_bounds` helper to build UTC half-open bounds from inclusive local dates. Currency separation, saved invoice tax snapshots and existing workspace authorization are preserved.
+- **Regression:** `backend/tests/test_business_tenant_boundaries.py` sets the workspace timezone to `America/Los_Angeles` and covers the UTC instants immediately before/at the local start and end boundaries. The expected report includes local October dates only.
+- **Status:** [قيد المراجعة] — implementation committed; consolidated exact-head CI and backend regression are still required. No production runtime or database changes.
+- **Next:** proceed to BUG-02 only after this candidate's targeted regression is validated; BUG-02 remains gated by the T37 financial-semantics approval boundary.
+
+
+## MASTER execution checkpoint — REP-20261119-002 — 2026-11-19
+
+- **Active branch:** `master/nov-2026-phase-1-runtime-qa`; PR #407 head `987b99edf7a4a1aa894537829d0256f7ea6c0c7a`.
+- **BUG-01 — [تم التحقق]:** the business-local IANA date-boundary implementation and its regression are included at this exact head. GitHub Actions run [#44566640675](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44566640675) completed SUCCESS on the exact SHA. The backend PostgreSQL regression suite reported **325 passed**; frontend full regression, frontend production build, frontend and backend dependency audits, backend container/import, authenticated API smoke and aggregate `all-checks-passed` all completed successfully. This validates the candidate code/CI only; it does not constitute production-rendered QA.
+- **BUG-02 — [قيد التنفيذ ضمن نطاق معتمد]:** Owner approved a phased Credit Notes policy on 2026-11-19. Stage 1 issuance-only is APPROVED TO IMPLEMENT with immutable OWNER issuance from approved returns, audit/idempotency, tenant/customer/currency checks, no mutation of historical invoice/payment/allocation records, and tax-bearing invoices blocked until tax allocation is separately reviewed. Stage 2 receivable application and Stage 3 cash refunds remain DEFERRED behind separate phase gates. T37 remains PARTIALLY COMPLETE overall; no blanket financial-contract approval.
+- **BUG-03 — [متبقي]:** Demo session endpoint has no demonstrated distributed rate-limit implementation. Do not add a process-local limiter that silently resets across serverless instances. First select an approved shared enforcement primitive and test its fail-closed behavior; preserve the existing disabled-by-default configuration.
+- **BUG-04 — [متبقي]:** payroll approval currently enforces a different-owner approver than creator. Changing this is a payroll separation-of-duties policy change, not a cosmetic bug fix. Keep the existing guard until the policy explicitly authorizes a safe single-owner alternative with audit/control requirements.
+- **BUG-05 — [قيد التحقق]:** purchase-order list now fetches all lines for the requested page in one tenant-scoped query, groups them by order, and preserves deterministic line ordering and remaining-quantity output. Added a regression that creates three orders and asserts exactly one PurchaseOrderLine SELECT. Await exact-head CI.
+- **BUG-06 — [تم التحقق]:** customer statement events are now unioned and date-filtered in SQL; per-currency running balances use a window function; count, page and latest balances are queried in SQL before response serialization. Currency mismatches remain visible but non-applying; issued Stage-1 credit notes remain excluded from AR balances and explicitly listed as a limitation. Exact-head CI #44574297152 passed.
+- **BUG-07 — [قيد التنفيذ]:** slice 1 moved the 51,271-byte root stylesheet into `app.component.css`; slice 2 extracted the Audit Events workspace into a standalone component with parent-owned state and event outputs. `app.component.ts` is now 262,105 bytes (from 317,642). Exact-head CI #44577925196 passed: 568 frontend tests, production build, backend 336 tests, PostgreSQL migration/schema checks, authenticated API smoke, containers, audits and aggregate gate. Further feature/template extraction remains open.
+- **BUG-08 — [متبقي / BLOCKED]:** recurring-invoice generation and external notification delivery require approved idempotency, retry, provider, secret, and operational contracts. Existing schedule/queue metadata is not proof of worker delivery. Do not activate external messaging or recurring invoice creation without those contracts and authorization.
+- **QA-GATE:** physical Android/installed-PWA, screen-reader, forced-colors, actual 200% zoom, production-rendered authenticated OWNER/STAFF/second-tenant journeys and isolated restore drill remain NOT RUN/BLOCKED. The currently connected Desktop Commander device is offline; no authorized physical device session is available in this run. Do not infer these gates from CI.
+- **Sequence:** BUG-01 is closed by exact-head evidence. BUG-02 Stage 1 is now authorized and is the next ordered implementation item; Stage 2/3 remain deferred. Continue on the existing active branch, reconcile the closed/unmerged PR #312 without reopening or merging it wholesale, and keep exact-head validation/release gates. No production write, merge or deployment is authorized until gates pass.
+
+
+## BUG-03 — shared distributed rate limit for public demo session — 2026-11-19
+
+- **Implementation:** `backend/app/demo_auth_api.py` now applies an atomic Redis REST fixed-window counter before Firebase user lookup or custom-token minting. Client identity is hashed; the implementation trusts the platform's `x-real-ip` header and does not parse arbitrary `X-Forwarded-For` chains.
+- **Fail-closed behavior:** demo login still remains disabled by default. When explicitly enabled, missing/invalid shared Redis configuration or an unavailable limiter returns HTTP 503; there is no in-memory/serverless-instance fallback. Requests over the configured threshold return HTTP 429 with `Retry-After`.
+- **Configuration:** `DEMO_RATE_LIMIT_REDIS_URL` and `DEMO_RATE_LIMIT_REDIS_TOKEN` are required when demo login is enabled. Optional `DEMO_RATE_LIMIT_MAX_REQUESTS` defaults to 5; `DEMO_RATE_LIMIT_WINDOW_SECONDS` defaults to 60. Limits are validated (1–100 requests, 1–3600 seconds). See `backend/README.md`.
+- **Regression:** `backend/tests/test_demo_auth_api.py` covers disabled-by-default behavior, successful mocked shared-counter flow, platform-super-admin rejection, missing shared limiter fail-closed behavior, and threshold rejection / Retry-After.
+- **Exact-head CI:** GitHub Actions run [#44567739139](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44567739139) SUCCESS on `04d9fb2b686b04595ac8f99d608ac22d421df676`; backend regression **327 passed, 23 warnings**; frontend unit tests/build, frontend/backend dependency audits, authenticated API smoke, backend container and `all-checks-passed` SUCCESS.
+- **Status:** [قيد المراجعة] — code and mocked Redis contract are CI-verified, but live Redis provider credentials/configuration have not been provisioned or exercised. Do not enable public demo login in a deployed environment until the shared limiter environment variables are configured and the provider connection is smoke-tested.
+- **Next ordered item:** BUG-02 remains the next item in the original order and remains blocked by T37 / financial-semantics approval. BUG-03 was advanced as the next independently safe item without changing that gate.
+
+
+## Owner decision checkpoint — Credit Notes phased authorization — 2026-11-19
+
+- **Authority:** explicit Product Owner decision recorded in canonical Notion T37: https://app.notion.com/p/4089320b90fb81708c5cc14a1b74580b.
+- **Approved scope:** Stage 1 only — immutable credit-note issuance from an OWNER-approved sales return, linked to the original issued invoice/customer/business/currency/source lines; reason required; server-derived totals; tenant/customer/currency checks; optional reason; transactional audit; idempotent duplicate protection; no rewriting original invoice/payment/allocation history.
+- **Tax guard:** tax-bearing invoices/returns remain blocked until line-level tax allocation/reversal receives its own review and validation. Stage 1 has no tax-report, filing, receivable-application, cash, refund, payment-reallocation or GL/journal side effects.
+- **Deferred:** Stage 2 (apply credit to receivables) and Stage 3 (cash refunds) require separate phase-gate decisions and acceptance evidence. Other T37 financial domains remain deferred.
+- **PR #312:** current state rechecked as CLOSED / UNMERGED / Draft, head `564dfacd5b518006468deb7d53fde16a38896c27`. Its body and diff include multiple phases (credit applications, cash refunds and tax/report effects). A policy comment was added; do not reopen or merge this PR wholesale. Isolate only Stage 1 work after full source/diff/branch-base reconciliation.
+- **Issue #79:** remains the canonical Feature 31 tracker. Its requirements align with the approved issuance-only slice but full refunds/application/reporting remain gated.
+- **Current workstream:** keep the single active branch `master/nov-2026-phase-1-runtime-qa` and PR #407. No new branch, production data write, live migration, merge, deployment or version bump as part of this policy decision.
+- **Validation status:** policy/documentation update only. No Stage 1 source implementation or tests were run in this checkpoint; exact-head CI, security review, migration/rollback review and release evidence remain NOT RUN for any new Stage 1 candidate.
+- **Next action:** inspect current active-branch Feature 31 models/routes/migrations and compare the full PR #312 diff; isolate the smallest Stage 1-only implementation and add the required focused tests before broader validation.
+
+
+## Credit Notes Stage 1 implementation + validation checkpoint — 2026-11-19
+
+- **Policy:** Stage 1 issuance-only remains the sole approved phase. Stage 2 receivable application and Stage 3 cash refunds are deferred. Tax-bearing invoices remain blocked. No tax, AR, payment, cash, refund, stock valuation, GL or reporting side effects are introduced.
+- **Implementation:** backend `CreditNote` model and additive Alembic revision `0008_credit_notes`; OWNER-only issuance from an OWNER-approved return; same-business invoice/customer/source-line checks; invoice-derived currency/customer; server-reconciled positive amount; tax guard; audit event; unique one-note-per-return protection; tenant-scoped return and credit-note reads. The original invoice and payment/allocation records are not mutated.
+- **Frontend:** bilingual issuance workspace integrated under Invoices; return draft, owner approval, owner-only note issuance, and read-only history. Arabic/English strings live in locale dictionaries and dates use LocalizationService formatting. No receivable-application or cash-refund controls.
+- **Tests:** focused backend issuance tests and frontend boundary tests added. Initial exact-head run #44571075880 found a frontend locale assertion; run #44571444616 then found two frontend test issues (stale copy assertions and date-pipe policy). Both were corrected; locale keys were added; the service-worker cache and release metadata were normalized.
+- **Versioning:** candidate version promotion is explicitly deferred. Frontend remains at 1.6.0 and backend API/package at 1.5.0 until release gates pass. No production release or version bump is claimed.
+- **Latest candidate:** PR #407 remains OPEN / UNMERGED on active branch `master/nov-2026-phase-1-runtime-qa`, latest head `766d8da5aec17f5634067f3458a7ebced53a8858`. Exact-head GitHub Actions run for this SHA is not yet visible; prior exact-head CI has backend accounting, disposable PostgreSQL migration/smoke, container/import, dependency audits and frontend production build passing, but frontend unit suite was failing before the fixes. Do not reuse those earlier passes as proof for the new head.
+- **Release gates still required:** latest exact-head aggregate CI including frontend unit suite; independent diff/security review; migration SQL/rollback review; production-rendered OWNER/STAFF/second-tenant journeys; Android/PWA, accessibility/forced-colors/200% zoom; backup/restore drill. No merge, live migration, production write, deployment or version promotion before all applicable gates pass.
+- **PR #312 / Issue #79:** PR #312 remains CLOSED / UNMERGED and is not merged wholesale because it contains deferred Stage 2/3 and tax/report behavior. Issue #79 remains the Feature 31 tracker and carries the phased owner decision.
+
+- **Inventory boundary clarification:** the existing OWNER approval of a sales return already records a stock movement for stock-tracked lines. Stage 1 reuses this existing return behavior; credit-note issuance itself creates no additional stock movement and writes only the credit-note record plus audit event. No stock valuation/COGS or GL posting is authorized.
+
+
+## BUG-05 — batched purchase-order list line loading — 2026-11-19
+
+- Replaced the per-order `PurchaseOrderLine` query loop in `list_purchase_orders` with one page-scoped query using the same `business_id` and `purchase_order_id IN (...)` filters.
+- Grouped fetched lines by order ID in memory; preserved order-level pagination, deterministic `purchase_order_id, id` line ordering, and the existing `remaining_quantity` calculation/response shape.
+- Added `test_purchase_order_list_batches_lines_in_one_tenant_scoped_query`: three orders, exactly one SELECT against purchase-order lines, tenant predicate present, and unchanged response contents.
+- Status: implementation committed on active PR #407 branch; exact-head CI pending. No query-plan/production performance claim is made until validated on PostgreSQL. No deployment.
+
+
+## BUG-06 — SQL-side customer statement — exact-head PASS — 2026-11-19
+
+- Replaced application-memory invoice/allocation loading, sorting, running-balance computation and pagination with a tenant-scoped SQL `UNION ALL` event CTE.
+- Applied business-local date boundaries to both event sources before counting/paging.
+- Computed running balances with a SQL window partitioned by currency and ordered by `occurred_at, event_type, source_id`; latest per-currency balances are also selected in SQL.
+- Preserved same-currency allocations as balance credits. Currency-mismatch allocations remain visible under the payment currency, carry `affects_balance=false`, and do not change balances.
+- Pagination is applied in SQL; total count and final balances are computed over the full filtered period, not just the page. Output timestamps are normalized to UTC ISO strings; decimal zeros preserve the prior `0` string representation.
+- Stage 1 credit notes are explicitly excluded from customer statement receivable balances; no receivable application is implied before Stage 2 approval.
+- Regression tests cover business-local date boundary, issued-only invoices, currency separation, mismatch non-application, running balances across pagination, and SQL-side LIMIT/OFFSET.
+- **Exact-head CI:** run [#44574297152](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44574297152) SUCCESS on `c5b79eeb7b2845705b8b597976870ec1252a4ae3`; backend **336 passed, 23 warnings**, frontend **565 passed**, build, disposable PostgreSQL migration/schema drift, authenticated API smoke, backend container/import, dependency audits, project knowledge and all-checks-passed SUCCESS.
+
+
+## BUG-07 — staged root component extraction, slice 1 — 2026-11-19
+
+- Extracted the existing 51,271-byte `styles` template literal from `frontend/src/app/app.component.ts` into `frontend/src/app/app.component.css` and changed Angular metadata to `styleUrl: './app.component.css'`.
+- Verified byte-for-byte equality between the old template-literal contents and the new CSS file. No selector, declaration, media query or style ordering was intentionally changed.
+- Updated the root template-safety test fixture to concatenate the TypeScript source and extracted stylesheet, preserving the existing selector/responsive-style assertions.
+- File size reduced from 317,642 bytes to 266,391 bytes (51,251-byte reduction). Remaining work is staged extraction of presentation/feature modules; no broad rewrite.
+- **Slice 1 validation:** exact-head GitHub Actions run [#44576491066](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44576491066) SUCCESS on `839d6a40807f13af9948dec00e002952b9ea38eb`; frontend **565 passed**, frontend production build PASS, backend **336 passed / 23 warnings**, PostgreSQL migrations/schema drift, authenticated API smoke, backend container/import, dependency audits, project knowledge and all-checks-passed SUCCESS. This verifies the stylesheet extraction only; remaining root component extractions are not complete.
+
+
+## BUG-07 — audit workspace extraction, slice 2 — exact-head PASS — 2026-11-19
+
+- Extracted the audit tab's filter form, event table, error state and pagination into `frontend/src/app/audit-events-workspace.component.ts`.
+- The root component retains tenant/role guarded data loading, audit load guard, event state and row/column mapping; the new component receives readonly inputs and emits action/target filter changes and page requests. No direct API dependency was added to the presentation component.
+- Preserved all action/target options and localization keys. Added responsive filter/pagination styles and focused component-boundary tests.
+- Updated template safety and employee UX tests to assert the moved audit options/loading state in the extracted component.
+- Root component size is now 262,105 bytes (317,642 baseline); stylesheet and audit view are separate artifacts.
+- **Exact-head CI:** run [#44577925196](https://github.com/AbdullahOmaar/ai-business-assistant/actions/runs/44577925196) SUCCESS on `de715347f8e2fa0b153d1ae21bb1b8c0decad366`; frontend **568 passed**, build PASS, backend **336 passed / 23 warnings**, migrations/schema drift, API smoke, container/import, dependency audits, project knowledge and all-checks-passed SUCCESS.
+- Status: slice 2 verified; BUG-07 remains in progress for additional bounded extractions.
+
+
+## P2 follow-up — demo rate-limit counter retention — 2026-11-20
+
+- **Finding:** `demo_rate_limit_counters` has no TTL, expiry, or pruning path. Distinct client-IP hashes can therefore leave persistent rows indefinitely.
+- **Evidence:** Codex review on PR #407, inline finding [P2 — Expire persisted demo rate-limit counters](https://github.com/AbdullahOmaar/ai-business-assistant/pull/407#discussion_r4639485639).
+- **Scope:** documentation/tracking only. No application code, model, migration, or database change is included in this follow-up.
+- **Runtime qualification:** migration 0009 was applied to Production on 2026-11-20 at 09:28 EET and verified by Alembic revision `0009_demo_rate_limit_counters`; the table exists. No live row growth or storage growth has been observed/reported yet.
+- **Status:** FOLLOW-UP / NOT IMPLEMENTED. This remains an unresolved follow-up, not an accepted risk. Evaluate bounded retention or cleanup in a separately reviewed task before enabling sustained public demo traffic.
+- **Acceptance:** define retention semantics, cleanup strategy and index/storage impact; test concurrency and cleanup safety; keep rate limiting fail-closed.

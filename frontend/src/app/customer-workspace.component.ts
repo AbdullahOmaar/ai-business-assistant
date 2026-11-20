@@ -95,6 +95,8 @@ export class CustomerWorkspaceComponent {
   readonly locale = input<'ar' | 'en'>('ar');
   readonly invoicesRequested = output<string>();
   readonly statementRequested = output<string>();
+  /** Emits the server-returned record after a successful create/edit so the host shell can refresh shared pickers. */
+  readonly customerSaved = output<Customer>();
 
   readonly mode = signal<'list' | 'profile' | 'create' | 'edit'>('list');
   readonly customers = signal<Customer[]>([]);
@@ -237,6 +239,7 @@ export class CustomerWorkspaceComponent {
         ? await this.api.updateCustomer(requested.businessId, editingId, value)
         : await this.api.createCustomer(requested.businessId, value);
       if (!this.isCurrent(this.saveGuard, version, requested)) return;
+      this.customerSaved.emit(record);
       this.selectedCustomer.set(record);
       this.selectedCustomerId = record.id;
       this.customers.update(rows => {

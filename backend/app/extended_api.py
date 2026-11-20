@@ -16,7 +16,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Response
 from pydantic import BaseModel, Field
-from sqlalchemy import func, or_, select, text
+from sqlalchemy import Numeric, String, case, cast, func, literal, or_, select, text, union_all
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
@@ -25,7 +25,7 @@ from app.data_exchange import CsvValidationError, parse_import_csv
 from app.models import (
     AuditEvent, Business, BusinessSetting, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
     Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, PurchaseReceiptIdempotency, RecurringInvoiceSchedule,
-    SalesReturn, SalesReturnLine, StockMovement, Supplier,
+    CreditNote, SalesReturn, SalesReturnLine, StockMovement, Supplier,
 )
 from app.core_features_api import _day_bounds
 from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, apply_expense_visibility, authorize_membership
@@ -241,12 +241,22 @@ def list_purchase_orders(business_id: UUID, limit: int = Query(default=100, ge=1
         orders = session.scalars(select(PurchaseOrder).where(
             PurchaseOrder.business_id == business_id,
         ).order_by(PurchaseOrder.created_at.desc(), PurchaseOrder.id.desc()).offset(offset).limit(limit)).all()
+
+        # Load all lines for the selected page in one tenant-scoped query. Avoid
+        # one extra round trip per order while preserving each order's line order.
+        lines_by_order: dict[UUID, list[PurchaseOrderLine]] = {}
+        order_ids = [order.id for order in orders]
+        if order_ids:
+            page_lines = session.scalars(select(PurchaseOrderLine).where(
+                PurchaseOrderLine.business_id == business_id,
+                PurchaseOrderLine.purchase_order_id.in_(order_ids),
+            ).order_by(PurchaseOrderLine.purchase_order_id, PurchaseOrderLine.id)).all()
+            for line in page_lines:
+                lines_by_order.setdefault(line.purchase_order_id, []).append(line)
+
         result = []
         for order in orders:
-            lines = session.scalars(select(PurchaseOrderLine).where(
-                PurchaseOrderLine.business_id == business_id,
-                PurchaseOrderLine.purchase_order_id == order.id,
-            ).order_by(PurchaseOrderLine.id)).all()
+            lines = lines_by_order.get(order.id, [])
             item = _dict(order, ("id", "business_id", "supplier_id", "order_number", "status", "currency_code", "total", "created_at"))
             item["lines"] = [
                 {**_dict(line, ("id", "product_id", "quantity", "unit_cost", "received_quantity")),
@@ -257,7 +267,6 @@ def list_purchase_orders(business_id: UUID, limit: int = Query(default=100, ge=1
         return result
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
-
 
 @router.get("/recurring-invoices")
 def list_recurring_schedules(business_id: UUID, limit: int = Query(default=100, ge=1, le=200),
@@ -332,10 +341,14 @@ def report_tax_summary(
         func.coalesce(func.sum(Invoice.tax_total), 0),
         func.count(Invoice.id),
     ).where(Invoice.business_id == business_id, Invoice.status == "issued")
-    if start_date:
-        statement = statement.where(Invoice.issue_date >= datetime.combine(start_date, datetime.min.time(), tzinfo=timezone.utc))
-    if end_date:
-        statement = statement.where(Invoice.issue_date < datetime.combine(end_date + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc))
+    business = session.get(Business, business_id)
+    if business is None:
+        raise HTTPException(status_code=404, detail="Business not found")
+    start_utc, end_utc = _day_bounds(start_date, end_date, business.timezone)
+    if start_utc is not None:
+        statement = statement.where(Invoice.issue_date >= start_utc)
+    if end_utc is not None:
+        statement = statement.where(Invoice.issue_date < end_utc)
     rows = session.execute(statement.group_by(Invoice.currency_code).order_by(Invoice.currency_code)).all()
     return {
         "period": {"start_date": start_date.isoformat() if start_date else None,
@@ -588,6 +601,51 @@ def receive_purchase_order(
         return previous.response_snapshot
 
 
+@router.get("/sales-returns")
+def list_sales_returns(
+    business_id: UUID,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    status: str | None = Query(default=None, pattern="^(draft|approved|rejected)$"),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """List business-scoped returns; reads never issue a credit note or refund cash."""
+    try:
+        _authorized(session, principal, business_id)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    statement = select(SalesReturn).where(SalesReturn.business_id == business_id)
+    if status is not None:
+        statement = statement.where(SalesReturn.status == status)
+    returns = session.scalars(
+        statement.order_by(SalesReturn.created_at.desc(), SalesReturn.id.desc())
+        .limit(limit).offset(offset)
+    ).all()
+    invoice_currency_by_id = {}
+    if returns:
+        source_invoices = session.scalars(select(Invoice).where(
+            Invoice.id.in_([item.invoice_id for item in returns]),
+            Invoice.business_id == business_id,
+        )).all()
+        invoice_currency_by_id = {
+            str(invoice.id): invoice.currency_code for invoice in source_invoices
+        }
+    return {
+        "items": [
+            {
+                **_dict(item, (
+                    "id", "business_id", "invoice_id", "status", "reason", "total", "created_at",
+                )),
+                "currency_code": invoice_currency_by_id.get(str(item.invoice_id)),
+            }
+            for item in returns
+        ],
+        "limit": limit,
+        "offset": offset,
+    }
+
+
 @router.post("/sales-returns", status_code=201)
 def post_sales_return(business_id: UUID, body: ReturnInput,
                       session: Session = Depends(get_session),
@@ -601,7 +659,7 @@ def post_sales_return(business_id: UUID, body: ReturnInput,
         if invoice is None:
             raise WorkflowError("Issued invoice not found in this business")
         ret = SalesReturn(business_id=business_id, invoice_id=invoice.id,
-                          status="draft", reason=body.reason, total=ZERO)
+                          status="draft", reason=(body.reason.strip() if body.reason else body.reason), total=ZERO)
         session.add(ret)
         session.flush()
         discount_allocation_lines = session.scalars(select(InvoiceLine).where(
@@ -640,7 +698,13 @@ def post_sales_return(business_id: UUID, body: ReturnInput,
         session.flush()
         return ret
     ret = _commit(session, op)
-    return _dict(ret, ("id", "business_id", "invoice_id", "status", "reason", "total", "created_at"))
+    currency_code = session.scalar(select(Invoice.currency_code).where(
+        Invoice.id == ret.invoice_id, Invoice.business_id == business_id,
+    ))
+    return {
+        **_dict(ret, ("id", "business_id", "invoice_id", "status", "reason", "total", "created_at")),
+        "currency_code": currency_code,
+    }
 
 
 @router.post("/sales-returns/{return_id}/approve")
@@ -659,19 +723,20 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
         ).with_for_update()).one_or_none()
         if invoice is None or invoice.status != "issued":
             raise WorkflowError("Sales return must reference an issued invoice")
+        if not (ret.reason or "").strip():
+            raise WorkflowError("A return reason is required before approval")
         lines = session.scalars(select(SalesReturnLine).where(
             SalesReturnLine.sales_return_id == ret.id, SalesReturnLine.business_id == business_id,
-        )).all()
+        ).order_by(SalesReturnLine.id)).all()
 
         # Group duplicate line entries and lock the invoice header first. Concurrent
         # approvals for the same invoice then serialize before checking approved returns.
         requested_by_line: dict[UUID, dict[str, Decimal]] = {}
         for returned in lines:
             requested = requested_by_line.setdefault(
-                returned.invoice_line_id, {"quantity": ZERO, "amount": ZERO}
+                returned.invoice_line_id, {"quantity": ZERO}
             )
             requested["quantity"] += returned.quantity
-            requested["amount"] += returned.amount
 
         discount_allocation_lines = session.scalars(select(InvoiceLine).where(
             InvoiceLine.invoice_id == invoice.id,
@@ -704,19 +769,41 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
                 SalesReturnLine.business_id == business_id,
                 SalesReturn.status == "approved",
             ))
+            invoiced_amount = discounted_return_line_total(
+                invoice_subtotal=invoice.subtotal,
+                invoice_discount_total=invoice.discount_total,
+                invoice_lines=[(str(row.id), row.line_total) for row in discount_allocation_lines],
+                target_line_id=str(invoice_line.id),
+            )
+            previous_quantity = Decimal(str(previously_returned_quantity or 0))
+            previous_amount = Decimal(str(previously_returned_amount or 0))
+            cumulative_amount = money(
+                invoiced_amount * (previous_quantity + requested["quantity"]) / invoice_line.quantity
+            )
+            allocated_amount = cumulative_amount - previous_amount
             try:
                 validate_return_amount(
-                    invoiced_amount=discounted_return_line_total(
-                        invoice_subtotal=invoice.subtotal,
-                        invoice_discount_total=invoice.discount_total,
-                        invoice_lines=[(str(row.id), row.line_total) for row in discount_allocation_lines],
-                        target_line_id=str(invoice_line.id),
-                    ),
-                    previously_returned_amount=Decimal(str(previously_returned_amount or 0)),
-                    requested_return_amount=requested["amount"],
+                    invoiced_amount=invoiced_amount,
+                    previously_returned_amount=previous_amount,
+                    requested_return_amount=allocated_amount,
                 )
             except ValueError as exc:
                 raise WorkflowError(str(exc)) from exc
+
+            # Allocate rounded cents against cumulative approved quantity, not each
+            # return independently. The final approved return reconciles exactly
+            # to the discounted source-line amount even for sub-cent unit shares.
+            running_quantity = previous_quantity
+            running_amount = previous_amount
+            for returned_line in (
+                row for row in lines if row.invoice_line_id == invoice_line_id
+            ):
+                running_quantity += returned_line.quantity
+                next_cumulative_amount = money(
+                    invoiced_amount * running_quantity / invoice_line.quantity
+                )
+                returned_line.amount = next_cumulative_amount - running_amount
+                running_amount = next_cumulative_amount
             invoice_lines[invoice_line_id] = invoice_line
 
         for returned in lines:
@@ -731,13 +818,158 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
                         movement_type="return", quantity_delta=returned.quantity,
                         reason=f"Approved sales return {ret.id}", reference_type="sales_return",
                         reference_id=ret.id, created_by_subject=principal.subject))
+        ret.total = sum((returned.amount for returned in lines), ZERO)
         ret.status = "approved"
         session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
             action="sales_return.approved", target_type="sales_return", target_id=str(ret.id)))
         session.flush()
         return ret
     ret = _commit(session, op)
-    return _dict(ret, ("id", "invoice_id", "status", "total", "created_at"))
+    currency_code = session.scalar(select(Invoice.currency_code).where(
+        Invoice.id == ret.invoice_id, Invoice.business_id == business_id,
+    ))
+    return {
+        **_dict(ret, ("id", "invoice_id", "status", "total", "created_at")),
+        "currency_code": currency_code,
+    }
+
+
+@router.post("/sales-returns/{return_id}/credit-note", status_code=201)
+def issue_credit_note_for_return(
+    business_id: UUID,
+    return_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Issue one immutable credit note for an approved return; no AR or cash posting."""
+
+    def op():
+        _authorized(session, principal, business_id, owner_only=True)
+        ret = session.scalars(
+            select(SalesReturn).where(
+                SalesReturn.id == return_id,
+                SalesReturn.business_id == business_id,
+            ).with_for_update()
+        ).one_or_none()
+        if ret is None:
+            raise WorkflowError("Sales return not found in this business")
+
+        existing = session.scalars(select(CreditNote).where(
+            CreditNote.business_id == business_id,
+            CreditNote.sales_return_id == ret.id,
+        ).with_for_update()).one_or_none()
+        if existing is not None:
+            return existing
+        if ret.status != "approved":
+            raise WorkflowError("Only an approved sales return can be credited")
+        if not (ret.reason or "").strip():
+            raise WorkflowError("A return reason is required before credit note issuance")
+
+        invoice = session.scalars(select(Invoice).where(
+            Invoice.id == ret.invoice_id,
+            Invoice.business_id == business_id,
+        ).with_for_update()).one_or_none()
+        if invoice is None or invoice.status != "issued":
+            raise WorkflowError("Credit note must reference an issued invoice")
+        if invoice.customer_id is None:
+            raise WorkflowError("Credit note requires an invoice linked to a customer")
+        if Decimal(str(invoice.tax_total or ZERO)) > ZERO:
+            raise WorkflowError(
+                "Credit note issuance for tax-bearing invoices is deferred until tax allocation is approved"
+            )
+
+        return_lines = session.scalars(select(SalesReturnLine).where(
+            SalesReturnLine.sales_return_id == ret.id,
+            SalesReturnLine.business_id == business_id,
+        ).order_by(SalesReturnLine.id)).all()
+        if not return_lines:
+            raise WorkflowError("An approved return must contain at least one line")
+        source_line_ids = {line.invoice_line_id for line in return_lines}
+        source_count = session.scalar(select(func.count(InvoiceLine.id)).where(
+            InvoiceLine.business_id == business_id,
+            InvoiceLine.invoice_id == invoice.id,
+            InvoiceLine.id.in_(source_line_ids),
+        ))
+        if int(source_count or 0) != len(source_line_ids):
+            raise WorkflowError("Every return line must reference the original invoice")
+
+        total = money(sum((Decimal(str(line.amount)) for line in return_lines), ZERO))
+        if total <= ZERO or money(Decimal(str(ret.total))) != total:
+            raise WorkflowError("Approved return total must reconcile to its persisted return lines")
+
+        note = CreditNote(
+            business_id=business_id,
+            sales_return_id=ret.id,
+            invoice_id=invoice.id,
+            customer_id=invoice.customer_id,
+            credit_note_number=f"CN-{ret.id.hex[:24].upper()}",
+            currency_code=invoice.currency_code,
+            total=total,
+            created_by_subject=principal.subject,
+        )
+        session.add(note)
+        session.flush()
+        session.add(AuditEvent(
+            business_id=business_id,
+            actor_subject=principal.subject,
+            action="credit_note.issued",
+            target_type="credit_note",
+            target_id=str(note.id),
+            change_summary=f"Credit note issued for approved sales return {ret.id}",
+        ))
+        session.flush()
+        return note
+
+    try:
+        note = _commit(session, op)
+    except HTTPException as exc:
+        if exc.status_code != 409:
+            raise
+        # A concurrent request may win the unique (business, return) constraint.
+        session.rollback()
+        existing = session.scalars(select(CreditNote).where(
+            CreditNote.business_id == business_id,
+            CreditNote.sales_return_id == return_id,
+        )).one_or_none()
+        if existing is None:
+            raise
+        note = existing
+
+    return _dict(note, (
+        "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
+        "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
+    ))
+
+
+@router.get("/credit-notes")
+def list_credit_notes(
+    business_id: UUID,
+    limit: int = Query(default=50, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    customer_id: UUID | None = Query(default=None),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """List issued Stage-1 credit-note documents; does not imply applied credit or cash refund."""
+    try:
+        _authorized(session, principal, business_id)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    statement = select(CreditNote).where(CreditNote.business_id == business_id)
+    if customer_id is not None:
+        statement = statement.where(CreditNote.customer_id == customer_id)
+    notes = session.scalars(
+        statement.order_by(CreditNote.created_at.desc(), CreditNote.id.desc())
+        .limit(limit).offset(offset)
+    ).all()
+    return {
+        "items": [_dict(note, (
+            "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
+            "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
+        )) for note in notes],
+        "limit": limit,
+        "offset": offset,
+    }
 
 
 @router.post("/recurring-invoices", status_code=201)
@@ -1633,11 +1865,7 @@ def customer_statement(
     session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ):
-    """Return a currency-separated customer statement from issued invoices and payment allocations.
-
-    Credit notes are not represented by a dedicated ledger model yet, so this endpoint
-    explicitly reports that limitation rather than treating sales returns as cash credits.
-    """
+    """Build a currency-separated customer statement with SQL-side pagination and balances."""
     try:
         _authorized(session, principal, business_id)
         if from_date is not None and to_date is not None and from_date > to_date:
@@ -1655,97 +1883,142 @@ def customer_statement(
             raise HTTPException(status_code=404, detail="Business not found")
         start_utc, end_utc = _day_bounds(from_date, to_date, business.timezone)
 
+        invoice_occurred_at = func.coalesce(Invoice.issue_date, Invoice.created_at)
+        invoice_events = select(
+            invoice_occurred_at.label("occurred_at"),
+            literal("invoice_issued", type_=String()).label("event_type"),
+            cast(Invoice.id, String()).label("source_id"),
+            Invoice.invoice_number.label("reference"),
+            Invoice.currency_code.label("currency_code"),
+            Invoice.total.label("debit"),
+            literal(0, type_=Numeric(14, 2)).label("credit"),
+            literal(True).label("affects_balance"),
+            literal(None, type_=String()).label("invoice_id"),
+        ).where(
+            Invoice.business_id == business_id,
+            Invoice.customer_id == customer_id,
+            Invoice.status == "issued",
+            invoice_occurred_at.is_not(None),
+        )
+        if start_utc is not None:
+            invoice_events = invoice_events.where(invoice_occurred_at >= start_utc)
+        if end_utc is not None:
+            invoice_events = invoice_events.where(invoice_occurred_at < end_utc)
+
+        allocation_occurred_at = func.coalesce(Payment.received_at, PaymentAllocation.created_at)
+        same_currency = Payment.currency_code == Invoice.currency_code
+        allocation_events = select(
+            allocation_occurred_at.label("occurred_at"),
+            case(
+                (same_currency, literal("payment_allocation", type_=String())),
+                else_=literal("currency_mismatch_allocation", type_=String()),
+            ).label("event_type"),
+            cast(PaymentAllocation.id, String()).label("source_id"),
+            Payment.reference.label("reference"),
+            case(
+                (same_currency, Invoice.currency_code),
+                else_=Payment.currency_code,
+            ).label("currency_code"),
+            literal(0, type_=Numeric(14, 2)).label("debit"),
+            PaymentAllocation.amount.label("credit"),
+            same_currency.label("affects_balance"),
+            cast(Invoice.id, String()).label("invoice_id"),
+        ).join(
+            Payment,
+            Payment.id == PaymentAllocation.payment_id,
+        ).join(
+            Invoice,
+            Invoice.id == PaymentAllocation.invoice_id,
+        ).where(
+            PaymentAllocation.business_id == business_id,
+            Payment.business_id == business_id,
+            Invoice.business_id == business_id,
+            Invoice.customer_id == customer_id,
+            Invoice.status == "issued",
+            allocation_occurred_at.is_not(None),
+        )
+        if start_utc is not None:
+            allocation_events = allocation_events.where(allocation_occurred_at >= start_utc)
+        if end_utc is not None:
+            allocation_events = allocation_events.where(allocation_occurred_at < end_utc)
+
+        # UNION ALL keeps the event sources in the database. The window function
+        # computes running balances per currency before LIMIT/OFFSET is applied.
+        events = union_all(invoice_events, allocation_events).cte("customer_statement_events")
+        applicable_credit = case(
+            (events.c.affects_balance.is_(True), events.c.credit),
+            else_=literal(0, type_=Numeric(14, 2)),
+        )
+        event_order = (events.c.occurred_at, events.c.event_type, events.c.source_id)
+        running_balance = func.sum(events.c.debit - applicable_credit).over(
+            partition_by=events.c.currency_code,
+            order_by=event_order,
+            rows=(None, 0),
+        )
+        windowed = select(
+            events,
+            running_balance.label("balance"),
+        ).cte("customer_statement_windowed")
+
+        total = session.scalar(select(func.count()).select_from(events)) or 0
+        page_rows = session.execute(
+            select(windowed)
+            .order_by(windowed.c.occurred_at, windowed.c.event_type, windowed.c.source_id)
+            .offset(offset)
+            .limit(limit)
+        ).all()
+
+        latest_rank = func.row_number().over(
+            partition_by=windowed.c.currency_code,
+            order_by=(
+                windowed.c.occurred_at.desc(),
+                windowed.c.event_type.desc(),
+                windowed.c.source_id.desc(),
+            ),
+        ).label("latest_rank")
+        ranked_balances = select(
+            windowed.c.currency_code,
+            windowed.c.balance,
+            latest_rank,
+        ).subquery("customer_statement_ranked_balances")
+        balance_rows = session.execute(
+            select(ranked_balances.c.currency_code, ranked_balances.c.balance)
+            .where(ranked_balances.c.latest_rank == 1)
+            .order_by(ranked_balances.c.currency_code)
+        ).all()
+
         def as_utc_timestamp(value: datetime) -> datetime:
             # SQLite may return naive values for timezone-aware columns; treat those as UTC.
             if value.tzinfo is None or value.utcoffset() is None:
                 return value.replace(tzinfo=timezone.utc)
             return value.astimezone(timezone.utc)
 
-        invoices = session.scalars(select(Invoice).where(
-            Invoice.business_id == business_id,
-            Invoice.customer_id == customer_id,
-            Invoice.status == "issued",
-        )).all()
-        invoice_ids = [item.id for item in invoices]
-        events: list[dict] = []
-        for item in invoices:
-            occurred_at = item.issue_date or item.created_at
-            if occurred_at is None:
-                continue
-            occurred_at = as_utc_timestamp(occurred_at)
-            if start_utc is not None and occurred_at < start_utc:
-                continue
-            if end_utc is not None and occurred_at >= end_utc:
-                continue
-            events.append({
-                "occurred_at": occurred_at,
-                "event_type": "invoice_issued",
-                "source_id": str(item.id),
-                "reference": item.invoice_number,
-                "currency_code": item.currency_code,
-                "debit": item.total,
-                "credit": ZERO,
-                "affects_balance": True,
-            })
+        def decimal_string(value) -> str:
+            amount = Decimal(str(value or ZERO))
+            return str(ZERO if amount == ZERO else amount)
 
-        if invoice_ids:
-            allocations = session.execute(
-                select(PaymentAllocation, Payment, Invoice)
-                .join(Payment, Payment.id == PaymentAllocation.payment_id)
-                .join(Invoice, Invoice.id == PaymentAllocation.invoice_id)
-                .where(
-                    PaymentAllocation.business_id == business_id,
-                    Payment.business_id == business_id,
-                    Invoice.business_id == business_id,
-                    Invoice.customer_id == customer_id,
-                    PaymentAllocation.invoice_id.in_(invoice_ids),
-                )
-            ).all()
-            for allocation, payment, invoice in allocations:
-                occurred_at = payment.received_at or allocation.created_at
-                if occurred_at is None:
-                    continue
-                occurred_at = as_utc_timestamp(occurred_at)
-                if start_utc is not None and occurred_at < start_utc:
-                    continue
-                if end_utc is not None and occurred_at >= end_utc:
-                    continue
-                same_currency = payment.currency_code == invoice.currency_code
-                events.append({
-                    "occurred_at": occurred_at,
-                    "event_type": "payment_allocation" if same_currency else "currency_mismatch_allocation",
-                    "source_id": str(allocation.id),
-                    "reference": payment.reference,
-                    "invoice_id": str(invoice.id),
-                    "currency_code": invoice.currency_code if same_currency else payment.currency_code,
-                    "debit": ZERO,
-                    "credit": allocation.amount,
-                    "affects_balance": same_currency,
-                })
-
-        events.sort(key=lambda event: (event["occurred_at"], event["event_type"], event["source_id"]))
-        running: dict[str, Decimal] = {}
-        for event in events:
-            currency = event["currency_code"]
-            running.setdefault(currency, ZERO)
-            if event["affects_balance"]:
-                running[currency] += event["debit"] - event["credit"]
-            event["balance"] = running[currency]
-            event["occurred_at"] = event["occurred_at"].isoformat()
+        items = []
+        for row in page_rows:
+            item = dict(row._mapping)
+            item["occurred_at"] = as_utc_timestamp(item["occurred_at"]).isoformat()
             for key in ("debit", "credit", "balance"):
-                event[key] = str(event[key])
+                item[key] = decimal_string(item[key])
+            items.append(item)
 
-        total = len(events)
+        balances_by_currency = {
+            currency: decimal_string(balance)
+            for currency, balance in balance_rows
+        }
         return {
             "customer": {"id": str(customer.id), "name": customer.name},
-            "items": events[offset:offset + limit],
+            "items": items,
             "total": total,
             "limit": limit,
             "offset": offset,
-            "balances_by_currency": {currency: str(balance) for currency, balance in running.items()},
+            "balances_by_currency": balances_by_currency,
             "limitations": [
-                "Credit notes are not implemented in the current data model and are excluded.",
-                "Approved sales returns are not treated as receivable credits until a credit-note ledger exists.",
+                "Issued credit notes are excluded from this statement and do not reduce receivables in Stage 1.",
+                "Approved sales returns are not treated as receivable credits until Stage 2 is separately approved and implemented.",
                 "Allocations with a currency mismatch are shown but do not change the running balance.",
                 "Balances represent issued invoices less matching-currency allocations, not a double-entry general ledger.",
             ],

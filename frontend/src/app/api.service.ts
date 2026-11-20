@@ -36,6 +36,14 @@ export interface InvoiceDetail extends Invoice {
   notes?: string | null;
   lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; unit_price: string; line_total: string }>;
 }
+export interface SalesReturn {
+  id: string; business_id: string; invoice_id: string; status: 'draft' | 'approved' | 'rejected';
+  reason: string | null; total: string; currency_code: string; created_at: string;
+}
+export interface CreditNote {
+  id: string; business_id: string; sales_return_id: string; invoice_id: string; customer_id: string;
+  credit_note_number: string; currency_code: string; total: string; created_by_subject: string; created_at: string;
+}
 export interface PaymentAllocation { invoice_id: string; amount: string; }
 export interface Payment { id: string; amount: string; currency_code: string; received_at: string; customer_id?: string | null; method?: string | null; reference?: string | null; allocations: PaymentAllocation[]; }
 export interface Expense { id: string; category: string; description: string; amount: string; currency_code: string; incurred_at: string; vendor_name?: string | null; reference?: string | null; created_at?: string | null; }
@@ -692,6 +700,38 @@ export class ApiService {
   invoiceDetail(businessId: string, invoiceId: string): Promise<InvoiceDetail> {
     return this.request<InvoiceDetail>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}`
+    );
+  }
+  salesReturns(businessId: string, status?: SalesReturn['status'], offset = 0, limit = 100): Promise<{ items: SalesReturn[]; limit: number; offset: number }> {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    if (status) params.set('status', status);
+    return this.request<{ items: SalesReturn[]; limit: number; offset: number }>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns?${params.toString()}`
+    );
+  }
+  createSalesReturn(businessId: string, body: {
+    invoice_id: string; reason?: string; lines: Array<{ invoice_line_id: string; quantity: string }>;
+  }): Promise<SalesReturn> {
+    return this.request<SalesReturn>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns`, 'POST', body
+    );
+  }
+  approveSalesReturn(businessId: string, returnId: string): Promise<Pick<SalesReturn, 'id' | 'invoice_id' | 'status' | 'total' | 'created_at'>> {
+    return this.request<Pick<SalesReturn, 'id' | 'invoice_id' | 'status' | 'total' | 'created_at'>>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns/${encodeURIComponent(returnId)}/approve`,
+      'POST', {}
+    );
+  }
+  creditNotes(businessId: string, offset = 0, limit = 100): Promise<{ items: CreditNote[]; limit: number; offset: number }> {
+    const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+    return this.request<{ items: CreditNote[]; limit: number; offset: number }>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/credit-notes?${params.toString()}`
+    );
+  }
+  issueCreditNote(businessId: string, returnId: string): Promise<CreditNote> {
+    return this.request<CreditNote>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/sales-returns/${encodeURIComponent(returnId)}/credit-note`,
+      'POST', {}
     );
   }
   updateDraftInvoice(businessId: string, invoiceId: string, body: {

@@ -3,7 +3,11 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { expandDictionaryBackedProperties, expandTranslationCalls } from './localization-test-helpers.ts';
 
-const appSource = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const appSource = expandTranslationCalls(
+  readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8')
+  + '\n'
+  + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8')
+);
 const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const backendSource = readFileSync(new URL('../../../backend/app/core_features_api.py', import.meta.url), 'utf8');
 const metricCardSource = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');

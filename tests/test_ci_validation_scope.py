@@ -177,6 +177,29 @@ class ChangeAwareValidationScopeTests(unittest.TestCase):
         self.assertEqual(plan["backend_tests"], "true")
         self.assertEqual(plan["backend_full"], "false")
         self.assertEqual(plan["backend_container"], "false")
+        self.assertEqual(plan["migrations"], "true")
+
+    def test_targeted_backend_pytest_runs_from_repository_root(self) -> None:
+        workflow = WORKFLOW.read_text(encoding="utf-8")
+        step = workflow.split("      - name: Run changed backend test modules", 1)[1].split(
+            "      - name: Upload backend test results", 1
+        )[0]
+        self.assertIn("working-directory: backend", step)
+        self.assertIn("sed 's#^backend/##'", step)
+        self.assertIn('python -m pytest -q "${files[@]}" --junitxml=test-results/pytest.xml', step)
+        self.assertIn("test_t39_receipt_idempotency_postgres_schema.py", workflow)
+        self.assertIn("Path(p).name in postgres_schema_tests", workflow)
+
+    def test_postgres_idempotency_module_selects_migrations(self) -> None:
+        self.write(
+            "backend/tests/test_t39_receipt_idempotency_postgres_schema.py",
+            "def test_targeted():\\n    assert True\\n",
+        )
+        self.commit("backend PostgreSQL idempotency test module")
+        plan = self.run_selector()
+        self.assertEqual(plan["backend_tests"], "true")
+        self.assertEqual(plan["backend_full"], "false")
+        self.assertEqual(plan["migrations"], "true")
 
     def test_backend_shared_test_helpers_run_full_suite(self) -> None:
         shared_modules = (

@@ -5,7 +5,12 @@ import { expandTranslationCalls } from './localization-test-helpers.ts';
 import { createServiceWorkerUpdateHandler } from './service-worker-update.ts';
 
 const globalStyles = expandTranslationCalls(readFileSync(new URL('../styles.css', import.meta.url), 'utf8'));
-const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const source = expandTranslationCalls(
+  readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8')
+  + '\n'
+  + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8')
+);
+const auditWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./audit-events-workspace.component.ts', import.meta.url), 'utf8'));
 const inventoryApiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const invoiceEditorSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8'));
 const invoiceDraftSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8'));
@@ -107,13 +112,13 @@ test('audit actions and record types have Arabic display labels', () => {
   assert.match(source, /this\.auditTargetLabel\(item\.target_type\)/);
   assert.match(auditLabelsSource, /"invoice\.issued": "audit\.actions\.m_1dgwo7k"/);
   assert.match(auditLabelsSource, /"invoice\.voided": "audit\.actions\.m_1b7zju0"/);
-  assert.match(source, /value="invoice\.draft_updated"/);
-  assert.match(source, /value="stock\.movement_recorded"/);
-  assert.match(source, /value="purchase_order\.approved"/);
-  assert.match(source, /value="sales_return\.approved"/);
-  assert.match(source, /value="recurring_invoice_schedule\.created"/);
+  assert.match(auditWorkspaceSource, /value="invoice\.draft_updated"/);
+  assert.match(auditWorkspaceSource, /value="stock\.movement_recorded"/);
+  assert.match(auditWorkspaceSource, /value="purchase_order\.approved"/);
+  assert.match(auditWorkspaceSource, /value="sales_return\.approved"/);
+  assert.match(auditWorkspaceSource, /value="recurring_invoice_schedule\.created"/);
   assert.match(auditLabelsSource, /"supplier\.created": "audit\.actions\.m_n1vp0a"/);
-  assert.equal((source.match(/<option value="supplier">/g) || []).length, 1);
+  assert.equal((auditWorkspaceSource.match(/<option value="supplier">/g) || []).length, 1);
 });
 
 
@@ -282,7 +287,7 @@ test('mobile More navigation renders grouped destinations from the shared catalo
 test('workspace empty states use the shared accessible state component', () => {
   assert.doesNotMatch(source, /<p class="empty">/);
   assert.match(recordTableSource, /<aba-state-message kind="empty"/, "shared record tables provide an accessible empty state");
-  assert.ok((source.match(/<aba-state-message kind="error"/g) || []).length >= 17);
+  assert.ok(((source + auditWorkspaceSource).match(/<aba-state-message kind="error"/g) || []).length >= 17);
   assert.doesNotMatch(source, /<p class="error" role="alert">/);
   assert.doesNotMatch(source, /class="error-banner"/);
   assert.doesNotMatch(source, /class="error" role="alert"/);
@@ -1185,8 +1190,8 @@ test('purchase order and recurring schedule forms expose accessible localized va
   assert.ok(purchase.includes('name="orderNumber" maxlength="64" required'));
   assert.ok(purchase.includes('name="supplier" required'));
   assert.ok(purchase.includes('required [(ngModel)]="line.product_id"'));
-  assert.ok(purchase.includes('type="number" min="0.001" step="0.001" required'));
-  assert.ok(purchase.includes('type="number" min="0" step="0.01" required'));
+  assert.ok(purchase.includes('type="text" inputmode="decimal" autocomplete="off" required [(ngModel)]="line.quantity"'));
+  assert.ok(purchase.includes('type="text" inputmode="decimal" autocomplete="off" required [(ngModel)]="line.unit_cost"'));
   assert.ok(purchase.includes('role="alert"'));
   assert.ok(purchase.includes("this.formError.set(this.t('invalidLines'))"));
 
