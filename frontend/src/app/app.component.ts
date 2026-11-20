@@ -1460,6 +1460,7 @@ export class AppComponent implements OnInit, OnDestroy {
   @ViewChild('mobileMoreTrigger') private mobileMoreTrigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('mobileMoreMenu') private mobileMoreMenu?: ElementRef<HTMLElement>;
   @ViewChild('invoiceDetailClose') private invoiceDetailCloseButton?: ElementRef<HTMLButtonElement>;
+  @ViewChild('invoiceDetailDrawer') invoiceDetailDrawer?: ElementRef<HTMLElement>;
   @ViewChild('chatLog') private chatLog?: ElementRef<HTMLElement>;
   isInstalled = false;
   installHelp = false;
@@ -1698,16 +1699,16 @@ export class AppComponent implements OnInit, OnDestroy {
     if (!this.selectedInvoiceForDetails || event.key !== 'Tab') return;
     const drawer = this.invoiceDetailDrawer?.nativeElement;
     if (!drawer) return;
-    const focusable = Array.from(drawer.querySelectorAll<HTMLElement>(
+    const focusable: HTMLElement[] = Array.from(drawer.querySelectorAll<HTMLElement>(
       'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    )).filter(element => element.getAttribute('aria-hidden') !== 'true' && element.getClientRects().length > 0);
+    )).filter((element: HTMLElement) => element.getAttribute('aria-hidden') !== 'true' && element.getClientRects().length > 0);
     if (!focusable.length) {
       event.preventDefault();
       drawer.focus();
       return;
     }
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
+    const first: HTMLElement = focusable[0];
+    const last: HTMLElement = focusable[focusable.length - 1];
     const active = document.activeElement;
     if (!drawer.contains(active)) {
       event.preventDefault();
