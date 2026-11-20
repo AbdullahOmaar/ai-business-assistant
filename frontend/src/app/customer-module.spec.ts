@@ -9,6 +9,7 @@ const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const directory = readFileSync(new URL('./customer-directory.component.ts', import.meta.url), 'utf8');
 const workspace = readFileSync(new URL('./customer-workspace.component.ts', import.meta.url), 'utf8');
 const directoryCss = readFileSync(new URL('./customer-directory.component.css', import.meta.url), 'utf8');
+const appShell = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 
 test('customer editor covers all supported contact fields and required-name/email validation', () => {
   for (const field of ['name', 'email', 'phone', 'address', 'notes']) assert.ok(editor.includes('name="' + field + '"'));
@@ -41,6 +42,23 @@ test('customer API client exposes bounded server search, detail and patch for su
   assert.match(api, /customer\(businessId: string, customerId: string\)/);
   assert.match(api, /updateCustomer\(businessId: string, customerId: string/);
   assert.match(api, /'address' \| 'notes'/);
+});
+
+test('saved customers reach the shared invoice picker immediately via a guarded customerSaved upsert', () => {
+  // The workspace emits the server-returned record only after the tenant/save guard passes.
+  assert.match(workspace, /readonly customerSaved = output<Customer>\(\);/);
+  assert.match(workspace, /this\.customerSaved\.emit\(record\);/);
+  const guardIndex = workspace.indexOf('if (!this.isCurrent(this.saveGuard, version, requested)) return;');
+  const emitIndex = workspace.indexOf('this.customerSaved.emit(record)');
+  assert.ok(guardIndex !== -1 && emitIndex !== -1 && guardIndex < emitIndex);
+  // The host shell listens and upserts by id without touching selection or pagination cursor.
+  assert.match(appShell, /\(customerSaved\)="onWorkspaceCustomerSaved\(\$event\)"/);
+  assert.match(appShell, /onWorkspaceCustomerSaved\(customer: Customer\): void/);
+  assert.match(appShell, /this\.customers\.some\(item => item\.id === customer\.id\)/);
+  assert.match(appShell, /\[customer, \.\.\.this\.customers\]/);
+  const handler = /onWorkspaceCustomerSaved\(customer: Customer\): void \{[\s\S]*?\n  \}/.exec(appShell);
+  assert.ok(handler, 'handler body found');
+  assert.doesNotMatch(handler[0], /invoiceCustomerId|customerOffset|customersHasMore/);
 });
 
 test('customer directory preserves responsive layouts and exposes saved address and notes', () => {
