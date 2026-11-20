@@ -382,3 +382,5 @@
   .invoice-controls{grid-template-columns:minmax(0,1fr)}
   .invoice-export,.invoice-load-more-customers,.invoice-density-toggle{grid-column:auto;justify-self:stretch}
 }
+
+@media(min-width:761px) and (max-width:900px){.desktop-nav-group-label{display:none}}

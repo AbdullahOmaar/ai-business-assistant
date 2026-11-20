@@ -917,7 +917,8 @@ test('invoice drafts are available to workspace members while issue and void rem
   assert.match(toolbar, /<aba-invoice-draft-editor/);
   assert.match(toolbar, /\(saveDraft\)="saveInvoiceDraft\(\$event\)"/);
 
-  const rowStart = source.indexOf('@for (invoice of filteredInvoices', filterStart);
+  const tableStart = source.indexOf('<table class="invoice-table">', filterStart);
+  const rowStart = source.indexOf('@for (invoice of visibleInvoices', tableStart);
   const rowEnd = source.indexOf('</tr>', rowStart);
   const row = source.slice(rowStart, rowEnd);
   assert.ok(rowStart >= 0 && rowEnd > rowStart);

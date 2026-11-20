@@ -35,9 +35,12 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   assert.match(source, /get primaryNavigationModules/);
   assert.match(source, /\['overview', 'invoices', 'customers'\]/);
   assert.match(source, /@for \(module of primaryNavigationModules; track module\.tab\)/);
-  assert.match(source, /get desktopNavigationGroups/);
-  assert.match(source, /@for \(group of desktopNavigationGroups; track group\.id\)/);
-  assert.match(source, /setTab\(module\.tab\)/);
+  assert.match(source, /get primaryNavigationModules/);
+  assert.match(source, /\['overview', 'invoices', 'customers'\]/);
+  assert.match(source, /@for \(module of primaryNavigationModules; track module\.tab\)/);
+  assert.match(source, /setTab\('platform-admin'\)/);
+  assert.match(source, /@if \(canAccessTab\('platform-admin'\)\)/);
+  assert.match(source, /@if \(canAccessTab\('employees'\)\)/);
   assert.match(catalogueSource, /tab: 'platform-admin', mobileGroup: 'team-admin'/);
 
   assert.ok(
@@ -81,12 +84,17 @@ test('Home module directory exposes bilingual search and a localized empty state
 });
 
 
-test('desktop navigation groups every authorized destination and scrolls independently of the fixed shell', () => {
-  assert.match(source, /<nav class="sidebar-nav-scroll"/);
-  assert.match(source, /get desktopNavigationGroups/);
-  assert.match(source, /accessibleModules\.filter\(module => coreTabs\.has\(module\.tab\)\)/);
-  assert.match(source, /WORKSPACE_MODULE_GROUPS\.map\(group =>/);
-  assert.match(source, /modules: accessibleModules\.filter\(module => module\.mobileGroup === group\.id\)/);
+test('desktop navigation groups every catalogue destination and scrolls independently of the fixed shell', () => {
+  assert.match(source, /<div class="sidebar-nav-scroll">/);
+  assert.match(source, /class="desktop-sidebar-groups"/);
+  assert.match(source, /class="desktop-nav-group"/);
+  for (const tab of ['overview', 'invoices', 'customers', 'products', 'suppliers', 'purchases', 'reports', 'taxes', 'payments', 'expenses', 'recurring', 'employees', 'team', 'platform-admin', 'audit', 'integrity', 'notifications', 'health', 'assistant', 'release-guide']) {
+    assert.ok(source.includes("setTab('" + tab + "')"), 'desktop navigation must retain ' + tab);
+  }
+  for (const key of ['catalog.m_1341u8e', 'catalog.m_2h49lq', 'catalog.m_8ogsj9', 'catalog.m_lkukj5', 'catalog.m_18paotq']) {
+    assert.ok(source.includes(key), 'desktop navigation must mirror More group ' + key);
+  }
+  assert.match(source, /@if \(canAccessTab\('integrity'\)\)/);
   assert.match(source, /\.sidebar-nav-scroll\{[^}]*min-height:0;[^}]*overflow-y:auto/s);
   assert.match(source, /overscroll-behavior:contain/);
   assert.match(source, /@media\(max-width:760px\)\{\s*\.sidebar-nav-scroll\{display:contents\}/);
