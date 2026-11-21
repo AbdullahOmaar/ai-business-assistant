@@ -107,7 +107,6 @@ const isTimeoutError = loadTimeoutDetector();
 function makeProductHarness(importBehaviour: (businessId: string, csv: string) => Promise<unknown>) {
   const productsCalls: string[] = [];
   const setPageCalls: { id: string }[][] = [];
-  let retryCalls = 0;
   const state = {
     business: { id: 'biz-1', role: 'owner' },
     importCsvText: 'name,sku\nA,1\n',
@@ -118,6 +117,7 @@ function makeProductHarness(importBehaviour: (businessId: string, csv: string) =
     error: '',
     products: [] as { id: string }[],
     invoiceProductId: null as string | null,
+    productRefreshRequest: 0,
     api: {
       importProductCsv: importBehaviour,
       products: async (businessId: string) => {
@@ -132,16 +132,14 @@ function makeProductHarness(importBehaviour: (businessId: string, csv: string) =
       setPageCalls.push(page);
       state.products = page;
     },
-    productWorkspace: { retry: () => { retryCalls += 1; } },
     isTimeoutError,
   };
-  return { state, productsCalls, setPageCalls, get retryCalls() { return retryCalls; } };
+  return { state, productsCalls, setPageCalls };
 }
 
 function makeCustomerHarness(importBehaviour: (businessId: string, csv: string) => Promise<unknown>) {
   const customersCalls: string[] = [];
   const setPageCalls: { id: string }[][] = [];
-  let retryCalls = 0;
   const state = {
     business: { id: 'biz-1', role: 'owner' },
     customerImportCsvText: 'name,email\nA,a@example.test\n',
@@ -152,6 +150,7 @@ function makeCustomerHarness(importBehaviour: (businessId: string, csv: string) 
     error: '',
     customers: [] as { id: string }[],
     invoiceCustomerId: null as string | null,
+    customerRefreshRequest: 0,
     api: {
       importCustomerCsv: importBehaviour,
       customers: async (businessId: string) => {
@@ -166,10 +165,9 @@ function makeCustomerHarness(importBehaviour: (businessId: string, csv: string) 
       setPageCalls.push(page);
       state.customers = page;
     },
-    customerWorkspace: { retry: () => { retryCalls += 1; } },
     isTimeoutError,
   };
-  return { state, customersCalls, setPageCalls, get retryCalls() { return retryCalls; } };
+  return { state, customersCalls, setPageCalls };
 }
 
 test('unknown-outcome keys exist in both dictionaries with the expected text', () => {
@@ -199,7 +197,7 @@ test('product import timeout shows the unknown-outcome message and refreshes the
   assert.deepEqual(h.productsCalls, ['biz-1'], 'the product list must be re-fetched on the timeout path');
   assert.equal(h.setPageCalls.length, 1, 'the refreshed page must be applied');
   assert.deepEqual(h.setPageCalls[0], [{ id: 'p1', name: 'A' }]);
-  assert.equal(h.retryCalls, 1);
+  assert.equal(h.state.productRefreshRequest, 1, 'the workspace refresh must be requested on the timeout path');
   assert.equal(h.state.invoiceProductId, 'p1');
   assert.equal(h.state.importLoading, false);
   assert.equal(h.state.importCsvText, 'name,sku\nA,1\n', 'the file stays loaded so the user can retry after checking');
@@ -219,7 +217,7 @@ test('customer import timeout shows the unknown-outcome message and refreshes th
   assert.deepEqual(h.customersCalls, ['biz-1'], 'the customer list must be re-fetched on the timeout path');
   assert.equal(h.setPageCalls.length, 1, 'the refreshed page must be applied');
   assert.deepEqual(h.setPageCalls[0], [{ id: 'c1', name: 'A' }]);
-  assert.equal(h.retryCalls, 1);
+  assert.equal(h.state.customerRefreshRequest, 1, 'the workspace refresh must be requested on the timeout path');
   assert.equal(h.state.invoiceCustomerId, 'c1');
   assert.equal(h.state.customerImportLoading, false);
   assert.equal(h.state.customerImportCsvText, 'name,email\nA,a@example.test\n', 'the file stays loaded so the user can retry after checking');

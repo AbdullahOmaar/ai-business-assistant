@@ -97,6 +97,8 @@ test('customer workspace covers server search, paginated list, detail and create
   assert.match(workspace, /loadingMore\(\) \? t\('ui\.m_1dwk1vm'\)/);
   assert.match(workspace, /\(retry\)="retry\(\)"/);
   assert.doesNotMatch(workspace, /\[retry\]="retry"/);
+  assert.match(workspace, /readonly refreshRequest = input\(0\)/);
+  assert.match(workspace, /if \(request > 0\) void this\.loadCustomers\(true\)/);
 });
 
 test('customer and product workspaces are mounted in the authenticated app shell', () => {
@@ -109,7 +111,11 @@ test('customer and product workspaces are mounted in the authenticated app shell
   assert.match(shell, /<aba-product-workspace/);
   assert.match(shell, /\[userId\]="workspaceUserId"/);
   assert.match(shell, /\[role\]="business\.role === 'owner' \? 'owner' : 'staff'"/);
-  assert.match(shell, /this\.customerWorkspace\?\.retry\(\)/);
-  assert.match(shell, /this\.productWorkspace\?\.retry\(\)/);
+  assert.match(shell, /\[refreshRequest\]="customerRefreshRequest"/);
+  assert.match(shell, /this\.customerRefreshRequest\+\+/);
+  assert.match(shell, /\[refreshRequest\]="productRefreshRequest"/);
+  assert.match(shell, /this\.productRefreshRequest\+\+/);
+  assert.doesNotMatch(shell, /@ViewChild\(CustomerWorkspaceComponent\)/);
+  assert.doesNotMatch(shell, /@ViewChild\(ProductWorkspaceComponent\)/);
 });
 
