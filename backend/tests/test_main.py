@@ -13,8 +13,9 @@ def test_health_endpoint_returns_ok() -> None:
 
 
 def test_cors_method_policy_includes_settings_put_route() -> None:
-    from app.main import CORS_ALLOWED_METHODS
     from starlette.middleware.cors import CORSMiddleware
+
+    from app.main import CORS_ALLOWED_METHODS
 
     middleware = CORSMiddleware(
         app,

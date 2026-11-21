@@ -6,6 +6,11 @@ from uuid import UUID
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from test_api import (
+    _configure_test_identity,
+    _restore_test_identity,
+    _sales_return_fixture,
+)
 
 from app.main import app
 from app.models import (
@@ -18,7 +23,6 @@ from app.models import (
     StockMovement,
     Supplier,
 )
-from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
 
 
 def test_staff_cannot_approve_purchase_order_and_owner_can():

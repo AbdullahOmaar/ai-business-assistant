@@ -6,8 +6,8 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.main import app
 from app.assistant_api import _fallback_source_ids
+from app.main import app
 from app.models import Base
 from app.security import AuthenticatedPrincipal
 

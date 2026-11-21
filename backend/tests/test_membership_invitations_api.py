@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta, timezone
 import os
+from datetime import UTC, datetime, timedelta
 from uuid import UUID
 
 import pytest
@@ -9,7 +9,13 @@ from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.models import AuditEvent, Base, Business, BusinessInvitation, BusinessMembership, MembershipRole
+from app.models import (
+    AuditEvent,
+    Base,
+    BusinessInvitation,
+    BusinessMembership,
+    MembershipRole,
+)
 from app.security import AuthenticatedPrincipal
 
 
@@ -151,7 +157,7 @@ def test_expired_invitation_cannot_be_accepted(invitation_client):
     created = create_invitation(client, business_id)
     with Session(engine) as session:
         invitation = session.get(BusinessInvitation, UUID(created["id"]))
-        invitation.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+        invitation.expires_at = datetime.now(UTC) - timedelta(seconds=1)
         session.commit()
     current["principal"] = AuthenticatedPrincipal(
         "firebase:test-project:staff-user", email="staff@example.com", email_verified=True
