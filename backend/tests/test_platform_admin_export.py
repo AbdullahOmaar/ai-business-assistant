@@ -5,8 +5,15 @@ import logging
 from uuid import UUID
 
 from sqlalchemy.orm import Session
+from test_platform_admin_api import (
+    ADMIN_SUBJECT,
+    OWNER_SUBJECT,
+    # Imported to register the `platform_admin_environment` pytest fixture for
+    # this module's tests; each test receives it as a parameter, which shadows
+    # this import (Ruff F401/F811 are expected here).
+    platform_admin_environment,
+)
 
-from test_platform_admin_api import ADMIN_SUBJECT, OWNER_SUBJECT, platform_admin_environment
 from app.models import AuditEvent
 
 

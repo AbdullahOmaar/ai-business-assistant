@@ -3,10 +3,10 @@
 All routes require a host-configured trusted identity resolver and a database
 session. This module never trusts caller-provided identity claims.
 """
-from datetime import date, datetime, time, timedelta, timezone
 import hashlib
 import re
 import secrets
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
@@ -19,11 +19,22 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
 from app.models import (
-    AuditEvent, Business, BusinessInvitation, BusinessMembership, Expense, Invoice, MembershipRole,
-    Payment, PaymentAllocation, SalesReturn,
+    AuditEvent,
+    Business,
+    BusinessInvitation,
+    BusinessMembership,
+    Expense,
+    Invoice,
+    MembershipRole,
+    Payment,
+    PaymentAllocation,
+    SalesReturn,
 )
 from app.security import (
-    AuthenticatedPrincipal, AuthorizationError, apply_expense_visibility, authorize_membership,
+    AuthenticatedPrincipal,
+    AuthorizationError,
+    apply_expense_visibility,
+    authorize_membership,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["workspace and dashboard"])
@@ -121,11 +132,11 @@ def _day_bounds(
         raise HTTPException(status_code=422, detail="start_date must be on or before end_date")
     zone = _timezone_zone(timezone_name)
     start = (
-        datetime.combine(start_date, time.min, tzinfo=zone).astimezone(timezone.utc)
+        datetime.combine(start_date, time.min, tzinfo=zone).astimezone(UTC)
         if start_date else None
     )
     end = (
-        datetime.combine(end_date + timedelta(days=1), time.min, tzinfo=zone).astimezone(timezone.utc)
+        datetime.combine(end_date + timedelta(days=1), time.min, tzinfo=zone).astimezone(UTC)
         if end_date else None
     )
     return start, end
@@ -328,12 +339,12 @@ def _invitation_token_hash(token: str) -> str:
 
 def _utc_datetime(value: datetime) -> datetime:
     if value.tzinfo is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 def _serialize_invitation(item: BusinessInvitation) -> dict:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     status = item.status
     if status == "pending" and _utc_datetime(item.expires_at) <= now:
         status = "expired"
@@ -356,7 +367,7 @@ def create_business_invitation(
 ):
     """Create a one-time STAFF invitation; this endpoint never sends email."""
     email = _normalize_invitation_email(body.email)
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     token = secrets.token_urlsafe(32)
     try:
         _authorize(session, principal, business_id, owner_only=True)
@@ -480,11 +491,11 @@ def revoke_business_invitation(
         if invitation is None:
             raise HTTPException(status_code=404, detail="Invitation not found")
         if invitation.status == "pending":
-            if _utc_datetime(invitation.expires_at) <= datetime.now(timezone.utc):
+            if _utc_datetime(invitation.expires_at) <= datetime.now(UTC):
                 invitation.status = "expired"
             else:
                 invitation.status = "revoked"
-                invitation.revoked_at = datetime.now(timezone.utc)
+                invitation.revoked_at = datetime.now(UTC)
             session.add(AuditEvent(
                 business_id=business_id,
                 actor_subject=principal.subject,
@@ -523,7 +534,7 @@ def accept_business_invitation(
     if invitation is None:
         raise HTTPException(status_code=404, detail="Invitation not found or no longer available")
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     try:
         business = session.scalars(
             select(Business).where(

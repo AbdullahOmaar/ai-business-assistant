@@ -8,14 +8,14 @@ request such as "void invoice ISS-1" was silently answered with a sales
 summary instead of being refused. The refusal is server-side, before both
 the local-fallback and the provider paths.
 """
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
@@ -74,14 +74,14 @@ def _seed_business(client):
                 status="issued", currency_code="EGP",
                 subtotal=Decimal(total), tax_total=Decimal("0.00"),
                 discount_total=Decimal("0.00"), total=Decimal(total),
-                issue_date=datetime(2026, 11, 1, tzinfo=timezone.utc),
+                issue_date=datetime(2026, 11, 1, tzinfo=UTC),
             ))
         session.add(Invoice(
             business_id=business_uuid, customer_id=customer.id, invoice_number="VOID-1",
             status="void", currency_code="EGP",
             subtotal=Decimal("40.00"), tax_total=Decimal("0.00"),
             discount_total=Decimal("0.00"), total=Decimal("40.00"),
-            issue_date=datetime(2026, 10, 15, tzinfo=timezone.utc),
+            issue_date=datetime(2026, 10, 15, tzinfo=UTC),
         ))
         for number, total in (("DFT-1", "50.00"), ("DFT-2", "70.00")):
             session.add(Invoice(

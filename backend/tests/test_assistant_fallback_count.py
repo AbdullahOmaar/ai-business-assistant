@@ -5,14 +5,14 @@ checked sales_intent before count_intent, and "invoice"/"invoices" (and
 "فاتورة"/"فواتير") are sales terms, so "count invoices" / "عدد الفواتير"
 answered with the monetary total of recent issued invoices instead of a count.
 """
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
@@ -71,7 +71,7 @@ def _seed_business(client):
                 status="issued", currency_code="EGP",
                 subtotal=Decimal(total), tax_total=Decimal("0.00"),
                 discount_total=Decimal("0.00"), total=Decimal(total),
-                issue_date=datetime(2026, 11, 1, tzinfo=timezone.utc),
+                issue_date=datetime(2026, 11, 1, tzinfo=UTC),
             ))
         for number, total in (("DFT-1", "50.00"), ("DFT-2", "70.00")):
             session.add(Invoice(

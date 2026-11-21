@@ -11,9 +11,8 @@ import time
 from fastapi import APIRouter, HTTPException, Request, Response
 from sqlalchemy import select, text
 
-from app.models import PlatformRoleGrant
-
 from app.firebase_auth import get_firebase_admin_app
+from app.models import PlatformRoleGrant
 
 router = APIRouter(prefix="/api/v1/demo", tags=["demo access"])
 

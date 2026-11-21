@@ -1,20 +1,40 @@
-from concurrent.futures import ThreadPoolExecutor
-from decimal import Decimal
 import os
+from concurrent.futures import ThreadPoolExecutor
+from datetime import UTC
+from decimal import Decimal
 from threading import Barrier
 from uuid import UUID, uuid4
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
-import pytest
 
 from app.main import app
 from app.models import (
-    AuditEvent, Base, Business, BusinessMembership, BusinessSetting, Customer, Expense, Invoice, InvoiceLine, Notification,
-    Product, PurchaseOrder, PurchaseOrderLine, RecurringInvoiceSchedule, StockMovement, Supplier,
-    MembershipRole, Payment, PaymentAllocation, PricingRule, SalesReturn, SalesReturnLine,
+    AuditEvent,
+    Base,
+    Business,
+    BusinessMembership,
+    BusinessSetting,
+    Customer,
+    Expense,
+    Invoice,
+    InvoiceLine,
+    MembershipRole,
+    Notification,
+    Payment,
+    PaymentAllocation,
+    PricingRule,
+    Product,
+    PurchaseOrder,
+    PurchaseOrderLine,
+    RecurringInvoiceSchedule,
+    SalesReturn,
+    SalesReturnLine,
+    StockMovement,
+    Supplier,
 )
 from app.security import AuthenticatedPrincipal
 
@@ -1056,7 +1076,8 @@ def test_owner_can_receive_purchase_order_and_records_stock_movement():
         engine.dispose()
 
 def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized():
-    from datetime import datetime, timezone
+    from datetime import datetime
+
     from app.models import Customer, Invoice, Payment, PaymentAllocation
 
     engine = create_engine(
@@ -1076,56 +1097,56 @@ def test_receivables_aging_is_business_scoped_currency_safe_and_owner_authorized
         invoices = [
             Invoice(
                 business_id=business.id, customer_id=customer.id, invoice_number="AGE-30",
-                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
-                due_date=datetime(2026, 9, 25, tzinfo=timezone.utc), subtotal=Decimal("100.00"),
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=UTC),
+                due_date=datetime(2026, 9, 25, tzinfo=UTC), subtotal=Decimal("100.00"),
                 tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("100.00"),
             ),
             Invoice(
                 business_id=business.id, customer_id=customer.id, invoice_number="AGE-USD",
-                status="issued", currency_code="USD", issue_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
-                due_date=datetime(2026, 10, 10, tzinfo=timezone.utc), subtotal=Decimal("50.00"),
+                status="issued", currency_code="USD", issue_date=datetime(2026, 10, 1, tzinfo=UTC),
+                due_date=datetime(2026, 10, 10, tzinfo=UTC), subtotal=Decimal("50.00"),
                 tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("50.00"),
             ),
             Invoice(
                 business_id=business.id, customer_id=customer.id, invoice_number="AGE-NODUE",
-                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=UTC),
                 due_date=None, subtotal=Decimal("30.00"), tax_total=Decimal("0.00"),
                 discount_total=Decimal("0.00"), total=Decimal("30.00"),
             ),
             Invoice(
                 business_id=business.id, customer_id=None, invoice_number="AGE-NOLINK",
-                status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
-                due_date=datetime(2026, 10, 20, tzinfo=timezone.utc), subtotal=Decimal("15.00"),
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, tzinfo=UTC),
+                due_date=datetime(2026, 10, 20, tzinfo=UTC), subtotal=Decimal("15.00"),
                 tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("15.00"),
             ),
             Invoice(
                 business_id=business.id, customer_id=customer.id, invoice_number="AGE-NOTDUE",
-                status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
-                due_date=datetime(2026, 10, 31, tzinfo=timezone.utc), subtotal=Decimal("25.00"),
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, tzinfo=UTC),
+                due_date=datetime(2026, 10, 31, tzinfo=UTC), subtotal=Decimal("25.00"),
                 tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("25.00"),
             ),
             Invoice(
                 business_id=business.id, customer_id=customer.id, invoice_number="AGE-SETTLED",
-                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
-                due_date=datetime(2026, 9, 20, tzinfo=timezone.utc), subtotal=Decimal("40.00"),
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=UTC),
+                due_date=datetime(2026, 9, 20, tzinfo=UTC), subtotal=Decimal("40.00"),
                 tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("40.00"),
             ),
             Invoice(
                 business_id=business.id, customer_id=customer.id, invoice_number="AGE-OVER",
-                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
-                due_date=datetime(2026, 9, 20, tzinfo=timezone.utc), subtotal=Decimal("20.00"),
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 9, 1, tzinfo=UTC),
+                due_date=datetime(2026, 9, 20, tzinfo=UTC), subtotal=Decimal("20.00"),
                 tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("20.00"),
             ),
             Invoice(
                 business_id=business.id, customer_id=customer.id, invoice_number="AGE-OVER90",
-                status="issued", currency_code="EGP", issue_date=datetime(2026, 5, 1, tzinfo=timezone.utc),
-                due_date=datetime(2026, 6, 1, tzinfo=timezone.utc), subtotal=Decimal("10.00"),
+                status="issued", currency_code="EGP", issue_date=datetime(2026, 5, 1, tzinfo=UTC),
+                due_date=datetime(2026, 6, 1, tzinfo=UTC), subtotal=Decimal("10.00"),
                 tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("10.00"),
             ),
             Invoice(
                 business_id=foreign_business.id, customer_id=None, invoice_number="FOREIGN",
-                status="issued", currency_code="USD", issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
-                due_date=datetime(2026, 9, 25, tzinfo=timezone.utc), subtotal=Decimal("900.00"),
+                status="issued", currency_code="USD", issue_date=datetime(2026, 9, 1, tzinfo=UTC),
+                due_date=datetime(2026, 9, 25, tzinfo=UTC), subtotal=Decimal("900.00"),
                 tax_total=Decimal("0.00"), discount_total=Decimal("0.00"), total=Decimal("900.00"),
             ),
         ]
@@ -1375,11 +1396,6 @@ def test_nonmember_cannot_mutate_sensitive_extended_workflows_without_writes_or_
 
         with Session(engine) as session:
             state_before = snapshot_business_state(session)
-            audit_before = session.scalar(
-                select(func.count()).select_from(AuditEvent).where(
-                    AuditEvent.business_id == business_id
-                )
-            )
 
         denied_requests = {
             "create purchase order": lambda: client.post(

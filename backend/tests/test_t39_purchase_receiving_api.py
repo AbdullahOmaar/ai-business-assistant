@@ -4,15 +4,20 @@ Every ordinary receive request supplies a canonical Idempotency-Key; the dedicat
 missing/malformed-key case intentionally omits or corrupts that header.
 """
 
-from decimal import Decimal
 import os
+from decimal import Decimal
 from uuid import UUID, uuid4
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from test_api import (
+    _configure_test_identity,
+    _restore_test_identity,
+    _sales_return_fixture,
+)
 
 from app.main import app
 from app.models import (
@@ -26,11 +31,6 @@ from app.models import (
     PurchaseReceiptIdempotency,
     StockMovement,
     Supplier,
-)
-from test_api import (
-    _configure_test_identity,
-    _restore_test_identity,
-    _sales_return_fixture,
 )
 
 

@@ -1,19 +1,32 @@
 import json
 import logging
-from types import SimpleNamespace
-
-import pytest
 from decimal import Decimal
+from types import SimpleNamespace
 from uuid import UUID, uuid4
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, func, select
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.models import (AuditEvent, Base, Business, BusinessMembership, Invoice, Payment, MembershipRole, PlatformAdminAuditEvent, PlatformRoleGrant)
-from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
+from app.models import (
+    AuditEvent,
+    Base,
+    Business,
+    BusinessMembership,
+    Invoice,
+    MembershipRole,
+    Payment,
+    PlatformAdminAuditEvent,
+    PlatformRoleGrant,
+)
+from app.security import (
+    AuthenticatedPrincipal,
+    AuthorizationError,
+    authorize_membership,
+)
 
 ADMIN_SUBJECT = "firebase:test-project:platform-admin-uid"
 OWNER_SUBJECT = "firebase:test-project:workspace-owner-uid"
@@ -363,6 +376,7 @@ def test_successful_status_change_emits_structured_security_event(platform_admin
 
 def test_platform_user_directory_lists_auth_accounts_without_membership(platform_admin_environment, monkeypatch):
     import firebase_admin.auth
+
     import app.platform_admin_api as platform_admin_api
 
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
@@ -411,6 +425,7 @@ def test_platform_user_directory_lists_auth_accounts_without_membership(platform
 
 def test_delegated_user_manager_can_read_directory_but_cannot_change_workspace_status(platform_admin_environment, monkeypatch):
     import firebase_admin.auth
+
     import app.platform_admin_api as platform_admin_api
     from app.models import PlatformRoleGrant
 
@@ -455,6 +470,7 @@ def test_delegated_user_manager_can_read_directory_but_cannot_change_workspace_s
 
 def test_only_bootstrap_super_admin_can_grant_delegated_roles_and_changes_are_audited(platform_admin_environment, monkeypatch):
     import firebase_admin.auth
+
     import app.platform_admin_api as platform_admin_api
 
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
@@ -519,6 +535,7 @@ def test_only_bootstrap_super_admin_can_grant_delegated_roles_and_changes_are_au
 
 def test_disabled_firebase_account_cannot_receive_delegated_platform_roles(platform_admin_environment, monkeypatch):
     import firebase_admin.auth
+
     import app.platform_admin_api as platform_admin_api
 
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
@@ -546,6 +563,7 @@ def test_role_grant_returns_not_found_for_missing_firebase_account_without_persi
     platform_admin_environment, monkeypatch
 ):
     import firebase_admin.auth
+
     import app.platform_admin_api as platform_admin_api
 
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
@@ -575,6 +593,7 @@ def test_role_grant_fails_closed_when_firebase_directory_is_unavailable(
     platform_admin_environment, monkeypatch
 ):
     import firebase_admin.auth
+
     import app.platform_admin_api as platform_admin_api
 
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
@@ -613,6 +632,7 @@ def test_platform_user_directory_search_uses_exact_firebase_lookup_not_paginatio
     platform_admin_environment, monkeypatch, query, expected_lookup
 ):
     import firebase_admin.auth
+
     import app.platform_admin_api as platform_admin_api
 
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
@@ -658,6 +678,7 @@ def test_platform_user_directory_forwards_opaque_cursor_and_page_size(
     platform_admin_environment, monkeypatch
 ):
     import firebase_admin.auth
+
     import app.platform_admin_api as platform_admin_api
 
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
@@ -686,6 +707,7 @@ def test_platform_user_directory_returns_empty_results_when_exact_lookup_finds_n
     platform_admin_environment, monkeypatch
 ):
     import firebase_admin.auth
+
     import app.platform_admin_api as platform_admin_api
 
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
@@ -799,6 +821,7 @@ def test_delegated_platform_role_permission_matrix(
     platform_admin_environment, monkeypatch, role, can_manage_status, can_view_users
 ):
     import firebase_admin.auth
+
     import app.platform_admin_api as platform_admin_api
 
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")
@@ -859,6 +882,7 @@ def test_platform_role_change_rolls_back_when_audit_and_grant_commit_fails(
     platform_admin_environment, monkeypatch
 ):
     import firebase_admin.auth
+
     import app.platform_admin_api as platform_admin_api
 
     monkeypatch.setenv("FIREBASE_PROJECT_ID", "test-project")

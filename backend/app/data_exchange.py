@@ -6,7 +6,7 @@ kept in the authenticated API layer.
 """
 import csv
 import io
-from typing import Iterable, Mapping
+from collections.abc import Iterable, Mapping
 
 MAX_CSV_BYTES = 5 * 1024 * 1024
 MAX_CSV_ROWS = 10_000

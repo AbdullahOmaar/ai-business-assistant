@@ -1,4 +1,3 @@
-from datetime import datetime, timezone
 from decimal import Decimal
 from uuid import uuid4
 
@@ -8,14 +7,28 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.models import (
-    AuditEvent, Base, Business, BusinessMembership, Invoice, InvoiceLine,
-    MembershipRole, Payment, PaymentAllocation, Product, StockMovement,
+    AuditEvent,
+    Base,
+    Business,
+    BusinessMembership,
+    Invoice,
+    InvoiceLine,
+    MembershipRole,
+    Payment,
+    PaymentAllocation,
+    StockMovement,
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError
 from app.services import (
-    WorkflowError, create_customer, create_invoice, create_product,
-    issue_invoice, record_payment, record_stock_movement,
-    replace_draft_invoice, void_invoice,
+    WorkflowError,
+    create_customer,
+    create_invoice,
+    create_product,
+    issue_invoice,
+    record_payment,
+    record_stock_movement,
+    replace_draft_invoice,
+    void_invoice,
 )
 
 
