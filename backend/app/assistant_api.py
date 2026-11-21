@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+import logging
 import os
 import re
 from datetime import date
@@ -26,6 +27,208 @@ from app.models import Business, Customer, Expense, Invoice, Product, Supplier
 from app.security import AuthenticatedPrincipal, AuthorizationError, apply_expense_visibility, authorize_membership
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}/assistant", tags=["AI assistant"])
+
+logger = logging.getLogger(__name__)
+
+# Sensitive-action requests the assistant must refuse instead of answering
+# from records: the endpoint is read-only by construction and must never
+# claim to have executed an action.
+#
+# Design (corrected matcher, replaces the earlier substring term list, which
+# false-positived on "void invoices", "refunded sales", "How do I create an
+# invoice?" and "ما سبب إلغاء الفاتورة 5؟"): distinguish a request that asks
+# the assistant to PERFORM an action from a question that reports, counts,
+# asks status, asks why, or asks how-to / explains. Two layers, in order:
+#
+# 1. Question/report guards — if the message is phrased as a question or a
+#    report (how many/much, how do/to, what is/are, which, when/why, show/
+#    list, capability questions such as "can I ...", and the Arabic
+#    equivalents كم/كيف/ما سبب/لماذا/متى/تم/اعرض/يمكنني), it is ANSWERED,
+#    never refused — even when it contains an action verb.
+# 2. Action patterns — a verb (imperative / 1st-person / 2nd-person) with an
+#    invoice object, matched on whole words, not substrings, so participles
+#    and plurals do not match ("void invoices" as a noun phrase, "refunded
+#    sales", "refunds"). In English the word after "invoice" must continue
+#    the action (an identifier, "for"/"to"/"with", "now", "that"/"which", a
+#    participle such as "issued", or "number"/"#5") — so "cancel invoice
+#    reminders" and "pay invoice late" do not match. In Arabic the message
+#    is normalised first (diacritics stripped, أ/إ/آ -> ا, ة -> ه; ى is
+#    deliberately NOT folded into ي, so past-tense "ألغى" does not match
+#    first-person "ألغي", and "أصدرت" does not match "أصدر").
+#
+# Known limits: pronoun-only references ("Void it", "احذفها"), passive
+# requests ("I need an invoice issued"), compound action+question messages
+# (the question guard wins), and ambiguous verbs ("اطلع الفاتورة" — show vs
+# issue) cannot be classified reliably by a keyword matcher and are
+# answered, not refused. Refusal is invoice-scoped by design: "Delete
+# customer X" is answered, not refused (no customer/product expansion).
+#
+# Round 2 (2026-11-21): (a) explain / how-to guards — شرح/اشرح/طريقة/
+# خطوات/ازاي/وضح and English explain/steps/walk-me-through are questions,
+# not actions; (b) a bare-plural action ("void invoices", "ألغِ الفواتير")
+# names no target, so it gets a read-only capability clarification, not a
+# confident refusal — checked before the refusal because it also matches
+# the action patterns; (c) unmatched action phrases ("void INV-2",
+# "mark invoice INV-2 as paid", "ارجع فلوس الفاتورة 3") are NOT added to
+# the verb set — they fall through to the read-only fallback answers.
+_ARABIC_DIACRITICS = re.compile(r"[\u064b-\u065f\u0670\u0640]")
+_ALEF_NORMALIZE = str.maketrans({"أ": "ا", "إ": "ا", "آ": "ا", "ة": "ه"})
+
+
+def _normalize_message(message: str) -> str:
+    """Casefold, strip Arabic diacritics, fold alef variants and ة -> ه."""
+    text = message.casefold()
+    text = text.replace("\u2019", "'").replace("\u2018", "'")
+    text = _ARABIC_DIACRITICS.sub("", text)
+    return text.translate(_ALEF_NORMALIZE)
+
+
+# Guards checked first: any match means the message is a question or a
+# report, not an action request, so it must be answered.
+_QUESTION_GUARDS = (
+    # Counting / how-to / what-questions, anywhere in the message.
+    r"how many|how much|how do|how does|how can|how to|how should|how would",
+    r"what is|what are|what's|what was|what were|what happens|what does|what do",
+    r"\bwhy\b|\bwhen\b|\bwhere\b",
+    # Arabic: counting, how, why, when/where, completed events, show.
+    r"\bكم\b",
+    r"\bكيف\b",
+    r"ما سبب|\bلماذا\b|\bليش\b|\bليه\b",
+    r"\bمتى\b|\bاين\b",
+    r"\bتم\b",
+    r"\bاعرض\b|\bاظهر\b",
+    r"\bيمكنني\b|\bاستطيع\b",
+    # "Should I ...?" in Arabic (هل + 1st-person/imperative verb) is advice.
+    r"\bهل\s+(الغ|الغي|اصدر|احذف|ادفع|سدد|استرد)\b",
+    # "Can I ...?" in Arabic (هل + أقدر/اقدر) is a capability question,
+    # same as "هل يمكنني" — answered, not refused. Only هل + اقدر is
+    # guarded; bare اقدر (without هل) is not.
+    r"\bهل\s+اقدر\b",
+    # Explain / how-to words (round 2): "شرح طريقة حذف الفاتورة" asks for
+    # an explanation, not an action — even though it contains "حذف الفاتورة".
+    # English "explain"/"steps"/"walk me through" likewise. "يعني ايه" is
+    # guarded only as the phrase "what does it mean", not bare "يعني"
+    # (a common filler word).
+    r"\bexplain\b|\bsteps?\b|\bwalk me through\b",
+    r"(?:\b|ال)(شرح|اشرحلي|اشرح|طريقه|خطوات|ازاي|ازاى|وضح)\b",
+    r"\bيعني\s+ايه\b",
+)
+_CAPABILITY_GUARD = (
+    r"\bcan i\b|\bcould i\b|\bmay i\b|\bshould i\b|\bdo i\b|\bam i able\b|\bis it possible\b"
+)
+_POLITENESS_PREFIX = re.compile(
+    r"^(?:please\s+|can\s+you\s+|could\s+you\s+|would\s+you\s+|will\s+you\s+|من\s+فضلك\s+|لو\s+سمحت\s+)+"
+)
+_LEADING_QUESTION = re.compile(
+    r"^(which|who|show|list|display|tell me|give me|when|where|why|what|how)\b|^ما\b"
+)
+
+
+def _is_question(text: str) -> bool:
+    """True when the message is phrased as a question or a report."""
+    for pattern in _QUESTION_GUARDS:
+        if re.search(pattern, text):
+            return True
+    # Capability / advice questions ("can I ...", "should I ...") are
+    # answered — unless the action is asked for the user ("... for me"),
+    # which is a request ("Is it possible to void invoice INV-2 for me?").
+    if "for me" not in text and re.search(_CAPABILITY_GUARD, text):
+        return True
+    stripped = _POLITENESS_PREFIX.sub("", text)
+    return _LEADING_QUESTION.search(stripped) is not None
+
+
+# English: the word after "invoice" must continue the action, otherwise the
+# noun is attributive ("cancel invoice reminders") or the phrase is a
+# question fragment ("pay invoice late").
+_EN_INVOICE_TAIL = (
+    r"(?:\s+#\s*\d+|\s+(?:inv[-\s]?\d+|iss[-\s]?\d+|\d+|for|to|with|and|now|today|please|asap|from|that|which|number|no|issued|created|paid|voided|refunded|cancelled|deleted|approved)\b|[?.!,;]?\s*$)"
+)
+_EN_ACTION_VERBS = r"(?:issue|create|raise|make|generate|void|cancel|delete|pay|refund)"
+_EN_ACTION_PATTERNS = (
+    _EN_ACTION_VERBS + r"\s+(?:(?:a|an|the|this|that)\s+)?(?:all\s+)?(?:new\s+)?invoices?" + _EN_INVOICE_TAIL,
+    r"\bpay\s+for\s+(?:(?:a|an|the)\s+)?(?:all\s+)?invoices?" + _EN_INVOICE_TAIL,
+    r"\brefund\s+(?:the\s+|a\s+)?customer\b",
+    # Bare "refund" only when an action follows it ("Refund", "Refund 500
+    # EGP"); "refund policy" and "refunds" do not match.
+    r"\brefund\b(?=\s*(?:\d|for\b|to\b|the\b|a\b|an\b|invoice\b|customer\b|please\b|now\b|[?.!,;]?\s*$))",
+)
+# Arabic: the noun may carry a prefix (ال / ل / لل / بال) before فاتورة.
+_AR_ACTION_PATTERNS = (
+    # Imperative / 1st-person verbs + invoice ("ألغِ الفاتورة", "أصدر فاتورة",
+    # "حرر فاتورة", "أريد أن ألغي الفاتورة" via "ألغي"). "كل" (all) scopes
+    # the request ("ألغِ كل الفواتير") so it stays refused, like "all" in
+    # English — it is a target, not a bare plural.
+    r"\b(الغ|الغي|اصدر|احذف|ادفع|سدد|اسدد|استرد|انشئ|اعمل|حرر)\s+(?:كل\s+)?(?:بال|لل|ال|ل)?(فاتوره|فواتير)\b",
+    # 2nd-person verbs + invoice ("هل تلغي الفاتورة؟", "ممكن تلغي الفاتورة؟").
+    r"\b(تلغي|تصدر|تحذف|تدفع|تسدد|تسترد|تنشئ|تعمل)\s+(?:بال|لل|ال|ل)?فاتوره\b",
+    # Verbal noun + invoice, bare terse request ("إلغاء الفاتورة 5").
+    r"\b(الغاء|اصدار|حذف|دفع|استرداد|سداد|انشاء|تحرير)\s+(?:بال|لل|ال|ل)?فاتوره\b",
+    # "أريد ..." + verbal noun + invoice ("أريد إلغاء الفاتورة 7").
+    r"\barid(?:\s+\S+){0,3}?\s+(الغاء|اصدار|حذف|دفع|استرداد|سداد|انشاء|تحرير)\s+(?:بال|لل|ال|ل)?فاتوره\b",
+)
+
+
+def _matched_action_term(message: str) -> str | None:
+    """Return the matched action phrase in the message, if any.
+
+    Returns None for questions and reports (see _is_question) and for
+    messages with no action pattern, so the caller answers them normally.
+    """
+    text = _normalize_message(message)
+    if _is_question(text):
+        return None
+    for pattern in _EN_ACTION_PATTERNS + _AR_ACTION_PATTERNS:
+        matched = re.search(pattern, text)
+        if matched:
+            return matched.group(0)
+    return None
+
+
+# Bare-plural actions (round 2): a verb with a bare plural noun and nothing
+# after it but an adverb / politeness word / punctuation names NO target —
+# no identifier or number, no "that/which" participle target. They are
+# ambiguous, so they get a read-only capability clarification, not a
+# confident refusal. Targeted actions ("Void invoice INV-3"), the bare
+# singular ("Void invoice"), and scoped plurals ("void all invoices",
+# "void invoices for customer X") stay refused. Arabic fits the same
+# distinction for the imperative / 1st-person pattern (the only Arabic
+# pattern that matches a plural noun); verbal-noun and 2nd-person bare
+# plurals ("إلغاء الفواتير") match no action pattern and already fall
+# through to a read-only summary, so they are left as they are.
+_EN_BARE_PLURAL_PATTERNS = (
+    r"\b(?:issue|create|raise|make|generate|void|cancel|delete|pay|refund)\s+(?:(?:a|an|the|this|that)\s+)?(?:new\s+)?invoices(?:\s+(?:now|today|please|asap|for\s+me))?\s*[?.!,;]?\s*$",
+    r"\bpay\s+for\s+(?:(?:a|an|the)\s+)?invoices(?:\s+(?:now|today|please|asap|for\s+me))?\s*[?.!,;]?\s*$",
+)
+_AR_BARE_PLURAL_PATTERNS = (
+    r"\b(?:الغ|الغي|اصدر|احذف|ادفع|سدد|اسدد|استرد|انشئ|اعمل|حرر)\s+(?:بال|لل|ال|ل)?فواتير(?:\s+(?:من\s+فضلك|لو\s+سمحت))?\s*[؟?.!,;]?\s*$",
+)
+
+
+def _matched_bare_plural(message: str) -> str | None:
+    """Return the matched bare-plural action phrase, if any.
+
+    Only when the message is not a question/report (see _is_question) and
+    the action names a bare plural ("invoices" / "فواتير") with no target
+    after it. The caller answers these with a capability clarification
+    instead of the refusal.
+    """
+    text = _normalize_message(message)
+    if _is_question(text):
+        return None
+    for pattern in _EN_BARE_PLURAL_PATTERNS + _AR_BARE_PLURAL_PATTERNS:
+        matched = re.search(pattern, text)
+        if matched:
+            return matched.group(0)
+    return None
+
+
+_ARABIC_SCRIPT = re.compile(r"[\u0600-\u06ff]")
+
+
+def _is_arabic_message(message: str) -> bool:
+    """True when the message contains any Arabic-script character."""
+    return _ARABIC_SCRIPT.search(message) is not None
 
 async def _provider_post(client: httpx.AsyncClient, *, headers: dict, payload: dict) -> httpx.Response:
     """Retry at most once for transient provider/network failures."""
@@ -100,6 +303,63 @@ async def chat(
 
     if sum(len(item.content) for item in body.history) > 8000:
         raise HTTPException(status_code=413, detail="Conversation history is too long. Please start a new conversation.")
+
+    # A bare-plural action ("void invoices", "ألغِ الفواتير") names no
+    # target, so it is ambiguous: answer with a truthful read-only
+    # capability clarification instead of a confident refusal. Nothing is
+    # performed and no action is claimed. Checked before the refusal
+    # because the bare plural also matches the action patterns. The
+    # clarification matches the language of the message (amendment
+    # 2026-11-21): an English request gets the English text, an Arabic
+    # request the Arabic text — same facts in both.
+    bare_plural = _matched_bare_plural(body.message)
+    if bare_plural is not None:
+        logger.info(
+            "Clarified bare-plural assistant action request for business %s (term %r)",
+            business_id, bare_plural,
+        )
+        if _is_arabic_message(body.message):
+            answer = (
+                "لا يمكنني تنفيذ إجراءات على الفواتير — المساعد للعرض والملخصات فقط، "
+                "ولم يتم إجراء أي تغيير. طلبك لم يحدد فواتير معينة، لذلك لم أتخذ أي إجراء. "
+                "يمكنك طلب ملخص للفواتير الصادرة أو الملغاة أو المستحقة، أو تنفيذ الإجراء من التطبيق."
+            )
+        else:
+            answer = (
+                "I can't take actions on invoices — the assistant is for viewing "
+                "and summaries only, and no change has been made. Your request "
+                "didn't name specific invoices, so I haven't taken any action. "
+                "You can ask for a summary of issued, voided or overdue invoices, "
+                "or perform the action in the app."
+            )
+        return {
+            "answer": answer,
+            "sources": [],
+            "model": "local-fallback",
+            "grounding": "business-records",
+            "mode": "local-fallback",
+        }
+
+    # Sensitive actions are refused server-side, before either the local
+    # fallback or the provider path: no mutation is attempted, no provider
+    # call is made, and the answer states plainly that nothing changed.
+    matched_term = _matched_action_term(body.message)
+    if matched_term is not None:
+        logger.info(
+            "Refused assistant action request for business %s (term %r)",
+            business_id, matched_term,
+        )
+        return {
+            "answer": (
+                "لا يمكنني تنفيذ إجراءات مثل إصدار فاتورة أو إلغائها أو دفعها "
+                "أو استردادها — المساعد للعرض والملخصات فقط، ولم يتم إجراء أي "
+                "تغيير. يمكنك طلب ملخص من السجلات، أو تنفيذ الإجراء من التطبيق."
+            ),
+            "sources": [],
+            "model": "local-fallback",
+            "grounding": "business-records",
+            "mode": "local-fallback",
+        }
 
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
 

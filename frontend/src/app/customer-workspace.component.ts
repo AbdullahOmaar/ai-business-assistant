@@ -93,6 +93,8 @@ export class CustomerWorkspaceComponent {
   readonly userId = input.required<string>();
   readonly role = input.required<'owner' | 'staff'>();
   readonly locale = input<'ar' | 'en'>('ar');
+  /** Incremented by the host shell to request a list refresh (e.g. after a CSV import). */
+  readonly refreshRequest = input(0);
   readonly invoicesRequested = output<string>();
   readonly statementRequested = output<string>();
   /** Emits the server-returned record after a successful create/edit so the host shell can refresh shared pickers. */
@@ -138,6 +140,12 @@ export class CustomerWorkspaceComponent {
         this.detailError.set('');
         this.editorError.set('');
         if (context.businessId && context.userId) void this.loadCustomers(true);
+      });
+    });
+    effect(() => {
+      const request = this.refreshRequest();
+      untracked(() => {
+        if (request > 0) void this.loadCustomers(true);
       });
     });
   }

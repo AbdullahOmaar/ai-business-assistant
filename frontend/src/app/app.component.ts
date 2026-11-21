@@ -7,7 +7,7 @@ import { AuthService, type AuthUserSnapshot } from './auth.service';
 import { createServiceWorkerUpdateHandler } from './service-worker-update';
 import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
-import { buildCsv } from './csv-export';
+import { buildCsv, CSV_FORMULA_TRIGGER_ASCII, escapeCsvFormulaPrefix } from './csv-export';
 import { auditActionLabel as formatAuditActionLabel, auditTargetLabel as formatAuditTargetLabel } from './audit-labels';
 import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers, firstRecordPage, mergeRecordPage } from './record-filters';
 import { countInvoiceStatuses, paginateInvoiceRecords, sortInvoiceRecords, type InvoiceSortDirection, type InvoiceSortKey, type InvoiceStatusCounts } from './invoice-list';
@@ -485,12 +485,18 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
 
 @if (tab === 'purchases') {
-              <aba-purchasing-workspace
-                [businessId]="business.id"
-                [userId]="workspaceUserId"
-                [role]="business.role === 'owner' ? 'owner' : 'staff'"
-                [currencyCode]="business.currency_code"
-                [language]="language" />
+              @defer (when tab === 'purchases') {
+                <aba-purchasing-workspace
+                  [businessId]="business.id"
+                  [userId]="workspaceUserId"
+                  [role]="business.role === 'owner' ? 'owner' : 'staff'"
+                  [currencyCode]="business.currency_code"
+                  [language]="language" />
+              } @placeholder {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
+                </section>
+              }
             }
             @if (tab === 'recurring') {
               <section abaCard class="panel">
@@ -607,14 +613,21 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                   @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('ui.m_15zjjtn')" /> }
-                <aba-customer-workspace
-                  [businessId]="business.id"
-                  [userId]="workspaceUserId"
-                  [role]="business.role === 'owner' ? 'owner' : 'staff'"
-                  [locale]="language"
-                  (invoicesRequested)="createInvoiceForCustomer($event)"
-                  (statementRequested)="openCustomerStatementById($event)"
-                  (customerSaved)="onWorkspaceCustomerSaved($event)" />
+                @defer (when tab === 'customers' && business?.id) {
+                  <aba-customer-workspace
+                    [businessId]="business.id"
+                    [userId]="workspaceUserId"
+                    [role]="business.role === 'owner' ? 'owner' : 'staff'"
+                    [locale]="language"
+                    [refreshRequest]="customerRefreshRequest"
+                    (invoicesRequested)="createInvoiceForCustomer($event)"
+                    (statementRequested)="openCustomerStatementById($event)"
+                    (customerSaved)="onWorkspaceCustomerSaved($event)" />
+                } @placeholder {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
+                  </section>
+                }
                 @if (statementVisible) {
                   <section abaCard class="panel statement-panel">
                     <aba-section-header [level]="3" [title]="t('ui.m_152dm1w') + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t('ui.m_ysb7zm')">
@@ -696,19 +709,32 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                   @if (importMessage) { <aba-state-message [kind]="importMessageKind" [description]="importMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('ui.m_15zjjtn')" /> }
-                <aba-product-workspace
-                  [businessId]="business.id"
-                  [userId]="workspaceUserId"
-                  [role]="business.role === 'owner' ? 'owner' : 'staff'"
-                  [locale]="language"
-                  [currencyCode]="business?.currency_code || ''" />
-                <aba-inventory-movement-ledger
-                  [businessId]="business.id"
-                  [userId]="workspaceUserId"
-                  [role]="business.role === 'owner' ? 'owner' : 'staff'"
-                  [products]="products"
-                  [language]="language"
-                  [loadPage]="loadInventoryMovementPage" />
+                @defer (when tab === 'products' && business?.id) {
+                  <aba-product-workspace
+                    [businessId]="business.id"
+                    [userId]="workspaceUserId"
+                    [role]="business.role === 'owner' ? 'owner' : 'staff'"
+                    [locale]="language"
+                    [currencyCode]="business?.currency_code || ''"
+                    [refreshRequest]="productRefreshRequest" />
+                } @placeholder {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
+                  </section>
+                }
+                @defer (when tab === 'products' && business?.id) {
+                  <aba-inventory-movement-ledger
+                    [businessId]="business.id"
+                    [userId]="workspaceUserId"
+                    [role]="business.role === 'owner' ? 'owner' : 'staff'"
+                    [products]="products"
+                    [language]="language"
+                    [loadPage]="loadInventoryMovementPage" />
+                } @placeholder {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
+                  </section>
+                }
               </section>
             }
 
@@ -718,19 +744,25 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <div class="invoice-toolbar">
                   @if (invoiceCreateOpen) {
                     <section class="invoice-create-panel" [attr.aria-label]="t('ui.m_h8xosr')">
-                      <aba-invoice-draft-editor
-                        [language]="language" [products]="products" [customers]="customers"
-                        [currencyCode]="business.currency_code" [invoiceNumber]="invoiceNumber"
-                        [customerId]="invoiceCustomerId" [discountRate]="invoiceDiscountRate"
-                        [taxRate]="invoiceTaxRate" [initialNotes]="invoiceDraftNotes"
-                        [saving]="invoiceDraftSaving" [blocked]="invoiceDraftUncertain"
-                        [serverSummary]="invoiceDraftSummary" [initialLines]="invoiceDraftInitialLines"
-                        [draftRevision]="invoiceDraftRevision" [editing]="!!editingInvoiceId"
-                        [hasMoreCustomers]="customersHasMore" [hasMoreProducts]="productsHasMore"
-                        [loadingMoreCustomers]="customersLoadingMore" [loadingMoreProducts]="productsLoadingMore"
-                        (loadMoreCustomers)="loadMoreInvoiceCustomers()" (loadMoreProducts)="loadMoreInvoiceProducts()"
-                        (saveDraft)="saveInvoiceDraft($event)" (newDraft)="startNewInvoiceDraft()"
-                        (cancel)="cancelInvoiceEdit()" (refreshStatus)="refreshInvoiceDraftStatus()" />
+                      @defer (when tab === 'invoices' && invoiceCreateOpen) {
+                        <aba-invoice-draft-editor
+                          [language]="language" [products]="products" [customers]="customers"
+                          [currencyCode]="business.currency_code" [invoiceNumber]="invoiceNumber"
+                          [customerId]="invoiceCustomerId" [discountRate]="invoiceDiscountRate"
+                          [taxRate]="invoiceTaxRate" [initialNotes]="invoiceDraftNotes"
+                          [saving]="invoiceDraftSaving" [blocked]="invoiceDraftUncertain"
+                          [serverSummary]="invoiceDraftSummary" [initialLines]="invoiceDraftInitialLines"
+                          [draftRevision]="invoiceDraftRevision" [editing]="!!editingInvoiceId"
+                          [hasMoreCustomers]="customersHasMore" [hasMoreProducts]="productsHasMore"
+                          [loadingMoreCustomers]="customersLoadingMore" [loadingMoreProducts]="productsLoadingMore"
+                          (loadMoreCustomers)="loadMoreInvoiceCustomers()" (loadMoreProducts)="loadMoreInvoiceProducts()"
+                          (saveDraft)="saveInvoiceDraft($event)" (newDraft)="startNewInvoiceDraft()"
+                          (cancel)="cancelInvoiceEdit()" (refreshStatus)="refreshInvoiceDraftStatus()" />
+                      } @placeholder {
+                        <section abaCard class="panel narrow">
+                          <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
+                        </section>
+                      }
                     </section>
                   } @else {
                     <button type="button" class="primary invoice-create-button" (click)="startNewInvoiceDraft()">
@@ -1015,26 +1047,38 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
 
             @if (tab === 'invoices' && business) {
-              <aba-credit-note-issuance
-                [businessId]="business.id"
-                [role]="business.role === 'owner' ? 'owner' : 'staff'"
-                [language]="language" />
+              @defer (when tab === 'invoices' && business) {
+                <aba-credit-note-issuance
+                  [businessId]="business.id"
+                  [role]="business.role === 'owner' ? 'owner' : 'staff'"
+                  [language]="language" />
+              } @placeholder {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
+                </section>
+              }
             }
 
             @if (tab === 'audit') {
-              <aba-audit-events-workspace
-                [total]="auditTotal"
-                [offset]="auditOffset"
-                [events]="auditEvents"
-                [loading]="auditLoading"
-                [error]="auditError"
-                [action]="auditAction"
-                [targetType]="auditTargetType"
-                [columns]="auditTableColumns"
-                [rows]="auditTableRows"
-                (actionChange)="auditAction=$event"
-                (targetTypeChange)="auditTargetType=$event"
-                (loadPage)="loadAuditEvents($event)" />
+              @defer (when tab === 'audit') {
+                <aba-audit-events-workspace
+                  [total]="auditTotal"
+                  [offset]="auditOffset"
+                  [events]="auditEvents"
+                  [loading]="auditLoading"
+                  [error]="auditError"
+                  [action]="auditAction"
+                  [targetType]="auditTargetType"
+                  [columns]="auditTableColumns"
+                  [rows]="auditTableRows"
+                  (actionChange)="auditAction=$event"
+                  (targetTypeChange)="auditTargetType=$event"
+                  (loadPage)="loadAuditEvents($event)" />
+              } @placeholder {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
+                </section>
+              }
             }
 
             @if (tab === 'release-guide') {
@@ -1163,59 +1207,65 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
         </main>
       }
       @if (pendingInvoiceVoid) {
-        <aba-confirm-dialog
-          [title]="t('ui.m_azron7') + ' · ' + pendingInvoiceVoid.invoice_number"
-          [message]="t('ui.m_13c8e52')"
-          [warning]="t('ui.m_1rhb2df')"
-          [confirmLabel]="t('ui.m_p2fc6q')"
-          [cancelLabel]="t('ui.m_mbs8k3')"
-          [busyLabel]="t('ui.m_1ex5gf4')"
-          [busy]="loading"
-          [confirmDisabled]="!!invoiceVoidError"
-          [error]="invoiceVoidError"
-          [tone]="'danger'"
-          [returnFocusTo]="confirmationReturnFocus"
-          [focusFallbackId]="'invoices-section-heading'"
-          (confirmed)="confirmInvoiceVoid()"
-          (cancelled)="cancelInvoiceVoid()" />
+        @defer (when pendingInvoiceVoid) {
+          <aba-confirm-dialog
+            [title]="t('ui.m_azron7') + ' · ' + pendingInvoiceVoid.invoice_number"
+            [message]="t('ui.m_13c8e52')"
+            [warning]="t('ui.m_1rhb2df')"
+            [confirmLabel]="t('ui.m_p2fc6q')"
+            [cancelLabel]="t('ui.m_mbs8k3')"
+            [busyLabel]="t('ui.m_1ex5gf4')"
+            [busy]="loading"
+            [confirmDisabled]="!!invoiceVoidError"
+            [error]="invoiceVoidError"
+            [tone]="'danger'"
+            [returnFocusTo]="confirmationReturnFocus"
+            [focusFallbackId]="'invoices-section-heading'"
+            (confirmed)="confirmInvoiceVoid()"
+            (cancelled)="cancelInvoiceVoid()" />
+        }
       }
       @if (pendingPurchaseApproval) {
-        <aba-confirm-dialog
-          [title]="t('ui.m_1pj46jy') + ' · ' + pendingPurchaseApproval.order_number"
-          [message]="t('ui.m_o7tlrf')"
-          [warning]="t('ui.m_wvb17f')"
-          [detailsTitle]="t('ui.m_14aur8c')"
-          [details]="pendingPurchaseApprovalDetails"
-          [confirmLabel]="t('ui.m_4bqrmd')"
-          [cancelLabel]="t('ui.m_1233hg7')"
-          [busyLabel]="t('ui.m_z167k8')"
-          [busy]="purchasesLoading"
-          [confirmDisabled]="!!purchaseApprovalError"
-          [error]="purchaseApprovalError"
-          [tone]="'warning'"
-          [returnFocusTo]="confirmationReturnFocus"
-          [focusFallbackId]="'purchases-section-heading'"
-          (confirmed)="confirmPurchaseOrderApproval()"
-          (cancelled)="cancelPurchaseOrderApproval()" />
+        @defer (when pendingPurchaseApproval) {
+          <aba-confirm-dialog
+            [title]="t('ui.m_1pj46jy') + ' · ' + pendingPurchaseApproval.order_number"
+            [message]="t('ui.m_o7tlrf')"
+            [warning]="t('ui.m_wvb17f')"
+            [detailsTitle]="t('ui.m_14aur8c')"
+            [details]="pendingPurchaseApprovalDetails"
+            [confirmLabel]="t('ui.m_4bqrmd')"
+            [cancelLabel]="t('ui.m_1233hg7')"
+            [busyLabel]="t('ui.m_z167k8')"
+            [busy]="purchasesLoading"
+            [confirmDisabled]="!!purchaseApprovalError"
+            [error]="purchaseApprovalError"
+            [tone]="'warning'"
+            [returnFocusTo]="confirmationReturnFocus"
+            [focusFallbackId]="'purchases-section-heading'"
+            (confirmed)="confirmPurchaseOrderApproval()"
+            (cancelled)="cancelPurchaseOrderApproval()" />
+        }
       }
       @if (pendingPurchaseReceipt) {
-        <aba-confirm-dialog
-          [title]="t('ui.m_qssa8w') + ' · ' + pendingPurchaseReceipt.order_number"
-          [message]="t('ui.m_1srrito')"
-          [warning]="t('ui.m_e0ddqk')"
-          [detailsTitle]="t('ui.m_126kkr6')"
-          [details]="pendingPurchaseReceiptDetails"
-          [confirmLabel]="t('ui.m_vc9tiw')"
-          [cancelLabel]="t('ui.m_1gc2kb4')"
-          [busyLabel]="t('ui.m_k3q67h')"
-          [busy]="purchasesLoading"
-          [confirmDisabled]="!!purchaseReceiptError"
-          [error]="purchaseReceiptError"
-          [tone]="'warning'"
-          [returnFocusTo]="confirmationReturnFocus"
-          [focusFallbackId]="'purchases-section-heading'"
-          (confirmed)="confirmPurchaseOrderReceipt()"
-          (cancelled)="cancelPurchaseOrderReceipt()" />
+        @defer (when pendingPurchaseReceipt) {
+          <aba-confirm-dialog
+            [title]="t('ui.m_qssa8w') + ' · ' + pendingPurchaseReceipt.order_number"
+            [message]="t('ui.m_1srrito')"
+            [warning]="t('ui.m_e0ddqk')"
+            [detailsTitle]="t('ui.m_126kkr6')"
+            [details]="pendingPurchaseReceiptDetails"
+            [confirmLabel]="t('ui.m_vc9tiw')"
+            [cancelLabel]="t('ui.m_1gc2kb4')"
+            [busyLabel]="t('ui.m_k3q67h')"
+            [busy]="purchasesLoading"
+            [confirmDisabled]="!!purchaseReceiptError"
+            [error]="purchaseReceiptError"
+            [tone]="'warning'"
+            [returnFocusTo]="confirmationReturnFocus"
+            [focusFallbackId]="'purchases-section-heading'"
+            (confirmed)="confirmPurchaseOrderReceipt()"
+            (cancelled)="cancelPurchaseOrderReceipt()" />
+        }
       }
 
     </div>
@@ -1223,8 +1273,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
   styleUrl: './app.component.css',
 })
 export class AppComponent implements OnInit, OnDestroy {
-  @ViewChild(CustomerWorkspaceComponent) private customerWorkspace?: CustomerWorkspaceComponent;
-  @ViewChild(ProductWorkspaceComponent) private productWorkspace?: ProductWorkspaceComponent;
+  customerRefreshRequest = 0;
+  productRefreshRequest = 0;
   get workspaceUserId(): string { return this.currentAuthUid ?? ''; }
   readonly appVersion = APP_BUILD_INFO.version;
   readonly uiCommitLabel = APP_BUILD_INFO.commit;
@@ -2771,7 +2821,8 @@ export class AppComponent implements OnInit, OnDestroy {
     const csv = '\uFEFF' + rows.map(row => row.map(value => {
       const raw = String(value);
       // Prevent spreadsheet formula execution for user-controlled cells such as invoice numbers.
-      const safe = /^[\u0000-\u0020]*[=+\-@]/.test(raw) ? "'" + raw : raw;
+      // Uses the shared helper with the ASCII-only trigger so this export's output is unchanged.
+      const safe = escapeCsvFormulaPrefix(raw, CSV_FORMULA_TRIGGER_ASCII);
       return '"' + safe.replace(/"/g, '""') + '"';
     }).join(',')).join('\r\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
@@ -3939,7 +3990,7 @@ export class AppComponent implements OnInit, OnDestroy {
         const products = await this.api.products(businessId);
         if (this.business?.id !== businessId) return;
         this.setProductPage(products);
-        this.productWorkspace?.retry();
+        this.productRefreshRequest++;
         if (this.products.length) this.invoiceProductId = this.products[0].id;
       } catch {
         if (this.business?.id === businessId) {
@@ -3959,7 +4010,7 @@ export class AppComponent implements OnInit, OnDestroy {
             const products = await this.api.products(businessId);
             if (this.business?.id !== businessId) return;
             this.setProductPage(products);
-            this.productWorkspace?.retry();
+            this.productRefreshRequest++;
             if (this.products.length) this.invoiceProductId = this.products[0].id;
           } catch {
             // Best-effort refresh: the unknown-outcome message already stands.
@@ -4045,7 +4096,7 @@ export class AppComponent implements OnInit, OnDestroy {
         const customers = await this.api.customers(businessId);
         if (this.business?.id !== businessId) return;
         this.setCustomerPage(customers);
-        this.customerWorkspace?.retry();
+        this.customerRefreshRequest++;
         if (!this.invoiceCustomerId && this.customers.length) {
           this.invoiceCustomerId = this.customers[0].id;
         }
@@ -4067,7 +4118,7 @@ export class AppComponent implements OnInit, OnDestroy {
             const customers = await this.api.customers(businessId);
             if (this.business?.id !== businessId) return;
             this.setCustomerPage(customers);
-            this.customerWorkspace?.retry();
+            this.customerRefreshRequest++;
             if (!this.invoiceCustomerId && this.customers.length) {
               this.invoiceCustomerId = this.customers[0].id;
             }
@@ -4139,7 +4190,7 @@ export class AppComponent implements OnInit, OnDestroy {
         const products = await this.api.products(businessId);
         if (this.business?.id !== businessId) return;
         this.setProductPage(products);
-        this.productWorkspace?.retry();
+        this.productRefreshRequest++;
         if (this.products.length) this.invoiceProductId = this.products[0].id;
       } catch {
         if (this.business?.id === businessId) {

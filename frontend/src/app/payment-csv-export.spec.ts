@@ -24,6 +24,6 @@ test('payment CSV export includes the full ledger fields and uses the shared saf
   assert.match(handler, /payment\.allocations\.length/);
   assert.match(handler, /const csv = buildCsv\(headers, rows\)/);
   assert.match(handler, /payments-' \+ new Date\(\)\.toISOString\(\)\.slice\(0, 10\) \+ '\.csv'/);
-  assert.match(source, /import \{ buildCsv \} from '\.\/csv-export'/);
+  assert.match(source, /import \{ buildCsv, CSV_FORMULA_TRIGGER_ASCII, escapeCsvFormulaPrefix \} from '\.\/csv-export'/);
   assert.match(csvHelper, /Prevent spreadsheet formula execution/);
 });
