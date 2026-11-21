@@ -349,12 +349,22 @@ async def chat(
             "Refused assistant action request for business %s (term %r)",
             business_id, matched_term,
         )
-        return {
-            "answer": (
+        if _is_arabic_message(body.message):
+            refusal = (
                 "لا يمكنني تنفيذ إجراءات مثل إصدار فاتورة أو إلغائها أو دفعها "
                 "أو استردادها — المساعد للعرض والملخصات فقط، ولم يتم إجراء أي "
                 "تغيير. يمكنك طلب ملخص من السجلات، أو تنفيذ الإجراء من التطبيق."
-            ),
+            )
+        else:
+            # Same facts as the Arabic text, in the language of the request.
+            refusal = (
+                "I can't take actions such as issuing, voiding, paying or "
+                "refunding an invoice. The assistant is for viewing and "
+                "summaries only, and no change has been made. You can ask "
+                "for a summary of the records, or perform the action in the app."
+            )
+        return {
+            "answer": refusal,
             "sources": [],
             "model": "local-fallback",
             "grounding": "business-records",

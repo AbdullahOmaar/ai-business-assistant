@@ -80,6 +80,8 @@
     "m_atfuse": "Go to Home",
     "m_worzj7": "Retry",
     "m_1oo6dkn": "Loading workspace data…",
+    "m_deferr1": "Could not load this section. Check your connection and reload the page.",
+    "m_deferr2": "Could not load the confirmation dialog. Nothing was changed. Cancel and try again after reloading the page.",
     "m_117ileb": "GET STARTED",
     "m_sgf5dv": "Create your first workspace",
     "m_1bmd66c": "This workspace belongs to your verified account. Other users cannot access it without membership.",
@@ -1150,7 +1152,9 @@
       "v161_transport": "CSV imports and exports now stop waiting after 15 seconds instead of hanging. If an import preview times out, nothing was written and you can try again. If saving an import times out, the result is unknown: check the list before importing again.",
       "v161_assistant": "The built-in assistant now answers invoice questions with a count only when you ask for a count, such as how many.",
       "v162_speed": "Version 1.6.2: the customers and products screens now load only when you open them, so the app downloads less when it first starts.",
-      "v162_assistant": "The built-in assistant only reads your records. When you clearly ask it to issue, void, cancel or pay an invoice, it says it cannot do that and nothing is changed. Some indirect requests, such as \"void it\" or \"I need an invoice issued\", may still get a read-only answer instead of a refusal. The suggested questions are now ones it can answer, such as how many invoices were issued."
+      "v162_assistant": "The built-in assistant only reads your records. When you clearly ask it to issue, void, cancel or pay an invoice, it says it cannot do that and nothing is changed. Some indirect requests, such as \"void it\" or \"I need an invoice issued\", may still get a read-only answer instead of a refusal. The suggested questions are now ones it can answer, such as how many invoices were issued.",
+      "v163_fallback": "Version 1.6.3: if a screen or dialog cannot load, for example because the connection dropped, it now shows a message asking you to check your connection and reload the page, instead of staying on a loading spinner.",
+      "v163_refusal": "The built-in assistant now replies in English when you ask it to issue, void, cancel or pay an invoice in English, and says it cannot do that. Nothing is changed."
     },
     "catalog": {
       "m_aba150_title": "Workspace and purchasing workflows",
@@ -1295,7 +1299,8 @@
       "v160_title": "Inventory ledger and mobile experience update",
       "v161_title": "Returns, credit notes, purchasing and inventory improvements",
       "v161_reliability_title": "Reliability fixes: recurring schedules, CSV transport and assistant counts",
-      "v162_title": "Lighter first load and a read-only assistant"
+      "v162_title": "Lighter first load and a read-only assistant",
+      "v163_title": "Loading-error handling and English assistant replies"
     }
   },
   "catalog": {
