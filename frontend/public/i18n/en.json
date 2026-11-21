@@ -1300,7 +1300,7 @@
       "v161_title": "Returns, credit notes, purchasing and inventory improvements",
       "v161_reliability_title": "Reliability fixes: recurring schedules, CSV transport and assistant counts",
       "v162_title": "Lighter first load and a read-only assistant",
-      "v163_title": "Safer loading and English assistant replies"
+      "v163_title": "Loading-error handling and English assistant replies"
     }
   },
   "catalog": {
