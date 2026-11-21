@@ -10,18 +10,31 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.domain_rules import (
-    money,
     discounted_return_line_total,
+    money,
     summarize_money_by_currency,
     validate_return_amount,
     validate_return_quantity,
 )
 from app.models import (
-    AuditEvent, Expense, Invoice, InvoiceLine, MembershipRole, Notification,
-    Payment, PaymentAllocation, Product, PurchaseOrder, PurchaseOrderLine,
-    SalesReturn, SalesReturnLine, StockMovement,
+    Expense,
+    Invoice,
+    InvoiceLine,
+    MembershipRole,
+    Notification,
+    Payment,
+    PaymentAllocation,
+    Product,
+    PurchaseOrder,
+    PurchaseOrderLine,
+    SalesReturn,
+    SalesReturnLine,
 )
-from app.security import AuthenticatedPrincipal, apply_expense_visibility, authorize_membership
+from app.security import (
+    AuthenticatedPrincipal,
+    apply_expense_visibility,
+    authorize_membership,
+)
 from app.services import WorkflowError, _audit, record_stock_movement
 
 ZERO = Decimal("0")

@@ -5,31 +5,67 @@ unless the host has configured a trusted principal resolver and database session
 """
 import csv
 import hashlib
-import json
 import io
+import json
 import os
 import re
-from datetime import date, datetime, timedelta, timezone
-from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
+from datetime import UTC, date, datetime
 from decimal import Decimal
 from uuid import UUID
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from fastapi import APIRouter, Body, Depends, Header, HTTPException, Query, Response
 from pydantic import BaseModel, Field
-from sqlalchemy import Numeric, String, case, cast, func, literal, or_, select, text, union_all
+from sqlalchemy import (
+    Numeric,
+    String,
+    case,
+    cast,
+    func,
+    literal,
+    or_,
+    select,
+    text,
+    union_all,
+)
 from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
-from app.dependencies import get_principal, get_session
-from app.data_exchange import CsvValidationError, parse_import_csv
-from app.models import (
-    AuditEvent, Business, BusinessSetting, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
-    Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, PurchaseReceiptIdempotency, RecurringInvoiceSchedule,
-    CreditNote, SalesReturn, SalesReturnLine, StockMovement, Supplier,
-)
 from app.core_features_api import _day_bounds
-from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, apply_expense_visibility, authorize_membership
+from app.data_exchange import CsvValidationError, parse_import_csv
+from app.dependencies import get_principal, get_session
 from app.domain_rules import discounted_return_line_total, money, validate_return_amount
+from app.models import (
+    AuditEvent,
+    Business,
+    BusinessSetting,
+    CreditNote,
+    Customer,
+    Expense,
+    ImportJob,
+    Invoice,
+    InvoiceLine,
+    Notification,
+    Payment,
+    PaymentAllocation,
+    PricingRule,
+    Product,
+    PurchaseOrder,
+    PurchaseOrderLine,
+    PurchaseReceiptIdempotency,
+    RecurringInvoiceSchedule,
+    SalesReturn,
+    SalesReturnLine,
+    StockMovement,
+    Supplier,
+)
+from app.security import (
+    AuthenticatedPrincipal,
+    AuthorizationError,
+    MembershipRole,
+    apply_expense_visibility,
+    authorize_membership,
+)
 from app.services import WorkflowError, create_expense
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["extended workflows"])
@@ -311,7 +347,7 @@ def operations_health(business_id: UUID, session: Session = Depends(get_session)
     healthy = database_connected and migration_table_available
     return {
         "status": "ok" if healthy else "degraded",
-        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "checked_at": datetime.now(UTC).isoformat(),
         "database_connected": database_connected,
         "migration_table_available": migration_table_available,
         "migration_revision": migration_revision,
@@ -1072,7 +1108,7 @@ def put_setting(business_id: UUID, setting_key: str, body: SettingInput,
             session.add(item)
         else:
             item.setting_value = body.setting_value
-            item.updated_at = datetime.now(timezone.utc)
+            item.updated_at = datetime.now(UTC)
         session.flush()
         return item
     item = _commit(session, op)
@@ -1126,7 +1162,7 @@ def export_csv(business_id: UUID, entity_type: str,
         if entity_type not in supported:
             raise HTTPException(status_code=404, detail="Unsupported export entity")
         from app.models import Customer
-        model_name, columns = supported[entity_type]
+        _model_name, columns = supported[entity_type]
         model = {"customers": Customer, "products": Product, "expenses": Expense}[entity_type]
         rows = session.scalars(select(model).where(model.business_id == business_id)).all()
         buffer = io.StringIO(newline="")
@@ -1658,7 +1694,7 @@ def receivables_aging(
     """Return open issued-invoice balances by currency without cross-currency netting."""
     try:
         _authorized(session, principal, business_id)
-        report_date = as_of or datetime.now(timezone.utc).date()
+        report_date = as_of or datetime.now(UTC).date()
         invoices = session.scalars(
             select(Invoice).where(
                 Invoice.business_id == business_id,
@@ -1843,7 +1879,7 @@ def assistant_insights(business_id: UUID,
         if not expense_rows:
             insights.append({"type": "info", "message": "No expenses are recorded yet."})
         return {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "source": "database-derived deterministic rules",
             "issued_sales_by_currency": [{"currency_code": c, "count": n, "total": str(total)} for c,n,total in invoice_rows],
             "expenses_by_currency": [{"currency_code": c, "count": n, "total": str(total)} for c,n,total in expense_rows],
@@ -1990,8 +2026,8 @@ def customer_statement(
         def as_utc_timestamp(value: datetime) -> datetime:
             # SQLite may return naive values for timezone-aware columns; treat those as UTC.
             if value.tzinfo is None or value.utcoffset() is None:
-                return value.replace(tzinfo=timezone.utc)
-            return value.astimezone(timezone.utc)
+                return value.replace(tzinfo=UTC)
+            return value.astimezone(UTC)
 
         def decimal_string(value) -> str:
             amount = Decimal(str(value or ZERO))
@@ -2173,7 +2209,7 @@ def report_data_integrity(
             }
 
         return {
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "read_only": True,
             "unlinked_issued_invoices": {
                 "total": int(unlinked_total),

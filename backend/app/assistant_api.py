@@ -10,7 +10,6 @@ import json
 import logging
 import os
 import re
-from datetime import date
 from decimal import Decimal
 from typing import Literal
 from uuid import UUID
@@ -24,7 +23,12 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_principal, get_session
 from app.domain_rules import money
 from app.models import Business, Customer, Expense, Invoice, Product, Supplier
-from app.security import AuthenticatedPrincipal, AuthorizationError, apply_expense_visibility, authorize_membership
+from app.security import (
+    AuthenticatedPrincipal,
+    AuthorizationError,
+    apply_expense_visibility,
+    authorize_membership,
+)
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}/assistant", tags=["AI assistant"])
 

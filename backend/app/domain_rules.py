@@ -1,6 +1,7 @@
 """Pure business rules shared by workflows; persistence and authorization are separate."""
-from decimal import Decimal, ROUND_HALF_UP
-from typing import Iterable, NamedTuple
+from collections.abc import Iterable
+from decimal import ROUND_HALF_UP, Decimal
+from typing import NamedTuple
 
 CENT = Decimal("0.01")
 QTY = Decimal("0.001")
