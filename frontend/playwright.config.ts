@@ -11,7 +11,7 @@ export default defineConfig({
     ['junit', { outputFile: 'test-results/e2e-junit.xml' }],
   ],
   use: {
-    baseURL: 'http://127.0.0.1:4200',
+    baseURL: process.env.AIBA_E2E_BASE_URL ?? 'http://127.0.0.1:4200',
     trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
   },

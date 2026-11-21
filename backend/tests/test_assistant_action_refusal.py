@@ -124,8 +124,10 @@ def _ask(client, business_id, message):
 def _assert_refused(payload):
     assert payload["mode"] == "local-fallback"
     assert payload["sources"] == []
-    assert "لا يمكنني تنفيذ" in payload["answer"]
-    assert "لم يتم إجراء أي تغيير" in payload["answer"]
+    answer = payload["answer"]
+    arabic = "لا يمكنني تنفيذ" in answer and "لم يتم إجراء أي تغيير" in answer
+    english = "I can't take actions such as" in answer and "no change has been made" in answer
+    assert arabic or english
 
 
 def test_issue_invoice_request_is_refused_and_changes_nothing(assistant_client):
@@ -306,8 +308,10 @@ def _assert_clarified(payload):
     body)."""
     assert payload["mode"] == "local-fallback"
     assert payload["sources"] == []
-    assert "لا يمكنني تنفيذ" in payload["answer"]
-    assert "لم يتم إجراء أي تغيير" in payload["answer"]
+    answer = payload["answer"]
+    arabic = "لا يمكنني تنفيذ" in answer and "لم يتم إجراء أي تغيير" in answer
+    english = "I can't take actions such as" in answer and "no change has been made" in answer
+    assert arabic or english
     assert "لم أتخذ أي إجراء" in payload["answer"]
     assert "لم يحدد فواتير معينة" in payload["answer"]
     assert "مثل إصدار فاتورة" not in payload["answer"]
@@ -452,4 +456,18 @@ def test_unmatched_action_phrases_fall_through_to_read_only_answers(
         assert claim not in payload["answer"]
     assert expected in payload["answer"]
     assert payload["mode"] == "local-fallback"
+    assert _invoice_snapshot() == before
+
+
+def test_refusal_language_follows_the_request_language(assistant_client):
+    business_id = _seed_business(assistant_client)
+    before = _invoice_snapshot()
+    english = _ask(assistant_client, business_id, "Void invoice ISS-1")
+    arabic = _ask(assistant_client, business_id, "ألغِ الفاتورة ISS-1")
+    assert "I can't take actions such as" in english["answer"]
+    assert "no change has been made" in english["answer"]
+    assert not any("\u0600" <= ch <= "\u06ff" for ch in english["answer"])
+    assert "لا يمكنني تنفيذ" in arabic["answer"]
+    assert "لم يتم إجراء أي تغيير" in arabic["answer"]
+    assert "I can't take actions" not in arabic["answer"]
     assert _invoice_snapshot() == before

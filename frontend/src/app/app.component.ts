@@ -227,7 +227,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               <section abaCard class="panel narrow">
                 <aba-state-message kind="loading" [description]="t('ui.m_icu2ib')" />
               </section>
-            }
+            } @error {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                  </section>
+                }
           } @else {
           <header class="topbar">
             <div class="topbar-heading"><p class="eyebrow">{{ t('ui.m_criw1m') }}</p><h1>{{ pageTitle }}</h1></div>
@@ -496,7 +500,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <section abaCard class="panel narrow">
                   <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
                 </section>
-              }
+              } @error {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                  </section>
+                }
             }
             @if (tab === 'recurring') {
               <section abaCard class="panel">
@@ -627,6 +635,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <section abaCard class="panel narrow">
                     <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
                   </section>
+                } @error {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                  </section>
                 }
                 @if (statementVisible) {
                   <section abaCard class="panel statement-panel">
@@ -721,6 +733,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <section abaCard class="panel narrow">
                     <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
                   </section>
+                } @error {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                  </section>
                 }
                 @defer (when tab === 'products' && business?.id) {
                   <aba-inventory-movement-ledger
@@ -733,6 +749,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 } @placeholder {
                   <section abaCard class="panel narrow">
                     <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
+                  </section>
+                } @error {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
                   </section>
                 }
               </section>
@@ -762,7 +782,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                         <section abaCard class="panel narrow">
                           <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
                         </section>
-                      }
+                      } @error {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                  </section>
+                }
                     </section>
                   } @else {
                     <button type="button" class="primary invoice-create-button" (click)="startNewInvoiceDraft()">
@@ -1056,7 +1080,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <section abaCard class="panel narrow">
                   <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
                 </section>
-              }
+              } @error {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                  </section>
+                }
             }
 
             @if (tab === 'audit') {
@@ -1078,7 +1106,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <section abaCard class="panel narrow">
                   <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
                 </section>
-              }
+              } @error {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                  </section>
+                }
             }
 
             @if (tab === 'release-guide') {
@@ -1088,7 +1120,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <section abaCard class="panel narrow">
                   <aba-state-message kind="loading" [description]="t('ui.m_111geup')" />
                 </section>
-              }
+              } @error {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                  </section>
+                }
             }
 
             @if (tab === 'employees' && business.role === 'owner') {
@@ -1098,7 +1134,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <section abaCard class="panel narrow">
                   <aba-state-message kind="loading" [description]="t('ui.m_9hwp1p')" />
                 </section>
-              }
+              } @error {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                  </section>
+                }
             }
 
             @if (tab === 'expenses') {
@@ -1223,6 +1263,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             [focusFallbackId]="'invoices-section-heading'"
             (confirmed)="confirmInvoiceVoid()"
             (cancelled)="cancelInvoiceVoid()" />
+        } @error {
+          <section abaCard class="panel narrow" role="alert">
+            <aba-state-message kind="error" [description]="t('ui.m_deferr2')" />
+            <button class="secondary" type="button" (click)="cancelInvoiceVoid()">{{ t('ui.m_mbs8k3') }}</button>
+          </section>
         }
       }
       @if (pendingPurchaseApproval) {
@@ -1244,6 +1289,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             [focusFallbackId]="'purchases-section-heading'"
             (confirmed)="confirmPurchaseOrderApproval()"
             (cancelled)="cancelPurchaseOrderApproval()" />
+        } @error {
+          <section abaCard class="panel narrow" role="alert">
+            <aba-state-message kind="error" [description]="t('ui.m_deferr2')" />
+            <button class="secondary" type="button" (click)="cancelPurchaseOrderApproval()">{{ t('ui.m_1233hg7') }}</button>
+          </section>
         }
       }
       @if (pendingPurchaseReceipt) {
@@ -1265,6 +1315,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             [focusFallbackId]="'purchases-section-heading'"
             (confirmed)="confirmPurchaseOrderReceipt()"
             (cancelled)="cancelPurchaseOrderReceipt()" />
+        } @error {
+          <section abaCard class="panel narrow" role="alert">
+            <aba-state-message kind="error" [description]="t('ui.m_deferr2')" />
+            <button class="secondary" type="button" (click)="cancelPurchaseOrderReceipt()">{{ t('ui.m_1gc2kb4') }}</button>
+          </section>
         }
       }
 

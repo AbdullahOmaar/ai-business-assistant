@@ -193,3 +193,27 @@ test('desktop navigation remains scroll-reachable at a 993px viewport height', a
   await expect(finalDestination).toHaveAttribute('aria-current', 'page');
   expect(errors).toEqual([]);
 });
+// Needs a production build served statically (lazy chunks do not exist under
+// ng serve): AIBA_E2E_BUILT=1 with the base URL pointing at the built output.
+test('a blocked lazy chunk shows the localized error state and navigation still recovers', async ({ page }) => {
+  test.skip(!process.env.AIBA_E2E_BUILT, 'requires a production build served statically');
+  const errors = await signInAt(page, '/workspace');
+  await expect(page.locator('.dashboard-period')).toBeVisible();
+
+  // Fault injection: every lazy chunk request fails from here on.
+  const blocked: string[] = [];
+  await page.route('**/chunk-*.js', async route => {
+    blocked.push(new URL(route.request().url()).pathname);
+    await route.abort('failed');
+  });
+  await page.locator('.desktop-sidebar-groups button.nav-item').filter({ hasText: 'Customers' }).click();
+  await expect(page).toHaveURL(/\/workspace\/customers$/);
+  await expect(page.getByText('Could not load this section. Check your connection and reload the page.').first()).toBeVisible();
+  await expect(page.locator('.customer-directory')).toHaveCount(0);
+  expect(blocked.length).toBeGreaterThan(0);
+
+  // Fail closed, with a way out: other workspaces stay reachable.
+  await page.locator('.desktop-sidebar-groups button.nav-item').filter({ hasText: 'Overview' }).click();
+  await expect(page.locator('.dashboard-period')).toBeVisible();
+  expect(errors.filter(message => !/dynamically imported|Failed to fetch|chunk/i.test(message))).toEqual([]);
+});
