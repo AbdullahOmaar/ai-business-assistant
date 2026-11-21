@@ -312,7 +312,7 @@ export class ApiService {
     }
   }
 
-  private async requestBlob(path: string): Promise<Response> {
+  private async requestBlob(path: string): Promise<{ blob: Blob; response: Response }> {
     const config = await this.auth.getRuntimeConfig();
     const configuredBase = (config.apiBaseUrl || '').trim();
     const base = configuredBase.endsWith('/') ? configuredBase.slice(0, -1) : configuredBase;
@@ -320,25 +320,46 @@ export class ApiService {
       throw new Error('The backend URL is not configured in runtime-config.json.');
     }
     const token = await this.auth.idToken();
-    let response: Response;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
     try {
-      response = await fetch(base + path, {
-        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'text/csv' },
-        cache: 'no-store'
-      });
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : '';
-      throw new Error(`API_CONNECTION_FAILED: ${detail}`);
-    }
-    if (!response.ok) {
-      let message = `Request failed (${response.status}).`;
+      let response: Response;
       try {
-        const payload = await response.json();
-        if (typeof payload.detail === 'string') message = payload.detail;
-      } catch { /* response body may be empty */ }
-      throw new Error(message);
+        response = await fetch(base + path, {
+          headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'text/csv' },
+          cache: 'no-store',
+          signal: controller.signal
+        });
+      } catch (error) {
+        const timedOut = (error as { name?: string } | null)?.name === 'AbortError';
+        const detail = error instanceof Error ? error.message : '';
+        throw new Error(timedOut
+          ? 'API_CONNECTION_FAILED: The request timed out. Check the connection and retry.'
+          : `API_CONNECTION_FAILED: ${detail}`);
+      }
+      if (!response.ok) {
+        let message = `Request failed (${response.status}).`;
+        try {
+          const payload = await response.json();
+          if (typeof payload.detail === 'string') message = payload.detail;
+        } catch { /* response body may be empty */ }
+        throw new Error(message);
+      }
+      try {
+        // Keep the abort timer active while the CSV body is being read too.
+        // The body is consumed here so the read stays inside the bound;
+        // the response is returned alongside for its headers.
+        const blob = await response.blob();
+        return { blob, response };
+      } catch (error) {
+        if ((error as { name?: string } | null)?.name === 'AbortError') {
+          throw new Error('API_CONNECTION_FAILED: The response timed out. Check the connection and retry.');
+        }
+        throw error;
+      }
+    } finally {
+      clearTimeout(timeoutId);
     }
-    return response;
   }
 
   private async requestCsv<T>(path: string, csvText: string): Promise<T> {
@@ -346,27 +367,45 @@ export class ApiService {
     const base = (config.apiBaseUrl || '').trim().replace(/\/$/, '');
     if (!base || base.includes('YOUR-BACKEND')) throw new Error('The backend URL is not configured in runtime-config.json.');
     const token = await this.auth.idToken();
-    let response: Response;
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15_000);
     try {
-      response = await fetch(base + path, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'text/csv', 'Accept': 'application/json' },
-        body: csvText
-      });
-    } catch (error) {
-      const detail = error instanceof Error ? error.message : '';
-      throw new Error(`API_CONNECTION_FAILED: ${detail}`);
-    }
-    if (!response.ok) {
-      let message = `Request failed (${response.status}).`;
+      let response: Response;
       try {
-        const payload = await response.json();
-        if (typeof payload.detail === 'string') message = payload.detail;
-        else if (payload.detail?.message) message = payload.detail.message;
-      } catch { /* response body may be empty */ }
-      throw new Error(message);
+        response = await fetch(base + path, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'text/csv', 'Accept': 'application/json' },
+          body: csvText,
+          signal: controller.signal
+        });
+      } catch (error) {
+        const timedOut = (error as { name?: string } | null)?.name === 'AbortError';
+        const detail = error instanceof Error ? error.message : '';
+        throw new Error(timedOut
+          ? 'API_CONNECTION_FAILED: The request timed out. Check the connection and retry.'
+          : `API_CONNECTION_FAILED: ${detail}`);
+      }
+      if (!response.ok) {
+        let message = `Request failed (${response.status}).`;
+        try {
+          const payload = await response.json();
+          if (typeof payload.detail === 'string') message = payload.detail;
+          else if (payload.detail?.message) message = payload.detail.message;
+        } catch { /* response body may be empty */ }
+        throw new Error(message);
+      }
+      try {
+        // Keep the abort timer active while the response body is being read too.
+        return await response.json() as T;
+      } catch (error) {
+        if ((error as { name?: string } | null)?.name === 'AbortError') {
+          throw new Error('API_CONNECTION_FAILED: The response timed out. Check the connection and retry.');
+        }
+        throw error;
+      }
+    } finally {
+      clearTimeout(timeoutId);
     }
-    return await response.json() as T;
   }
 
   previewProductCsv(businessId: string, csvText: string): Promise<{
@@ -489,8 +528,8 @@ export class ApiService {
     for (const [key, value] of Object.entries(filters)) {
       if (value !== undefined && value !== '') params.set(key, String(value));
     }
-    return this.requestBlob(`/api/v1/platform-admin/audit-events/export.csv?${params.toString()}`).then(async response => ({
-      blob: await response.blob(),
+    return this.requestBlob(`/api/v1/platform-admin/audit-events/export.csv?${params.toString()}`).then(({ blob, response }) => ({
+      blob,
       truncated: response.headers.get('X-Export-Truncated') === 'true',
       rowCount: Number(response.headers.get('X-Export-Row-Count') || 0)
     }));

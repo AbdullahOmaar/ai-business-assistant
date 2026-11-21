@@ -980,10 +980,10 @@ def post_recurring_schedule(business_id: UUID, body: ScheduleInput,
         # Recurring schedules can trigger future financial documents; OWNER approval is required.
         _authorized(session, principal, business_id, owner_only=True)
         schedule_timezone = _validated_schedule_timezone(body.timezone)
-        if body.customer_id is not None and session.scalars(select(Invoice).where(
-            Invoice.business_id == business_id, Invoice.customer_id == body.customer_id,
-        ).limit(1)).first() is None:
+        if body.customer_id is not None:
             # Customer existence is verified separately; it need not already have an invoice.
+            # The active-customer check applies regardless of invoice history:
+            # an inactive customer with past invoices must not get a schedule.
             from app.models import Customer
             customer = session.scalars(select(Customer).where(
                 Customer.id == body.customer_id, Customer.business_id == business_id,
