@@ -22,7 +22,11 @@
 
 ## History currently represented in the app
 
+- **1.6.1 (release candidate; NOT deployed)** — reliability fixes from PR #413 (branch `master/p2-copilot-repairs`, head `578c0b4a` at this moment, base main `35caf299`): recurring schedules now check that the customer is active whenever a customer is chosen; CSV imports and exports stop waiting after 15 seconds instead of hanging, with an unknown-outcome message on import-commit timeout; the built-in assistant answers invoice questions with a count only when asked for a count. Frontend, backend package and FastAPI versions are aligned at 1.6.1. Do not describe this candidate as live.
+
 - **1.5.0 (release candidate; NOT deployed)** — coordinated frontend/API release for customer and product workspaces, purchasing lifecycle and receipt idempotency, secure staff invitations, and tenant-isolation hardening. Frontend and API versions are aligned at 1.5.0. Candidate PR #398 on `master/nov-2026-phase-1-ux-foundation`; production remains on the previously deployed main commit until all live acceptance and release gates pass. Do not describe this candidate as live.
+
+- **Correction 2026-11-21:** the live API `/version` reports 1.5.0 at commit `ca0f9734a99f` in production, so the 1.5.0 entry above calling it an undeployed candidate is stale; the 1.5.0 API is live in production. The 1.5.0 coordinated frontend/API candidate text is kept as written.
 
 - **1.4.1 (deployed)** — frontend-only mobile App Bar refinement: compact page-first actions, separate workspace context, sticky safe-area-aware header, and preserved four-slot mobile navigation. API remains 1.3.5. Deployed to Web Production on main SHA `1f72f45a0830462afb1f25e37a962cb9e30646e8` (Vercel deployment `dpl_AnGL6WvHZgy75zE9qkdrSfYHVq1n`, READY); alias [ai-business-assistant-web.vercel.app](https://ai-business-assistant-web.vercel.app). `/`, `/sw.js`, `/manifest.webmanifest` and `/runtime-config.json` returned HTTP 200; PWA cache key `aba-shell-v1.4.1-1f72f45a0830` matches the deployed version and SHA.
 - **1.4.0 (previous release)** — workspace and mobile experience improvements. Previously deployed to Web Production on main SHA `570dbcbb59ec887bea86125ff4b8933ec821f3af` (deployment `dpl_99L4ro2Uta4MCbBGHLcXDJypDTnB`); superseded by Web 1.4.1. API remains 1.3.5.

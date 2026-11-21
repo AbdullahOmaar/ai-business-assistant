@@ -1145,7 +1145,10 @@
       "v160_precision": "Improved exact decimal price and stock sorting, search context and customer/product editing.",
       "v161_purchasing": "Version 1.6.1 preserves purchase quantity and unit-cost decimal strings and validates them against the API precision limits.",
       "v161_inventory": "Version 1.6.1 adds product-opening balance as a filterable inventory movement reference.",
-      "v161_credit_notes": "Version 1.6.1 adds return drafts, owner approval and owner-only issuance of a separate credit-note document. It does not apply credit to receivables or record cash refunds; tax-bearing invoices remain blocked until tax allocation is approved."
+      "v161_credit_notes": "Version 1.6.1 adds return drafts, owner approval and owner-only issuance of a separate credit-note document. It does not apply credit to receivables or record cash refunds; tax-bearing invoices remain blocked until tax allocation is approved.",
+      "v161_schedule": "Version 1.6.1: recurring schedules now check that the customer is active whenever a customer is chosen, including customers who already have invoices.",
+      "v161_transport": "CSV imports and exports now stop waiting after 15 seconds instead of hanging. If an import preview times out, nothing was written and you can try again. If saving an import times out, the result is unknown: check the list before importing again.",
+      "v161_assistant": "The built-in assistant now answers invoice questions with a count only when you ask for a count, such as how many."
     },
     "catalog": {
       "m_aba150_title": "Workspace and purchasing workflows",
@@ -1288,7 +1291,8 @@
       "m_12vb645": "Review activity entries available to workspace owners; action and target labels use the selected language.",
       "m_hnk1p9": "A separate area for authorized platform administrators.",
       "v160_title": "Inventory ledger and mobile experience update",
-      "v161_title": "Returns, credit notes, purchasing and inventory improvements"
+      "v161_title": "Returns, credit notes, purchasing and inventory improvements",
+      "v161_reliability_title": "Reliability fixes: recurring schedules, CSV transport and assistant counts"
     }
   },
   "catalog": {

@@ -1,3 +1,13 @@
+## Version/docs candidate 1.6.1 — 2026-11-21 (local prep, NOT pushed, NOT approved)
+
+- **Candidate:** PR #413 head `578c0b4a` plus the version/docs commit (local only, unpushed; no SHA assigned). Branch `master/p2-copilot-repairs`, base main `35caf299`. Base/source head stays `578c0b4a`.
+- **Change:** version 1.6.1 aligned in frontend/package.json, package-lock.json (root fields only), build-info.ts fallback, backend/pyproject.toml and backend/app/main.py; `frontend/public/sw.js` fallback cache name `aba-shell-v1.6.1-unknown-v3`; new RELEASE_HISTORY 1.6.1 entry (reliability fixes: recurring schedules, CSV transport, assistant counts) under a distinct title key; docs/RELEASE_HISTORY.md 1.6.1 entry (release candidate; NOT deployed) plus a dated 1.5.0 correction.
+- **i18n keys:** already existed, left unchanged — `release.catalog.v161_title` (November-branch text), `release.changes.v161_purchasing`, `v161_inventory`, `v161_credit_notes`. New in this commit (en+ar) — `release.catalog.v161_reliability_title`, `release.changes.v161_schedule`, `v161_transport`, `v161_assistant`.
+- **Checks (Muse-local):** focused i18n/release-guide specs 152/152; full frontend unit 600/600; production build reads 1.6.1; backend `/version` via TestClient returns 1.6.1. CI: pending.
+- **Merge state:** open draft (PR #413). **Deployment state:** not deployed. **Approval state:** not approved.
+
+---
+
 ## MASTER CI selector audit — 2026-11-19
 
 - **Active candidate:** `master/nov-2026-phase-1-runtime-qa`, PR #401, head `d37b66b68421e0db0fd1cceaefbaa06381a544f3`; no new branch or PR.
