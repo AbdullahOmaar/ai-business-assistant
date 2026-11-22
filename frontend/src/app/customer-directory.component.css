@@ -94,3 +94,5 @@
   .customer-directory__action{min-height:48px;padding-inline:12px;border-radius:11px}
 }
 @media(max-width:480px){.customer-directory__mobile-row{padding:14px}.customer-directory__actions{gap:8px}.customer-directory__action{padding-inline:6px}}
+.customer-directory__skeletons{display:grid;gap:10px}
+.customer-directory__sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}

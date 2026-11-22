@@ -106,7 +106,9 @@ test('customer directory distinguishes an empty list from a no-match search', ()
 // sort control stays readable at 220px.
 test('customer directory card actions carry icons and stay readable at 195/220px', () => {
   assert.ok(component.includes("import { AbaIconComponent } from './shared/ui/aba-icon.component';"));
-  assert.ok(component.includes('imports: [AbaStateMessageComponent, AbaIconComponent]'));
+  // 3A-354 (2026-11-22): the loading state renders skeleton rows, so
+  // AbaSkeletonComponent joined the imports; the card actions are unchanged.
+  assert.ok(component.includes('imports: [AbaStateMessageComponent, AbaIconComponent, AbaSkeletonComponent]'));
   // One icon per action in each of the two layouts (desktop table + mobile list).
   for (const name of ['document', 'statement', 'edit']) {
     assert.equal((component.match(new RegExp('<aba-icon name="' + name + '" />', 'g')) ?? []).length, 2,
