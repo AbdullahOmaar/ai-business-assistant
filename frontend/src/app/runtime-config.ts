@@ -6,6 +6,10 @@ export interface RuntimeConfig {
     projectId: string;
     appId: string;
   };
+  sentry: {
+    dsn: string;
+    environment: string;
+  };
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -36,6 +40,13 @@ export function validateRuntimeConfig(value: unknown): RuntimeConfig {
   }
 
   const firebase = isRecord(rawFirebase) ? rawFirebase : {};
+
+  const rawSentry = value['sentry'];
+  if (rawSentry !== undefined && rawSentry !== null && !isRecord(rawSentry)) {
+    throw new Error('Runtime configuration is invalid.');
+  }
+  const sentry = isRecord(rawSentry) ? rawSentry : {};
+
   return {
     apiBaseUrl: optionalString(value['apiBaseUrl']),
     firebase: {
@@ -43,6 +54,10 @@ export function validateRuntimeConfig(value: unknown): RuntimeConfig {
       authDomain: optionalString(firebase['authDomain']),
       projectId: optionalString(firebase['projectId']),
       appId: optionalString(firebase['appId']),
+    },
+    sentry: {
+      dsn: optionalString(sentry['dsn']),
+      environment: optionalString(sentry['environment']),
     },
   };
 }

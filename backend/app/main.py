@@ -17,12 +17,17 @@ from app.firebase_auth import configure_firebase_auth
 from app.platform_admin_api import router as platform_admin_router
 from app.employee_payroll_api import router as employee_payroll_router
 from app.demo_auth_api import router as demo_auth_router
+from app.monitoring import configure_sentry
+
+# Error monitoring stays off unless SENTRY_DSN is set by the operator; it
+# must be configured before the app serves requests (see app/monitoring.py).
+configure_sentry()
 
 CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 
 app = FastAPI(
     title="AI Business Assistant API",
-    version="1.8.0",
+    version="1.8.1",
     description=(
         "Business workflows with PostgreSQL, Firebase ID-token verification, "
         "tenant-scoped authorization, and grounded assistant chat."

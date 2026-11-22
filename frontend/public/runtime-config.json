@@ -5,5 +5,9 @@
     "authDomain": "ai-business-assistant-97f37.firebaseapp.com",
     "projectId": "ai-business-assistant-97f37",
     "appId": "1:803541434464:web:57242ff4d0ae409047c305"
+  },
+  "sentry": {
+    "dsn": "https://cfdbc7302a85310266ef9c202e71a48e@o4512476853764096.ingest.de.sentry.io/4512476856516688",
+    "environment": "production"
   }
 }

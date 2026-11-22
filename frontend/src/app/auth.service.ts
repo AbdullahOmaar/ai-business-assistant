@@ -3,6 +3,7 @@ import type { FirebaseApp } from '@firebase/app';
 import type { Auth, User } from '@firebase/auth';
 import { AuthStateBroadcaster, observeAuthState } from './auth-state-observer';
 import { validateRuntimeConfig, type RuntimeConfig } from './runtime-config';
+import { initializeSentryMonitoring } from './sentry-monitoring';
 export type { RuntimeConfig } from './runtime-config';
 
 export interface AuthUserSnapshot { uid: string; email: string | null; }
@@ -36,7 +37,12 @@ export class AuthService {
           } catch {
             throw new Error('Runtime configuration is invalid.');
           }
-          return validateRuntimeConfig(payload);
+          const config = validateRuntimeConfig(payload);
+          // 3A-327: error monitoring starts from the validated public
+          // config; it is fire-and-forget so it can never block or break
+          // configuration loading, and it stays off without a DSN.
+          void initializeSentryMonitoring(config).catch(() => undefined);
+          return config;
         })
         .catch(error => {
           this.configPromise = undefined;
