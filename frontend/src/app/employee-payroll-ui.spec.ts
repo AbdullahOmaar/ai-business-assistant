@@ -245,3 +245,31 @@ test('employee table action heading and remaining record loading descriptions re
   ]) assert.ok(app.includes(fragment), 'missing localized record UX: '+fragment);
 });
 
+// T18 Slice U12 (2026-11-22): payroll money cells join each amount to its
+// currency with a non-breaking space, so the currency can never strand on
+// its own line in a stacked record card. The additions expression may still
+// wrap after the plus at 321-760px (the stacked card's accepted behaviour,
+// same as the U02 amounts-intact batch rule); only the currency join is
+// pinned here.
+test('payroll money cells keep each amount joined to its currency', () => {
+  const rowsStart = component.indexOf('get payrollTableRows()');
+  const rowsEnd = component.indexOf('onEmployeeRecordAction(', rowsStart);
+  assert.ok(rowsStart >= 0 && rowsEnd > rowsStart);
+  const rows = component.slice(rowsStart, rowsEnd);
+  for (const fragment of [
+    'base:`${payroll.base_salary}\\u00A0${this.currencyCode}`',
+    'additions:`${payroll.allowances} + ${payroll.bonuses}\\u00A0${this.currencyCode}`',
+    'deductions:`${payroll.deductions}\\u00A0${this.currencyCode}`',
+    'net:`${payroll.net_pay}\\u00A0${this.currencyCode}`',
+  ]) assert.ok(rows.includes(fragment), `missing non-breaking currency join: ${fragment}`);
+  assert.doesNotMatch(rows, /base_salary\} |allowances\} \+ .*bonuses\} |deductions\} |net_pay\} /);
+});
+
+test('employee and payroll text wraps on words, never mid-word', () => {
+  assert.doesNotMatch(component, /overflow-wrap:anywhere/);
+  const navStart = component.indexOf('.mobile-hr-nav button{');
+  assert.ok(navStart >= 0);
+  const navRule = component.slice(navStart, component.indexOf('}', navStart));
+  assert.ok(navRule.includes('overflow-wrap:normal'), 'mobile HR buttons must wrap on words');
+});
+

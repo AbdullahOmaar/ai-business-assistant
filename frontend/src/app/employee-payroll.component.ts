@@ -159,9 +159,9 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     .list{margin-top:14px;min-width:0}
     .list-row{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:12px;padding:13px 3px;border-bottom:1px solid var(--aba-color-border-subtle,#edf0f5);min-width:0}
     .list-row:last-child{border-bottom:0}
-    .grow{min-width:0;overflow-wrap:anywhere}
-    .list-row strong{display:block;font-size:12px;overflow-wrap:anywhere}
-    .list-row small{display:block;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px;margin-top:5px;overflow-wrap:anywhere}
+    .grow{min-width:0;overflow-wrap:normal}
+    .list-row strong{display:block;font-size:12px;overflow-wrap:normal}
+    .list-row small{display:block;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px;margin-top:5px;overflow-wrap:normal}
     .empty{padding:20px;text-align:center;color:var(--aba-color-text-tertiary,#9ca3af);font-size:12px}
     .employee-form,.payroll-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;min-width:0;margin:14px 0}
     .employee-form label,.payroll-form label,.employee-tools label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155)}
@@ -183,7 +183,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     @media(max-width:760px){
       .employee-panel{padding:15px;border-radius:13px}
       .mobile-hr-nav{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;margin:0 0 16px;padding:5px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:13px;background:var(--aba-color-surface-subtle,#f8fafc)}
-      .mobile-hr-nav button{min-width:0;min-height:48px;padding:8px 5px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--aba-color-text-secondary,#475569);font-size:12px;font-weight:800;line-height:1.35;overflow-wrap:anywhere}
+      .mobile-hr-nav button{min-width:0;min-height:48px;padding:8px 5px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--aba-color-text-secondary,#475569);font-size:12px;font-weight:800;line-height:1.35;overflow-wrap:normal}
       .mobile-hr-nav button.active{border-color:var(--aba-color-primary-border,#99f6e4);background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59)}
       .mobile-hr-nav button:focus-visible,.employee-form-toggle:focus-visible{outline:3px solid var(--aba-color-focus-ring,#2563eb);outline-offset:2px}
       .employee-form-shell{min-width:0;margin-bottom:14px;padding:10px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px;background:var(--aba-color-surface-subtle,#f8fafc)}
@@ -199,7 +199,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
       .employee-panel[data-mobile-section="history"] [data-mobile-pane="employees"],
       .employee-panel[data-mobile-section="history"] [data-mobile-pane="prepare"]{display:none}
       .employee-row .actions,.payroll-row .actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px;justify-content:stretch}
-      .employee-row .actions button,.payroll-row .actions button{min-width:0;min-height:44px;padding:8px 9px;white-space:normal;overflow-wrap:anywhere}
+      .employee-row .actions button,.payroll-row .actions button{min-width:0;min-height:44px;padding:8px 9px;white-space:normal;overflow-wrap:normal}
       .employee-row .actions button:nth-child(3){grid-column:1/-1}
       .section-head{align-items:flex-start}
       .notice{align-items:flex-start;flex-direction:column}
@@ -350,9 +350,9 @@ export class EmployeePayrollComponent implements OnChanges {
     {key:'payout',label:this.t('ui.m_y96e6r')},
   ]; }
   get payrollTableRows(): readonly AbaRecordTableRow[] { return this.payrollRecords.map(payroll=>({id:payroll.id,cells:{
-    employee:payroll.employee_name,period:payroll.period,base:`${payroll.base_salary} ${this.currencyCode}`,
-    additions:`${payroll.allowances} + ${payroll.bonuses} ${this.currencyCode}`,
-    deductions:`${payroll.deductions} ${this.currencyCode}`,net:`${payroll.net_pay} ${this.currencyCode}`,
+    employee:payroll.employee_name,period:payroll.period,base:`${payroll.base_salary}\u00A0${this.currencyCode}`,
+    additions:`${payroll.allowances} + ${payroll.bonuses}\u00A0${this.currencyCode}`,
+    deductions:`${payroll.deductions}\u00A0${this.currencyCode}`,net:`${payroll.net_pay}\u00A0${this.currencyCode}`,
     status:this.payrollStatusLabel(payroll.status),payout:this.formatPayrollPayoutDate(payroll.paid_at),
   },actions:payroll.status==='draft'?[
     {id:'edit',label:this.t('ui.m_s0gv7p'),disabled:this.busy||!!this.operationId},
