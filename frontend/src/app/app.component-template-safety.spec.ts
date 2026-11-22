@@ -28,6 +28,8 @@ const purchasingWorkspaceSource = expandTranslationCalls(readFileSync(new URL('.
 const customerEditorSource = expandTranslationCalls(readFileSync(new URL('./customer-editor.component.ts', import.meta.url), 'utf8'));
 const auditLabelsSource = expandTranslationCalls(readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8'));
 const reportsWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8'));
+// 3A-351: the AI assistant tab moved into its own deferred workspace component.
+const assistantWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./assistant-workspace.component.ts', import.meta.url), 'utf8'));
 const reportLabelsSource = expandTranslationCalls(readFileSync(new URL('./report-labels.ts', import.meta.url), 'utf8'));
 const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
 const workspaceInvitationsSource = readFileSync(new URL('./workspace-invitations.component.ts', import.meta.url), 'utf8');
@@ -102,21 +104,23 @@ test('expense and notification types use selectable, localized options', () => {
 });
 
 test('AI suggestions live outside the chat panel in a compact responsive prompt rail', () => {
-  const assistantStart = source.indexOf('<div class="assistant-workspace"');
-  const chatStart = source.indexOf('<section abaCard class="panel chat-panel">', assistantStart);
-  const chatEnd = source.indexOf('</section>', chatStart);
-  const suggestionsStart = source.indexOf('<aside class="assistant-suggestions"', chatEnd);
-  const workspaceEnd = source.indexOf('</div>\n            }', suggestionsStart);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const assistantStart = assistantWorkspaceSource.indexOf('<div class="assistant-workspace"');
+  const chatStart = assistantWorkspaceSource.indexOf('<section abaCard class="panel chat-panel">', assistantStart);
+  const chatEnd = assistantWorkspaceSource.indexOf('</section>', chatStart);
+  const suggestionsStart = assistantWorkspaceSource.indexOf('<aside class="assistant-suggestions"', chatEnd);
+  // 3A-351: the component template ends with the assistant-workspace </div>.
+  const workspaceEnd = assistantWorkspaceSource.indexOf('</div>', suggestionsStart);
   assert.ok(assistantStart >= 0 && chatStart > assistantStart);
   assert.ok(chatEnd > chatStart && suggestionsStart > chatEnd,
     'suggestions must be a sibling of the chat panel, not inside it');
   assert.ok(workspaceEnd > suggestionsStart, 'suggestions must remain inside the assistant layout');
-  assert.ok(source.includes('.assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px'));
-  assert.ok(source.includes('.assistant-workspace:not(.has-chat) .assistant-suggestions{grid-row:1}'));
-  assert.ok(source.includes('.assistant-workspace:not(.has-chat) .chat-panel{grid-row:2}'));
-  assert.ok(source.includes('.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr)'));
-  assert.ok(source.includes('@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}'));
-  assert.match(source, /class="suggestion-card"/);
+  assert.ok(assistantWorkspaceSource.includes('.assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px'));
+  assert.ok(assistantWorkspaceSource.includes('.assistant-workspace:not(.has-chat) .assistant-suggestions{grid-row:1}'));
+  assert.ok(assistantWorkspaceSource.includes('.assistant-workspace:not(.has-chat) .chat-panel{grid-row:2}'));
+  assert.ok(assistantWorkspaceSource.includes('.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr)'));
+  assert.ok(assistantWorkspaceSource.includes('@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}'));
+  assert.match(assistantWorkspaceSource, /class="suggestion-card"/);
 });
 
 test('audit actions and record types have Arabic display labels', () => {
@@ -341,33 +345,39 @@ test('Home quick access shows only the five key destinations from the shared rol
 
 
 test('chat requests are fenced by workspace, authenticated UID, role and request generation', () => {
-  assert.match(source, /private readonly chatRequestGuard = new WorkspaceLoadGuard\(\)/);
-  assert.match(source, /private currentChatRequestContext\(\): TenantRequestContext/);
-  assert.match(source, /runTenantScopedRequest\([\s\S]*this\.chatRequestGuard/);
-  const clearStart = source.indexOf('private clearWorkspaceData(): void');
-  const clearEnd = source.indexOf('async createWorkspace(): Promise<void>', clearStart);
-  const clear = source.slice(clearStart, clearEnd);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  // The shell keeps its own currentChatRequestContext for its remaining loaders.
+  assert.match(assistantWorkspaceSource, /private readonly chatRequestGuard = new WorkspaceLoadGuard\(\)/);
+  assert.match(assistantWorkspaceSource, /private chatRequestContext\(\): TenantRequestContext/);
+  assert.match(assistantWorkspaceSource, /runTenantScopedRequest\([\s\S]*this\.chatRequestGuard/);
+  const clearStart = assistantWorkspaceSource.indexOf('ngOnChanges(changes: SimpleChanges): void');
+  const clearEnd = assistantWorkspaceSource.indexOf('private chatRequestContext', clearStart);
+  const clear = assistantWorkspaceSource.slice(clearStart, clearEnd);
   assert.match(clear, /this\.chatRequestGuard\.invalidate\(\)/);
   assert.match(clear, /this\.chatSending = false/);
-  assert.match(source, /if \(!requestContext\.signedIn \|\| !requestContext\.userId \|\| !requestContext\.role \|\| !requestContext\.workspaceId\) return/);
+  assert.match(assistantWorkspaceSource, /if \(!requestContext\.signedIn \|\| !requestContext\.userId \|\| !requestContext\.role \|\| !requestContext\.workspaceId\) return/);
+  assert.match(source, /private currentChatRequestContext\(\): TenantRequestContext/);
 });
 
 test('mobile chat adapts to the visual viewport and keeps the composer above the bottom dock', () => {
+  // 3A-351: the chat-form layout rules moved with the assistant workspace;
+  // the visual-viewport handling and the shell-chrome rules stay in the shell.
   assert.match(source, /window\.visualViewport\?\.addEventListener\('resize'/);
   assert.match(source, /window\.visualViewport\?\.removeEventListener\('resize'/);
   assert.match(source, /--aba-keyboard-inset/);
   assert.match(source, /\[class\.keyboard-open\]="keyboardOpen"/);
-  assert.match(source, /\.chat-form\{position:sticky;bottom:calc\(var\(--aba-keyboard-inset,0px\) \+ 8px\)/);
-  assert.match(source, /\.shell\.keyboard-open \.chat-form\{position:fixed;inset-inline:12px;bottom:calc\(var\(--aba-keyboard-inset,0px\) \+ 8px\)/);
+  assert.match(assistantWorkspaceSource, /\.chat-form\{position:sticky;bottom:calc\(var\(--aba-keyboard-inset,0px\) \+ 8px\)/);
+  assert.match(assistantWorkspaceSource, /\.shell\.keyboard-open \.chat-form\{position:fixed;inset-inline:12px;bottom:calc\(var\(--aba-keyboard-inset,0px\) \+ 8px\)/);
   assert.match(source, /\.shell\.keyboard-open \.sidebar/);
   assert.match(source, /\.shell:has\(\.chat-form textarea:focus\) \.sidebar/);
-  assert.match(source, /max-height:25dvh/);
+  assert.match(assistantWorkspaceSource, /max-height:25dvh/);
 });
 
 test('chat send preserves retry draft behavior and keeps the existing API contract', () => {
-  const start = source.indexOf('async sendChat(): Promise<void>');
-  const end = source.indexOf('private message(error:', start);
-  const method = source.slice(start, end);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const start = assistantWorkspaceSource.indexOf('async sendChat(): Promise<void>');
+  const end = assistantWorkspaceSource.indexOf('private message(error:', start);
+  const method = assistantWorkspaceSource.slice(start, end);
   assert.match(method, /this\.api\.chat\(requestContext\.workspaceId, question, history\)/);
   assert.match(method, /this\.chatDraft = question/);
   assert.match(method, /onFinally: \(\) => \{\s*this\.chatSending = false;/);
@@ -714,8 +724,9 @@ test('invoice success messages support warning state and reset with workspace co
 });
 
 test('payment completion cannot clear the loading state of a newly selected workspace', () => {
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
   const start = source.indexOf('async createPayment(): Promise<void>');
-  const end = source.indexOf('useAssistantSuggestion(', start);
+  const end = source.indexOf('private captureTenantRequest(', start);
   const method = source.slice(start, end);
   assert.ok(start >= 0 && end > start);
   assert.match(method, /const businessSnapshot = this\.business/);
@@ -1041,10 +1052,11 @@ test('CSV import preview and write controls are owner-only without restricting m
 });
 
 test('assistant source citations use bilingual labels and localized expense categories', () => {
-  assert.match(source, /t\('المصادر:', 'Sources:'\)/);
-  assert.match(source, /source\.type === 'invoice' \? t\('فاتورة', 'Invoice'\)/);
-  assert.match(source, /source\.type === 'expense' \? t\('مصروف', 'Expense'\)/);
-  assert.match(source, /expenseCategoryLabel\(source\.category\)/);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  assert.match(assistantWorkspaceSource, /t\('المصادر:', 'Sources:'\)/);
+  assert.match(assistantWorkspaceSource, /source\.type === 'invoice' \? t\('فاتورة', 'Invoice'\)/);
+  assert.match(assistantWorkspaceSource, /source\.type === 'expense' \? t\('مصروف', 'Expense'\)/);
+  assert.match(assistantWorkspaceSource, /expenseCategoryLabel\(source\.category\)/);
 });
 
 test('expense categories are localized in the list and available to local search', () => {
@@ -1081,6 +1093,7 @@ test('purchase-order status labels are localized in the list and available to lo
 });
 
 test('purchase orders remain creatable by members while approval, receiving and payment writes are owner-only', () => {
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
   assert.ok(purchasingWorkspaceSource.includes("startCreate(): void"));
   assert.ok(purchasingWorkspaceSource.includes("this.api.createPurchaseOrder"));
   assert.ok(purchasingWorkspaceSource.includes("async saveDraft(): Promise<void>"));
@@ -1092,7 +1105,7 @@ test('purchase orders remain creatable by members while approval, receiving and 
   assert.ok(purchasingWorkspaceSource.includes("this.api.cancelPurchaseOrder"));
   assert.ok(purchasingWorkspaceSource.includes("this.api.receivePurchaseOrder"));
   const paymentStart = source.indexOf('async createPayment(): Promise<void>');
-  const paymentEnd = source.indexOf('useAssistantSuggestion(', paymentStart);
+  const paymentEnd = source.indexOf('private captureTenantRequest(', paymentStart);
   const payment = source.slice(paymentStart, paymentEnd);
   assert.match(payment, /businessSnapshot\.role !== 'owner'/);
 });
@@ -1121,16 +1134,17 @@ test('workspace switcher announces the current business context accessibly', () 
 });
 
 test('shared shell uses logical inline positioning for Arabic RTL and English LTR', () => {
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
   assert.match(source, /\.sidebar\{position:fixed;inset-block:0;inset-inline-end:0;/);
   assert.match(source, /\.main\{margin-inline-end:var\(--aba-layout-sidebar,245px\);/);
   assert.match(source, /\.nav-item\{[^}]*text-align:start;/);
   assert.match(source, /\.home-shortcut-link\{[^}]*text-align:start;/);
-  assert.match(source, /\.chat-message\.user-message\{margin-inline-end:auto;margin-inline-start:0;/);
+  assert.match(assistantWorkspaceSource, /\.chat-message\.user-message\{margin-inline-end:auto;margin-inline-start:0;/);
   assert.match(source, /\.nav-item\.active\{[^}]*border-inline-start:3px solid/);
   assert.doesNotMatch(source, /\.shell\.english \.sidebar\{inset:0 0 0 auto\}/);
   assert.doesNotMatch(source, /\.shell\.english \.main\{margin-left:0;margin-right:/);
   assert.doesNotMatch(source, /\.shell\.english \.home-shortcut-link\{text-align:left/);
-  assert.doesNotMatch(source, /\.shell\.english \.chat-message\.user-message\{margin-right:auto/);
+  assert.doesNotMatch(assistantWorkspaceSource, /\.shell\.english \.chat-message\.user-message\{margin-right:auto/);
 });
 
 
@@ -1266,9 +1280,10 @@ test('custom report date filters expose localized errors and never submit invali
 });
 
 test('chat composer announces empty and whitespace-only drafts without sending a request', () => {
-  const start = source.indexOf('<form #chatForm="ngForm" class="chat-form"');
-  const end = source.indexOf('</form>', start);
-  const form = source.slice(start, end);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const start = assistantWorkspaceSource.indexOf('<form #chatForm="ngForm" class="chat-form"');
+  const end = assistantWorkspaceSource.indexOf('</form>', start);
+  const form = assistantWorkspaceSource.slice(start, end);
   assert.ok(form.includes('chatForm.valid && chatDraft.trim() && sendChat()'));
   assert.ok(form.includes('#chatMessageControl="ngModel"'));
   assert.match(form, /maxlength="2000"[\s\S]*?\brequired/);
@@ -1278,9 +1293,9 @@ test('chat composer announces empty and whitespace-only drafts without sending a
   assert.ok(textarea.includes('[disabled]=\"chatSending\"'));
   assert.ok(!textarea.includes('[disabled]=\"chatSending || !chatDraft.trim()\"'));
   assert.ok(sendButton.includes('[disabled]=\"chatSending || !chatDraft.trim()\"'));
-  assert.ok(source.includes('id="chat-message-error"'));
-  assert.ok(source.includes('Enter your question before sending (up to 2000 characters).'));
-  assert.ok(source.includes("if (!this.business || !this.chatDraft.trim() || this.chatSending) return;"));
+  assert.ok(assistantWorkspaceSource.includes('id="chat-message-error"'));
+  assert.ok(assistantWorkspaceSource.includes('Enter your question before sending (up to 2000 characters).'));
+  assert.ok(assistantWorkspaceSource.includes("if (!this.businessId() || !this.chatDraft.trim() || this.chatSending) return;"));
 });
 
 test('workspace build metadata is presented once in the workspace context, not duplicated in the page header', () => {
@@ -1357,8 +1372,9 @@ test('quick-access keyboard focus fallback meets the shared semantic focus token
 
 
 test('AI chat composer placeholder follows selected language', () => {
-  assert.match(source, /\[placeholder\]="t\('اكتب سؤالك عن نشاطك…', 'Ask a question about your business…'\)"/);
-  assert.doesNotMatch(source, /placeholder="اكتب سؤالك عن نشاطك…"/);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  assert.match(assistantWorkspaceSource, /\[placeholder\]="t\('اكتب سؤالك عن نشاطك…', 'Ask a question about your business…'\)"/);
+  assert.doesNotMatch(assistantWorkspaceSource, /placeholder="اكتب سؤالك عن نشاطك…"/);
 });
 
 
@@ -1521,7 +1537,8 @@ test('shared workspace record tables and Platform Admin tables are named keyboar
 
 
 test('AI assistant conversation history is a named keyboard-scrollable log region', () => {
-  const log = source.match(/<div #chatLog class="chat-log"[^>]*>/)?.[0] ?? '';
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const log = assistantWorkspaceSource.match(/<div #chatLog class="chat-log"[^>]*>/)?.[0] ?? '';
   assert.match(log, /role="log"/);
   assert.match(log, /tabindex="0"/);
   assert.match(log, /\[attr\.aria-label\]=/);
@@ -1550,9 +1567,10 @@ test('unapproved discount and tax rates remain read-only and saved values are pr
 
 
 test('AI assistant new-chat control resets only in-memory conversation state', () => {
-  const start = source.indexOf('startNewChat(): void');
-  const end = source.indexOf('async copyAssistantMessage(', start);
-  const method = source.slice(start, end);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const start = assistantWorkspaceSource.indexOf('startNewChat(): void');
+  const end = assistantWorkspaceSource.indexOf('async copyAssistantMessage(', start);
+  const method = assistantWorkspaceSource.slice(start, end);
   assert.ok(method.includes('if (this.chatSending) return;'));
   assert.ok(method.includes('this.chatMessages = [];'));
   assert.ok(method.includes("this.chatDraft = '';"));
@@ -1566,11 +1584,12 @@ test('AI assistant new-chat control resets only in-memory conversation state', (
 });
 
 test('AI assistant response copy is explicitly click initiated and always removes its fallback input', () => {
-  const copyStart = source.indexOf('async copyAssistantMessage(');
-  const fallbackStart = source.indexOf('private copyTextWithSelectionFallback(', copyStart);
-  const copyEnd = source.indexOf('private isChatLogNearBottom()', fallbackStart);
-  const copy = source.slice(copyStart, fallbackStart);
-  const fallback = source.slice(fallbackStart, copyEnd);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const copyStart = assistantWorkspaceSource.indexOf('async copyAssistantMessage(');
+  const fallbackStart = assistantWorkspaceSource.indexOf('private copyTextWithSelectionFallback(', copyStart);
+  const copyEnd = assistantWorkspaceSource.indexOf('private isChatLogNearBottom()', fallbackStart);
+  const copy = assistantWorkspaceSource.slice(copyStart, fallbackStart);
+  const fallback = assistantWorkspaceSource.slice(fallbackStart, copyEnd);
   assert.ok(copy.includes('if (navigator.clipboard?.writeText)'));
   assert.ok(copy.includes('await navigator.clipboard.writeText(content);'));
   assert.ok(copy.includes('this.copyTextWithSelectionFallback(content);'));
@@ -1578,57 +1597,64 @@ test('AI assistant response copy is explicitly click initiated and always remove
   assert.ok(copy.includes('this.chatCopyStatus = { index, success: false };'));
   assert.ok(fallback.includes('finally {'));
   assert.ok(fallback.includes('temporaryInput.remove();'));
-  assert.ok(source.includes('(click)="copyAssistantMessage(message.content, messageIndex)"'));
+  assert.ok(assistantWorkspaceSource.includes('(click)="copyAssistantMessage(message.content, messageIndex)"'));
   assert.ok(!copy.includes('fetch('));
   assert.ok(!copy.includes('this.api.'));
 });
 
 test('AI assistant keyboard submission preserves multiline entry and IME composition', () => {
-  const start = source.indexOf('handleChatKeydown(event: KeyboardEvent): void');
-  const end = source.indexOf('startNewChat(): void', start);
-  const method = source.slice(start, end);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const start = assistantWorkspaceSource.indexOf('handleChatKeydown(event: KeyboardEvent): void');
+  const end = assistantWorkspaceSource.indexOf('startNewChat(): void', start);
+  const method = assistantWorkspaceSource.slice(start, end);
   assert.ok(method.includes("event.key !== 'Enter'"));
   assert.ok(method.includes('event.shiftKey'));
   assert.ok(method.includes('event.isComposing'));
   assert.ok(method.includes('event.preventDefault();'));
   assert.ok(method.includes('if (!this.chatDraft.trim() || this.chatSending) return;'));
-  assert.ok(source.includes('Shift + Enter for a new line'));
-  assert.ok(source.includes('{{ chatDraft.length }} / 2000'));
+  assert.ok(assistantWorkspaceSource.includes('Shift + Enter for a new line'));
+  assert.ok(assistantWorkspaceSource.includes('{{ chatDraft.length }} / 2000'));
 });
 
 test('AI assistant conversation log announces additions and exposes active request state', () => {
-  const logStart = source.indexOf('<div #chatLog class="chat-log"');
-  const logEnd = source.indexOf('>', logStart);
-  const log = source.slice(logStart, logEnd + 1);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const logStart = assistantWorkspaceSource.indexOf('<div #chatLog class="chat-log"');
+  const logEnd = assistantWorkspaceSource.indexOf('>', logStart);
+  const log = assistantWorkspaceSource.slice(logStart, logEnd + 1);
   assert.ok(log.includes('role="log"'));
   assert.ok(log.includes('aria-live="polite"'));
   assert.ok(log.includes('aria-relevant="additions"'));
   assert.ok(log.includes('aria-atomic="false"'));
   assert.ok(log.includes("chatSending ? 'true' : null"));
-  assert.ok(source.includes('.assistant-workspace:not(.has-chat) .assistant-suggestions{grid-row:1}'));
-  assert.ok(source.includes('.assistant-workspace:not(.has-chat) .chat-panel{grid-row:2}'));
+  assert.ok(assistantWorkspaceSource.includes('.assistant-workspace:not(.has-chat) .assistant-suggestions{grid-row:1}'));
+  assert.ok(assistantWorkspaceSource.includes('.assistant-workspace:not(.has-chat) .chat-panel{grid-row:2}'));
 });
 
 test('AI assistant template uses null-safe copy feedback and a typed key event expression', () => {
-  assert.ok(source.includes('chatCopyStatus?.success'));
-  assert.ok(source.includes('handleChatKeydown($any($event))'));
-  assert.ok(!source.includes('(keydown.enter)="handleChatKeydown($event)"'));
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  assert.ok(assistantWorkspaceSource.includes('chatCopyStatus?.success'));
+  assert.ok(assistantWorkspaceSource.includes('handleChatKeydown($any($event))'));
+  assert.ok(!assistantWorkspaceSource.includes('(keydown.enter)="handleChatKeydown($event)"'));
 });
 
 test('AI assistant resets transient copy feedback when workspace context changes', () => {
-  const start = source.indexOf('private clearWorkspaceData(): void');
-  const end = source.indexOf('async createWorkspace(): Promise<void>', start);
-  const clear = source.slice(start, end);
+  // 3A-351: the shell's clearWorkspaceData reset is now the assistant
+  // workspace's ngOnChanges on businessId.
+  const start = assistantWorkspaceSource.indexOf('ngOnChanges(changes: SimpleChanges): void');
+  const end = assistantWorkspaceSource.indexOf('private chatRequestContext', start);
+  const clear = assistantWorkspaceSource.slice(start, end);
   assert.ok(clear.includes('this.chatMessages = [];'));
   assert.ok(clear.includes('this.chatCopyStatus = null;'));
   assert.ok(clear.includes("this.chatError = '';"));
   assert.ok(clear.includes('this.chatConfigurationMissing = false;'));
+  assert.ok(clear.includes('this.chatRequestGuard.invalidate();'));
 });
 
 test('AI assistant auto-follow respects the reader position and reduced motion', () => {
-  const start = source.indexOf('private scrollChatToLatest(force = false): void');
-  const end = source.indexOf('private captureTenantRequest(', start);
-  const method = source.slice(start, end);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const start = assistantWorkspaceSource.indexOf('private scrollChatToLatest(force = false): void');
+  const end = assistantWorkspaceSource.indexOf('async sendChat(): Promise<void>', start);
+  const method = assistantWorkspaceSource.slice(start, end);
   assert.ok(method.includes('!force && !this.isChatLogNearBottom()'));
   assert.ok(method.includes('prefers-reduced-motion'));
   assert.ok(method.includes("behavior: reducedMotion ? 'auto' : 'smooth'"));

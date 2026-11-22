@@ -22,7 +22,9 @@ test('payment controls are only exposed to workspace owners', () => {
 
 test('payment retries preserve the idempotency key after an uncertain result', () => {
   const start = source.indexOf('async createPayment(): Promise<void>');
-  const end = source.indexOf('useAssistantSuggestion(', start);
+  // 3A-351: the chat methods moved to the assistant workspace; the next
+  // shell method after createPayment is now captureTenantRequest.
+  const end = source.indexOf('private captureTenantRequest(', start);
   const handler = source.slice(start, end);
   assert.ok(start >= 0 && end > start);
   assert.match(handler, /this\.paymentRetryVault\.get\(authUid, businessId\)/);

@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { LocalizationService } from './localization.service';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, ApiRequestError, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, InvoiceDetail, Payment, Product, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
+import { ApiService, ApiRequestError, AuditEvent, Business, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, InvoiceDetail, Payment, Product, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
 import { createServiceWorkerUpdateHandler } from './service-worker-update';
 import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
@@ -21,6 +21,7 @@ import { PurchasingWorkspaceComponent } from './purchasing-workspace.component';
 import { CreditNoteIssuanceComponent } from './credit-note-issuance.component';
 import { AuditEventsWorkspaceComponent } from './audit-events-workspace.component';
 import { ReportsWorkspaceComponent } from './reports-workspace.component';
+import { AssistantWorkspaceComponent } from './assistant-workspace.component';
 import { reportLimitationKey } from './report-labels';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
@@ -56,7 +57,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -1207,43 +1208,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               </section>
             }
 
-            @if (tab === 'assistant') {
-              <div class="assistant-workspace" [class.has-chat]="chatMessages.length > 0">
-              <section abaCard class="panel chat-panel">
-                <aba-section-header [title]=" t('ui.m_1ajyrpz') " [description]=" t('ui.m_1yriqyt') ">
-                  <div class="chat-header-actions">
-                    <span class="count">{{ t('ui.m_1bvwx8l') }}</span>
-                    <button type="button" class="chat-new-button" (click)="startNewChat()" [disabled]="chatSending || (!chatMessages.length && !chatDraft.trim())">{{ t('ui.m_gz9o3g') }}</button>
-                  </div>
-                </aba-section-header>
-                <div #chatLog class="chat-log" role="log" tabindex="0" aria-live="polite" aria-relevant="additions" aria-atomic="false" [attr.aria-busy]="chatSending ? 'true' : null" [attr.aria-label]="t('ui.m_180k0we')">
-                  @if (!chatMessages.length) { <aba-state-message kind="empty" [description]="t('ui.m_1dsxkpa')" /> }
-                  @for (message of chatMessages; track $index; let messageIndex = $index) {
-                    <article class="chat-message" [class.user-message]="message.role === 'user'">
-                      <div class="chat-message-head">
-                        <span>{{ message.role === 'user' ? t('ui.m_ma3u89') : t('ui.m_dzn3ev') }}</span>
-                        @if (message.role === 'assistant') {
-                          <button type="button" class="chat-copy-button" (click)="copyAssistantMessage(message.content, messageIndex)" [attr.aria-label]="t('ui.m_14dh0xk')">
-                            <span aria-live="polite">{{ chatCopyStatus?.index === messageIndex ? (chatCopyStatus?.success ? t('ui.m_d2vkge') : t('ui.m_qenrab')) : t('ui.m_1dtdc5p') }}</span>
-                          </button>
-                        }
-                      </div>
-                      @if (message.mode === 'local-fallback') { <small class="source-list">{{ t('ui.m_1raguvh') }}</small> }
-                      <p>{{ message.content }}</p>
-                      @if (message.sources?.length) { <small class="source-list">{{ t('ui.m_1uui693') }} @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? t('ui.m_1nfhuv2') : (source.type === 'expense' ? t('ui.m_q7obp1') : source.type) }} · {{ source.invoice_number || (source.type === 'expense' && source.category ? expenseCategoryLabel(source.category) : (source.category || source.id)) }}</span> }</small> }
-                    </article>
-                  }
-                </div>
-                
-                @if (chatError) { <aba-state-message kind="error" [description]="chatError" [actionLabel]="chatConfigurationMissing ? '' : t('ui.m_worzj7')" [actionDisabled]="chatSending || !chatDraft.trim()" (action)="sendChat()" /> }
-                @if (chatSending) { <aba-state-message kind="loading" [description]="t('ui.m_1xguwi5')" /> }
-                <form #chatForm="ngForm" class="chat-form" (ngSubmit)="chatForm.valid && chatDraft.trim() && sendChat()"><textarea #chatMessageControl="ngModel" name="chatMessage" rows="2" maxlength="2000" enterkeyhint="send" (keydown.enter)="handleChatKeydown($any($event))" [attr.aria-label]="t('ui.m_1d2fatg')" [attr.aria-invalid]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'true' : null" [attr.aria-describedby]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'chat-message-hint chat-message-error' : 'chat-message-hint'" [placeholder]="t('ui.m_1pafgoq')" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t('ui.m_1sgwbzd') : t('ui.m_rf7y63') }}</button></form>
-                <div class="chat-composer-meta"><small id="chat-message-hint">{{ t('ui.m_vdvf9x') }}</small><small>{{ chatDraft.length }} / 2000</small></div>
-                @if ((chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted)) { <small id="chat-message-error" class="field-error" role="alert">{{ t('ui.m_18j0gfn') }}</small> }
-                <p class="footnote">{{ t('ui.m_118u9lx') }}</p>
+            @defer (when tab === 'assistant') {
+              <aba-assistant-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [language]="language" />
+            } @placeholder {
+              <section abaCard class="panel narrow"><aba-state-message kind="loading" [description]="t('ui.m_1xguwi5')" /></section>
+            } @error {
+              <section abaCard class="panel narrow">
+                <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
               </section>
-              <aside class="assistant-suggestions" aria-label="{{ t('ui.m_1is9ve0') }}"><p>{{ t('ui.m_lxd4e7') }}</p><div class="suggestion-grid"><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_1clvjpr'))"><span class="suggestion-icon">↗</span><strong>{{ t('ui.m_1dkpjlm') }}</strong><small>{{ t('ui.m_70o2ur') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_1ij9tr8'))"><span class="suggestion-icon">✦</span><strong>{{ t('ui.m_159lqb4') }}</strong><small>{{ t('ui.m_1ktypo7') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_4tgkt3'))"><span class="suggestion-icon">▦</span><strong>{{ t('ui.m_yezco3') }}</strong><small>{{ t('ui.m_1a12moo') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_xc417r'))"><span class="suggestion-icon">◎</span><strong>{{ t('ui.m_b2oroc') }}</strong><small>{{ t('ui.m_ap19ks') }}</small></button></div></aside>
-              </div>
             }
           }
           <footer>{{ t('ui.m_1ajyrpz') }} <span>{{ t('ui.m_1f5dk3e') }}</span></footer>
@@ -1555,12 +1527,6 @@ export class AppComponent implements OnInit, OnDestroy {
   showPaymentForm = false;
   private pendingPaymentRetrySnapshot: PaymentRetrySnapshot | null = null;
   private readonly paymentRetryVault = new PaymentRetryVault();
-  chatDraft = '';
-  chatMessages: Array<{ role: 'user' | 'assistant'; content: string; sources?: ChatReply['sources']; mode?: string }> = [];
-  chatSending = false;
-  chatError = '';
-  chatConfigurationMissing = false;
-  chatCopyStatus: { index: number; success: boolean } | null = null;
   keyboardOpen = false;
   mobileMoreOpen = false;
   homeModuleSearch = '';
@@ -1568,7 +1534,6 @@ export class AppComponent implements OnInit, OnDestroy {
   @ViewChild('mobileMoreMenu') private mobileMoreMenu?: ElementRef<HTMLElement>;
   @ViewChild('invoiceDetailClose') private invoiceDetailCloseButton?: ElementRef<HTMLButtonElement>;
   @ViewChild('invoiceDetailDrawer') invoiceDetailDrawer?: ElementRef<HTMLElement>;
-  @ViewChild('chatLog') private chatLog?: ElementRef<HTMLElement>;
   isInstalled = false;
   installHelp = false;
   appUpdateAvailable = false;
@@ -2389,7 +2354,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.pendingPurchaseApproval = null;
     this.purchaseApprovalError = '';
     this.confirmationReturnFocus = null;
-    this.chatRequestGuard.invalidate();
     this.payrollRefreshGuard.invalidate();
     this.dataIntegrityLoadGuard.invalidate();
     this.operationalHealthLoadGuard.invalidate();
@@ -2499,12 +2463,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.healthLoading = false;
     this.expenseMessage = '';
     this.expenseSubmissionUncertain = false;
-    this.chatSending = false;
-    this.chatMessages = [];
-    this.chatDraft = '';
-    this.chatError = '';
-    this.chatConfigurationMissing = false;
-    this.chatCopyStatus = null;
     this.invoiceCustomerId = '';
     this.invoiceProductId = '';
     this.invoiceQuantity = '1';
@@ -2584,7 +2542,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly productPickerLoadGuard = new WorkspaceLoadGuard();
   private readonly invoiceListLoadGuard = new WorkspaceLoadGuard();
   private readonly paymentListLoadGuard = new WorkspaceLoadGuard();
-  private readonly chatRequestGuard = new WorkspaceLoadGuard();
   private readonly payrollRefreshGuard = new WorkspaceLoadGuard();
   private readonly dataIntegrityLoadGuard = new WorkspaceLoadGuard();
   private readonly operationalHealthLoadGuard = new WorkspaceLoadGuard();
@@ -4817,80 +4774,6 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  useAssistantSuggestion(question: string): void {
-    if (this.chatSending || !question.trim()) return;
-    this.chatDraft = question;
-    void this.sendChat();
-  }
-
-  handleChatKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
-    event.preventDefault();
-    if (!this.chatDraft.trim() || this.chatSending) return;
-    void this.sendChat();
-  }
-
-  startNewChat(): void {
-    if (this.chatSending) return;
-    this.chatMessages = [];
-    this.chatDraft = '';
-    this.chatError = '';
-    this.chatConfigurationMissing = false;
-    this.chatCopyStatus = null;
-  }
-
-  async copyAssistantMessage(content: string, index: number): Promise<void> {
-    try {
-      if (navigator.clipboard?.writeText) {
-        try {
-          await navigator.clipboard.writeText(content);
-        } catch {
-          this.copyTextWithSelectionFallback(content);
-        }
-      } else {
-        this.copyTextWithSelectionFallback(content);
-      }
-      this.chatCopyStatus = { index, success: true };
-    } catch {
-      this.chatCopyStatus = { index, success: false };
-    }
-  }
-
-  private copyTextWithSelectionFallback(content: string): void {
-    const temporaryInput = document.createElement('textarea');
-    temporaryInput.value = content;
-    temporaryInput.setAttribute('readonly', '');
-    temporaryInput.setAttribute('aria-hidden', 'true');
-    temporaryInput.style.position = 'fixed';
-    temporaryInput.style.opacity = '0';
-    temporaryInput.style.pointerEvents = 'none';
-    temporaryInput.style.insetInlineStart = '-9999px';
-    document.body.appendChild(temporaryInput);
-    let copied = false;
-    try {
-      temporaryInput.select();
-      temporaryInput.setSelectionRange(0, temporaryInput.value.length);
-      copied = document.execCommand('copy');
-    } finally {
-      temporaryInput.remove();
-    }
-    if (!copied) throw new Error('Clipboard copy command failed');
-  }
-
-  private isChatLogNearBottom(): boolean {
-    const log = this.chatLog?.nativeElement;
-    if (!log) return true;
-    return log.scrollHeight - log.scrollTop - log.clientHeight <= 120;
-  }
-
-  private scrollChatToLatest(force = false): void {
-    requestAnimationFrame(() => {
-      const log = this.chatLog?.nativeElement;
-      if (!log || (!force && !this.isChatLogNearBottom())) return;
-      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      log.scrollTo({ top: log.scrollHeight, behavior: reducedMotion ? 'auto' : 'smooth' });
-    });
-  }
 
   private captureTenantRequest(workspaceId: string): TenantRequestContext {
     return {
@@ -4923,57 +4806,6 @@ export class AppComponent implements OnInit, OnDestroy {
       role: this.business?.role ?? null,
       signedIn: this.signedIn,
     };
-  }
-
-  async sendChat(): Promise<void> {
-    if (!this.business || !this.chatDraft.trim() || this.chatSending) return;
-    const requestContext = this.currentChatRequestContext();
-    // Fail closed if the request cannot be tied to an authenticated user and current role.
-    if (!requestContext.signedIn || !requestContext.userId || !requestContext.role || !requestContext.workspaceId) return;
-
-    const question = this.chatDraft.trim();
-    const history = this.chatMessages.slice(-8);
-    const shouldFollowLatest = this.isChatLogNearBottom();
-    this.chatMessages = [...this.chatMessages, { role: 'user', content: question }];
-    this.chatDraft = '';
-    this.chatSending = true;
-    this.chatError = '';
-    this.chatCopyStatus = null;
-    this.error = '';
-    this.scrollChatToLatest(shouldFollowLatest);
-
-    await runTenantScopedRequest(
-      this.chatRequestGuard,
-      requestContext,
-      () => this.currentChatRequestContext(),
-      () => this.api.chat(requestContext.workspaceId, question, history),
-      {
-        onSuccess: (reply: ChatReply) => {
-          const shouldFollowLatest = this.isChatLogNearBottom();
-          this.chatMessages = [...this.chatMessages, { role: 'assistant', content: reply.answer, sources: reply.sources, mode: reply.mode }];
-          this.scrollChatToLatest(shouldFollowLatest);
-        },
-        onError: error => {
-          this.chatMessages = this.chatMessages.slice(0, -1);
-          this.chatDraft = question;
-          const rawMessage = error instanceof Error ? error.message : '';
-          this.chatConfigurationMissing = /AI chat is not configured/i.test(rawMessage);
-          this.chatError = this.message(error);
-        },
-        onFinally: () => {
-          this.chatSending = false;
-        },
-        onStale: () => {
-          // The latest request lost its identity/role context without a workspace clear.
-          this.chatSending = false;
-          this.chatMessages = [];
-          this.chatDraft = '';
-          this.chatError = '';
-          this.chatConfigurationMissing = false;
-          this.chatCopyStatus = null;
-        },
-      },
-    );
   }
 
   private lastErrorKind: 'session-expired' | 'access-denied' | null = null;
