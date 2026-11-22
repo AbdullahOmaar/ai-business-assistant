@@ -5,13 +5,27 @@ from uuid import UUID
 from fastapi.testclient import TestClient
 from sqlalchemy import event, select
 from sqlalchemy.orm import Session
+from test_api import (
+    _configure_test_identity,
+    _restore_test_identity,
+    _sales_return_fixture,
+)
+from test_t39_purchase_receiving_api import _create_approved_order, _receipt_headers
 
 from app.extended_api import list_purchase_orders
 from app.main import app
-from app.models import AuditEvent, Business, BusinessMembership, MembershipRole, Product, PurchaseOrder, PurchaseOrderLine, StockMovement, Supplier
+from app.models import (
+    AuditEvent,
+    Business,
+    BusinessMembership,
+    MembershipRole,
+    Product,
+    PurchaseOrder,
+    PurchaseOrderLine,
+    StockMovement,
+    Supplier,
+)
 from app.security import AuthenticatedPrincipal
-from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
-from test_t39_purchase_receiving_api import _create_approved_order, _receipt_headers
 
 
 def _draft_order(engine, client, business_id, number="PO-T39-DRAFT"):

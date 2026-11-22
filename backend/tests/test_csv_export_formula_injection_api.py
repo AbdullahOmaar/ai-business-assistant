@@ -10,16 +10,19 @@ whitespace first. Normal values must pass through byte-identical.
 
 import csv
 import io
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
+from test_api import (
+    _configure_test_identity,
+    _restore_test_identity,
+    _sales_return_fixture,
+)
 
 from app.main import app
 from app.models import Customer, Expense
-from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
-
 
 HOSTILE_CUSTOMER_NAMES = {
     " =2+5": "' =2+5",
@@ -80,7 +83,7 @@ def test_owner_expense_export_neutralizes_formulas_in_description():
                 session.add(Expense(
                     business_id=business_id, category="Office",
                     description=description, amount=Decimal("10.00"),
-                    currency_code="EGP", incurred_at=datetime.now(timezone.utc),
+                    currency_code="EGP", incurred_at=datetime.now(UTC),
                 ))
             session.commit()
 

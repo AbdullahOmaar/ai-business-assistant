@@ -4,10 +4,10 @@ These tests deliberately use a separate temporary schema in the disposable CI
 database. They skip outside PostgreSQL; they never point at production and never
 drop or truncate the shared database.
 """
-from concurrent.futures import ThreadPoolExecutor
-from decimal import Decimal
 import os
 import re
+from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 from threading import Barrier
 from uuid import uuid4
 
@@ -27,7 +27,6 @@ from app.models import (
     MembershipRole,
     Payment,
     PaymentAllocation,
-    Product,
     SalesReturn,
     SalesReturnLine,
     StockMovement,

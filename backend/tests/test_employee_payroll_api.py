@@ -3,12 +3,20 @@ from uuid import UUID
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, select, func
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import create_engine, func, select
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
-from app.models import AuditEvent, Base, BusinessMembership, Employee, Expense, MembershipRole, PayrollRecord
+from app.models import (
+    AuditEvent,
+    Base,
+    BusinessMembership,
+    Employee,
+    Expense,
+    MembershipRole,
+    PayrollRecord,
+)
 from app.security import AuthenticatedPrincipal
 
 OWNER = "employee-payroll-test-owner"

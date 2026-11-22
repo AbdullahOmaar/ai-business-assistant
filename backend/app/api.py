@@ -17,7 +17,12 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
 from app.models import Product, StockMovementIdempotency
-from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, authorize_membership
+from app.security import (
+    AuthenticatedPrincipal,
+    AuthorizationError,
+    MembershipRole,
+    authorize_membership,
+)
 from app.services import (
     WorkflowError,
     create_customer,
@@ -25,10 +30,10 @@ from app.services import (
     create_product,
     create_supplier,
     issue_invoice,
-    replace_draft_invoice,
-    void_invoice,
     record_payment,
     record_stock_movement,
+    replace_draft_invoice,
+    void_invoice,
 )
 
 router = APIRouter(prefix="/api/v1", tags=["business"])

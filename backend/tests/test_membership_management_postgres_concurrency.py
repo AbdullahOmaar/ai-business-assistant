@@ -4,8 +4,8 @@ SQLite ignores SELECT ... FOR UPDATE, so this test deliberately requires the
 disposable PostgreSQL service configured by GitHub Actions. It never creates schema
 or connects to a production database.
 """
-from concurrent.futures import ThreadPoolExecutor
 import os
+from concurrent.futures import ThreadPoolExecutor
 from threading import Barrier
 from uuid import UUID, uuid4
 

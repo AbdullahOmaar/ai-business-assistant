@@ -10,14 +10,14 @@ from sqlalchemy.orm import sessionmaker
 from app.api import router as business_router
 from app.assistant_api import router as assistant_router
 from app.core_features_api import router as core_features_router
-from app.extended_api import router as extended_business_router
-from app.purchasing_api import router as purchasing_router
 from app.database import create_database_engine
-from app.firebase_auth import configure_firebase_auth
-from app.platform_admin_api import router as platform_admin_router
-from app.employee_payroll_api import router as employee_payroll_router
 from app.demo_auth_api import router as demo_auth_router
+from app.employee_payroll_api import router as employee_payroll_router
+from app.extended_api import router as extended_business_router
+from app.firebase_auth import configure_firebase_auth
 from app.monitoring import configure_sentry
+from app.platform_admin_api import router as platform_admin_router
+from app.purchasing_api import router as purchasing_router
 
 # Error monitoring stays off unless SENTRY_DSN is set by the operator; it
 # must be configured before the app serves requests (see app/monitoring.py).
@@ -39,7 +39,7 @@ _DOCS_ENABLED = _interactive_docs_enabled()
 
 app = FastAPI(
     title="AI Business Assistant API",
-    version="1.9.2",
+    version="1.9.3",
     description=(
         "Business workflows with PostgreSQL, Firebase ID-token verification, "
         "tenant-scoped authorization, and grounded assistant chat."

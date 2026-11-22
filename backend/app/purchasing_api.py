@@ -15,8 +15,20 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
 from app.domain_rules import money
-from app.models import AuditEvent, MembershipRole, Product, PurchaseOrder, PurchaseOrderLine, StockMovement, Supplier
-from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
+from app.models import (
+    AuditEvent,
+    MembershipRole,
+    Product,
+    PurchaseOrder,
+    PurchaseOrderLine,
+    StockMovement,
+    Supplier,
+)
+from app.security import (
+    AuthenticatedPrincipal,
+    AuthorizationError,
+    authorize_membership,
+)
 from app.services import WorkflowError
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["purchasing"])

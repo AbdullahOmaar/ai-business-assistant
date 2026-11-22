@@ -1,18 +1,26 @@
 """Business-local date boundary tests for financial dashboard/report APIs."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
+from uuid import UUID
 
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
-from uuid import UUID
 
 from app.main import app
 from app.models import (
-    Base, Business, Customer, Expense, Invoice, InvoiceLine, Payment, PaymentAllocation,
-    SalesReturn, SalesReturnLine,
+    Base,
+    Business,
+    Customer,
+    Expense,
+    Invoice,
+    InvoiceLine,
+    Payment,
+    PaymentAllocation,
+    SalesReturn,
+    SalesReturnLine,
 )
 from app.security import AuthenticatedPrincipal
 
@@ -70,7 +78,7 @@ def test_dashboard_and_profit_loss_use_business_local_day_boundaries():
                     invoice_number="TZ-OUTSIDE",
                     status="issued",
                     currency_code="EGP",
-                    issue_date=datetime(2026, 1, 1, 4, 30, tzinfo=timezone.utc),
+                    issue_date=datetime(2026, 1, 1, 4, 30, tzinfo=UTC),
                     subtotal=Decimal("10.00"),
                     discount_total=Decimal("0.00"),
                     tax_total=Decimal("0.00"),
@@ -81,7 +89,7 @@ def test_dashboard_and_profit_loss_use_business_local_day_boundaries():
                     invoice_number="TZ-INSIDE",
                     status="issued",
                     currency_code="EGP",
-                    issue_date=datetime(2026, 1, 1, 6, 0, tzinfo=timezone.utc),
+                    issue_date=datetime(2026, 1, 1, 6, 0, tzinfo=UTC),
                     subtotal=Decimal("20.00"),
                     discount_total=Decimal("0.00"),
                     tax_total=Decimal("0.00"),
@@ -93,7 +101,7 @@ def test_dashboard_and_profit_loss_use_business_local_day_boundaries():
                     description="Outside local day",
                     amount=Decimal("7.00"),
                     currency_code="EGP",
-                    incurred_at=datetime(2026, 1, 1, 4, 30, tzinfo=timezone.utc),
+                    incurred_at=datetime(2026, 1, 1, 4, 30, tzinfo=UTC),
                 ),
                 Expense(
                     business_id=business.id,
@@ -101,7 +109,7 @@ def test_dashboard_and_profit_loss_use_business_local_day_boundaries():
                     description="Inside local day",
                     amount=Decimal("5.00"),
                     currency_code="EGP",
-                    incurred_at=datetime(2026, 1, 1, 6, 0, tzinfo=timezone.utc),
+                    incurred_at=datetime(2026, 1, 1, 6, 0, tzinfo=UTC),
                 ),
             ])
             session.commit()
@@ -158,7 +166,7 @@ def test_profit_loss_explicitly_reports_gross_revenue_when_approved_return_exist
                 invoice_number="RET-GROSS-001",
                 status="issued",
                 currency_code="EGP",
-                issue_date=datetime(2026, 1, 15, 12, 0, tzinfo=timezone.utc),
+                issue_date=datetime(2026, 1, 15, 12, 0, tzinfo=UTC),
                 subtotal=Decimal("20.00"),
                 discount_total=Decimal("0.00"),
                 tax_total=Decimal("0.00"),
@@ -279,6 +287,7 @@ def test_business_creation_rejects_invalid_timezone_name():
 
 def test_day_bounds_respect_daylight_saving_transitions():
     from datetime import date
+
     from app.core_features_api import _day_bounds
 
     spring_start, spring_end = _day_bounds(
@@ -332,10 +341,10 @@ def test_customer_statement_uses_business_local_date_boundaries_for_invoices_and
         business_id = UUID(created.json()["id"])
         timestamps = [
             # Cairo local Jan 15 begins at 22:00 UTC on Jan 14.
-            datetime(2026, 1, 14, 21, 59, 59, tzinfo=timezone.utc),
-            datetime(2026, 1, 14, 22, 30, 0, tzinfo=timezone.utc),
+            datetime(2026, 1, 14, 21, 59, 59, tzinfo=UTC),
+            datetime(2026, 1, 14, 22, 30, 0, tzinfo=UTC),
             # Exactly local midnight at the start of Jan 16; exclusive upper bound.
-            datetime(2026, 1, 15, 22, 0, 0, tzinfo=timezone.utc),
+            datetime(2026, 1, 15, 22, 0, 0, tzinfo=UTC),
         ]
         with Session(engine) as session:
             business = session.get(Business, business_id)

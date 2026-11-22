@@ -1,5 +1,4 @@
 from datetime import date
-
 from decimal import Decimal
 
 from app.extended_api import _receivable_aging_bucket, _receivable_outstanding
