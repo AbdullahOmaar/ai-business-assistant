@@ -372,7 +372,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <aba-section-header [title]=" t('ui.m_slegw7') " [description]=" t('ui.m_1e0c20g') "><div class="section-actions"><span class="count">{{ filteredRecurringSchedules.length }} / {{ recurringSchedules.length }}</span>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="showRecurringForm = !showRecurringForm">{{ showRecurringForm ? t('ui.m_pw64as') : t('ui.m_slegw7') }}</button> }</div></aba-section-header>
                 @if (business?.role === 'owner') {
                 @if (showRecurringForm) {
-                <form #recurringForm="ngForm" class="stack" (ngSubmit)="recurringForm.valid && createRecurringSchedule()">
+                <form #recurringForm="ngForm" class="stack recurring-form" (ngSubmit)="recurringForm.valid && createRecurringSchedule()">
                   <label>{{ t('ui.m_eoh95l') }}<select name="recurringCustomerId" [(ngModel)]="recurringCustomerId"><option value="">{{ t('ui.m_8pt45d') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
                   <div class="inline-form"><label>{{ t('ui.m_py5g30') }}<input #recurringIntervalControl="ngModel" name="recurringIntervalDays" type="number" min="1" max="3650" required [attr.aria-invalid]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'recurring-interval-error' : null" [(ngModel)]="recurringIntervalDays"></label><label>{{ t('ui.m_1e7ftdu') }}<input #recurringNextRunControl="ngModel" name="recurringNextRunAt" type="datetime-local" required [attr.aria-invalid]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'recurring-next-run-error' : null" [(ngModel)]="recurringNextRunAt"></label></div>
                   <label>{{ t('ui.m_z76sxh') }}<input #recurringTimezoneControl="ngModel" name="recurringTimezone" required maxlength="64" [attr.aria-invalid]="recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted) ? 'recurring-timezone-error' : null" [(ngModel)]="recurringTimezone"></label>
@@ -530,7 +530,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @if (tab === 'products' && business?.id) {
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ui.m_137u0ee')" [description]="t('ui.m_snu8sb')" />
-                @if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }
+                @if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()"><aba-icon name="export" />{{ t('ui.m_nbsw3y') }}</button> }
                 <details class="aba-record-create" [open]="productCreateOpen" (toggle)="productCreateOpen = $any($event.target).open">
                   <summary><span>{{ t('ui.m_1nbakc8') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
@@ -682,11 +682,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       {{ customersLoadingMore ? t('ui.m_14qa8nk') : t('ui.m_8ighyf') }}
                     </button>
                   }
-                  @if (business?.role === 'owner') { <button class="secondary invoice-export" type="button" (click)="exportCurrentList()" [disabled]="!filteredInvoices.length">{{ t('ui.m_nbsw3y') }}</button> }
+                  @if (business?.role === 'owner') { <button class="secondary invoice-export" type="button" (click)="exportCurrentList()" [disabled]="!filteredInvoices.length"><aba-icon name="export" />{{ t('ui.m_nbsw3y') }}</button> }
                   <button class="secondary invoice-density-toggle" type="button" [attr.aria-pressed]="invoiceDensity === 'compact'" (click)="toggleInvoiceDensity()">{{ invoiceDensity === 'compact' ? t('app.invoiceList.cards') : t('app.invoiceList.compact') }}</button>
                 </div>
                 @if (loading && !invoices.length) {
-                  <p class="invoice-list-state" role="status" aria-live="polite">{{ t('ui.m_x2q4oa') }}</p>
+                  <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_x2q4oa') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
                 } @else if (error && !invoices.length) {
                   <aba-state-message kind="error" [description]="error" />
                 } @else if (!filteredInvoices.length) {
