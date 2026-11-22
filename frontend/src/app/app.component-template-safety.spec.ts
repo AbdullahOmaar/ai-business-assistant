@@ -317,7 +317,10 @@ test('workspace empty states use the shared accessible state component', () => {
   assert.doesNotMatch(source, /<p class="error" role="alert">/);
   assert.doesNotMatch(source, /class="error-banner"/);
   assert.doesNotMatch(source, /class="error" role="alert"/);
-  assert.match(recordTableSource, /<aba-state-message kind="loading"/, "shared record tables provide an accessible loading state");
+  // 3A-371: record-table loading is skeleton list-rows in a status region
+  // carrying the loading description (G4 fixed loading), not a text message.
+  assert.match(recordTableSource, /aba-record-table__skeletons" role="status"/, "shared record tables provide an accessible loading state");
+  assert.match(recordTableSource, /<aba-skeleton variant="list-row" \/>/);
   // 3A-351: the expense and notification success states moved into their
   // workspaces; the count spans the shell and both workspaces.
   assert.ok(((source + expensesWorkspaceSource + notificationsWorkspaceSource).match(/<aba-state-message kind="success"/g) || []).length >= 4);
@@ -1423,8 +1426,11 @@ test('OWNER payroll view is loaded only after selecting Employees', () => {
   assert.equal((source.match(/<aba-employee-payroll\b/g) || []).length, 1,
     'the payroll component must not be referenced outside its lazy boundary');
   const loadingView = source.slice(placeholder, end);
-  assert.match(loadingView, /aba-state-message kind="loading"/);
-  assert.match(loadingView, /Loading employees &amp; payroll|Loading employees & payroll/);
+  // 3A-371: defer placeholders render the shared skeleton placeholder
+  // component (G4 fixed loading), not a text message; the component keeps
+  // the loading description in a status region for assistive tech.
+  assert.match(loadingView, /<aba-defer-placeholder \[description\]="t\([^)]*Loading employees & payroll/);
+  assert.match(source, /AbaDeferPlaceholderComponent/);
   assert.match(source, /imports: \[[^\]]*EmployeePayrollComponent/);
   assert.match(source, /@if \(tab === 'employees' && business\.role === 'owner'\)/);
 });

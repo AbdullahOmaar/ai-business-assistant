@@ -156,3 +156,16 @@ test('purchasing search shows the short placeholder at narrow widths', () => {
   assert.equal(english.purchasingWorkspace.search, 'Search order, supplier or status');
   assert.equal(arabic.purchasingWorkspace.search, 'ابحث برقم الأمر أو المورد أو الحالة');
 });
+
+test('3A-371: purchasing activity shows localized labels, never raw action keys or JSON', () => {
+  assert.match(workspace, /<strong>\{\{ activityLabel\(event\) \}\}<\/strong>/);
+  assert.doesNotMatch(workspace, /<strong>\{\{ event\.action \}\}<\/strong>/);
+  assert.match(workspace, /'purchase_order\.created': 'activityCreated'/);
+  assert.match(workspace, /'purchase_order\.approved': 'activityApproved'/);
+  assert.match(workspace, /'purchase_order\.received': 'activityReceived'/);
+  assert.doesNotMatch(workspace, /JSON\.stringify\(event\.change_summary\)/);
+  assert.equal(english.purchasingWorkspace.activityCreated, 'Order draft created');
+  assert.equal(arabic.purchasingWorkspace.activityCreated, 'أُنشئت مسودة الأمر');
+  assert.equal(english.purchasingWorkspace.activityReceived, 'Receipt recorded');
+  assert.equal(arabic.purchasingWorkspace.activityReceived, 'سُجّل استلام');
+});

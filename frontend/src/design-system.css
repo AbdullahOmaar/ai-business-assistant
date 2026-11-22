@@ -2119,6 +2119,10 @@
 :root body .shell .aba-record-table tbody tr:hover{background:var(--aiba-surface-tint)}
 :root body .shell .aba-record-table__primary-cell{min-width:150px;color:var(--aiba-ink);font-weight:750}
 :root body .shell .aba-record-table td[data-kind="numeric"]{font-variant-numeric:tabular-nums;white-space:nowrap;text-align:end}
+/* 3A-371 (U07): long unbroken cell values (supplier emails, URLs) wrap
+   inside record-table cards instead of overflowing; numeric cells keep
+   their nowrap rule above. */
+:root body .shell .aba-record-table :is(td,th) bdi{overflow-wrap:anywhere}
 :root body .shell .aba-record-table__status-value{display:inline-flex;align-items:center;justify-content:center;max-width:100%;min-height:28px;padding:5px 9px;border:1px solid var(--aiba-line);border-radius:999px;background:var(--aiba-surface-tint);color:var(--aiba-muted);font-size:var(--aiba-text-xs);font-weight:700;line-height:1.3;white-space:normal}
 :root body .shell .aba-record-table__actions-cell{min-width:140px}
 :root body .shell .aba-record-table__actions{display:flex;flex-wrap:wrap;gap:7px;min-width:0}

@@ -125,7 +125,9 @@ test('customer and product workspaces are mounted in the authenticated app shell
 // the profile heading wraps on words, and the phone number never splits.
 test('customer profile actions carry icons and the heading wraps on words', () => {
   assert.ok(profile.includes("import { AbaIconComponent } from './shared/ui/aba-icon.component';"));
-  assert.ok(profile.includes('imports: [AbaStateMessageComponent, AbaIconComponent]'));
+  // 3A-371: AbaSkeletonComponent joined the imports for the profile's
+  // skeleton loading state (G4).
+  assert.ok(profile.includes('imports: [AbaStateMessageComponent, AbaSkeletonComponent, AbaIconComponent]'));
   assert.ok(profile.includes('<aba-icon name="edit" />'));
   assert.ok(profile.includes('<aba-icon name="document" />'));
   assert.ok(profile.includes('<aba-icon name="statement" />'));

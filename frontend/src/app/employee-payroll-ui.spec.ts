@@ -196,7 +196,8 @@ test('owner-only payroll view stays behind its deferred loading boundary', () =>
   const block = app.slice(start, end);
   assert.match(block, /@defer \(when tab === 'employees' && business\.role === 'owner'\)/);
   assert.match(block, /@placeholder/);
-  assert.match(block, /<aba-state-message kind="loading"/);
+  // 3A-371: the placeholder is the shared skeleton placeholder component (G4).
+  assert.match(block, /<aba-defer-placeholder \[description\]/);
   assert.equal((app.match(/<aba-employee-payroll\b/g) || []).length, 1);
   assert.match(app, /import \{ EmployeePayrollComponent \} from '\.\/employee-payroll\.component';/);
   assert.match(component, /standalone: true/);
