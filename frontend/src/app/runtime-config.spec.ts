@@ -10,6 +10,10 @@ const completeConfig = {
     projectId: 'example-project',
     appId: '1:123:web:abc',
   },
+  sentry: {
+    dsn: 'https://key@o0.ingest.example.test/1',
+    environment: 'production',
+  },
 };
 
 test('accepts a complete valid runtime config without changing public settings', () => {
@@ -20,15 +24,33 @@ test('normalizes missing or null optional settings to the explicit setup-require
   assert.deepEqual(validateRuntimeConfig({}), {
     apiBaseUrl: '',
     firebase: { apiKey: '', authDomain: '', projectId: '', appId: '' },
+    sentry: { dsn: '', environment: '' },
   });
   assert.deepEqual(validateRuntimeConfig({ apiBaseUrl: null, firebase: null }), {
     apiBaseUrl: '',
     firebase: { apiKey: '', authDomain: '', projectId: '', appId: '' },
+    sentry: { dsn: '', environment: '' },
   });
   assert.deepEqual(validateRuntimeConfig({ firebase: { apiKey: 'key' } }), {
     apiBaseUrl: '',
     firebase: { apiKey: 'key', authDomain: '', projectId: '', appId: '' },
+    sentry: { dsn: '', environment: '' },
   });
+});
+
+test('rejects non-object Sentry settings and non-string Sentry fields', () => {
+  for (const value of ['sentry', 42, true, []]) {
+    assert.throws(() => validateRuntimeConfig({ sentry: value }), {
+      message: 'Runtime configuration is invalid.',
+    });
+  }
+  for (const field of ['dsn', 'environment']) {
+    for (const invalidValue of [42, true, [], {}]) {
+      assert.throws(() => validateRuntimeConfig({
+        sentry: { [field]: invalidValue },
+      }), { message: 'Runtime configuration is invalid.' }, `${field} must be a string`);
+    }
+  }
 });
 
 test('rejects null, arrays and primitive top-level payloads', () => {
@@ -81,6 +103,7 @@ test('normalizes whitespace-only required values to the setup-required shape', (
   }), {
     apiBaseUrl: '',
     firebase: { apiKey: '', authDomain: '', projectId: '', appId: '' },
+    sentry: { dsn: '', environment: '' },
   });
 });
 
@@ -96,5 +119,6 @@ test('trims surrounding whitespace from valid public configuration values', () =
   }), {
     apiBaseUrl: 'https://api.example.test/',
     firebase: { apiKey: 'public-web-key', authDomain: 'example.firebaseapp.com', projectId: 'example-project', appId: '1:123:web:abc' },
+    sentry: { dsn: '', environment: '' },
   });
 });
