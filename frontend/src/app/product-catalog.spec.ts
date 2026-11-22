@@ -131,3 +131,30 @@ test('stock quantities use one LTR-isolated, tabular numeric treatment across ca
   assert.match(productProfile, /class="product-profile__stock"[^>]*>@if \(record\.is_stock_tracked\) \{ <bdi dir="ltr">/);
   assert.match(productProfile, /product-profile__stock bdi\{font-variant-numeric:tabular-nums/);
 });
+
+test('T18 U03: mobile catalogue price stays on one line and names wrap on words', () => {
+  // Price + currency together, never split: nowrap on the mobile price; the
+  // nowrap min-content also stops the auto grid column collapsing to ~44px.
+  assert.match(css, /product-catalog__mobile-price\{[^}]*white-space:nowrap/);
+  assert.match(css, /product-catalog__mobile-price\{[^}]*overflow-wrap:normal/);
+  assert.doesNotMatch(css, /product-catalog__mobile-price\{[^}]*white-space:normal/);
+  // The price column sizes to the price's own width (max-content), and the
+  // price carries no percentage max-width cap: a percentage cap resolved to
+  // 48% of the content width during intrinsic track sizing and collapsed the
+  // column to 47px, so the 98px price overflowed its box.
+  assert.match(css, /product-catalog__main\{display:grid;grid-template-columns:minmax\(0,1fr\) max-content/);
+  assert.doesNotMatch(css, /product-catalog__mobile-price\{[^}]*max-width:[^}]*%/);
+  // Below 320px the name/price row stacks so the price gets the full row width.
+  assert.match(css, /@media\(max-width:320px\)[\s\S]*?\.product-catalog__main\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(css, /@media\(max-width:320px\)[\s\S]*?\.product-catalog__mobile-price\{max-width:none\}/);
+  // Names wrap on words, never mid-word.
+  assert.match(css, /product-catalog__main h3\{[^}]*overflow-wrap:normal/);
+  assert.match(css, /product-catalog__open\{[^}]*overflow-wrap:normal/);
+  assert.doesNotMatch(css, /product-catalog__main h3\{[^}]*overflow-wrap:anywhere/);
+  assert.doesNotMatch(css, /product-catalog__open\{[^}]*overflow-wrap:anywhere/);
+  // Filter chips wrap on words and stack full-width below 320px.
+  assert.match(css, /product-catalog__filters button\{[^}]*overflow-wrap:normal/);
+  assert.match(css, /@media\(max-width:320px\)[\s\S]*?\.product-catalog__filters\{grid-template-columns:minmax\(0,1fr\)\}/);
+  // No import control added to the catalogue.
+  assert.doesNotMatch(component, /Import/);
+});

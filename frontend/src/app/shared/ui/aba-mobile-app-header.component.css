@@ -46,11 +46,12 @@
   height: 28px;
   place-items: center;
   border-radius: 9px;
-  background: var(--aba-color-primary-soft, #ecfdf5);
-  color: var(--aba-color-primary-strong, #115e59);
+  background: linear-gradient(180deg, var(--aiba-brand-teal-light, #1F8C96), var(--aiba-brand-teal-deep, #093A44));
+  color: #ffffff;
   font-size: 15px;
   font-weight: 900;
 }
+.brand-mark svg { display: block; width: 20px; height: 20px; }
 .page-copy { flex: 1 1 auto; min-width: 0; }
 .greeting { display: none; }
 .page-copy h1 {
@@ -63,6 +64,7 @@
   -webkit-line-clamp: unset;
   text-overflow: clip;
   color: var(--aba-color-text-primary, #172033);
+  font-family: var(--aiba-font-heading, "Cairo", "Tajawal", Inter, "Noto Sans Arabic", "Segoe UI", ui-sans-serif, system-ui, sans-serif);
   font-size: clamp(16px, 4.5vw, 19px);
   font-weight: 800;
   line-height: 1.35;
@@ -213,6 +215,17 @@
 @media (max-width: 760px) {
   :host { display: block; }
 }
+/* Owner correction 2026-11-21: long page titles wrap — never truncate, never
+ * force one line. Below 481px the title has too little width beside the brand
+ * button and the three fixed actions, so it moves to its own full-width row
+ * (brand button and actions share the first row) and wraps within that row
+ * at a fixed readable size. */
+@media (max-width: 480px) {
+  .page-context { flex-wrap: wrap; justify-content: space-between; }
+  .page-copy { flex: 1 1 100%; order: 3; }
+  .page-copy h1 { font-size: 16px; }
+}
+
 @media (max-width: 380px) {
   .mobile-app-header { gap: 7px; padding: 7px 8px; }
   .page-context { gap: 6px; }

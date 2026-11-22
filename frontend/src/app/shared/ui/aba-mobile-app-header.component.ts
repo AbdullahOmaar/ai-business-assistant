@@ -15,7 +15,7 @@ import { LocalizationService } from '../../localization.service';
       <div class="page-context">
         <button class="brand-button" type="button" (click)="homeRequested.emit()"
           [attr.aria-label]="t('ui.m_1a1fpcr')">
-          <span class="brand-mark" aria-hidden="true">A</span>
+          <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><polygon points="68.75,4.73 76.52,23.48 95.27,31.25 87.50,50.00 95.27,68.75 76.52,76.52 68.75,95.27 50.00,87.50 31.25,95.27 23.48,76.52 4.73,68.75 12.50,50.00 4.73,31.25 23.48,23.48 31.25,4.73 50.00,12.50" fill="#FFFFFF"/><rect x="27.25" y="49.00" width="11.5" height="20" rx="3.68" fill="#093A44"/><rect x="44.25" y="35.00" width="11.5" height="34" rx="3.68" fill="#093A44"/><rect x="61.25" y="19.00" width="11.5" height="50" rx="3.68" fill="#F5A623"/><circle cx="67.00" cy="9.80" r="5.17" fill="#F5A623"/></svg></span>
         </button>
         <div class="page-copy">
           @if (showGreeting) {

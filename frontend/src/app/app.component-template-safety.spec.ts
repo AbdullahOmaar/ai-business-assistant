@@ -17,6 +17,9 @@ const invoiceDraftSource = expandTranslationCalls(readFileSync(new URL('./invoic
 const releaseGuideSource = expandTranslationCalls(readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8'));
 const platformAdminSource = expandTranslationCalls(readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8'));
 const stateMessageSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8'));
+// T18 Slice B (2026-11-21): the loading animation moved from the state-message
+// border spinner into aba-loading-logo; the reduced-motion rule moved with it.
+const loadingLogoSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-loading-logo.component.ts', import.meta.url), 'utf8'));
 const recordTableSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-record-table.component.ts', import.meta.url), 'utf8'));
 const quickAccessSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8'));
 const workspaceLoadGuardSource = expandTranslationCalls(readFileSync(new URL('./workspace-load-guard.ts', import.meta.url), 'utf8'));
@@ -79,7 +82,10 @@ test('the new invoice editor replaces the old disclosure before invoice search a
   assert.match(source, /\(cancel\)="cancelInvoiceEdit\(\)"/);
   assert.match(source, /Search by customer name or invoice number/);
   assert.match(source, /name="invoiceFilterCustomer"/);
-  assert.match(source, /class="invoice-search-icon"/);
+  // T18 Slice E (2026-11-21): the invoice search is aba-search-field now; the
+  // magnifier lives inside that component (aba-search-field.spec.ts), so the
+  // invoice-search-icon positioning class no longer exists in the shell.
+  assert.match(source, /<aba-search-field class="invoice-search" name="invoiceSearch"/);
   assert.equal((source.match(/class="invoice-controls"/g) || []).length, 1);
 });
 
@@ -374,7 +380,10 @@ test('shared state feedback owns info, warning, success, error and accessible ac
   assert.ok(sharedStateSource.includes('aba-state-message--info'));
   assert.ok(sharedStateSource.includes('aba-state-message--warning'));
   assert.ok(sharedStateSource.includes('min-height:44px'));
-  assert.ok(sharedStateSource.includes('prefers-reduced-motion:reduce'));
+  // T18 Slice B: the loading animation (and its reduced-motion rule) now lives
+  // in aba-loading-logo, which the state-message renders for kind="loading".
+  assert.ok(sharedStateSource.includes('<aba-loading-logo [compact]="true" [announce]="false" />'));
+  assert.ok(loadingLogoSource.includes('prefers-reduced-motion:reduce'));
 });
 
 test('shared card hosts own card surface styling and projected KPI styles live in the shared stylesheet', () => {
@@ -507,7 +516,14 @@ test('mobile workspace view retains the active page title through the extracted 
   const mobileHeader = source.indexOf('<aba-mobile-app-header');
   assert.ok(desktopTopbar >= 0 && mobileHeader > desktopTopbar);
   assert.match(source, /<aba-mobile-app-header[\s\S]*?\[pageTitle\]="pageTitle"/);
+  // T18 Slice H: the extracted header's h1 keeps its polite live region. The
+  // amber octagram marker is a ::before pseudo-element (design-system.css),
+  // not a DOM span inside the h1: a real span adds a second box to
+  // Range.getClientRects(), which the mobile E2E title check reads as a
+  // second rendered line (2026-11-21 regression at b558cbd). The h1 holds
+  // only the title text.
   assert.match(mobileHeaderSource, /<h1 aria-live="polite" aria-atomic="true">\{\{ pageTitle \}\}<\/h1>/);
+  assert.doesNotMatch(mobileHeaderSource, /aiba-page-title-marker/);
 });
 
 
@@ -979,7 +995,7 @@ test('owner-only notification and recurring creation controls stay hidden from s
   const recurringEnd = source.indexOf("@if (tab === 'health'", recurringStart);
   const recurringView = source.slice(recurringStart, recurringEnd);
   assert.ok(recurringStart >= 0 && recurringEnd > recurringStart);
-  assert.match(recurringView, /@if \(business\?\.role === 'owner'\) \{\s*<form #recurringForm="ngForm"/);
+  assert.match(recurringView, /@if \(business\?\.role === 'owner'\) \{\s*@if \(showRecurringForm\) \{\s*<form #recurringForm="ngForm"/);
   assert.match(recurringView, /Only workspace owners can create recurring invoice schedules/);
   assert.match(recurringView, /<aba-record-table[^>]*\[rows\]="recurringTableRows"/);
 
@@ -1078,7 +1094,7 @@ test('purchase orders remain creatable by members while approval, receiving and 
 test('local CSV exports follow the backend owner-only export permission', () => {
   assert.equal((source.match(/\(click\)="exportCurrentList\(\)"/g) || []).length, 3,
     'the three current-list export buttons must remain available to owners');
-  assert.equal((source.match(/@if \(business\?\.role === 'owner'\) \{ <button class="secondary(?: invoice-export)?" type="button" \(click\)="exportCurrentList\(\)"/g) || []).length, 3);
+  assert.equal((source.match(/@if \(business\?\.role === 'owner'\) \{ <button class="secondary(?: invoice-export| customers-tool)?" type="button" \(click\)="exportCurrentList\(\)"/g) || []).length, 3);
   const listExportStart = source.indexOf('exportCurrentList(): void');
   const listExportEnd = source.indexOf('syncPaymentCustomer(): void', listExportStart);
   const listExport = source.slice(listExportStart, listExportEnd);
@@ -1141,7 +1157,10 @@ test('shared state feedback exposes correct alert, status, and reduced-motion se
   assert.ok(stateMessageSource.includes("'loading' || kind() === 'success' ? 'polite' : null"));
   assert.ok(stateMessageSource.includes('type="button"'));
   assert.ok(stateMessageSource.includes('[disabled]="actionDisabled()"'));
-  assert.ok(stateMessageSource.includes('prefers-reduced-motion:reduce'));
+  // T18 Slice B: the loading animation (and its reduced-motion rule) now lives
+  // in aba-loading-logo, which the state-message renders for kind="loading".
+  assert.ok(stateMessageSource.includes('<aba-loading-logo [compact]="true" [announce]="false" />'));
+  assert.ok(loadingLogoSource.includes('prefers-reduced-motion:reduce'));
 });
 
 test('notification and supplier forms expose localized field validation without changing optional fields', () => {
@@ -1308,11 +1327,20 @@ test('payment submit remains available to reveal required-field validation', () 
   assert.match(source, /const allocation = String\(this\.paymentAllocationAmount \?\? ''\)\.trim\(\)/);
 });
 
-test('Home KPI cards use one column on narrow mobile viewports', () => {
+test('Home KPI cards keep two flexible columns on narrow mobile viewports', () => {
+  // T18 Slice U01 (2026-11-21): the old single-column rule (and its "P1 Home
+  // hierarchy" comment) is removed. It never won the cascade — the later
+  // two-column rule in the same file and the design-system two-column rules
+  // override it — and it contradicted the two-column phone contract. The
+  // cards stay fixed-height (aba-metric-card) and flexible-width.
   assert.match(source, /\.metric-grid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(source, /@media\(max-width:1050px\)\{\.metric-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)\}/);
-  assert.match(source, /P1 Home hierarchy: keep the four KPI cards readable as a single column on phones/);
-  assert.match(source, /@media\(max-width:760px\)\{\.metric-grid\{grid-template-columns:minmax\(0,1fr\)\}\}/);
+  assert.doesNotMatch(source, /\.metric-grid\{grid-template-columns:minmax\(0,1fr\)\}/,
+    'no single-column KPI rule may remain in the shell stylesheet');
+  assert.doesNotMatch(source, /keep the four KPI cards readable as a single column on phones/,
+    'the stale single-column intent comment is gone with the rule');
+  assert.ok(source.includes('.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}'),
+    'the narrow mobile grid stays two flexible columns');
 });
 
 test('quick-access keyboard focus fallback meets the shared semantic focus token', () => {
@@ -1446,8 +1474,11 @@ test('payment and expense lists expose local search and distinguish no-match fro
   assert.match(source, /filterExpenses\(this\.expenses, this\.expenseSearch, category => this\.expenseCategoryLabel\(category\), this\.localization\.locale\)/);
   assert.match(source, /paymentSearch\.trim\(\) \? t\(/);
   assert.match(source, /expenseSearch\.trim\(\) \? t\(/);
-  assert.match(source, /name="paymentSearch" type="search"/);
-  assert.match(source, /name="expenseSearch" type="search"/);
+  // T18 Slice E (2026-11-21): the payment/expense searches are aba-search-field
+  // components now; the type="search" input lives inside the component, and the
+  // shell keeps the same name and [(ngModel)] binding on the component element.
+  assert.match(source, /<aba-search-field name="paymentSearch"/);
+  assert.match(source, /<aba-search-field name="expenseSearch"/);
 });
 
 
@@ -1462,6 +1493,7 @@ test('customer statement event types use bilingual labels while preserving unkno
   assert.match(source, /customerStatementEventLabel\(event\.event_type\)/);
   assert.match(source, /invoice_issued: 'app\.customerStatementEvent\.invoice_issued'/);
   assert.match(source, /payment_allocation: 'app\.customerStatementEvent\.payment_allocation'/);
+  assert.match(source, /payment_received: 'app\.customerStatementEvent\.payment_received'/);
   assert.match(source, /currency_mismatch_allocation: 'app\.customerStatementEvent\.currency_mismatch_allocation'/);
 });
 
@@ -1774,4 +1806,21 @@ test('deferred confirmation dialogs fail closed with an error message and a canc
     assert.ok(fallback.includes(`(click)="${cancel}()"`), `${pending} fallback must offer the cancel action`);
     assert.doesNotMatch(fallback, /confirm[A-Za-z]*\(\)/, 'the fallback must not offer a confirm action');
   }
+});
+
+
+// T18 Slice U02 (2026-11-21): the customer tools carry icons, and the
+// statement starts from the top when it is opened.
+test('customer export and import tools carry icons', () => {
+  assert.match(source, /<button class="secondary customers-tool" type="button" \(click\)="exportCurrentList\(\)"><aba-icon name="export" \/>/);
+  assert.match(source, /<details class="aba-record-secondary csv-disclosure"><summary><span><aba-icon name="import" \/>/);
+});
+
+test('opening a customer statement scrolls the statement panel to the top', () => {
+  assert.match(source, /private scrollStatementIntoView\(\): void \{[\s\S]*?document\.querySelector\('\.statement-panel'\)\?\.scrollIntoView\(\{ block: 'start' \}\)/);
+  // Both open paths scroll (directory row action and profile button); the
+  // pager and the filter apply do not scroll.
+  assert.match(source, /await this\.loadCustomerStatementPage\(0\);\s*this\.scrollStatementIntoView\(\);\s*\} catch \(error\)/);
+  assert.match(source, /async loadCustomerStatement\(customer: Customer\): Promise<void> \{[\s\S]*?await this\.loadCustomerStatementPage\(0\);\s*this\.scrollStatementIntoView\(\);/);
+  assert.doesNotMatch(source, /async applyCustomerStatementFilters\(\): Promise<void> \{[\s\S]*?scrollStatementIntoView/);
 });

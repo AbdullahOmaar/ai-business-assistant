@@ -150,7 +150,7 @@ type ReturnDraftLine = {
     p, .muted, .footnote { color: var(--muted, #5b6474); line-height: 1.5; } .footnote { font-size: .85rem; margin-block-start: 1rem; }
     .return-form { display: grid; gap: .8rem; margin: .6rem 0 1.2rem; }
     label { display: grid; gap: .35rem; font-size: .92rem; min-width: 0; }
-    input, select { width: 100%; min-width: 0; box-sizing: border-box; padding: .65rem; border: 1px solid var(--border, #cbd5e1); border-radius: 9px; background: var(--surface, #fff); color: inherit; }
+    input, select { width: 100%; min-width: 0; box-sizing: border-box; padding: .65rem; border: 1px solid var(--border, #cbd5e1); border-radius: 11px; background: var(--surface, #fff); color: inherit; }
     .return-lines, .records { display: grid; gap: .6rem; }
     .return-line { grid-template-columns: minmax(0, 1fr) minmax(90px, 140px); align-items: center; border: 1px solid var(--border, #dfe5ec); border-radius: 10px; padding: .65rem; }
     .return-line small, .record small { display: block; color: var(--muted, #5b6474); overflow-wrap: anywhere; }

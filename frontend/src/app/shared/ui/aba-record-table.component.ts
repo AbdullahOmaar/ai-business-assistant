@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { LocalizationService } from '../../localization.service';
-import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { AbaStateMessageComponent } from './aba-state-message.component';
 
 export interface AbaRecordTableColumn { key:string; label:string; primary?:boolean; kind?:'text'|'numeric'|'status'; }
@@ -17,11 +17,12 @@ export interface AbaRecordTableActionEvent { rowId:string; actionId:string; anch
       @if(loading()){
         <aba-state-message kind="loading" [description]="loadingDescription()" />
       } @else if(rows().length){
+        <div class="aba-record-table__mobile-sort"><select class="aba-record-table__mobile-sort-select" [attr.aria-label]="sortByLabel()" [value]="mobileSortValue" (change)="onMobileSortChange($event)"><option value="">{{ sortByLabel() }}</option>@for(column of columns();track column.key){<option [value]="column.key + ':asc'">{{column.label}} ↑</option><option [value]="column.key + ':desc'">{{column.label}} ↓</option>}</select></div>
         <div class="aba-record-table__viewport" role="region" tabindex="0" [attr.aria-label]="ariaLabel()">
           <table>
             <caption class="aba-record-table__visually-hidden">{{ariaLabel()}}</caption>
             <thead><tr>
-              @for(column of columns();track column.key){<th scope="col" [attr.aria-sort]="sortAria(column.key)"><button class="aba-record-table__sort-button" type="button" (click)="toggleSort(column)" [attr.aria-label]="column.label" [attr.aria-pressed]="isSortActive(column.key)"><span>{{column.label}}</span><span class="aba-record-table__sort-indicator" aria-hidden="true">{{sortIndicator(column.key)}}</span></button></th>}
+              @for(column of columns();track column.key){<th scope="col" [attr.aria-sort]="sortAria(column.key)"><button class="aba-record-table__sort-button" type="button" (click)="toggleSort(column)" [attr.tabindex]="isStacked() ? -1 : null" [attr.aria-label]="column.label" [attr.aria-pressed]="isSortActive(column.key)"><span>{{column.label}}</span><span class="aba-record-table__sort-indicator" aria-hidden="true">{{sortIndicator(column.key)}}</span></button></th>}
               @if(hasActions){<th scope="col">{{resolvedActionsHeading()}}</th>}
             </tr></thead>
             <tbody>
@@ -72,6 +73,18 @@ export class AbaRecordTableComponent {
   readonly actionsHeading=input('');
   private readonly localization=inject(LocalizationService);
   readonly resolvedActionsHeading=computed(()=>this.actionsHeading()||this.localization.translate('ui.actions'));
+  /** Tracks the ≤760px stacked layout, where the thead is clipped to 1x1
+   * (routine (B) 2026-11-22). Guarded for the node unit runner, which has
+   * no `window`. Same matchMedia pattern as aba-search-field. */
+  private readonly stackedQuery = typeof window !== 'undefined'
+    ? window.matchMedia('(max-width: 760px)') : null;
+  protected readonly isStacked = signal(this.stackedQuery?.matches ?? false);
+  /** "Sort by" label for the visible mobile sort group (ui.m_tpfmbp). */
+  readonly sortByLabel = computed(() => this.localization.translate('ui.m_tpfmbp'));
+
+  constructor() {
+    this.stackedQuery?.addEventListener('change', (event) => this.isStacked.set(event.matches));
+  }
   readonly rowAction=output<AbaRecordTableActionEvent>();
   private activeSortKey = '';
   private sortDirection: 'asc' | 'desc' = 'asc';
@@ -99,6 +112,22 @@ export class AbaRecordTableComponent {
   isSortActive(key:string):boolean{return this.activeSortKey===key;}
   sortAria(key:string):string|null{return this.activeSortKey===key?(this.sortDirection==='asc'?'ascending':'descending'):null;}
   sortIndicator(key:string):string{return this.activeSortKey!==key?'↕':this.sortDirection==='asc'?'↑':'↓';}
+  /** Mobile sort select value: '' (unsorted) or '<key>:asc' / '<key>:desc'.
+   * A plain getter, not a computed — activeSortKey/sortDirection are plain
+   * fields, so a computed would never re-evaluate; the getter re-reads on
+   * every change-detection pass, like isSortActive() in the template. */
+  get mobileSortValue():string{return this.activeSortKey?`${this.activeSortKey}:${this.sortDirection}`:'';}
+  /** The select offers both directions explicitly: a select fires no change
+   * event for re-selecting the same value, so direction cannot rely on
+   * toggle-on-repeat the way the thead buttons do. Drives the same sort
+   * state the thead buttons use, so both stay in sync. */
+  onMobileSortChange(event:Event):void{
+    const value=(event.target as HTMLSelectElement|null)?.value??'';
+    if(!value){this.activeSortKey='';this.sortDirection='asc';return;}
+    const [key,direction]=value.split(':');
+    this.activeSortKey=key??'';
+    this.sortDirection=direction==='desc'?'desc':'asc';
+  }
   actionAriaLabel(row:AbaRecordTableRow,action:AbaRecordTableAction):string{
     const primaryColumn=this.columns().find(column=>column.primary);
     const recordLabel=primaryColumn?row.cells[primaryColumn.key]:row.id;

@@ -1,6 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { LocalizationService } from './localization.service';
-import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild } from '@angular/core';
+import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService, ApiRequestError, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, InvoiceDetail, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
@@ -30,6 +30,13 @@ import { AbaQuickAccessCardComponent } from './shared/ui/aba-quick-access-card.c
 import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
 import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecordTableColumn, type AbaRecordTableRow } from './shared/ui/aba-record-table.component';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
+import { AbaLoadingLogoComponent } from './shared/ui/aba-loading-logo.component';
+import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
+import { AbaSearchFieldComponent } from './shared/ui/aba-search-field.component';
+import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';
+import { AbaDateRangeComponent } from './shared/ui/aba-date-range.component';
+import { AbaIconComponent } from './shared/ui/aba-icon.component';
+import { AbaLoadingStateService } from './loading-state.service';
 import { AbaMobileAppHeaderComponent } from './shared/ui/aba-mobile-app-header.component';
 import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
 import { WorkspaceInvitationsComponent } from './workspace-invitations.component';
@@ -47,13 +54,13 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
         <a class="skip-link" href="#main-content">{{ t('ui.m_1561v1f') }}</a>
       }
-      @if (loading && initialized) { <div class="global-loading" role="status" aria-live="polite"><span></span><span class="loading-label">{{ t('ui.m_1rza5t5') }}</span></div> }
+      @if (loading && initialized) { <div class="global-loading" role="status" aria-live="polite"><aba-loading-logo [compact]="true" [announce]="false" /><span class="loading-label">{{ t('ui.m_1rza5t5') }}</span></div> }
       @if (appUpdateAvailable) {
         <aside class="app-update-notice" role="status" aria-live="polite">
           <span>{{ t('ui.m_4cplhg') }}</span>
@@ -234,6 +241,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 }
           } @else {
           <header class="topbar">
+            <div class="topbar-identity"><span class="topbar-mark" aria-hidden="true"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><polygon points="68.75,4.73 76.52,23.48 95.27,31.25 87.50,50.00 95.27,68.75 76.52,76.52 68.75,95.27 50.00,87.50 31.25,95.27 23.48,76.52 4.73,68.75 12.50,50.00 4.73,31.25 23.48,23.48 31.25,4.73 50.00,12.50" fill="#FFFFFF"/><rect x="27.25" y="49.00" width="11.5" height="20" rx="3.68" fill="#093A44"/><rect x="44.25" y="35.00" width="11.5" height="34" rx="3.68" fill="#093A44"/><rect x="61.25" y="19.00" width="11.5" height="50" rx="3.68" fill="#F5A623"/><circle cx="67.00" cy="9.80" r="5.17" fill="#F5A623"/></svg></span><span class="topbar-app-name">{{ t('common.app_title') }}</span></div>
             <div class="topbar-heading"><p class="eyebrow">{{ t('ui.m_criw1m') }}</p><h1>{{ pageTitle }}</h1></div>
             <div class="user-area">@if (!isInstalled) { <button class="secondary install-button" type="button" (click)="installApp()">{{ t('ui.m_1ig5s72') }}</button> }<button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button><span>{{ userEmail }}</span><button class="secondary" type="button" (click)="logout()">{{ t('ui.m_r2b303') }}</button></div>
           </header>
@@ -242,8 +250,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
           @if (!business) {
             <section abaCard class="panel narrow">
-              <p class="eyebrow">{{ t('ui.m_117ileb') }}</p><h2>{{ t('ui.m_sgf5dv') }}</h2>
-              <p class="muted">{{ t('ui.m_1bmd66c') }}</p>
+              <p class="eyebrow">{{ t('ui.m_117ileb') }}</p><aba-section-header [title]="t('ui.m_sgf5dv')" [description]="t('ui.m_1bmd66c')" />
               <form #workspaceForm="ngForm" class="stack" (ngSubmit)="workspaceForm.valid && createWorkspace()">
                 <label>{{ t('ui.m_lzm3kh') }}<input #businessNameModel="ngModel" name="businessName" required maxlength="160" [(ngModel)]="businessName" [attr.aria-invalid]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'true' : null" [attr.aria-describedby]="businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted) ? 'workspace-name-error' : null">
                   @if (businessNameModel.invalid && (businessNameModel.touched || workspaceForm.submitted)) {
@@ -282,7 +289,13 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               (signOutRequested)="logout()" />
 
             @if (tab === 'overview') {
-              <aba-workspace-invitations mode="accept" [businessId]="business?.id || null" [language]="language" (accepted)="loadBusinesses()" />
+              @defer (when tab === 'overview') {
+                <aba-workspace-invitations mode="accept" [businessId]="business?.id || null" [language]="language" (accepted)="loadBusinesses()" />
+              } @error {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                </section>
+              }
 
               @if (dashboard) {
                 <section class="dashboard-period" [attr.aria-label]="t('ui.m_14yh7ls')">
@@ -350,20 +363,12 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 </section>
                 <section class="notice dashboard-trust-note" role="note"><strong>{{ t('ui.m_lgrza4') }}</strong><span>{{ t('ui.m_1yfmgqi') }}</span></section>
               } @else if (loading) {
-                <section class="dashboard-period dashboard-period--skeleton" aria-hidden="true">
-                  <div class="dashboard-period__heading">
-                    <h2 class="dashboard-period__title">{{ t('ui.m_1wch2zm') }}</h2>
-                    <strong>{{ t('ui.m_1ql1fm2') }}</strong>
-                  </div>
-                  <div class="dashboard-period-skeleton__details">
-                    <span></span><span></span>
-                  </div>
-                </section>
+                <aba-skeleton variant="detail" [title]="t('ui.m_1wch2zm')" [subtitle]="t('ui.m_1ql1fm2')" />
                 <section class="metric-grid metric-grid--skeleton" aria-hidden="true">
-                  <div class="metric-skeleton"><span></span><span></span><span></span></div>
-                  <div class="metric-skeleton"><span></span><span></span><span></span></div>
-                  <div class="metric-skeleton"><span></span><span></span><span></span></div>
-                  <div class="metric-skeleton"><span></span><span></span><span></span></div>
+                  <aba-skeleton variant="metric-card" />
+                  <aba-skeleton variant="metric-card" />
+                  <aba-skeleton variant="metric-card" />
+                  <aba-skeleton variant="metric-card" />
                 </section>
 
               } @else if (!error) {
@@ -390,13 +395,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     <span class="count">{{ homeModuleCards.length }}</span>
                     <span class="module-directory-toggle" aria-hidden="true">＋</span>
                   </summary>
-                  <label class="module-directory-search">
-                    <span class="sr-only">{{ t('ui.m_1yd5km1') }}</span>
-                    <input type="search" name="homeModuleSearch" autocomplete="off"
-                      [attr.aria-label]="t('ui.m_1yd5km1')"
-                      [placeholder]="t('ui.m_3bdru5')"
-                      [(ngModel)]="homeModuleSearch" />
-                  </label>
+                  <aba-search-field class="module-directory-search" name="homeModuleSearch" autocomplete="off"
+                    [ariaLabel]="t('ui.m_1yd5km1')"
+                    [placeholder]="t('ui.m_3bdru5')" [placeholderNarrow]="t('ui.m_11ucx5t')"
+                    [clearLabel]="t('ui.m_4k8q2zr')"
+                    [(ngModel)]="homeModuleSearch" />
                   @if (filteredHomeModuleCards.length) {
                   <div class="module-directory-grid">
                     @for (module of filteredHomeModuleCards; track module.tab) {
@@ -450,7 +453,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (operationsError && operationsErrorTab === 'notifications') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'notifications') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'notifications' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="notificationSearch" type="search" [attr.aria-label]="t('ui.m_1qze32v')" [placeholder]="t('ui.m_1aqo4qr')" [(ngModel)]="notificationSearch"></div>
+                <div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="notificationSearch" [hasActiveFilter]="notificationSearch.trim() !== ''" (clear)="notificationSearch = ''"><aba-search-field name="notificationSearch" [ariaLabel]="t('ui.m_1qze32v')" [placeholder]="t('ui.m_1aqo4qr')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="notificationSearch" /></aba-filter-bar></div>
                 <aba-record-table [ariaLabel]="t('ui.m_1qfr3uw')" [columns]="notificationTableColumns" [rows]="notificationTableRows" [loading]="notificationsLoading && !notifications.length" [loadingDescription]="t('ui.m_fwia2s')" [emptyTitle]="t('ui.m_1mw6u5')" [emptyDescription]="notificationSearch.trim() ? t('ui.m_23ba9u') : t('ui.m_1yt5n1a')" />
               </section>
             }
@@ -481,7 +484,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (operationsError && operationsErrorTab === 'suppliers') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'suppliers') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'suppliers' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="supplierSearch" type="search" [attr.aria-label]="t('ui.m_1mc30sn')" [placeholder]="t('ui.m_jtec0a')" [(ngModel)]="supplierSearch"></div>
+                <div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="supplierSearch" [hasActiveFilter]="supplierSearch.trim() !== ''" (clear)="supplierSearch = ''"><aba-search-field name="supplierSearch" [ariaLabel]="t('ui.m_1mc30sn')" [placeholder]="t('ui.m_jtec0a')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="supplierSearch" /></aba-filter-bar></div>
                 <aba-record-table [ariaLabel]="t('ui.m_13lj997')" [columns]="supplierTableColumns" [rows]="supplierTableRows" [loading]="suppliersLoading && !suppliers.length" [loadingDescription]="t('ui.m_16wb349')" [emptyTitle]="t('ui.m_1u3jkgy')" [emptyDescription]="supplierSearch.trim() ? t('ui.m_ka2uzv') : t('ui.m_9e3ceh')" />
 
               </section>
@@ -508,8 +511,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
             @if (tab === 'recurring') {
               <section abaCard class="panel">
-                <aba-section-header [title]=" t('ui.m_slegw7') " [description]=" t('ui.m_1e0c20g') "><span class="count">{{ filteredRecurringSchedules.length }} / {{ recurringSchedules.length }}</span></aba-section-header>
+                <aba-section-header [title]=" t('ui.m_slegw7') " [description]=" t('ui.m_1e0c20g') "><div class="section-actions"><span class="count">{{ filteredRecurringSchedules.length }} / {{ recurringSchedules.length }}</span>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="showRecurringForm = !showRecurringForm">{{ showRecurringForm ? t('ui.m_pw64as') : t('ui.m_slegw7') }}</button> }</div></aba-section-header>
                 @if (business?.role === 'owner') {
+                @if (showRecurringForm) {
                 <form #recurringForm="ngForm" class="stack" (ngSubmit)="recurringForm.valid && createRecurringSchedule()">
                   <label>{{ t('ui.m_eoh95l') }}<select name="recurringCustomerId" [(ngModel)]="recurringCustomerId"><option value="">{{ t('ui.m_8pt45d') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
                   <div class="inline-form"><label>{{ t('ui.m_py5g30') }}<input #recurringIntervalControl="ngModel" name="recurringIntervalDays" type="number" min="1" max="3650" required [attr.aria-invalid]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'recurring-interval-error' : null" [(ngModel)]="recurringIntervalDays"></label><label>{{ t('ui.m_1e7ftdu') }}<input #recurringNextRunControl="ngModel" name="recurringNextRunAt" type="datetime-local" required [attr.aria-invalid]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'recurring-next-run-error' : null" [(ngModel)]="recurringNextRunAt"></label></div>
@@ -523,11 +527,12 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     @if (recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted)) { <small id="recurring-timezone-error" class="field-error">{{ t('ui.m_1t55sm0') }}</small> }
                   </div>
                 }
+                }
                 } @else { <aba-state-message kind="info" [description]="t('ui.m_t5zhtj')" /> }
                 @if (operationsError && operationsErrorTab === 'recurring') { <aba-state-message kind="error" [description]="operationsError" /> }
                 @if (operationsWarning && operationsMessageTab === 'recurring') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
                 @if (operationsMessageTab === 'recurring' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="recurringSearch" type="search" [attr.aria-label]="t('ui.m_aljqyp')" [placeholder]="t('ui.m_z7f6xc')" [(ngModel)]="recurringSearch"></div>
+                <div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="recurringSearch" [hasActiveFilter]="recurringSearch.trim() !== ''" (clear)="recurringSearch = ''"><aba-search-field name="recurringSearch" [ariaLabel]="t('ui.m_aljqyp')" [placeholder]="t('ui.m_z7f6xc')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="recurringSearch" /></aba-filter-bar></div>
                 <aba-record-table [ariaLabel]="t('ui.m_uxwqg9')" [columns]="recurringTableColumns" [rows]="recurringTableRows" [loading]="recurringLoading && !recurringSchedules.length" [loadingDescription]="t('ui.m_10b19k6')" [emptyTitle]="t('ui.m_4r8x8c')" [emptyDescription]="recurringSearch.trim() ? t('ui.m_11cvrt7') : t('ui.m_kxnfs6')" />
               </section>
             }
@@ -557,8 +562,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <form #profitLossForm="ngForm" class="inline-form" (ngSubmit)="profitLossForm.valid && loadProfitLoss()">
                   <select name="profitLossPeriod" [attr.aria-label]="t('ui.m_cwfche')" [(ngModel)]="profitLossPeriod"><option value="30d">{{ t('ui.m_1ql1fm2') }}</option><option value="month">{{ t('ui.m_1sm3j94') }}</option><option value="all">{{ t('ui.m_bp8vk5') }}</option><option value="custom">{{ t('ui.m_57v6ro') }}</option></select>
                   @if (profitLossPeriod === 'custom') {
+                    <aba-date-range [showClear]="true" [hasValue]="profitLossStart !== '' || profitLossEnd !== ''" [clearLabel]="t('ui.m_1np7zc4')" (clear)="profitLossStart = ''; profitLossEnd = ''">
                     <label>{{ t('ui.m_15qcbwy') }}<input #profitLossStartControl="ngModel" type="date" name="profitLossStart" required [attr.aria-invalid]="profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted) ? 'true' : null" [attr.aria-describedby]="profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted) ? 'profit-loss-start-error' : null" [(ngModel)]="profitLossStart">@if (profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted)) { <small id="profit-loss-start-error" class="field-error" role="alert">{{ t('ui.m_c9vs17') }}</small> }</label>
                     <label>{{ t('ui.m_8ibmd8') }}<input #profitLossEndControl="ngModel" type="date" name="profitLossEnd" required [attr.aria-invalid]="profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted) ? 'true' : null" [attr.aria-describedby]="profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted) ? 'profit-loss-end-error' : null" [(ngModel)]="profitLossEnd">@if (profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted)) { <small id="profit-loss-end-error" class="field-error" role="alert">{{ t('ui.m_146gz4o') }}</small> }</label>
+                    </aba-date-range>
                   }
                   <button class="primary" type="submit" [disabled]="reportLoading">{{ reportLoading ? t('ui.m_1k98007') : t('ui.m_10jsbot') }}</button>
                 </form>
@@ -582,7 +589,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     <div class="notice warning-notice"><strong>{{ t('ui.m_fhk738') }}</strong>
                       @for (warning of agingReport.data_quality_warnings; track warning.invoice_id + warning.type) {
                         <p><strong>{{ warning.invoice_number }}</strong> — {{ agingWarningLabel(warning.type) }}</p>
-                        @if (warning.excess_allocated) { <p>{{ t('ui.m_29qoiu') }} {{ warning.excess_allocated }} {{ warning.invoice_currency || '' }}</p> }
+                        @if (warning.excess_allocated) { <p>{{ t('ui.m_29qoiu') }} <span class="amount-pair">{{ warning.excess_allocated }} {{ warning.invoice_currency || '' }}</span></p> }
                         @if (warning.mismatched_allocations_amount) { <p>{{ t('ui.m_1hrsgrk') }} {{ warning.mismatched_allocations_amount }}</p> }
                       }
                     </div>
@@ -594,15 +601,24 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
 
             @if (tab === 'team' && business?.id) {
-              <aba-workspace-invitations mode="manage" [businessId]="business?.id || ''" [language]="language" />
+              @defer (when tab === 'team' && business?.id) {
+                <aba-workspace-invitations mode="manage" [businessId]="business?.id || ''" [language]="language" />
+              } @placeholder {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="loading" [description]="t('ui.m_icu2ib')" />
+                </section>
+              } @error {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                </section>
+              }
             }
             @if (tab === 'customers' && business?.id) {
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ui.m_1lifkl9')" [description]="t('ui.m_15gmqko')" />
-                @if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()">{{ t('ui.m_nbsw3y') }}</button> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span>{{ t('ui.m_p4xhry') }}</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
-                  <h3>{{ t('ui.m_p4xhry') }}</h3>
-                  <p>{{ t('ui.m_1239wd4') }}</p>
+                @if (business?.role === 'owner') { <button class="secondary customers-tool" type="button" (click)="exportCurrentList()"><aba-icon name="export" />{{ t('ui.m_nbsw3y') }}</button> }
+                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span><aba-icon name="import" />{{ t('ui.m_p4xhry') }}</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
+                  <aba-section-header [level]="3" [title]="t('ui.m_p4xhry')" [description]="t('ui.m_1239wd4')" />
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1m32l6p')" (change)="onCustomerImportFileSelected($event)" [disabled]="customerImportLoading">
                   @if (customerImportFileName) { <small>{{ customerImportFileName }}</small> }
                   <div class="csv-import-actions">
@@ -641,15 +657,28 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   </section>
                 }
                 @if (statementVisible) {
+                  <!-- T18 Slice G (2026-11-21): statement card redrawn per the owner ruling
+                       2026-11-21 15:07 EET ("the card at the bottom, its look and design is
+                       not interactive and not good, redo the design and buttons"). The
+                       filters are grouped (dates together, actions together) instead of
+                       four stretched blocks, the pager groups its range text with its
+                       buttons, and every action has an icon. All handlers, labels and
+                       disabled states are unchanged; no action was added or removed. -->
                   <section abaCard class="panel statement-panel">
                     <aba-section-header [level]="3" [title]="t('ui.m_152dm1w') + ' · ' + (customerStatement?.customer?.name || statementCustomerName)" [description]="t('ui.m_ysb7zm')">
-                      <button class="secondary" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''">{{ t('ui.m_1whnkun') }}</button>
+                      <button class="secondary statement-action" type="button" (click)="customerStatement=null; statementVisible=false; statementError=''"><aba-icon name="close" />{{ t('ui.m_1whnkun') }}</button>
                     </aba-section-header>
                     <div class="inline-form statement-filters">
-                      <label>{{ t('ui.m_6ousik') }}<input type="date" name="statementFromDate" [(ngModel)]="statementFromDate"></label>
-                      <label>{{ t('ui.m_hltyrq') }}<input type="date" name="statementToDate" [(ngModel)]="statementToDate"></label>
-                      <button class="primary" type="button" (click)="applyCustomerStatementFilters()" [disabled]="statementLoading">{{ t('ui.m_1vs0iyd') }}</button>
-                      <button class="secondary" type="button" (click)="clearCustomerStatementFilters()" [disabled]="statementLoading || (!statementFromDate && !statementToDate)">{{ t('ui.m_1kg6ptq') }}</button>
+                      <div class="statement-filters__dates">
+                        <aba-date-range>
+                        <label>{{ t('ui.m_6ousik') }}<input type="date" name="statementFromDate" [(ngModel)]="statementFromDate"></label>
+                        <label>{{ t('ui.m_hltyrq') }}<input type="date" name="statementToDate" [(ngModel)]="statementToDate"></label>
+                        </aba-date-range>
+                      </div>
+                      <div class="statement-filters__actions">
+                        <button class="primary statement-action" type="button" (click)="applyCustomerStatementFilters()" [disabled]="statementLoading"><aba-icon name="check" />{{ t('ui.m_1vs0iyd') }}</button>
+                        <button class="secondary statement-action" type="button" (click)="clearCustomerStatementFilters()" [disabled]="statementLoading || (!statementFromDate && !statementToDate)"><aba-icon name="clear" />{{ t('ui.m_1kg6ptq') }}</button>
+                      </div>
                     </div>
                     @if (statementFromDate || statementToDate) { <p class="muted">{{ t('ui.m_gqq69s') }}</p> }
                     @if (statementLoading) { <aba-state-message kind="loading" [description]="t('ui.m_1jqptmt')" /> }
@@ -657,7 +686,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     @if (customerStatement) {
                       <div class="metric-grid">@for (entry of statementBalanceEntries; track entry.currency) { <article class="metric"><span>{{ t('ui.m_lyblb3') }} · {{ entry.currency }}</span><strong>{{ entry.balance }} {{ entry.currency }}</strong></article> }</div>
                       <aba-record-table [ariaLabel]="t('ui.m_152dm1w')" [columns]="customerStatementTableColumns" [rows]="customerStatementTableRows" [emptyTitle]="t('ui.m_3op8q6')" [emptyDescription]="t('ui.m_18o73kt')" />
-                      <div class="inline-form"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0">{{ t('ui.m_14wy3hz') }}</button><button class="secondary" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('ui.m_thb9eg') }}</button></div>
+                      <div class="statement-pager"><span class="muted">{{ statementOffset + 1 }}–{{ statementOffset + customerStatement.items.length }} / {{ customerStatement.total }}</span><div class="statement-pager__actions"><button class="secondary statement-action" type="button" (click)="loadCustomerStatementPage(statementOffset > 50 ? statementOffset - 50 : 0)" [disabled]="statementLoading || statementOffset === 0"><aba-icon name="chevron-left" class="statement-pager__chevron" />{{ t('ui.m_14wy3hz') }}</button><button class="secondary statement-action" type="button" (click)="loadCustomerStatementPage(statementOffset + 50)" [disabled]="statementLoading || statementOffset + customerStatement.items.length >= customerStatement.total">{{ t('ui.m_thb9eg') }}<aba-icon name="chevron-right" class="statement-pager__chevron" /></button></div></div>
                       @for (limitation of customerStatement.limitations; track limitation) { <p class="muted">• {{ limitation }}</p> }
                     }
                   </section>
@@ -701,8 +730,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 </details>
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
                 @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span>{{ t('ui.m_1wgx28b') }}</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_ps78ce')">
-                  <h3>{{ t('ui.m_1wgx28b') }}</h3>
-                  <p>{{ t('ui.m_1kaqi1p') }}</p>
+                  <aba-section-header [level]="3" [title]="t('ui.m_1wgx28b')" [description]="t('ui.m_1kaqi1p')" />
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1yr2ptt')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
                   @if (importFileName) { <small>{{ importFileName }}</small> }
                   <div class="csv-import-actions">
@@ -801,16 +829,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <article class="invoice-summary-card"><span>{{ t('app.invoiceList.summaryIssued') }}</span><strong>{{ invoiceStatusCounts.issued }}</strong></article>
                 </div>
                 <div class="invoice-controls">
-                  <label class="invoice-search">
-                    <svg class="invoice-search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m16 16 5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                    <input name="invoiceSearch" type="search" [attr.aria-label]="t('ui.m_qwjq9v')" [placeholder]="t('ui.m_2onysz')" [(ngModel)]="invoiceSearch" (ngModelChange)="invoicePageIndex = 0">
-                  </label>
-                  <div class="invoice-status-chips" role="group" [attr.aria-label]="t('app.invoiceList.statusFilters')">
+                  <aba-filter-bar variant="chips" [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="invoiceFilterSummary()" [hasActiveFilter]="invoiceSearch.trim() !== '' || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId !== ''" (clear)="clearInvoiceFilters()">
+                  <aba-search-field class="invoice-search" name="invoiceSearch" [ariaLabel]="t('ui.m_qwjq9v')" [placeholder]="t('ui.m_2onysz')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="invoiceSearch" (ngModelChange)="invoicePageIndex = 0" />
+                  <div class="invoice-status-chips" role="group" [attr.aria-label]="t('app.invoiceList.statusFilters')" filterExtras>
                     <button type="button" class="invoice-status-chip" [class.active]="invoiceStatusFilter === 'all'" [attr.aria-pressed]="invoiceStatusFilter === 'all'" (click)="setInvoiceStatusFilter('all')">{{ t('ui.m_1cyu9lp') }} <span>{{ invoiceStatusCounts.all }}</span></button>
                     <button type="button" class="invoice-status-chip" [class.active]="invoiceStatusFilter === 'draft'" [attr.aria-pressed]="invoiceStatusFilter === 'draft'" (click)="setInvoiceStatusFilter('draft')">{{ t('ui.m_1vbs2bw') }} <span>{{ invoiceStatusCounts.draft }}</span></button>
                     <button type="button" class="invoice-status-chip" [class.active]="invoiceStatusFilter === 'issued'" [attr.aria-pressed]="invoiceStatusFilter === 'issued'" (click)="setInvoiceStatusFilter('issued')">{{ t('ui.m_7bugfd') }} <span>{{ invoiceStatusCounts.issued }}</span></button>
                     <button type="button" class="invoice-status-chip" [class.active]="invoiceStatusFilter === 'void'" [attr.aria-pressed]="invoiceStatusFilter === 'void'" (click)="setInvoiceStatusFilter('void')">{{ t('ui.m_1a2uk7t') }} <span>{{ invoiceStatusCounts.void }}</span></button>
                   </div>
+                  </aba-filter-bar>
                   <label class="invoice-filter"><span>{{ t('ui.m_ubgrc2') }}</span>
                     <select name="invoiceFilterCustomer" [attr.aria-label]="t('ui.m_1k3k63e')" [(ngModel)]="invoiceFilterCustomerId" (ngModelChange)="invoicePageIndex = 0">
                       <option value="">{{ t('ui.m_1c6r7y7') }}</option>
@@ -881,7 +908,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                             <span class="invoice-customer-avatar" aria-hidden="true">{{ customerInitialForInvoice(invoice.customer_id) }}</span>
                             <div class="invoice-card-customer-copy">
                               <strong>{{ customerNameForInvoice(invoice.customer_id) }}</strong>
-                              <small class="invoice-card-meta">{{ invoice.invoice_number }} · {{ invoice.issue_date ? formatRecordDate(invoice.issue_date, 'date') : (invoice.created_at ? t('ui.m_1ipvpcp') + formatRecordDate(invoice.created_at, 'date') : t('ui.m_8ghcxc')) }} · <bdi dir="ltr">{{ invoice.currency_code }}</bdi></small>
+                              <small class="invoice-card-meta">{{ invoice.invoice_number }} · {{ invoice.issue_date ? '' : (invoice.created_at ? t('ui.m_1ipvpcp') : '') }}<span class="invoice-card-meta-date">{{ invoice.issue_date ? formatRecordDate(invoice.issue_date, 'date') : (invoice.created_at ? formatRecordDate(invoice.created_at, 'date') : t('ui.m_8ghcxc')) }}</span> · <bdi dir="ltr">{{ invoice.currency_code }}</bdi></small>
                             </div>
                           </div>
                           <span class="invoice-status-badge"
@@ -994,9 +1021,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       <table class="invoice-detail-lines" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
                         <thead><tr><th scope="col">{{ t('app.invoiceList.lineItem') }}</th><th scope="col">{{ t('app.invoiceList.quantity') }}</th><th scope="col">{{ t('app.invoiceList.unitPrice') }}</th><th scope="col">{{ t('app.invoiceList.lineTotal') }}</th></tr></thead>
                         <tbody>@for (line of detail.lines; track line.id) {
-                          <tr><td>{{ line.description }}</td><td><bdi dir="ltr">{{ formatNumber(line.quantity) }}</bdi></td>
-                            <td><bdi dir="ltr">{{ formatNumber(line.unit_price) }} {{ detail.currency_code }}</bdi></td>
-                            <td><bdi dir="ltr">{{ formatNumber(line.line_total) }} {{ detail.currency_code }}</bdi></td></tr>
+                          <tr><td>{{ line.description }}</td><td [attr.data-label]="t('app.invoiceList.quantity')"><bdi dir="ltr">{{ formatNumber(line.quantity) }}</bdi></td>
+                            <td [attr.data-label]="t('app.invoiceList.unitPrice')"><bdi dir="ltr">{{ formatNumber(line.unit_price) }} {{ detail.currency_code }}</bdi></td>
+                            <td [attr.data-label]="t('app.invoiceList.lineTotal')"><bdi dir="ltr">{{ formatNumber(line.line_total) }} {{ detail.currency_code }}</bdi></td></tr>
                         }</tbody>
                       </table>
                     </div>
@@ -1033,11 +1060,12 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
             @if (tab === 'payments' && business.role === 'owner') {
               <section abaCard class="panel"><aba-section-header [title]="t('ui.m_3k0fux')" [description]="t('ui.m_cj3m99')">
-                  <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t('ui.m_1ouah2m') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('ui.m_nbsw3y') }}</button></div>
+                  <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t('ui.m_1ouah2m') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('ui.m_nbsw3y') }}</button><button class="secondary" type="button" (click)="showPaymentForm = !showPaymentForm" [disabled]="paymentRetryPending">{{ showPaymentForm ? t('ui.m_pw64as') : t('ui.m_3k0fux') }}</button></div>
                 </aba-section-header>
+                @if (showPaymentForm || paymentRetryPending) {
                 <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="(paymentRetryPending || paymentForm.valid) && createPayment()">
-                  <input #paymentAmountModel="ngModel" [attr.aria-label]="t('ui.m_q9mxbb')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_1smcjxm')" required [(ngModel)]="paymentAmount" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('ui.m_me0lkl') }}</small> }
                   <select #paymentCustomerModel="ngModel" [attr.aria-label]="t('ui.m_edaho8')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'payment-customer-error' : null"><option value="" disabled>{{ t('ui.m_p0vza7') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>@if (paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted)) { <small id="payment-customer-error" class="field-error" aria-live="polite">{{ t('ui.m_5b5dll') }}</small> }
+                  <input #paymentAmountModel="ngModel" [attr.aria-label]="t('ui.m_q9mxbb')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_1smcjxm')" required [(ngModel)]="paymentAmount" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('ui.m_me0lkl') }}</small> }
                   <select [attr.aria-label]="t('ui.m_h7ngs9')" name="paymentMethod" [(ngModel)]="paymentMethod" [disabled]="paymentRetryPending"><option value="cash">{{ t('ui.m_1xk4i7j') }}</option><option value="bank_transfer">{{ t('ui.m_bof380') }}</option><option value="card">{{ t('ui.m_tq9n36') }}</option><option value="wallet">{{ t('ui.m_1bho9og') }}</option><option value="other">{{ t('ui.m_47rh1w') }}</option></select>
                   <select [attr.aria-label]="t('ui.m_vkei9c')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" [disabled]="paymentRetryPending" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t('ui.m_1xrgrqj') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
                   @if (invoicesHasMore) { <button type="button" class="secondary" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore || paymentRetryPending">{{ invoicesLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_14d2jh7') }}</button> }
@@ -1045,10 +1073,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <input [attr.aria-label]="t('ui.m_15jj1na')" name="paymentReference" maxlength="128" [placeholder]="t('ui.m_v160u1')" [(ngModel)]="paymentReference" [disabled]="paymentRetryPending">
                   <button class="primary" type="submit" [disabled]="paymentLoading">{{ paymentLoading ? t('ui.m_1ty0fxd') : paymentRetryPending ? t('ui.m_1pvlpdc') : t('ui.m_3k0fux') }}</button>
                 </form>
+                }
                 @if (paymentRetryPending) { <p class="footnote" role="status">{{ t('ui.m_1yhgb5f') }}</p> }
                 @if (paymentMessage) { <aba-state-message [kind]="paymentMessageKind" [description]="paymentMessage" /> }
                 <p class="footnote">{{ t('ui.m_1c93fyv') }} {{ business.currency_code }} {{ t('ui.m_1sweklr') }}</p>
-                <div class="list-tools operations-search aba-record-toolbar"><input name="paymentSearch" type="search" [attr.aria-label]="t('ui.m_nmj0be')" [placeholder]="t('ui.m_hoei9y')" [(ngModel)]="paymentSearch"></div>
+                <div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="paymentSearch" [hasActiveFilter]="paymentSearch.trim() !== ''" (clear)="paymentSearch = ''"><aba-search-field name="paymentSearch" [ariaLabel]="t('ui.m_nmj0be')" [placeholder]="t('ui.m_hoei9y')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="paymentSearch" /></aba-filter-bar></div>
                 <aba-record-table [ariaLabel]="t('ui.m_mxsp4b')" [columns]="paymentTableColumns" [rows]="paymentTableRows" [loading]="paymentLoading && !payments.length" [loadingDescription]="t('ui.m_1kn1f7h')" [emptyTitle]="t('ui.m_1c2srea')" [emptyDescription]="paymentSearch.trim() ? t('ui.m_1igz78g') : t('ui.m_1nttjd')" />
                 @if (paymentsHasMore) { <button class="secondary" type="button" (click)="loadMorePayments()" [disabled]="paymentsLoadingMore">{{ paymentsLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_1olqej1') }}</button> }
               </section>
@@ -1058,8 +1087,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ui.m_nxo405')" [description]="t('ui.m_1dw63nh')" />
                 <form class="inline-form" (ngSubmit)="loadTaxSummary()">
+                  <aba-date-range [showClear]="true" [hasValue]="taxStartDate !== '' || taxEndDate !== ''" [clearLabel]="t('ui.m_1np7zc4')" (clear)="taxStartDate = ''; taxEndDate = ''">
                   <label>{{ t('ui.m_10pndrs') }}<input name="taxStartDate" type="date" [(ngModel)]="taxStartDate"></label>
                   <label>{{ t('ui.m_aulmks') }}<input name="taxEndDate" type="date" [(ngModel)]="taxEndDate"></label>
+                  </aba-date-range>
                   <button class="primary" type="submit" [disabled]="taxLoading">{{ taxLoading ? t('ui.m_1k98007') : t('ui.m_10jsbot') }}</button>
                 </form>
                 @if (taxError) { <aba-state-message kind="error" [description]="taxError" /> }
@@ -1177,7 +1208,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @if (expenseSubmissionUncertain) {
                   <aba-state-message kind="error" [description]="t('ui.m_bv3h04')" [actionLabel]="t('ui.m_r6p4yr')" [actionDisabled]="loading" (action)="checkExpenseSubmissionOutcome()" />
                 }
-                <div class="list-tools operations-search aba-record-toolbar"><input name="expenseSearch" type="search" [attr.aria-label]="t('ui.m_qat44q')" [placeholder]="t('ui.m_34prmq')" [(ngModel)]="expenseSearch"></div>
+                <div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="expenseSearch" [hasActiveFilter]="expenseSearch.trim() !== ''" (clear)="expenseSearch = ''"><aba-search-field name="expenseSearch" [ariaLabel]="t('ui.m_qat44q')" [placeholder]="t('ui.m_34prmq')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="expenseSearch" /></aba-filter-bar></div>
                 <aba-record-table [ariaLabel]="t('ui.m_zyptez')" [columns]="expenseTableColumns" [rows]="expenseTableRows" [loading]="loading && !expenses.length" [loadingDescription]="t('ui.m_luj2e5')" [emptyTitle]="t('ui.m_ia2bhy')" [emptyDescription]="expenseSearch.trim() ? t('ui.m_1ow9n49') : t('ui.m_1xx6js5')" />
               </section>
             }
@@ -1194,9 +1225,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     <article class="metric"><span>{{ t('ui.m_56uiuq') }}</span><strong>{{ dataIntegrityReport.currency_mismatched_allocations.total }}</strong></article>
                     <article class="metric"><span>{{ t('ui.m_15jyanv') }}</span><strong>{{ dataIntegrityReport.customer_mismatched_allocations.total }}</strong></article>
                   </div>
-                  <h3>{{ t('ui.m_h5fuqc') }}</h3>
+                  <aba-section-header [level]="3" [title]="t('ui.m_h5fuqc')" />
                   <aba-record-table [ariaLabel]="t('ui.m_1muvs8z')" [columns]="integrityInvoiceColumns" [rows]="integrityInvoiceRows" [emptyTitle]="t('ui.m_ej8yte')" [emptyDescription]="t('ui.m_ydex7x')" />
-                  <h3>{{ t('ui.m_ord1a3') }}</h3>
+                  <aba-section-header [level]="3" [title]="t('ui.m_ord1a3')" />
                   <aba-record-table [ariaLabel]="t('ui.m_xbtfmu')" [columns]="integrityAllocationColumns" [rows]="integrityAllocationRows" [emptyTitle]="t('ui.m_hrqqij')" [emptyDescription]="t('ui.m_uxsaek')" />
                   <div class="inline-form"><span class="muted">{{ t('ui.m_3dypht') }} {{ dataIntegrityReport.offset }} · {{ t('ui.m_1o0uw0o') }} {{ dataIntegrityReport.limit }}</span><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset > 0 ? dataIntegrityReport.offset - dataIntegrityReport.limit : 0)" [disabled]="integrityLoading || dataIntegrityReport.offset === 0">{{ t('ui.m_14wy3hz') }}</button><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset + dataIntegrityReport.limit)" [disabled]="integrityLoading || dataIntegrityReport.offset + dataIntegrityReport.limit >= maxIntegrityTotal">{{ t('ui.m_thb9eg') }}</button></div>
                 }
@@ -1346,7 +1377,13 @@ export class AppComponent implements OnInit, OnDestroy {
   signedIn = false;
   platformAdminAvailable = false;
   signingUp = false;
-  loading = false;
+  // T18 Slice B: reference-counted loading state. `loading` is a getter over
+  // AbaLoadingStateService: assigning true claims one count, assigning false
+  // releases exactly one count (see the service for the guard/release rules).
+  // Every existing `this.loading = ...` site keeps working unchanged.
+  private readonly loadingState = inject(AbaLoadingStateService);
+  get loading(): boolean { return this.loadingState.isLoading(); }
+  set loading(value: boolean) { if (value) this.loadingState.begin(); else this.loadingState.end(); }
   error = '';
   homeDashboardError = '';
   email = '';
@@ -1457,6 +1494,7 @@ export class AppComponent implements OnInit, OnDestroy {
   suppliersLoading = false;
   purchasesLoading = false;
   recurringLoading = false;
+  showRecurringForm = false;
   operationsError = '';
   operationsErrorTab: OperationsMessageTab | null = null;
   operationsMessage = '';
@@ -1551,6 +1589,7 @@ export class AppComponent implements OnInit, OnDestroy {
   paymentIdempotencyKey = '';
   paymentLoading = false;
   paymentRetryPending = false;
+  showPaymentForm = false;
   private pendingPaymentRetrySnapshot: PaymentRetrySnapshot | null = null;
   private readonly paymentRetryVault = new PaymentRetryVault();
   chatDraft = '';
@@ -1773,6 +1812,35 @@ export class AppComponent implements OnInit, OnDestroy {
   setInvoiceStatusFilter(status: 'all' | 'draft' | 'issued' | 'void'): void {
     this.invoiceStatusFilter = status;
     this.invoicePageIndex = 0;
+  }
+
+  // T18 Slice F (2026-11-21): the filter bar's clear action resets every
+  // invoice list filter (search, status, customer) and the page index.
+  clearInvoiceFilters(): void {
+    this.invoiceSearch = '';
+    this.invoiceStatusFilter = 'all';
+    this.invoiceFilterCustomerId = '';
+    this.invoicePageIndex = 0;
+  }
+
+  // T18 Slice F (2026-11-21): the text the filter bar shows for the current
+  // invoice filters — status (unless "all"), search term, customer name —
+  // using the same labels as the status chips. Empty when nothing is set.
+  invoiceFilterSummary(): string {
+    const statusKeys: Record<string, string> = {
+      all: 'ui.m_1cyu9lp',
+      draft: 'ui.m_1vbs2bw',
+      issued: 'ui.m_7bugfd',
+      void: 'ui.m_1a2uk7t',
+    };
+    const parts: string[] = [];
+    if (this.invoiceStatusFilter !== 'all') parts.push(this.t(statusKeys[this.invoiceStatusFilter]));
+    if (this.invoiceSearch.trim()) parts.push(this.invoiceSearch.trim());
+    if (this.invoiceFilterCustomerId) {
+      const customer = this.customers.find((item) => item.id === this.invoiceFilterCustomerId);
+      if (customer) parts.push(customer.name);
+    }
+    return parts.join(' · ');
   }
 
   async openInvoiceDetails(invoice: Invoice, event?: Event): Promise<void> {
@@ -2349,11 +2417,17 @@ export class AppComponent implements OnInit, OnDestroy {
       else this.initialRouteApplied = false;
       this.error = this.message(error);
     } finally {
-      if (requestVersion === this.businessListRequestVersion) this.loading = false;
+      // Slice B: release this operation's own count; the guard above still protects the data writes.
+      this.loading = false;
     }
   }
 
   private clearWorkspaceData(): void {
+    // T18 Slice B: this invalidates every in-flight request guard below, so
+    // those operations' results are discarded — release their loading counts
+    // too, or a superseded operation whose guarded finally never fires would
+    // stick the loader on.
+    this.loadingState.reset();
     this.closeInvoiceDetails(false);
     this.invoiceSaveGuard.invalidate();
     this.invoiceEditRequestGuard.invalidate();
@@ -2626,6 +2700,7 @@ export class AppComponent implements OnInit, OnDestroy {
     if (savedPaymentRetry) {
       this.pendingPaymentRetrySnapshot = savedPaymentRetry;
       this.paymentRetryPending = true;
+      this.showPaymentForm = true;
       this.paymentIdempotencyKey = savedPaymentRetry.payload.idempotency_key;
     }
     this.loading = true;
@@ -2657,7 +2732,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.loading = false;
       }
     } finally {
-      if (this.workspaceLoadGuard.isLatest(loadVersion)) this.loading = false;
+      // Slice B: release this operation's own count; the guard above still protects the data writes.
+      this.loading = false;
     }
   }
 
@@ -3090,6 +3166,7 @@ export class AppComponent implements OnInit, OnDestroy {
     const keys: Record<string, string> = {
       invoice_issued: 'app.customerStatementEvent.invoice_issued',
       payment_allocation: 'app.customerStatementEvent.payment_allocation',
+      payment_received: 'app.customerStatementEvent.payment_received',
       currency_mismatch_allocation: 'app.customerStatementEvent.currency_mismatch_allocation',
     };
     return keys[eventType] ? this.t(keys[eventType]) : eventType;
@@ -3822,6 +3899,17 @@ export class AppComponent implements OnInit, OnDestroy {
     return Object.entries(this.customerStatement?.balances_by_currency || {}).map(([currency, balance]) => ({ currency, balance }));
   }
 
+  /* T18 Slice U02 (2026-11-21): the statement starts from the top. The
+   * statement panel renders below the customer list, so opening it leaves it
+   * below the fold; scroll it to the top of the viewport once the page has
+   * loaded and the panel has rendered. Only the open paths scroll — paging
+   * and filter changes inside the statement do not. */
+  private scrollStatementIntoView(): void {
+    requestAnimationFrame(() => {
+      document.querySelector('.statement-panel')?.scrollIntoView({ block: 'start' });
+    });
+  }
+
   async openCustomerStatementById(customerId: string): Promise<void> {
     const business = this.business;
     const userId = this.currentAuthUid;
@@ -3855,6 +3943,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.statementToDate = '';
       this.statementLoading = false;
       await this.loadCustomerStatementPage(0);
+      this.scrollStatementIntoView();
     } catch (error) {
       if (!isCurrent()) return;
       this.statementError = this.message(error);
@@ -3869,6 +3958,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.statementToDate = '';
     this.statementVisible = true;
     await this.loadCustomerStatementPage(0);
+    this.scrollStatementIntoView();
   }
 
   async applyCustomerStatementFilters(): Promise<void> {
@@ -3970,7 +4060,8 @@ export class AppComponent implements OnInit, OnDestroy {
     } catch (error) {
       if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      // Slice B: release this operation's own count; the guard above still protects the data writes.
+      this.loading = false;
     }
   }
 
@@ -4446,7 +4537,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.invoiceMessage = this.t('ui.m_1y7z87x');
       }
     } finally {
-      if (isCurrent()) this.loading = false;
+      // Slice B: release this operation's own count; the guard above still protects the data writes.
+      this.loading = false;
     }
   }
 
@@ -4620,7 +4712,8 @@ export class AppComponent implements OnInit, OnDestroy {
     } catch (error) {
       if (isCurrent()) this.error = this.message(error);
     } finally {
-      if (isCurrent()) this.loading = false;
+      // Slice B: release this operation's own count; the guard above still protects the data writes.
+      this.loading = false;
     }
   }
 
@@ -4682,7 +4775,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.invoiceMessage = this.t('ui.m_cbiq5f');
       }
     } finally {
-      if (isCurrent()) this.loading = false;
+      // Slice B: release this operation's own count; the guard above still protects the data writes.
+      this.loading = false;
     }
   }
 
@@ -4772,7 +4866,8 @@ export class AppComponent implements OnInit, OnDestroy {
         this.error = this.t('ui.m_1womw08') + ' ' + this.message(error);
       }
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      // Slice B: release this operation's own count; the guard above still protects the data writes.
+      this.loading = false;
     }
   }
 
@@ -4794,7 +4889,8 @@ export class AppComponent implements OnInit, OnDestroy {
     } catch (error) {
       if (this.business?.id === businessId) this.error = this.message(error);
     } finally {
-      if (this.business?.id === businessId) this.loading = false;
+      // Slice B: release this operation's own count; the guard above still protects the data writes.
+      this.loading = false;
     }
   }
 

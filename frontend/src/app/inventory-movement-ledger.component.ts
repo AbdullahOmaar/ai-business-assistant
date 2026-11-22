@@ -6,6 +6,7 @@ import type {
   StockMovementType as InventoryMovementType,
 } from './api.service';
 import { LocalizationService } from './localization.service';
+import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 
 export interface InventoryMovementQuery {
@@ -27,6 +28,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
   selector: 'aba-inventory-movement-ledger',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [AbaFilterBarComponent],
   template: `
     <section class="inventory-ledger" [attr.dir]="direction()" [attr.aria-label]="copy().title">
       <header class="inventory-ledger__header">
@@ -38,7 +40,8 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
         <button type="button" class="inventory-ledger__refresh" (click)="refresh()" [disabled]="loading()">{{ copy().refresh }}</button>
       </header>
 
-      <div class="inventory-ledger__filters" role="group" [attr.aria-label]="copy().filters">
+      <aba-filter-bar variant="selects" [filterLabel]="copy().filters" [clearLabel]="copy().clearFilters" [filterSummary]="activeFilterSummary()" [hasActiveFilter]="hasActiveFilters()" (clear)="clearFilters()">
+      <div class="inventory-ledger__filters" role="group" [attr.aria-label]="copy().filters" filterExtras>
         <label>
           <span>{{ copy().product }}</span>
           <select [value]="productId()" (change)="setProduct(readValue($event))" [disabled]="loading()">
@@ -69,6 +72,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
         </label>
         }
       </div>
+      </aba-filter-bar>
 
       @if (error()) {
         <div class="inventory-ledger__state inventory-ledger__state--error" role="alert">
@@ -143,7 +147,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
     :host{display:block;min-width:0}
     .inventory-ledger{display:grid;gap:var(--aiba-space-4,16px);min-width:0;color:var(--aiba-ink,#172033);font-family:var(--aiba-font-sans,system-ui,sans-serif)}
     .inventory-ledger__header{display:flex;align-items:center;justify-content:space-between;gap:12px}
-    .inventory-ledger__header h2{margin:3px 0;font-size:19px}
+    .inventory-ledger__header h2{margin:3px 0;font-size:19px;overflow-wrap:normal}
     .inventory-ledger__eyebrow{margin:0;color:var(--aiba-brand,#0f766e);font-size:11px;font-weight:800}
     .inventory-ledger__muted{color:var(--aiba-muted,#64748b);font-size:12px}
     .inventory-ledger__filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--aiba-space-3,12px);padding:var(--aiba-space-3,12px);border:1px solid var(--aiba-line,#e2e8f0);border-radius:var(--aiba-radius-card,16px);background:var(--aiba-surface-tint,#f6fafb)}
@@ -160,9 +164,9 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
     .inventory-ledger__mobile-list{display:grid;gap:9px}
     .inventory-ledger__card{display:grid;gap:9px;padding:var(--aiba-space-4,16px);border:1px solid var(--aiba-line,#e2e8f0);border-radius:var(--aiba-radius-card,16px);background:var(--aiba-surface,#fff);box-shadow:var(--aiba-shadow-card,0 2px 8px rgb(15 23 42 / 4%));min-width:0;overflow-wrap:anywhere}
     .inventory-ledger__card-top,.inventory-ledger__meta,.inventory-ledger__footer{display:flex;align-items:center;justify-content:space-between;gap:8px;min-width:0}
-    .inventory-ledger__card-top strong{overflow-wrap:anywhere}
-    .inventory-ledger__type{padding:4px 8px;border-radius:999px;background:var(--aiba-soft,#f1f5f9);font-size:11px}
-    .inventory-ledger__quantity{font-size:20px;font-weight:850;font-variant-numeric:tabular-nums;direction:ltr;text-align:start;unicode-bidi:isolate}.inventory-ledger__table-quantity{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
+    .inventory-ledger__card-top strong{overflow-wrap:normal}
+    .inventory-ledger__type{padding:4px 8px;border-radius:999px;background:var(--aiba-soft,#f1f5f9);font-size:11px;white-space:nowrap}
+    .inventory-ledger__quantity{font-size:20px;font-weight:850;font-variant-numeric:tabular-nums;direction:ltr;text-align:start;unicode-bidi:isolate;white-space:nowrap}.inventory-ledger__table-quantity{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate}
     .inventory-ledger__quantity small{font-size:11px;font-weight:600;color:var(--aiba-muted,#64748b)}
     .inventory-ledger__quantity--negative{color:var(--aiba-danger,#b91c1c)}
     .inventory-ledger__quantity--positive{color:var(--aiba-success,#15803d)}
@@ -182,6 +186,18 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
     @media(max-width:760px){.inventory-ledger__filters{gap:10px;padding:14px}.inventory-ledger__card{gap:11px;padding:16px;border-radius:16px}.inventory-ledger__quantity{font-size:22px}.inventory-ledger__refresh,.inventory-ledger__footer button{min-height:48px}.inventory-ledger__meta{font-size:12px}}
     @media(prefers-reduced-motion:reduce){.inventory-ledger *{scroll-behavior:auto!important;animation:none!important;transition:none!important}}
     @media(forced-colors:active){.inventory-ledger button,.inventory-ledger select,.inventory-ledger__card{border:1px solid CanvasText}.inventory-ledger :is(button,select,[tabindex]):focus-visible{outline-color:Highlight}.inventory-ledger__quantity--negative,.inventory-ledger__quantity--positive{color:CanvasText}}
+    /* T18 Slice U03 (2026-11-21): below 380px stack the ledger header (title
+     * above Refresh, full width) so the heading gets the full card width and
+     * wraps on words; let the card-top wrap so the type badge drops below the
+     * name instead of squeezing vertical; shrink the quantity to 14px so the
+     * longest quantity+unit fits on one nowrap line at 195px. Placed last so
+     * it wins over the ≤760px/≤520px rules by source order. */
+    @media(max-width:380px){
+      .inventory-ledger__header{flex-direction:column;align-items:flex-start}
+      .inventory-ledger__header .inventory-ledger__refresh{width:100%}
+      .inventory-ledger__card-top{flex-wrap:wrap}
+      .inventory-ledger__quantity{font-size:14px}
+    }
   `],
 })
 export class InventoryMovementLedgerComponent {
@@ -240,6 +256,9 @@ export class InventoryMovementLedgerComponent {
       date: this.t('date'), quantity: this.t('quantity'), reason: this.t('reason'),
       reference: this.t('reference'), shown: this.t('shown'), loadingMore: this.t('loadingMore'),
       loadMore: this.t('loadMore'),
+      // T18 Slice F (2026-11-21): the filter bar's clear action reuses the
+      // shared "Clear filters" label; there is no inventoryLedger clear key.
+      clearFilters: this.localization.translate('ui.m_1np7zc4'),
     };
   }
 
@@ -258,6 +277,33 @@ export class InventoryMovementLedgerComponent {
   setMovementType(value: InventoryMovementType | ''): void { this.movementType.set(value); void this.load(true); }
   setMovementTypeFromEvent(event: Event): void { this.setMovementType(this.readValue(event) as InventoryMovementType | ''); }
   setReferenceType(value: string): void { this.referenceType.set(value); void this.load(true); }
+
+  // T18 Slice F (2026-11-21): the filter bar's current-filter summary and
+  // clear action for the inventory 3-select variant. The summary joins the
+  // selected product / movement type / reference type labels; empty when
+  // nothing is selected. Clearing resets all three selects and reloads once.
+  hasActiveFilters(): boolean {
+    return this.productId() !== '' || this.movementType() !== '' || this.referenceType() !== '';
+  }
+
+  activeFilterSummary(): string {
+    const parts: string[] = [];
+    if (this.productId()) {
+      const product = this.products().find((item) => item.id === this.productId());
+      if (product) parts.push(product.name);
+    }
+    const movementType = this.movementType();
+    if (movementType) parts.push(this.typeLabel(movementType));
+    if (this.referenceType()) parts.push(this.referenceTypeLabel(this.referenceType()));
+    return parts.join(' · ');
+  }
+
+  clearFilters(): void {
+    this.productId.set('');
+    this.movementType.set('');
+    this.referenceType.set('');
+    void this.load(true);
+  }
   refresh(): void { void this.load(true); }
   retry(): void { void this.load(true); }
 

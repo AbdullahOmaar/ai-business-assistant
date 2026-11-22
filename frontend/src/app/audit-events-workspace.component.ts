@@ -99,7 +99,7 @@ import { AbaStateMessageComponent } from './shared/ui/aba-state-message.componen
     .audit-panel{display:grid;gap:16px}
     .audit-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:var(--aba-color-surface-subtle,#f8fafc);border:1px solid var(--aba-color-border,#edf0f5);border-radius:11px}
     .audit-filters label{display:grid;gap:7px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-secondary,#374151)}
-    .audit-filters select{width:100%;min-width:0;padding:11px 12px;border:1px solid var(--aba-color-border,#d1d5db);border-radius:9px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#111827);font:inherit}
+    .audit-filters select{width:100%;min-width:0;padding:11px 12px;border:1px solid var(--aba-color-border,#d1d5db);border-radius:11px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#111827);font:inherit}
     .count{font-size:10px;font-weight:700;color:var(--aba-color-primary,#0f766e);background:var(--aba-color-primary-soft,#ecfdf5);padding:7px 9px;border-radius:999px;white-space:nowrap}
     .audit-pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--aba-color-text-tertiary,#6b7280);font-size:12px}
     .pagination-actions{display:flex;gap:8px;flex-wrap:wrap}

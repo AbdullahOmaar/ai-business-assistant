@@ -50,6 +50,42 @@ test('primary button white labels meet WCAG AA contrast at every gradient stop',
   for (const stop of [strong, brand]) assert.ok(contrast(stop) >= 4.5, stop + ' must provide at least 4.5:1 contrast with white');
 });
 
+// T18 Slice D (2026-11-21): the .primary/.secondary contract is one
+// definition. The design-system.css `:root body .shell` rules are the
+// contract; the app.component.css base carries the same declarations (same
+// min-height, padding, radius, gradient, contrast, disabled opacity, hover
+// lift) so the two cannot fight. The old competing base (9px radius, 10px
+// 13px padding, flat #0f766e fill, 12px/700 type, .55 disabled opacity) is
+// gone. The focus-visible base is intentionally NOT aligned here: it is
+// pinned by design-tokens.spec.ts as the --aba-* focus-token usage.
+test('button contract is one definition: the shell base matches the design-system contract', () => {
+  const secondary = app.match(/\.secondary\{([^}]*)\}/)?.[1] ?? '';
+  const primary = app.match(/\.primary\{([^}]*)\}/)?.[1] ?? '';
+  assert.ok(secondary.length > 0, 'missing .secondary base in app.component.css');
+  assert.ok(primary.length > 0, 'missing .primary base in app.component.css');
+  for (const [name, block] of [['secondary', secondary], ['primary', primary]] as const) {
+    assert.match(block, /min-height:\s*var\(--aiba-control-md,44px\)/, name + ' min-height must be the 44px contract');
+    assert.match(block, /border-radius:\s*var\(--aiba-radius-control,11px\)/, name + ' radius must be the 11px contract');
+    assert.match(block, /font-size:\s*var\(--aiba-text-sm,13px\)/, name + ' type must be the 13px contract');
+  }
+  assert.match(secondary, /padding:\s*9px 14px/);
+  assert.match(secondary, /border:\s*1px solid var\(--aiba-line-strong,#cbd5e1\)/);
+  assert.match(secondary, /background:\s*var\(--aiba-surface,#fff\)/);
+  assert.match(secondary, /color:\s*var\(--aiba-ink-soft,#344256\)/);
+  assert.match(secondary, /font-weight:\s*650/);
+  assert.match(primary, /padding:\s*10px 17px/);
+  assert.match(primary, /border:\s*1px solid var\(--aiba-brand,#0f766e\)/);
+  assert.match(primary, /background:\s*linear-gradient\(135deg,var\(--aiba-brand-strong,#115e59\) 0%,var\(--aiba-brand,#0f766e\) 100%\)/);
+  assert.match(primary, /color:\s*#fff/);
+  assert.match(primary, /font-weight:\s*720/);
+  assert.match(app, /\.secondary:hover:not\(:disabled\)\{border-color:#94a3b8;background:var\(--aba-color-surface-subtle,#f8fafc\);box-shadow:0 2px 7px rgb\(15 23 42 \/ 5%\)\}/);
+  assert.match(app, /\.primary:hover:not\(:disabled\)\{filter:saturate\(1\.08\) brightness\(\.98\);box-shadow:0 6px 16px rgb\(15 118 110 \/ 20%\);transform:translateY\(-1px\)\}/);
+  assert.ok(app.includes('button:disabled{opacity:.62;cursor:not-allowed}'), 'disabled opacity must be the .62 contract');
+  assert.ok(!app.includes('.secondary,.primary{border-radius:9px'), 'old combined competing base must be gone');
+  assert.ok(!app.includes('.primary:hover{background:#115e59}'), 'old flat primary hover must be gone');
+  assert.ok(!app.includes('button:disabled{opacity:.55'), 'old .55 disabled opacity must be gone');
+});
+
 test('KPI card surface is drawn once by the inner component, not the Angular host', () => {
   const hostBlocks = [...css.matchAll(/([^{}]*metric-grid > aba-metric-card[^{}]*)\{([^{}]*)\}/g)]
     .filter(([, selector]) => !selector.includes('.aba-metric-card'));
@@ -69,6 +105,37 @@ test('public authentication screens fit the visible viewport without redundant v
   assert.ok(app.includes('class="shell" [class.auth-shell]="!signedIn"'));
   assert.ok(app.includes('.shell.auth-shell{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;padding-block:24px}'));
   assert.ok(app.includes('.shell.auth-shell>.auth-card,.shell.auth-shell>.setup-card{margin:0 auto}'));
+});
+
+test('topbar and mobile headings stay complete: long titles wrap, never truncate (owner correction 2026-11-21)', () => {
+  // Slice A forced long titles onto one line; the owner requires the opposite:
+  // a long title wraps and stays complete, with no ellipsis and no nowrap.
+  const headingRule = css.match(/:root body \.shell \.topbar h1,[\s\S]*?\{([\s\S]*?)\}/)?.[1] ?? '';
+  assert.match(headingRule, /font-family:\s*var\(--aiba-font-heading\)/);
+  assert.match(headingRule, /white-space:\s*normal;/);
+  assert.match(headingRule, /overflow:\s*visible;/);
+  assert.match(headingRule, /text-overflow:\s*clip;/);
+  assert.doesNotMatch(headingRule, /text-overflow:\s*ellipsis/);
+  assert.doesNotMatch(headingRule, /white-space:\s*nowrap/);
+  assert.doesNotMatch(css, /Long titles shrink via the viewport term/);
+  const topbarRule = app.match(/\.topbar h1\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(topbarRule, /white-space:normal/);
+  assert.match(topbarRule, /text-overflow:clip/);
+  assert.doesNotMatch(app, /\.topbar h1\{[^}]*text-overflow:ellipsis/);
+  // Setup/auth card h1 (2026-11-21 regression, superseded 2026-11-21 by the
+  // U01 follow-up): at 195px (200% zoom) the long English word "workspace"
+  // in the 28px Black heading font is wider than the ~119px content box and
+  // overflowed the document. The b558cbd fix let long words break anywhere,
+  // which stopped the overflow but split words mid-word ("works pace") —
+  // the owner does not accept mid-word breaks. The replacement keeps whole
+  // words (`overflow-wrap:normal`) and shrinks the size instead: the clamp
+  // minimum 17px fits the longest word ("workspace", 150.88px at 28px ->
+  // 91.6px at 17px; the startup-failed heading's "configuration", 191.11px
+  // at 28px -> 115.8px at 17px) inside the 119px box at 195px.
+  const setupH1Rule = app.match(/\.setup-card h1,\.auth-card h1\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(setupH1Rule, /font-size:clamp\(17px,8vw,28px\)/);
+  assert.match(setupH1Rule, /overflow-wrap:normal/);
+  assert.doesNotMatch(setupH1Rule, /overflow-wrap:anywhere/);
 });
 
 test('the authentication form is named by its visible localized heading', () => {
@@ -137,8 +204,124 @@ test('Home KPIs and module shortcuts keep two readable columns at narrow phone w
   const kpiMobileRule = css.slice(css.indexOf('/* At the narrowest supported phone width'));
   const shortcutMobileRule = css.slice(css.indexOf('/* Keep the Home action and module grids'));
   assert.match(kpiMobileRule, /\.metric-grid\s*\{\s*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/);
-  assert.match(kpiMobileRule, /aba-metric-card strong\s*\{\s*font-size:\s*17px/);
+  // T18 Slice U01 follow-up (2026-11-21): 14px, not 17px — a 17px amount
+  // ("548525.00 EGP", 115px) does not fit the 2-column card at 320-380px
+  // (box 125-149px) on the owner's wider font rendering, which split it at
+  // 390px; 14px (~95px) fits with margin. The amount stays nowrap (see the
+  // base amount rule). Below 300px the grid goes single-column (asserted in
+  // the period-header test) because no readable size fits two columns there.
+  assert.match(kpiMobileRule, /aba-metric-card strong\s*\{\s*font-size:\s*14px/);
   assert.match(shortcutMobileRule, /\.home-shortcut-list,\s*:root body \.shell \.module-directory-grid\s*\{\s*grid-template-columns:\s*repeat\(2/);
+});
+
+// T18 Slice U01 (2026-11-21): the period hero is a small header (compact
+// padding and title) and no single-column KPI rule may contradict the
+// two-column phone contract — except the U01 follow-up ≤300px exception
+// below, where a 13-char amount cannot fit a 2-column card at any readable
+// size (see the ≤300px block comment for the measured widths).
+test('Home period header stays small and KPI cards keep two flexible columns', () => {
+  const heroStart = css.indexOf(':root body .shell .dashboard-period {');
+  assert.ok(heroStart >= 0, 'the Home period hero rule must exist');
+  const hero = css.slice(heroStart, css.indexOf('}', heroStart));
+  assert.match(hero, /padding:\s*clamp\(14px, 2vw, 20px\)/);
+  const titleStart = css.indexOf(':root body .shell .dashboard-period__title {');
+  assert.ok(titleStart >= 0, 'the Home period title rule must exist');
+  const title = css.slice(titleStart, css.indexOf('}', titleStart));
+  assert.match(title, /font-size:\s*clamp\(18px, 2vw, 22px\)/);
+  // The ≤380px KPI grid stays two columns; the only single-column KPI rule
+  // is the ≤300px amount-fit exception (a 2-column card is ~64px wide at
+  // 195px while "548525.00 EGP" needs 95px at the 14px minimum). The slice
+  // ends at the ≤300px exception block so the exception itself is not
+  // counted against the ≤380px contract.
+  const narrowBlock = css.slice(css.indexOf('/* At the narrowest supported phone width'), css.indexOf('/* T18 Slice U01 follow-up (2026-11-21): below 300px the KPI grid is a'));
+  assert.doesNotMatch(narrowBlock, /\.metric-grid\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+    'the ≤380px KPI grid stays two columns');
+  assert.match(css, /@media \(max-width: 300px\)[\s\S]*?\.metric-grid\s*\{\s*grid-template-columns:\s*minmax\(0,\s*1fr\);/,
+    'below 300px the KPI grid is a single column so a 13-char amount fits');
+  // Hero title wraps on words at narrow widths: below 380px the period pill
+  // ("Last 30 days", nowrap, ~102px) squeezed the title to ~42px at 195px
+  // and "Business" broke mid-word; the heading now stacks so the title
+  // takes the full row.
+  assert.match(css, /@media \(max-width: 380px\)[\s\S]*?\.dashboard-period__heading\s*\{\s*flex-wrap:\s*wrap/);
+  assert.match(css, /@media \(max-width: 380px\)[\s\S]*?\.dashboard-period__title\s*\{\s*flex:\s*1 1 100%/);
+  const heroTitleRule = app.match(/\.dashboard-period__title\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(heroTitleRule, /overflow-wrap:normal/);
+  assert.doesNotMatch(heroTitleRule, /overflow-wrap:anywhere/);
+  // KPI amounts never split: the base amount rule is nowrap with a
+  // viewport clamp sized from the measured "548525.00 EGP" width.
+  const amountRule = css.match(/:root body \.shell \.metric-grid \.metric strong,[\s\S]*?\{([\s\S]*?)\}/)?.[1] ?? '';
+  assert.match(amountRule, /font-size:\s*clamp\(14px, 3\.8vw, 18px\)/);
+  assert.match(amountRule, /white-space:\s*nowrap/);
+  // The global projected-slot rule in styles.css is the one that actually
+  // set the computed `overflow-wrap:anywhere` on the amount (the component
+  // and design-system rules only set the size); it is nowrap now.
+  const globalAmountRule = globalStyles.match(/aba-metric-card strong \{([\s\S]*?)\}/)?.[1] ?? '';
+  assert.match(globalAmountRule, /white-space:\s*nowrap/);
+  assert.doesNotMatch(globalAmountRule, /overflow-wrap:anywhere/);
+});
+
+// T18 Slice U02 date fix (2026-11-21): the ISO period dates split at the
+// hyphens at 195/220px in both EN and AR ("2026-11-" / "11"). The date
+// values are the <bdi dir="ltr"> elements inside .dashboard-period__details;
+// each date stays on one line and the line breaks only at the spaces between
+// "From", the dates and "to". NEW assertion (no old assertion — the dates
+// had no nowrap rule before this fix).
+test('Home period ISO dates stay unbroken at narrow widths', () => {
+  const dateRule = css.match(/:root body \.shell \.dashboard-period__details bdi\[dir="ltr"\] \{([\s\S]*?)\}/)?.[1] ?? '';
+  assert.match(dateRule, /white-space:\s*nowrap/);
+  assert.match(dateRule, /overflow-wrap:\s*normal/);
+  assert.doesNotMatch(dateRule, /overflow-wrap:anywhere/);
+});
+
+// U02 follow-up (2026-11-21): at <=220px the native date inputs in a
+// date-range row are too narrow for "mm/dd/yyyy" at the 16px mobile size —
+// the calendar icon crowds the text (AR clips a letter) on wider real-Chrome
+// rendering. The inputs get a smaller type and tighter inline padding so the
+// text clears the icon in both languages. NEW assertions (no old assertions —
+// the date inputs had no <=220px rule before this fix).
+test('date-range date inputs keep clearance from the calendar icon at narrow widths', () => {
+  assert.match(css, /@media\s*\(max-width:\s*220px\)[\s\S]*?aba-date-range \.aba-date-range__fields > label input\[type="date"\][\s\S]*?font-size:\s*13px !important/);
+  assert.match(css, /aba-date-range \.aba-date-range__fields > label input\[type="datetime-local"\][\s\S]*?font-size:\s*13px !important/);
+  assert.match(css, /aba-date-range \.aba-date-range__fields > label input\[type="date"\][\s\S]*?padding-inline:\s*8px !important/);
+});
+
+// T18 U06 (2026-11-21): the expense form's datetime-local shows only the
+// date at 195/220px — the time segment is cut ("11/21/2026, 09:") at the 16px
+// mobile size. Same treatment as the U02 date-range fix above, one step
+// smaller: 13px still left the final "M" of "PM" cut at 220px in EN, and 12px
+// still left it cut in AR (the AR field is 6px narrower), so the type is 11px
+// with the same 8px inline padding, and date + time clear the calendar icon
+// at 220px in both languages. NEW assertions (no old assertions — the expense
+// date input had no <=220px rule before this fix).
+test('expense datetime-local input keeps date and time visible at narrow widths', () => {
+  assert.match(css, /@media\s*\(max-width:\s*220px\)[\s\S]*?form\.expense-form input\[name="expenseDate"\][\s\S]*?font-size:\s*11px !important/);
+  assert.match(css, /form\.expense-form input\[name="expenseDate"\][\s\S]*?padding-inline:\s*8px !important/);
+});
+
+// T18 U11 (2026-11-22): the recurring form's datetime-local shows only the
+// date at 195px ("11/22/2026") and a truncated time at 220px ("11/22/2026,
+// 1") at the 16px mobile size — the same class as the U06 expense fix above,
+// so the same 11px + 8px treatment. NEW assertions (no old assertions — the
+// recurring next-run input had no <=220px rule before this fix).
+test('recurring datetime-local input keeps date and time visible at narrow widths', () => {
+  assert.match(css, /@media\s*\(max-width:\s*220px\)[\s\S]*?input\[name="recurringNextRunAt"\][\s\S]*?font-size:\s*11px !important/);
+  assert.match(css, /input\[name="recurringNextRunAt"\][\s\S]*?padding-inline:\s*8px !important/);
+});
+
+// Narrow-input fix (2026-11-22): the shared search field's magnifier
+// overlapped the first ~19px of the placeholder/text at every width — the
+// Slice I base input rule (five :not()s, (0,7,2)) beat the component's own
+// 48px/42px padding, so the input computed 13px/13px. design-system.css
+// restores the component's 48px/42px values with !important (same reason as
+// the U02/U06 overrides of this base rule). At ≤220px placeholders render
+// at 11px so the form placeholders fit their fields; the search placeholders
+// are shortened by the component's narrow placeholder instead. NEW assertions
+// (no old assertions — the search input had no override and placeholders had
+// no ≤220px font-size before this fix).
+test('shared search field keeps icon/text clearance and placeholders fit at narrow widths', () => {
+  assert.match(css, /:root body \.shell aba-search-field \.aba-search-field input[\s\S]*?padding-inline-start:\s*48px !important/);
+  assert.match(css, /:root body \.shell aba-search-field \.aba-search-field input[\s\S]*?padding-inline-end:\s*42px !important/);
+  assert.match(css, /@media\s*\(max-width:\s*220px\)[\s\S]*?:root body \.shell input::placeholder,[\s\S]*?:root body \.shell textarea::placeholder[\s\S]*?font-size:\s*11px;/);
 });
 
 
@@ -198,4 +381,14 @@ test('tablet workspace navigation uses a compact rail without removing accessibl
   assert.match(sidebarMarkup, /\[attr\.aria-label\]="t\(module\.titleKey\)"/);
   assert.match(sidebarMarkup, /\[attr\.title\]="t\(module\.titleKey\)"/);
   assert.match(sidebarMarkup, /\(click\)="setTab\(module\.tab\)"/);
+});
+
+
+// T18 Slice U02 (2026-11-21): the customer tools carry icons inline with
+// their labels (Export CSV button, CSV-import disclosure).
+test('customer export and import tools lay their icons inline with the label', () => {
+  assert.match(css, /:root body \.shell \.customers-tool\{display:inline-flex;align-items:center;gap:7px\}/);
+  assert.match(css, /:root body \.shell \.customers-tool aba-icon\{width:16px;height:16px\}/);
+  assert.match(css, /:root body \.shell details\.aba-record-secondary\.csv-disclosure>summary>span\{display:inline-flex;align-items:center;gap:7px;min-width:0\}/);
+  assert.match(css, /:root body \.shell details\.aba-record-secondary\.csv-disclosure>summary aba-icon\{width:16px;height:16px\}/);
 });

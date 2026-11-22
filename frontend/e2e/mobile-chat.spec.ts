@@ -440,7 +440,15 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
           .map(element => Number.parseFloat(getComputedStyle(element).fontSize)),
         sectionDescriptionFontSizes: Array.from(document.querySelectorAll('.aba-section-header p'))
           .map(element => Number.parseFloat(getComputedStyle(element).fontSize)),
-        quickAccessColumns: columns('.home-shortcut-list'),
+        // T18 Slice U01 (2026-11-21): the quick-access launcher is hidden on
+        // mobile — it duplicates the bottom dock and the module directory.
+        // A display:none grid has no laid-out tracks, so its computed
+        // gridTemplateColumns stays the unresolved repeat() text and cannot
+        // be column-counted; assert the removal itself instead. The
+        // two-column quick-access contract applies where the launcher is
+        // visible (desktop). The module directory keeps its own check below.
+        launcherDisplay: document.querySelector('.module-launcher')
+          ? getComputedStyle(document.querySelector('.module-launcher')!).display : 'missing',
         moduleColumns: columns('.module-directory-grid'),
         headerControlHeights: Array.from(document.querySelectorAll(
           '.mobile-app-header .brand-button, .mobile-app-header .assistant-shortcut, .mobile-app-header .icon-button, .mobile-app-header .profile-trigger'
@@ -468,7 +476,7 @@ test('mobile Home layout and chat remain usable across viewport and keyboard cha
     for (const fontSize of layout.workspaceNameFontSizes) expect(fontSize).toBeGreaterThanOrEqual(12);
     for (const fontSize of layout.quickAccessDescriptionFontSizes) expect(fontSize).toBeGreaterThanOrEqual(12);
     for (const fontSize of layout.sectionDescriptionFontSizes) expect(fontSize).toBeGreaterThanOrEqual(12);
-    expect(layout.quickAccessColumns, `Quick access must use two columns at ${width}px`).toBe(2);
+    expect(layout.launcherDisplay, 'T18 Slice U01 removed the duplicate mobile quick-access launcher').toBe('none');
     expect(layout.moduleColumns, `Module directory must use two columns at ${width}px`).toBe(2);
     expect(layout.headerControlHeights).toHaveLength(4);
     expect(layout.dockItemHeights).toHaveLength(4);
@@ -1518,6 +1526,15 @@ test('STAFF mobile navigation hides owner-only modules and does not request paym
   await expect(menu).toBeVisible();
   await expect(keyboardProductAction).toBeVisible();
   await expect(keyboardProductAction).toHaveCSS('pointer-events', 'auto');
+  // The More sheet enters with a 190ms animation (aiba-motion-menu-enter:
+  // translateY(7px) scale(.99) to identity). getBoundingClientRect includes
+  // the in-flight transform, so a measurement taken before it settles reads a
+  // hair low (observed bottomGap 387.97 vs >= 388). Wait for the sheet's
+  // finite animations to finish so the measurement is deterministic. Only
+  // finite animations are awaited (infinite ones are excluded, so this cannot
+  // hang); under prefers-reduced-motion the menu has animation: none, so
+  // getAnimations() is empty and this is a no-op. Assertions unchanged.
+  await menu.evaluate(el => Promise.all(el.getAnimations().filter(a => a.effect?.getComputedTiming().iterations !== Infinity).map(a => a.finished)));
   const keyboardMenuLayout = await menu.evaluate(element => {
     const rect = element.getBoundingClientRect();
     return {

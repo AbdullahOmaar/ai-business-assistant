@@ -226,13 +226,19 @@ button, input, select, textarea { font-family: inherit; }
   color: var(--aba-color-text-tertiary);
 }
 
-/* Projected value slots for the shared KPI card component. */
+/* Projected value slots for the shared KPI card component.
+ * T18 Slice U01 follow-up (2026-11-21): the amount value must stay on one
+ * line — `overflow-wrap:anywhere` here split "548525.00 EGP" inside the
+ * number at 220px and 390px (owner render). This global rule is the one
+ * that actually set the computed `overflow-wrap:anywhere` on the amount
+ * (the component and design-system rules only set the size). The amount is
+ * nowrap now; the size is governed by the design-system clamp. */
 aba-metric-card strong {
   display: block;
   font-size: var(--aba-font-size-xl);
   font-weight: var(--aba-font-weight-bold);
   letter-spacing: var(--aba-letter-spacing-tight);
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 aba-metric-card small {
   display: block;
@@ -322,13 +328,18 @@ aba-metric-card small {
   background: var(--aba-color-danger-soft);
 }
 
+/* T18 Slice I (2026-11-21): this field rule resolves to the same one height
+ * and one radius as design-system.css — 44px (var(--aba-control-height)) and
+ * 11px (var(--aiba-radius-control)). No token was renamed, merged or
+ * revalued: --aba-control-radius keeps its 10px value for the button rules
+ * below, and the field radius is written here at the rule level. */
 :root body .shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
 :root body .shell select,
 :root body .shell textarea {
   min-height: var(--aba-control-height);
   padding-inline: var(--aba-control-padding-inline);
   border: 1px solid var(--aba-color-border-strong);
-  border-radius: var(--aba-control-radius);
+  border-radius: var(--aiba-radius-control, 11px);
   background: var(--aba-color-surface);
   color: var(--aba-color-text-primary);
   font-size: var(--aba-font-size-base);
@@ -354,8 +365,7 @@ aba-metric-card small {
 :root body .shell .panel,
 :root body .shell .metric,
 :root body .shell .workspace-bar,
-:root body .shell .assistant-suggestions,
-:root body .shell .invoice-preview {
+:root body .shell .assistant-suggestions {
   border-color: var(--aba-color-border);
   border-radius: var(--aba-radius-card);
   box-shadow: var(--aba-shadow-card);
@@ -424,8 +434,6 @@ aba-metric-card small {
 }
 
 :root body .shell .inline-form,
-:root body .shell .customer-invoice-filter,
-:root body .shell .invoice-preview,
 :root body .shell .setup-steps {
   border-color: var(--aba-color-border-subtle);
   border-radius: var(--aba-radius-card);

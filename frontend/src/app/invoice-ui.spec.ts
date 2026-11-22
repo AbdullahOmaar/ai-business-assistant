@@ -9,6 +9,8 @@ const appSource = expandTranslationCalls(
   + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8')
 );
 const editorSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8'));
+const searchFieldSource = readFileSync(new URL('./shared/ui/aba-search-field.component.ts', import.meta.url), 'utf8');
+const designSystemSource = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 
 test('editor back navigation mirrors correctly for RTL and LTR', () => {
   assert.match(editorSource, /language === 'ar' \? '→' : '←'/);
@@ -81,10 +83,18 @@ test('startup screen shows the Cairo-localized build date and time beneath relea
   assert.match(appSource, /timeZone: 'Africa\/Cairo'/);
 });
 
+// T18 Slice E (2026-11-21): the invoice search input and its icon moved into
+// aba-search-field, and the clearance rules moved with them (48px/42px input
+// padding, 15px icon inset, hidden native search decorations). The old
+// .invoice-search CSS in app.component.css was deleted with the duplicated
+// markup; the component owns the clearance now.
 test('invoice search icon stays clear of search text in RTL and LTR', () => {
-  assert.match(appSource, /\.invoice-controls \.invoice-search input\{[^}]*padding-inline-start:48px;padding-inline-end:42px;text-indent:0;text-align:start/);
-  assert.match(appSource, /\.invoice-search-icon\{[^}]*inset-inline-start:15px/);
-  assert.match(appSource, /\.invoice-search input::-webkit-search-decoration/);
+  assert.match(searchFieldSource, /padding-inline-start:48px;padding-inline-end:42px/);
+  assert.match(searchFieldSource, /\.aba-search-field__icon\{[^}]*inset-inline-start:15px/);
+  assert.match(searchFieldSource, /input::-webkit-search-decoration/);
+  assert.match(searchFieldSource, /input::-webkit-search-cancel-button\{display:none\}/);
+  assert.match(designSystemSource, /\.invoice-controls aba-search-field,/);
+  assert.match(appSource, /<aba-search-field class="invoice-search" name="invoiceSearch"/);
 });
 
 test('invoice editor selectors, catalog prices and read-only rate fields are clearly distinguished', () => {
@@ -177,4 +187,137 @@ test('invoice tables and slide-over preserve explicit RTL/LTR direction and acce
   assert.match(appSource, /class="invoice-detail-drawer" role="dialog" aria-modal="true"/);
   assert.match(appSource, /aria-labelledby="invoice-detail-heading"/);
   assert.match(appSource, /invoiceDetailCloseButton/);
+});
+
+// T18 Slice U04 (2026-11-21): the invoice list and drawer stay readable at
+// narrow widths, export tools are secondary, and the editor hides its delete
+// control when only one line remains. Measured at d185578 with a 548,525.00
+// EGP fixture: amounts split into 2-3 lines at 195/220, the customer name
+// split mid-word into 8-27 lines, the drawer lines table scrolled at
+// 195/220/390, and the drawer totals split across 2 lines.
+
+test('invoice export tools render as secondary actions', () => {
+  assert.match(appSource, /class="secondary invoice-export"/);
+  assert.match(appSource, /class="secondary invoice-load-more-customers"/);
+  assert.match(appSource, /class="secondary invoice-density-toggle"/);
+});
+
+test('invoice card amounts stay intact and stack below 320px', () => {
+  assert.match(appSource, /\.invoice-card-financials strong\{[^}]*white-space:nowrap;overflow-wrap:normal/);
+  assert.match(appSource, /@media\(max-width:320px\)\{[\s\S]*?\.invoice-card-financials\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(appSource, /@media\(max-width:320px\)\{[\s\S]*?\.invoice-summary-cards\{grid-template-columns:minmax\(0,1fr\)\}/);
+  // The pre-existing <=760px block re-asserts the 3-column summary cards;
+  // same-specificity rules later in the file win, so the narrow rule must
+  // come after it or the cards stay 3-up at 195px.
+  const summaryNarrow = appSource.indexOf('.invoice-summary-cards{grid-template-columns:minmax(0,1fr)}');
+  const summaryWide = appSource.indexOf('.invoice-summary-cards{grid-template-columns:repeat(3,minmax(0,1fr))');
+  assert.ok(summaryNarrow > summaryWide, 'narrow summary rule must come after the 3-column rule');
+});
+
+test('invoice card customer name wraps on words with a stacked header below 380px', () => {
+  assert.match(appSource, /\.invoice-card-customer strong\{[^}]*overflow-wrap:normal/);
+  assert.match(appSource, /\.invoice-card-meta\{[^}]*overflow-wrap:normal/);
+  assert.match(appSource, /\.invoice-card-meta-date\{white-space:nowrap\}/);
+  assert.match(appSource, /@media\(max-width:380px\)\{[\s\S]*?\.invoice-card-header\{flex-wrap:wrap\}/);
+  assert.match(appSource, /@media\(max-width:380px\)\{[\s\S]*?\.invoice-card-customer\{flex:1 1 100%;min-width:0\}/);
+});
+
+test('invoice detail lines stack with labels below 480px and totals stay intact', () => {
+  assert.match(appSource, /\[attr\.data-label\]="t\('[^']*', 'Quantity'\)"/);
+  assert.match(appSource, /\[attr\.data-label\]="t\('[^']*', 'Unit price'\)"/);
+  assert.match(appSource, /\[attr\.data-label\]="t\('[^']*', 'Line total'\)"/);
+  assert.match(appSource, /\.invoice-detail-totals dd\{[^}]*white-space:nowrap/);
+  assert.match(appSource, /\.invoice-detail-meta strong bdi\{white-space:nowrap\}/);
+  assert.match(appSource, /@media\(max-width:480px\)\{[\s\S]*?\.invoice-detail-lines-wrap\{overflow-x:visible\}/);
+  assert.match(appSource, /@media\(max-width:480px\)\{[\s\S]*?\.invoice-detail-lines thead\{position:absolute/);
+  assert.match(appSource, /@media\(max-width:480px\)\{[\s\S]*?\.invoice-detail-lines tbody tr\{display:grid/);
+  assert.match(appSource, /@media\(max-width:480px\)\{[\s\S]*?\.invoice-detail-lines td\[data-label\]::before\{content:attr\(data-label\)/);
+  assert.match(appSource, /@media\(max-width:380px\)\{[\s\S]*?\.invoice-detail-meta\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(appSource, /@media\(max-width:380px\)\{[\s\S]*?\.invoice-detail-totals>div\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+  // The pre-existing <=760px block re-asserts the 2-column drawer meta;
+  // same-specificity rules later in the file win, so the narrow rule must
+  // come after it or the meta stays 2-up and overflows at 195px.
+  const metaNarrow = appSource.indexOf('.invoice-detail-meta{grid-template-columns:minmax(0,1fr)}');
+  const metaWide = appSource.indexOf('.invoice-detail-meta{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}');
+  assert.ok(metaNarrow > metaWide, 'narrow meta rule must come after the 2-column rule');
+});
+
+test('editor delete control is hidden when only one line item remains', () => {
+  assert.match(editorSource, /@if \(lines\.length > 1\) \{[\s\S]*?class="remove-line"/);
+  assert.doesNotMatch(editorSource, /\[disabled\]="locked \|\| lines\.length <= 1"/);
+  const draftSource = readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8');
+  assert.match(draftSource, /lines\.length <= 1\) return/);
+});
+
+test('editor title, line controls and rate fields stack below 380px', () => {
+  // At 195px the title column was ~31px wide ("Create a new invoice" broke
+  // into single letters) and the Product/Service switch, Remove button and
+  // Discount/Tax fields all broke mid-word in ~55px columns.
+  assert.match(editorSource, /@media\(max-width:380px\)\{[\s\S]*?\.editor-topbar\{grid-template-columns:42px minmax\(0,1fr\)\}/);
+  assert.match(editorSource, /@media\(max-width:380px\)\{[\s\S]*?\.draft-status\{grid-column:1\/-1;justify-self:start/);
+  assert.match(editorSource, /\.editor-title h3\{[^}]*overflow-wrap:normal/);
+  assert.match(editorSource, /@media\(max-width:380px\)\{[\s\S]*?\.line-card-heading\{flex-wrap:wrap\}/);
+  assert.match(editorSource, /\.remove-line\{[^}]*white-space:nowrap/);
+  assert.match(editorSource, /@media\(max-width:380px\)\{[\s\S]*?\.line-kind-switch\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(editorSource, /@media\(max-width:380px\)\{[\s\S]*?\.kind-option\{padding:7px 8px;overflow-wrap:normal\}/);
+  assert.match(editorSource, /@media\(max-width:380px\)\{[\s\S]*?\.readonly-rates\{grid-template-columns:minmax\(0,1fr\)/);
+});
+
+test('screen-reader-only utility exists so the invoices heading stays hidden', () => {
+  assert.match(appSource, /<h2 id="invoices-section-title" class="sr-only">/);
+  assert.match(designSystemSource, /:root body \.shell \.sr-only\{position:absolute!important;width:1px!important/);
+});
+
+// T18 U04 fix (2026-11-21): four defects from the coordinator's independent
+// real-Chrome renders at 195/220, EN+AR. (1) The sticky Cancel / Save draft
+// buttons clipped their labels at both edges (the two-column grid gave
+// Cancel ~39px and Save draft ~58px at 195px for ~40px/~61px of centred
+// nowrap text). (2) The customer select showed only the tail of a long name
+// ("Company"): a native select clips at the end its direction points to.
+// (3) The invoice-number value was cut at the start in AR (RTL input).
+// (4) The list-card name/meta boxes stretched ~11px past the card's content
+// edge at EN 195px (the nowrap "Created: 3 Nov 2026" span's min-content
+// exceeded the ~94px copy column). Classes kept separate: defects 2 and 3
+// are field text (reachable by scrolling inside the field); defects 1 and 4
+// are content cut off with no way to read it.
+
+test('editor sticky actions stack below 380px so Cancel and Save draft stay readable', () => {
+  assert.match(editorSource, /\.action-buttons\{display:grid;grid-template-columns:minmax\(0,\.8fr\) minmax\(0,1\.2fr\)\}/);
+  assert.match(editorSource, /@media\(max-width:380px\)\{[\s\S]*?\.editor-actions\{padding:12px\}/);
+  assert.match(editorSource, /@media\(max-width:380px\)\{[\s\S]*?\.action-buttons\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(editorSource, /@media\(max-width:380px\)\{[\s\S]*?\.primary-action,\.secondary-action\{white-space:normal\}/);
+});
+
+test('invoice number input is LTR so its value is cut at the end, never the start', () => {
+  assert.match(editorSource, /<input name="invoiceNumber" dir="ltr"/);
+});
+
+test('customer select direction follows the selected name script, not the UI language', () => {
+  assert.match(editorSource, /\[attr\.dir\]="customerSelectDir"/);
+  assert.match(editorSource, /get customerSelectDir\(\): 'ltr' \| 'rtl'/);
+  assert.match(editorSource, /customers\.find\(customer => customer\.id === this\.customerId\)/);
+  assert.match(editorSource, /\\u0590-\\u05FF\\u0600-\\u06FF/);
+  assert.match(editorSource, /\[A-Za-z\]/);
+  assert.match(editorSource, /return this\.language === 'ar' \? 'rtl' : 'ltr'/);
+  // `unicode-bidi: plaintext` does not change select rendering in Chromium
+  // (verified by experiment: identical screenshots); the script-aware
+  // direction is the fix, not a bidi override.
+  assert.doesNotMatch(editorSource, /unicode-bidi:plaintext/);
+});
+
+test('invoice card meta keeps the date intact while the Created prefix wraps', () => {
+  assert.ok(cardMarkup, 'invoice card template must exist');
+  assert.match(cardMarkup, /invoice\.issue_date \? '' : \(invoice\.created_at \? t\('[^']*', '[^']*'\) : ''\) \}\}<span class="invoice-card-meta-date">/);
+  assert.match(cardMarkup, /<span class="invoice-card-meta-date">\{\{ invoice\.issue_date \? formatRecordDate\(invoice\.issue_date, 'date'\) : \(invoice\.created_at \? formatRecordDate\(invoice\.created_at, 'date'\)/);
+  assert.doesNotMatch(cardMarkup, /\+ formatRecordDate\(invoice\.created_at, 'date'\)/);
+  assert.match(appSource, /\.invoice-card-meta-date\{white-space:nowrap\}/);
+});
+
+test('invoice card copy cannot stretch past the card below 220px', () => {
+  assert.match(appSource, /@media\(max-width:220px\)\{[\s\S]*?\.invoice-card-customer-copy>\*\{min-width:0\}/);
+  // The <=220px block must come after the <=380px U04 block so it wins at
+  // equal specificity.
+  const copyNarrow = appSource.indexOf('.invoice-card-customer-copy>*{min-width:0}');
+  const headerNarrow = appSource.indexOf('.invoice-card-header{flex-wrap:wrap}');
+  assert.ok(copyNarrow > headerNarrow, '220px copy rule must come after the 380px card rules');
 });

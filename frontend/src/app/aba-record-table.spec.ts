@@ -131,3 +131,63 @@ test('shared record tables sort locally with keyboard-accessible, semantic direc
   assert.match(component, /new Intl\.Collator\(undefined,\{numeric:true,sensitivity:'base'\}\)/);
   assert.match(component, /this\.sortDirection==='asc'\?result:-result/);
 });
+
+
+// Routine (B) revision 2026-11-22: the chip row was 288px tall at 195px
+// EN (320px AR) — five stacked chips before the first record — which
+// conflicts with the owner's compact-cards direction. It is replaced by
+// one compact native sort select, the same mobile-sort pattern
+// customer-directory and product-catalog already use
+// (__mobile-sort select, min-height 44px). The thead buttons still leave
+// the tab order when stacked (tabindex=-1, still in the accessibility
+// tree for screen-reader browse mode). Sorting itself is unchanged.
+test('stacked record tables keep sorting reachable without invisible tab stops', () => {
+  assert.match(component, /matchMedia\('\(max-width: 760px\)'\)/);
+  assert.match(component, /\[attr\.tabindex\]="isStacked\(\) \? -1 : null"/);
+  assert.match(component, /this\.localization\.translate\('ui\.m_tpfmbp'\)/);
+  // One compact select, inside the rows branch (no control for
+  // empty/loading states), before the table viewport. Its aria-label is
+  // the "Sort by" key; the placeholder option clears the sort, and each
+  // column offers both directions explicitly — a select fires no change
+  // event for re-selecting the same value, so direction cannot rely on
+  // toggle-on-repeat here.
+  const mobileStart = component.indexOf('aba-record-table__mobile-sort');
+  assert.ok(mobileStart >= 0, 'missing mobile sort control');
+  const mobileBlock = component.slice(mobileStart, component.indexOf('aba-record-table__viewport', mobileStart));
+  assert.match(mobileBlock, /<select class="aba-record-table__mobile-sort-select" \[attr\.aria-label\]="sortByLabel\(\)" \[value\]="mobileSortValue" \(change\)="onMobileSortChange\(\$event\)">/);
+  assert.match(mobileBlock, /<option value="">\{\{ sortByLabel\(\) \}\}<\/option>/);
+  assert.match(mobileBlock, /\[value\]="column\.key \+ ':asc'"/);
+  assert.match(mobileBlock, /\[value\]="column\.key \+ ':desc'"/);
+  assert.match(mobileBlock, /\{\{column\.label\}\} ↑/);
+  assert.match(mobileBlock, /\{\{column\.label\}\} ↓/);
+  // The change handler drives the same sort state the thead buttons use;
+  // the value is a plain getter (not a computed) because the sort fields
+  // are plain fields, so a computed would never re-evaluate.
+  assert.match(component, /onMobileSortChange\(event:Event\):void\{/);
+  assert.match(component, /get mobileSortValue\(\):string\{/);
+  // CSS: control hidden by default, shown as one compact row at ≤760px;
+  // the thead clip itself is unchanged (screen readers still get the headers).
+  assert.match(css, /\.aba-record-table__mobile-sort\{display:none\}/);
+  assert.match(css, /@media\(max-width:760px\)\{[\s\S]*?\.aba-record-table__mobile-sort\{display:block/);
+  assert.match(css, /\.aba-record-table__mobile-sort-select\{[^}]*min-height:44px/);
+  assert.match(css, /\.aba-record-table thead\{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect\(0,0,0,0\);white-space:nowrap;border:0\}/);
+  // No chip row left anywhere in the component or the CSS.
+  assert.doesNotMatch(component, /aba-record-table__mobile-sort-button/);
+  assert.doesNotMatch(css, /aba-record-table__mobile-sort-button/);
+});
+
+// each numeric cell ~70px, so "548525.00 EGP" splits mid-number ("548525.0
+// 0 EGP") and the date splits ("10/11/20 26"). Below 320px the card is a
+// single column and numeric cells keep white-space:nowrap.
+// T18 Slice U02 (2026-11-21): at 195/220px a two-column record card gives
+// each numeric cell ~70px, so "548525.00 EGP" splits mid-number ("548525.0
+// 0 EGP") and the date splits ("10/11/20 26"). Below 320px the card is a
+// single column and numeric cells keep white-space:nowrap.
+test('record cards become a single column below 320px and keep amounts intact', () => {
+  assert.match(css, /@media\(max-width:320px\)\{[\s\S]*?\.aba-record-table tbody tr\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(css, /@media\(max-width:320px\)\{[\s\S]*?\.aba-record-table tbody td\[data-kind="numeric"\]\{white-space:nowrap;overflow-wrap:normal;text-align:start\}/);
+  // The two-column card and the normal-wrapping numeric cells at 390px are
+  // unchanged (the 760px rule still applies there).
+  assert.match(css, /\.aba-record-table tbody tr\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.match(css, /\.aba-record-table tbody td\[data-kind="numeric"\]\{white-space:normal;text-align:start\}/);
+});

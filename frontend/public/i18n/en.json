@@ -457,6 +457,7 @@
     "m_9ckn2u": "Pricing rule",
     "m_11q6v6c": "Filter",
     "m_1np7zc4": "Clear filters",
+    "m_4k8q2zr": "Clear search",
     "m_j3pe5o": "Activity log table",
     "m_19p9gnl": "Loading activity log…",
     "m_1en86jm": "No activity yet",
@@ -1154,7 +1155,9 @@
       "v162_speed": "Version 1.6.2: the customers and products screens now load only when you open them, so the app downloads less when it first starts.",
       "v162_assistant": "The built-in assistant only reads your records. When you clearly ask it to issue, void, cancel or pay an invoice, it says it cannot do that and nothing is changed. Some indirect requests, such as \"void it\" or \"I need an invoice issued\", may still get a read-only answer instead of a refusal. The suggested questions are now ones it can answer, such as how many invoices were issued.",
       "v163_fallback": "Version 1.6.3: if a screen or dialog cannot load, for example because the connection dropped, it now shows a message asking you to check your connection and reload the page, instead of staying on a loading spinner.",
-      "v163_refusal": "The built-in assistant now replies in English when you ask it to issue, void, cancel or pay an invoice in English, and says it cannot do that. Nothing is changed."
+      "v163_refusal": "The built-in assistant now replies in English when you ask it to issue, void, cancel or pay an invoice in English, and says it cannot do that. Nothing is changed.",
+      "v164_ui": "Version 1.6.4: workspace screens share the new responsive UI pieces, and headings use the Cairo and Tajawal fonts.",
+      "v164_csv": "CSV exports now neutralize spreadsheet formulas hidden behind leading spaces, tabs or newlines."
     },
     "catalog": {
       "m_aba150_title": "Workspace and purchasing workflows",
@@ -1300,7 +1303,8 @@
       "v161_title": "Returns, credit notes, purchasing and inventory improvements",
       "v161_reliability_title": "Reliability fixes: recurring schedules, CSV transport and assistant counts",
       "v162_title": "Lighter first load and a read-only assistant",
-      "v163_title": "Loading-error handling and English assistant replies"
+      "v163_title": "Loading-error handling and English assistant replies",
+      "v164_title": "Workspace UI, Cairo/Tajawal headings and CSV export safety"
     }
   },
   "catalog": {
@@ -1528,6 +1532,7 @@
     "customerStatementEvent": {
       "invoice_issued": "Invoice issued",
       "payment_allocation": "Payment allocation",
+      "payment_received": "Payment received",
       "currency_mismatch_allocation": "Currency-mismatch allocation"
     },
     "invoiceStatus": {
@@ -1831,7 +1836,7 @@
     "unitPlaceholder": "piece, kg, hour",
     "unitRequired": "Unit is required",
     "descriptionLabel": "Description",
-    "descriptionPlaceholder": "A short product or service description",
+    "descriptionPlaceholder": "Short description",
     "cancel": "Cancel",
     "save": "Save changes",
     "saving": "Saving…",
@@ -1860,6 +1865,7 @@
     "subtitle": "Manage purchase orders, receipts and their audit history.",
     "newOrder": "New purchase order",
     "search": "Search order, supplier or status",
+    "searchShort": "Search orders",
     "loading": "Loading purchase orders…",
     "emptyTitle": "No purchase orders yet",
     "emptyDescription": "Create a multi-line purchase order to get started.",

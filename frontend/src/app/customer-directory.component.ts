@@ -3,6 +3,7 @@ import type { Customer } from './api.service';
 import type { AbaRecordTableActionEvent } from './shared/ui/aba-record-table.component';
 import { sortCustomers, type CustomerSortField, type SortDirection } from './directory-sort';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
+import { AbaIconComponent } from './shared/ui/aba-icon.component';
 import { inject } from '@angular/core';
 import { LocalizationService } from './localization.service';
 
@@ -15,7 +16,7 @@ import { LocalizationService } from './localization.service';
 @Component({
   selector: 'aba-customer-directory',
   standalone: true,
-  imports: [AbaStateMessageComponent],
+  imports: [AbaStateMessageComponent, AbaIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="customer-directory" [attr.aria-label]="ariaLabel()">
@@ -90,13 +91,13 @@ import { LocalizationService } from './localization.service';
                   <td>
                     <div class="customer-directory__actions">
                       <button class="customer-directory__action" type="button" (click)="emitAction(customer.id, 'invoices', $event)" [attr.aria-label]="actionAriaLabel(customer, 'invoices')">
-                        {{ t('customerDirectory.m_1h7f08p') }}
+                        <aba-icon name="document" />{{ t('customerDirectory.m_1h7f08p') }}
                       </button>
                       <button class="customer-directory__action customer-directory__action--primary" type="button" (click)="emitAction(customer.id, 'statement', $event)" [attr.aria-label]="actionAriaLabel(customer, 'statement')">
-                        {{ t('customerDirectory.m_np2h9e') }}
+                        <aba-icon name="statement" />{{ t('customerDirectory.m_np2h9e') }}
                       </button>
                       <button class="customer-directory__action" type="button" (click)="emitAction(customer.id, 'edit', $event)" [attr.aria-label]="actionAriaLabel(customer, 'edit')">
-                        {{ t('customerProfile.edit') }}
+                        <aba-icon name="edit" />{{ t('customerProfile.edit') }}
                       </button>
                     </div>
                   </td>
@@ -131,13 +132,13 @@ import { LocalizationService } from './localization.service';
               </div>
               <div class="customer-directory__actions">
                 <button class="customer-directory__action" type="button" (click)="emitAction(customer.id, 'invoices', $event)" [attr.aria-label]="actionAriaLabel(customer, 'invoices')">
-                  {{ t('customerDirectory.m_1h7f08p') }}
+                  <aba-icon name="document" />{{ t('customerDirectory.m_1h7f08p') }}
                 </button>
                 <button class="customer-directory__action customer-directory__action--primary" type="button" (click)="emitAction(customer.id, 'statement', $event)" [attr.aria-label]="actionAriaLabel(customer, 'statement')">
-                  {{ t('customerDirectory.m_np2h9e') }}
+                  <aba-icon name="statement" />{{ t('customerDirectory.m_np2h9e') }}
                 </button>
                 <button class="customer-directory__action" type="button" (click)="emitAction(customer.id, 'edit', $event)" [attr.aria-label]="actionAriaLabel(customer, 'edit')">
-                  {{ t('customerProfile.edit') }}
+                  <aba-icon name="edit" />{{ t('customerProfile.edit') }}
                 </button>
               </div>
             </li>

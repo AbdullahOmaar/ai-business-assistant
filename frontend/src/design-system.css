@@ -11,6 +11,15 @@
   --aiba-brand-bright: #0d9488;
   --aiba-brand-soft: #ecfdf5;
   --aiba-brand-line: #99f6e4;
+  /* T18 brand palette (brand handoff, 2026-11-21). Added alongside the existing
+   * --aiba-* tokens; does not replace them. Amber is brand only, never a status colour. */
+  --aiba-brand-teal: #0F5C68;
+  --aiba-brand-teal-deep: #093A44;
+  --aiba-brand-teal-light: #1F8C96;
+  --aiba-brand-amber: #F5A623;
+  --aiba-brand-ink: #0E2026;
+  --aiba-brand-paper: #F7F6F2;
+  --aiba-brand-muted: #687478;
   --aiba-ink: #172033;
   --aiba-ink-soft: #344256;
   --aiba-muted: #5f6e83;
@@ -28,6 +37,9 @@
 
   /* Typography — system-first, no external font request or startup dependency. */
   --aiba-font-sans: Inter, "Noto Sans Arabic", "Segoe UI", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Heading face: Cairo / Tajawal (loaded in index.html, weights 400-800;
+   * headings use weight 800). Body text keeps --aiba-font-sans unchanged. */
+  --aiba-font-heading: "Cairo", "Tajawal", Inter, "Noto Sans Arabic", "Segoe UI", ui-sans-serif, system-ui, sans-serif;
   --aiba-text-xs: 12px;
   --aiba-text-sm: 13px;
   --aiba-text-md: 14px;
@@ -91,16 +103,59 @@
 :root body .shell .topbar h1,
 :root body .shell .mobile-page-heading h1 {
   color: var(--aiba-ink);
-  font-size: clamp(22px, 2.3vw, var(--aiba-heading-lg));
+  font-family: var(--aiba-font-heading);
+  /* Compact for the Black heading face (T18): 19–25px, so the Kufi Black title reads
+   * modern and compact, not giant. Owner correction 2026-11-21: a long title must
+   * stay complete — it wraps onto extra lines, never truncates with an ellipsis
+   * and is never forced onto one line. The clamp only keeps the size readable. */
+  font-size: clamp(19px, 2vw, 25px);
   font-weight: 760;
   line-height: var(--aiba-leading-tight);
   letter-spacing: -.035em;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: clip;
+  overflow-wrap: anywhere;
+}
+
+/* T18 Slice H: one page-title contract — the shell .topbar h1 and the mobile
+ * header h1 share the amber octagram marker at the inline start and the short
+ * amber bar below (mark + current name + screen title, compact). The marker
+ * and bar live here once; app.component.css no longer carries its own copy.
+ * Long titles wrap and stay complete — never truncate, never force one line
+ * (owner correction 2026-11-21).
+ * The marker is a ::before pseudo-element (not a DOM span): a real span inside
+ * the h1 adds a second box to Range.getClientRects(), which the mobile E2E
+ * title check reads as a second rendered line (2026-11-21 regression at
+ * b558cbd — "Customers" was visually one line but measured as two). A
+ * pseudo-element is not in the DOM, so the range covers only the title text
+ * and the one-line check reads true, while the marker still renders. */
+:root body .shell .topbar h1::before,
+:root body .shell .mobile-app-header .page-copy h1::before {
+  content: "";
+  display: inline-block;
+  width: .85em;
+  height: .85em;
+  margin-inline-end: .35em;
+  vertical-align: -.08em;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cpolygon points='68.75,4.73 76.52,23.48 95.27,31.25 87.50,50.00 95.27,68.75 76.52,76.52 68.75,95.27 50.00,87.50 31.25,95.27 23.48,76.52 4.73,68.75 12.50,50.00 4.73,31.25 23.48,23.48 31.25,4.73 50.00,12.50' fill='%23F5A623'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+:root body .shell .topbar h1::after,
+:root body .shell .mobile-app-header .page-copy h1::after {
+  content: "";
+  display: block;
+  width: 28px;
+  height: 3px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--aiba-brand-amber);
 }
 
 :root body .shell .section-head h2,
 :root body .shell .panel h2,
 :root body .shell .panel h3 {
   color: var(--aiba-ink);
+  font-family: var(--aiba-font-heading);
   font-weight: 720;
   letter-spacing: -.02em;
   line-height: var(--aiba-leading-tight);
@@ -151,7 +206,16 @@
   box-shadow: 0 8px 24px rgb(13 148 136 / 18%);
 }
 
-/* Primary and secondary action hierarchy. */
+/* Primary and secondary action hierarchy.
+ * T18 Slice D (2026-11-21): this is THE single .primary/.secondary contract.
+ * The app.component.css base carries the same declarations (same min-height,
+ * padding, radius, gradient, contrast, disabled opacity, hover lift), so the
+ * two definitions cannot fight; the visual result is this contract either way.
+ * Bespoke button classes are intentionally NOT merged here: platform-admin
+ * .primary-button/.outline-button and confirm-dialog .confirm-cancel/
+ * .confirm-accept use flat fills, 9-10px radii and 12px type (plus a danger
+ * tone and a small-button variant) — merging them would change their
+ * appearance, so they keep their own rules. */
 :root body .shell button.primary,
 :root body .shell .primary[type="button"],
 :root body .shell .primary[type="submit"] {
@@ -224,12 +288,19 @@
   line-height: var(--aiba-leading-normal);
 }
 
+/* T18 Slice I (2026-11-21): one field height and one field radius. Single-line
+ * fields are 44px (var(--aiba-control-md)) with the 11px control radius —
+ * the compact height the feature components already used, and the radius the
+ * button contract already pins. The 48px --aiba-control-lg value stays
+ * defined as a token but is no longer used by any field rule. The ≤760px
+ * 48px mobile field rule below is intentionally untouched: it is pinned by
+ * design-tokens.spec.ts and keeps the 48px touch target on phones. */
 :root body .shell input:not([type="checkbox"]):not([type="radio"]):not([type="file"]):not([type="hidden"]):not([type="range"]),
 :root body .shell select,
 :root body .shell textarea {
   min-width: 0;
   max-width: 100%;
-  min-height: var(--aiba-control-lg);
+  min-height: var(--aiba-control-md);
   padding: 11px 13px;
   border: 1px solid var(--aiba-line-strong);
   border-radius: var(--aiba-radius-control);
@@ -241,6 +312,22 @@
   line-height: var(--aiba-leading-normal);
   box-shadow: inset 0 1px 1px rgb(15 23 42 / 2%);
   transition: background var(--aiba-motion), border-color var(--aiba-motion), box-shadow var(--aiba-motion);
+}
+
+/* Narrow-input fix (2026-11-22): the shared search field's icon sits at
+ * 15–33px from the start edge and needs 48px start / 42px end padding to
+ * clear it, but the Slice I base rule above wins at runtime — its five
+ * :not() attribute selectors give it (0,7,2) specificity, which beats the
+ * component's own :host rule — so the input computed 13px/13px and the
+ * magnifier overlapped the first ~19px of the placeholder/text in both
+ * languages at every width. Restore the component's own 48px/42px values
+ * here. !important is unavoidable for the same reason as the U02/U06
+ * overrides of this base rule: no maintainable search-field selector beats
+ * five :not()s without mimicking that chain. Keep these values in sync
+ * with the component (aba-search-field.spec.ts pins both). */
+:root body .shell aba-search-field .aba-search-field input {
+  padding-inline-start: 48px !important;
+  padding-inline-end: 42px !important;
 }
 
 :root body .shell textarea {
@@ -333,10 +420,14 @@
 
 :root body .shell .list-tools input,
 :root body .shell .list-tools select,
+:root body .shell .list-tools aba-search-field,
+:root body .shell .list-tools aba-filter-bar,
 :root body .shell .customer-invoice-filter input,
 :root body .shell .customer-invoice-filter select,
 :root body .shell .invoice-controls input,
 :root body .shell .invoice-controls select,
+:root body .shell .invoice-controls aba-search-field,
+:root body .shell .invoice-controls aba-filter-bar,
 :root body .shell .filter-bar input,
 :root body .shell .filter-bar select {
   min-width: 0;
@@ -346,7 +437,6 @@
 /* Cards and KPI blocks: quiet surface, stronger hierarchy, shared geometry. */
 :root body .shell section.panel,
 :root body .shell .workspace-bar,
-:root body .shell .invoice-preview,
 :root body .shell .chat-log,
 :root body .shell .assistant-suggestions,
 :root body .shell .csv-import-panel,
@@ -369,15 +459,27 @@
   gap: var(--aiba-space-3);
 }
 
+/* T18 Slice G (2026-11-21): `.metric` is a compact label+value card, sized by
+ * its content — not a tall fixed card. Before this slice it forced
+ * `min-height: 148px` for a label and one value (owner notes 2026-11-21
+ * 14:45 "the text inside the card is far apart" and 14:47 "the card is very
+ * very very big": ~70px of dead space under two lines of text, in the
+ * statement balances, Health status and Integrity counts). The label and
+ * value now sit 4px apart in a grid; the row stays even because the grid
+ * stretches its items. The Overview KPI cards (`aba-metric-card`) keep
+ * their own 148px host height — their content (label + values + basis note)
+ * fills it, and their heights are pinned by `home-dashboard.spec.ts`. */
 :root body .shell .metric-grid > .metric {
   min-width: 0;
-  min-height: 148px;
-  padding: var(--aiba-space-5);
+  display: grid;
+  align-content: start;
+  gap: var(--aiba-space-1);
+  padding: var(--aiba-space-4);
   border: 1px solid var(--aiba-line);
   border-radius: var(--aiba-radius-card);
   background: linear-gradient(180deg, #ffffff 0%, var(--aiba-surface-raised) 100%);
   box-shadow: var(--aiba-shadow-card);
-  transition: border-color var(--aiba-motion), box-shadow var(--aiba-motion), transform var(--aiba-motion);
+  transition: border-color var(--aiba-motion), box-shadow var(--aiba-motion);
 }
 
 /* The Angular KPI host is layout-only; the component's inner card owns the single surface. */
@@ -398,14 +500,24 @@
   transition: border-color var(--aiba-motion), box-shadow var(--aiba-motion), transform var(--aiba-motion);
 }
 
-:root body .shell .metric-grid > .metric:hover,
+/* Only the tappable KPI cards lift on hover. `.metric` is not interactive
+ * (owner note 2026-11-21 13:42: cards "not interactive"), so it must not
+ * react to hover as if it could be pressed. */
 :root body .shell .metric-grid > aba-metric-card:hover .aba-metric-card {
   border-color: #c5d8d7;
   box-shadow: var(--aiba-shadow-card-hover);
   transform: translateY(-2px);
 }
 
-:root body .shell .metric-grid .metric > span,
+:root body .shell .metric-grid .metric > span {
+  display: block;
+  margin-block-end: 0;
+  color: var(--aiba-muted);
+  font-size: var(--aiba-text-xs);
+  font-weight: 680;
+  line-height: var(--aiba-leading-normal);
+}
+
 :root body .shell .metric-grid aba-metric-card [metricLabel] {
   display: block;
   margin-block-end: 10px;
@@ -415,17 +527,33 @@
   line-height: var(--aiba-leading-normal);
 }
 
+/* T18 Slice U01 follow-up (2026-11-21): KPI amounts never split. The value
+ * ("548525.00 EGP", 115px at 17px, 122px at 18px) broke inside the number
+ * at 220px and at 390px (owner render) because `overflow-wrap:anywhere`
+ * was applied to it. The amount is now `white-space:nowrap` (amount +
+ * currency stay on one line) and the size is a viewport clamp
+ * `clamp(14px, 3.8vw, 18px)` so the longest mocked amount fits its card:
+ * 390px -> ~14.8px (~100px in a 149px box), 1280px -> 18px (~122px in a
+ * 182px box). Below 300px the grid itself goes single-column (see below)
+ * because no readable size fits a 13-char amount in a 2-column card. */
 :root body .shell .metric-grid .metric strong,
 :root body .shell .metric-grid aba-metric-card strong {
   color: var(--aiba-ink);
-  font-size: clamp(18px, 1.9vw, 24px);
+  font-size: clamp(14px, 3.8vw, 18px);
   font-weight: 760;
   line-height: 1.25;
   letter-spacing: -.025em;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
-:root body .shell .metric-grid .metric small,
+:root body .shell .metric-grid .metric small {
+  margin-block-start: 0;
+  color: var(--aiba-muted);
+  font-size: var(--aiba-text-xs);
+  line-height: var(--aiba-leading-relaxed);
+}
+
 :root body .shell .metric-grid aba-metric-card small {
   margin-block-start: var(--aiba-space-2);
   color: var(--aiba-muted);
@@ -443,15 +571,18 @@
   font-weight: 720;
 }
 
-/* Full Home dashboard treatment: the first complete screen using the final direction. */
+/* Full Home dashboard treatment: the first complete screen using the final direction.
+ * T18 Slice U01 (2026-11-21): small header — the period hero is compact
+ * (tighter padding, smaller title, smaller heading/details gap) instead of
+ * the large banner; gradient, identity and copy are unchanged. */
 :root body .shell .dashboard-period {
   position: relative;
   isolation: isolate;
   display: grid;
-  gap: var(--aiba-space-4);
+  gap: var(--aiba-space-3);
   min-width: 0;
   margin-block: 0 var(--aiba-space-4);
-  padding: clamp(20px, 3vw, 30px);
+  padding: clamp(14px, 2vw, 20px);
   overflow: hidden;
   border: 1px solid #244b62;
   border-radius: var(--aiba-radius-panel);
@@ -486,7 +617,7 @@
 :root body .shell .dashboard-period__title {
   margin: 0;
   color: #ffffff;
-  font-size: clamp(21px, 2.2vw, 28px);
+  font-size: clamp(18px, 2vw, 22px);
   font-weight: 760;
   line-height: var(--aiba-leading-tight);
   letter-spacing: -.03em;
@@ -519,6 +650,16 @@
   color: #ffffff;
   font-weight: 650;
   font-variant-numeric: tabular-nums;
+}
+
+/* T18 Slice U02 date fix (2026-11-21): the ISO period dates ("2026-10-13",
+ * "2026-11-11") split across lines at the hyphens at 195/220px in both EN
+ * and AR ("2026-11-" / "11"). The date values are the <bdi dir="ltr">
+ * elements; each date stays on one line and the line breaks only at the
+ * spaces between "From", the dates and "to". */
+:root body .shell .dashboard-period__details bdi[dir="ltr"] {
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 
 :root body .shell .dashboard-trust-note {
@@ -791,6 +932,8 @@
 
   :root body .shell .list-tools input,
   :root body .shell .list-tools select,
+  :root body .shell .list-tools aba-search-field,
+  :root body .shell .list-tools aba-filter-bar,
   :root body .shell .list-tools button {
     width: 100%;
   }
@@ -809,16 +952,110 @@
     padding: 16px;
   }
 
-  :root body .shell .metric-grid {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
+  /* T18 Slice U01 (2026-11-21): the single-column KPI rule that used to sit
+   * here is removed. It contradicted the two-column phone contract below
+   * ("At the narrowest supported phone width, keep the Home KPIs scannable
+   * in two columns") and never won the cascade — the later two-column rule
+   * has the same specificity. Cards stay fixed-height and flexible-width. */
   :root body .shell .home-shortcut-list {
     grid-template-columns: minmax(0, 1fr);
   }
 
   :root body .shell section.panel {
-    padding: 13px;
+    padding: 10px;
+  }
+
+  /* T18 Item 3 (2026-11-21): at the narrowest widths the Reports period select
+     ("Last 30 days") clipped to "Last 30 d" at 200% zoom (195px viewport).
+     Reclaim horizontal space around the inline form so the full option text
+     fits: tighter panel/form/select-inline padding. The 16px control type is
+     kept (iOS focus-zoom guard); only inline spacing shrinks. */
+  :root body .shell form.inline-form:not(.expense-form):not(.invoice-form) {
+    padding: 8px;
+  }
+
+  :root body .shell form.inline-form:not(.expense-form):not(.invoice-form) select {
+    padding-inline: 6px;
+  }
+}
+
+/* T18 Item 3 (2026-11-21): below 220px (200% zoom on the narrowest phones)
+   the longest period options ("Current month", "Custom period", ~112px at
+   16px) still clipped even after the 380px step above. Tighten the same
+   surroundings one more step so every option fits; normal small-phone
+   widths keep the 380px spacing above. */
+@media (max-width: 220px) {
+  :root body .shell section.panel {
+    padding: 6px;
+  }
+
+  :root body .shell form.inline-form:not(.expense-form):not(.invoice-form) {
+    padding: 4px;
+  }
+
+  :root body .shell form.inline-form:not(.expense-form):not(.invoice-form) select {
+    padding-inline: 4px;
+  }
+
+  /* U02 follow-up: native date inputs in a date-range row are too narrow for
+     "mm/dd/yyyy" at the 16px mobile size — the calendar icon crowds the text on
+     wider real-Chrome rendering (AR clips a letter). Shrink the type and the
+     inline padding so the text clears the icon in both languages. Both
+     declarations need !important: font-size to override the 16px!important
+     mobile rule in app.component.css, and padding-inline to override the
+     13px Slice I form-field rule in this file (its six :not() attribute
+     selectors outrank a plain descendant selector). */
+  :root body .shell aba-date-range .aba-date-range__fields > label input[type="date"],
+  :root body .shell aba-date-range .aba-date-range__fields > label input[type="datetime-local"] {
+    font-size: 13px !important;
+    padding-inline: 8px !important;
+  }
+
+  /* T18 U06 (2026-11-21): the expense form's datetime-local shows only the
+     date at 195/220px — the time segment is cut ("11/21/2026, 09:") at the
+     16px mobile size. Same treatment as the U02 date-range fix above, one
+     step smaller: 13px still left the final "M" of "PM" cut at 220px in EN,
+     and 12px still left it cut in AR (the AR field is 6px narrower — the form
+     measures 184px vs 190px in EN — so the same value needs ~3px more), so
+     the type is 11px with the same 8px inline padding, and date + time clear
+     the calendar icon at 220px in both languages. Both declarations need
+     !important for the same reason as the U02 rule (font-size overrides the
+     16px!important mobile rule in app.component.css). At 195px the full
+     value still may not fit — the field is already full-width — so the time
+     stays reachable by scrolling inside the field; at 220px the whole value
+     fits. */
+  :root body .shell form.expense-form input[name="expenseDate"] {
+    font-size: 11px !important;
+    padding-inline: 8px !important;
+  }
+
+  /* T18 U11 (2026-11-22): the recurring form's datetime-local shows only the
+     date at 195px ("11/22/2026") and a truncated time at 220px ("11/22/2026,
+     1") at the 16px mobile size — the same class as the U06 expense fix above.
+     Same 11px + 8px treatment, verified by render at both widths in both
+     languages; at 195px the full value may still not fit and the time stays
+     reachable by scrolling inside the field (U06 accepted class). Both
+     declarations need !important for the same reason as the U02 rule. */
+  :root body .shell input[name="recurringNextRunAt"] {
+    font-size: 11px !important;
+    padding-inline: 8px !important;
+  }
+
+  /* Narrow-input fix (2026-11-22): at ≤220px most form placeholders are a
+     few px too wide for the field at the 16px mobile size ("Supplier name"
+     111px vs a 101px area, "Address (optional)" 139px vs 101px) and clip.
+     The placeholder is a hint, not typed text, so it alone renders at 11px
+     — the input's own 16px size (iOS no-zoom rule in app.component.css) is
+     untouched. At 11px every form placeholder fits its area except the
+     product description and the AR supplier email, whose copy is shortened
+     instead (productEditor.descriptionPlaceholder, supplier email ui.m_u2wvbv
+     in ar.json only). The search placeholders are shortened by the shared
+     component's narrow placeholder at this width. No !important: this sets
+     the pseudo-element's own font-size, which beats the size it inherits
+     from the input. */
+  :root body .shell input::placeholder,
+  :root body .shell textarea::placeholder {
+    font-size: 11px;
   }
 }
 
@@ -854,7 +1091,6 @@
   }
 
   :root body .shell .metric-grid > .metric {
-    min-height: 126px;
     padding: 12px;
   }
 
@@ -863,9 +1099,27 @@
     padding: 0;
   }
 
+  /* T18 Slice U01 follow-up (2026-11-21): 14px, not 17px — a 17px amount
+   * ("548525.00 EGP", 115px) does not fit the 2-column card at 320-380px
+   * (box 125-149px) on the owner's wider font rendering, which split it at
+   * 390px; 14px (~95px) fits with margin. The amount stays nowrap. */
   :root body .shell .metric-grid .metric strong,
   :root body .shell .metric-grid aba-metric-card strong {
-    font-size: 17px;
+    font-size: 14px;
+    white-space: nowrap;
+  }
+}
+
+/* T18 Slice U01 follow-up (2026-11-21): below 300px the KPI grid is a
+ * single column. A 2-column card is only ~64px wide at 195px (76px at
+ * 220px) while "548525.00 EGP" needs 95px at the 14px minimum (116px on
+ * the owner's wider font rendering) — no readable size fits it on one
+ * line in two columns, and nowrap would clip digits. A single column gives
+ * the amount the full row (~153px at 195px). The two-column contract
+ * above 300px is unchanged. */
+@media (max-width: 300px) {
+  :root body .shell .metric-grid {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
@@ -946,6 +1200,112 @@
   flex: 1 1 170px;
 }
 
+/* T18 Slice G (2026-11-21): the customer-statement card, redrawn per the
+ * owner ruling 2026-11-21 15:07 EET (13:42: "the card at the bottom, its
+ * look and design is not interactive and not good, redo the design and
+ * buttons"). The panel groups its parts on an even 16px rhythm instead of
+ * relying on each child's own margins; the filter bar groups the two date
+ * fields together and the two actions together (before, all four children
+ * stretched as equal 170px+ blocks across the full width, so the labels and
+ * their buttons sat far apart — owner note 14:45); the pager keeps its
+ * range text with its buttons instead of spreading them across a 3-column
+ * grid. Buttons with icons are inline-flex so the icon sits next to the
+ * label; pager chevrons flip in RTL so Previous/Next keep pointing the
+ * right way. */
+:root body .shell .statement-panel {
+  display: grid;
+  align-content: start;
+  gap: var(--aiba-space-4);
+}
+
+:root body .shell .statement-panel .statement-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+:root body .shell .statement-panel .statement-action aba-icon {
+  width: 16px;
+  height: 16px;
+}
+
+:root body .shell .statement-filters > .statement-filters__dates {
+  display: flex;
+  flex: 1 1 320px;
+  gap: var(--aiba-space-3);
+  min-width: 0;
+}
+
+:root body .shell .statement-filters > .statement-filters__dates > label {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* T18 Slice J (2026-11-21): one shared date-range component (aba-date-range)
+ * for the four from/to pairs (Reports P&L, Customers statement, Taxes,
+ * Platform-admin audit). The component projects the caller's two inputs, so
+ * each pair keeps its own name, label, validation and [(ngModel)] binding;
+ * the component owns only the shared layout and the icon-only clear action.
+ * These rules must live here, not in the component styles: component styles
+ * cannot reach projected content under emulated encapsulation, and this repo
+ * uses no ::ng-deep. The 44px height / 11px radius of the date inputs comes
+ * from the global field rules (Slice I); the labels below only restore the
+ * grid label layout the direct-child rules above used to give them (the
+ * `> label` rules stop matching once the component sits between the form
+ * and its labels) and size the component host in each caller's layout.
+ * No presets: the preset choice is an owner decision (plan section 7.4),
+ * so the component ships with just the two inputs + clear. */
+:root body .shell aba-date-range {
+  display: block;
+  min-width: 0;
+}
+
+:root body .shell aba-date-range .aba-date-range__fields > label {
+  display: grid;
+  align-content: start;
+  gap: var(--aiba-space-2);
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+:root body .shell .statement-filters > .statement-filters__dates > aba-date-range {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+:root body .shell .audit-filters aba-date-range {
+  flex: 2 1 340px;
+  min-width: 0;
+}
+
+:root body .shell .statement-filters > .statement-filters__actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: end;
+  gap: var(--aiba-space-2);
+  min-width: 0;
+}
+
+:root body .shell .statement-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  min-width: 0;
+  gap: var(--aiba-space-2) var(--aiba-space-3);
+}
+
+:root body .shell .statement-pager__actions {
+  display: flex;
+  min-width: 0;
+  margin-inline-start: auto;
+  gap: var(--aiba-space-2);
+}
+
+:root body .shell[dir="rtl"] .statement-pager__chevron svg {
+  transform: scaleX(-1);
+}
+
 :root body .shell .table-wrap,
 :root body .shell .invoice-table-wrap,
 :root body .shell .audit-table-wrap {
@@ -987,10 +1347,7 @@
 
 :root body .shell .invoice-card,
 :root body .shell .line-card,
-:root body .shell .invoice-section,
-:root body .shell .invoice-summary,
 :root body .shell .server-summary,
-:root body .shell .invoice-summary-pending,
 :root body .shell .statement-panel,
 :root body .shell .chat-panel {
   border: 1px solid var(--aiba-line);
@@ -1008,7 +1365,6 @@
   box-shadow: none;
 }
 
-:root body .shell .invoice-summary-pending,
 :root body .shell .summary-pending-note {
   background: var(--aiba-surface-tint);
 }
@@ -1368,8 +1724,11 @@
 
 :root body .shell .list-tools > input,
 :root body .shell .list-tools > select,
+:root body .shell .list-tools > aba-search-field,
+:root body .shell .list-tools > aba-filter-bar,
 :root body .shell .invoice-controls input,
 :root body .shell .invoice-controls select,
+:root body .shell .invoice-controls aba-search-field,
 :root body .shell .statement-filters input,
 :root body .shell .statement-filters select,
 :root body .shell .audit-filters input,
@@ -1516,6 +1875,17 @@
     max-width: 100%;
   }
 
+  /* T18 Slice G (2026-11-21): on narrow phones the statement dates stack
+   * and the two filter actions share one row instead of stretching full
+   * width as separate blocks. */
+  :root body .shell .statement-filters > .statement-filters__dates {
+    flex-direction: column;
+  }
+
+  :root body .shell .statement-filters > .statement-filters__actions > * {
+    flex: 1 1 0;
+  }
+
   :root body .shell .aba-section-header__actions {
     width: 100%;
     justify-content: flex-start;
@@ -1524,6 +1894,39 @@
   :root body .shell .aba-state-message__action {
     width: 100%;
     margin-inline-start: 0;
+  }
+}
+
+/* T18 Slice U02 (2026-11-21): at 195/220px the statement Apply / Clear
+ * buttons share one row at ~70px each, so "Apply range" and "Clear range"
+ * break letter-by-letter, and the pager Previous / Next do the same.
+ * Below 380px both groups stack full-width, so every label stays readable.
+ * At 390px the side-by-side buttons already fit, so they are untouched. */
+@media (max-width: 380px) {
+  :root body .shell .statement-filters > .statement-filters__actions {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  :root body .shell .statement-filters > .statement-filters__actions > * {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  :root body .shell .statement-pager {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  :root body .shell .statement-pager__actions {
+    flex-direction: column;
+    width: 100%;
+    margin-inline-start: 0;
+  }
+
+  :root body .shell .statement-pager__actions > * {
+    width: 100%;
   }
 }
 
@@ -1722,9 +2125,28 @@
 :root body .shell .aba-record-table__action{min-height:40px;padding:8px 11px;font-size:var(--aiba-text-xs);white-space:nowrap}
 :root body .shell .aba-record-table__action:disabled{cursor:not-allowed;opacity:.55}
 :root body .shell .aba-record-table__no-action{color:var(--aiba-muted-soft)}
-:root body .shell .aba-record-table__visually-hidden,:root body .shell .aba-record-create__sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+/* Routine (B) revision 2026-11-22: the visible sort control for the
+ * stacked layout is one compact native select (the same mobile-sort
+ * pattern customer-directory and product-catalog already use). Hidden by
+ * default (desktop keeps the thead buttons); the ≤760px block below shows
+ * it as a single row. The chip row it replaces was 288px tall at 195px. */
+:root body .shell .aba-record-table__mobile-sort{display:none}
+:root body .shell .aba-record-table__visually-hidden{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+/* T18 Slice U04 (2026-11-21): the plain .sr-only utility was missing, so the
+ * invoices section heading (<h2 id="invoices-section-title" class="sr-only">,
+ * allow-listed as screen-reader-only by slice-h-headings.spec.ts) rendered as
+ * a visible duplicate "Sales & invoices" title that broke mid-word at 195/220.
+ * Same declarations as the record-table visually-hidden utility above. */
+:root body .shell .sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
 :root body .shell details.aba-record-create,:root body .shell details.aba-record-secondary{min-width:0;margin-block:12px;border-radius:13px}
 :root body .shell details.aba-record-create>summary,:root body .shell details.aba-record-secondary>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:46px;padding:10px 14px;border:1px solid var(--aiba-line);border-radius:12px;background:var(--aiba-surface-tint);color:var(--aiba-ink);font-size:var(--aiba-text-sm);font-weight:720;line-height:1.45;cursor:pointer;list-style:none;touch-action:manipulation}
+/* T18 Slice U02 (2026-11-21): every customer tool has an icon. The Export
+ * CSV button and the CSV-import disclosure label carry their icon inline
+ * with the label (16px, the same size as the statement-card action icons). */
+:root body .shell .customers-tool{display:inline-flex;align-items:center;gap:7px}
+:root body .shell .customers-tool aba-icon{width:16px;height:16px}
+:root body .shell details.aba-record-secondary.csv-disclosure>summary>span{display:inline-flex;align-items:center;gap:7px;min-width:0}
+:root body .shell details.aba-record-secondary.csv-disclosure>summary aba-icon{width:16px;height:16px}
 :root body .shell details.aba-record-create>summary::-webkit-details-marker,:root body .shell details.aba-record-secondary>summary::-webkit-details-marker{display:none}
 :root body .shell details.aba-record-create>summary::marker,:root body .shell details.aba-record-secondary>summary::marker{content:""}
 :root body .shell details.aba-record-create>summary{border-color:var(--aiba-brand-line);background:var(--aiba-brand-soft);color:var(--aiba-brand-strong)}
@@ -1749,8 +2171,34 @@
 :root body .shell .aba-record-table tbody td.aba-record-table__actions-cell{grid-column:1/-1;min-width:0;padding-block:10px;border-block-start:1px solid var(--aiba-line);background:var(--aiba-surface-tint)}
 :root body .shell .aba-record-table__actions{width:100%}
 :root body .shell .aba-record-table__action{flex:1 1 130px;min-width:0;min-height:44px;white-space:normal}
+/* Routine (B) revision 2026-11-22: at ≤760px the thead is clipped to 1x1,
+ * so its sort buttons were invisible Tab stops. The compact select above
+ * the table is the visible replacement — same sort state, same labels —
+ * while the thead buttons leave the tab order (tabindex=-1 in the
+ * component) but stay in the accessibility tree for screen-reader browse
+ * mode. One row, 48px when closed: the 16px font + 48px min-height of the
+ * ≤760px modernization rule beat this rule on specificity (0,7,2), and
+ * that is wanted — 16px keeps iOS from zooming on focus, 48px is the
+ * established mobile touch target. padding-block is 4px (not 8px) because
+ * the select's intrinsic content is 36px at 16px, so 8px of padding pushed
+ * the total to 54px; at 4px the 48px min-height governs. The label + select
+ * stack in customer-directory below 360px, but this control must stay a
+ * single row at 195px, so the "Sort by" text is the select's own
+ * placeholder option and aria-label. */
+:root body .shell .aba-record-table__mobile-sort{display:block;margin-block-end:11px}
+:root body .shell .aba-record-table__mobile-sort-select{display:block;width:100%;min-height:44px;padding-block:4px;padding-inline-start:12px;padding-inline-end:34px;border:1px solid var(--aiba-line);border-radius:11px;background:var(--aiba-surface);color:var(--aiba-ink,#172033);font:inherit;font-size:var(--aiba-text-xs);font-weight:650}
 :root body .shell .aba-record-toolbar{grid-template-columns:minmax(0,1fr)}
 :root body .shell .aba-record-create__body,:root body .shell .aba-record-secondary__body{padding:12px}
+}
+/* T18 Slice U02 (2026-11-21): at 195/220px a two-column record card gives
+ * each numeric cell ~70px, so "548525.00 EGP" splits mid-number ("548525.0
+ * 0 EGP") and the date splits ("10/11/20 26"). Below 320px the card is a
+ * single column, so every value gets the full width and stays intact
+ * (white-space:nowrap on numeric cells, the amounts-intact batch rule). At
+ * 390px the two-column card already fits the amounts, so it is untouched. */
+@media(max-width:320px){
+:root body .shell .aba-record-table tbody tr{grid-template-columns:minmax(0,1fr)}
+:root body .shell .aba-record-table tbody td[data-kind="numeric"]{white-space:nowrap;overflow-wrap:normal;text-align:start}
 }
 @media(prefers-reduced-motion:reduce){:root body .shell .aba-record-create__icon{transition:none}}
 
@@ -1947,5 +2395,19 @@
 @media (max-width: 380px) {
   :root body .shell .dashboard-period {
     padding: 12px;
+  }
+
+  /* T18 Slice U01 follow-up (2026-11-21): below 380px the period pill
+   * ("Last 30 days", nowrap, ~102px) squeezes the hero title to ~42px at
+   * 195px, so "Business" broke mid-word. Stack the heading: the title
+   * takes the full row and the pill wraps below it. The title keeps its
+   * 18px size and wraps between words (overflow-wrap:normal in the shell
+   * stylesheet), never mid-word. */
+  :root body .shell .dashboard-period__heading {
+    flex-wrap: wrap;
+  }
+
+  :root body .shell .dashboard-period__title {
+    flex: 1 1 100%;
   }
 }

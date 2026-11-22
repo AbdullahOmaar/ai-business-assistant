@@ -776,6 +776,8 @@ test('late invoice detail is discarded and its print window closes after a works
 test('payment controls stay locked while pending and retry preserves the exact payload and idempotency key', async ({ page }) => {
   const harness = await setupOwner(page, { deferFirstPayment: true });
   await page.locator('aside.sidebar[role="navigation"]').getByRole('button', { name: 'Payments & collections', exact: true }).click();
+  // U05: the add-payment form opens on demand; the toggle is the "Record payment" button.
+  await page.getByRole('button', { name: 'Record payment', exact: true }).click();
   const paymentForm = page.locator('form.payment-form');
   await expect(paymentForm).toBeVisible();
 

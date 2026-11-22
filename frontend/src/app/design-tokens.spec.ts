@@ -167,8 +167,11 @@ test('shared section headers preserve h2/h3 hierarchy for nested workspace secti
   assert.match(sectionHeaderSource, /readonly level = input<2 \| 3>\(2\)/);
   assert.match(sectionHeaderSource, /@if \(level\(\) === 3\)/);
   assert.match(sectionHeaderSource, /<h3 \[id\]="titleId\(\) \|\| null">/);
-  assert.equal([...appSource.matchAll(/<aba-section-header \[level\]="3"/g)].length, 2,
-    'nested receivables and customer statement sections must use h3');
+  // T18 Slice H: four more nested sections joined the level-3 set (the two
+  // CSV import panels and the two data-integrity subsections), so the count
+  // is 6: receivables ageing, customer statement, CSV imports ×2, integrity ×2.
+  assert.equal([...appSource.matchAll(/<aba-section-header \[level\]="3"/g)].length, 6,
+    'nested sections must use h3: receivables ageing, customer statement, CSV imports, integrity subsections');
 });
 
 test('shared section headers stack heading copy and actions on narrow screens without clipping long localized titles', () => {

@@ -29,13 +29,14 @@
     *{box-sizing:border-box}body{margin:0;min-height:100vh}
     .boot-fallback{min-height:100vh;display:grid;place-items:center;padding:24px}
     .boot-card{width:min(100%,520px);min-height:180px;display:grid;place-items:center;background:#fff;border:1px solid #e5eaf1;border-radius:20px;padding:32px;box-shadow:0 20px 60px #17203312}
-    .boot-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900}
+    .boot-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:50%;background:linear-gradient(180deg,#1f8c96,#093a44);box-shadow:0 2px 8px #0f172a26}
+    .boot-mark svg{display:block;width:78%;height:78%}
   </style>
 </head>
 <body>
   <aba-root>
     <main class="boot-fallback" role="status" aria-live="polite">
-      <section class="boot-card"><div class="boot-mark" aria-hidden="true">A</div></section>
+      <section class="boot-card"><div class="boot-mark" aria-hidden="true"><svg viewBox="0 0 100 100" aria-hidden="true" focusable="false"><polygon points="68.75,4.73 76.52,23.48 95.27,31.25 87.50,50.00 95.27,68.75 76.52,76.52 68.75,95.27 50.00,87.50 31.25,95.27 23.48,76.52 4.73,68.75 12.50,50.00 4.73,31.25 23.48,23.48 31.25,4.73 50.00,12.50" fill="#ffffff"/><rect x="27.25" y="49.00" width="11.5" height="20" rx="3.68" fill="#093A44"/><rect x="44.25" y="35.00" width="11.5" height="34" rx="3.68" fill="#093A44"/><rect x="61.25" y="19.00" width="11.5" height="50" rx="3.68" fill="#f5a623"/><circle cx="67.00" cy="9.80" r="5.17" fill="#f5a623"/></svg></div></section>
     </main>
   </aba-root>
 </body>
