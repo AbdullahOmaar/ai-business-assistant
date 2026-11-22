@@ -21,7 +21,7 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
-from app.data_exchange import CsvValidationError, parse_import_csv
+from app.data_exchange import CsvValidationError, parse_import_csv, spreadsheet_safe
 from app.models import (
     AuditEvent, Business, BusinessSetting, Customer, Expense, ImportJob, Invoice, InvoiceLine, Notification,
     Payment, PaymentAllocation, PricingRule, Product, PurchaseOrder, PurchaseOrderLine, PurchaseReceiptIdempotency, RecurringInvoiceSchedule,
@@ -1143,9 +1143,7 @@ def export_csv(business_id: UUID, entity_type: str,
                 elif isinstance(value, Decimal):
                     value = format(value, "f")
                 text_value = "" if value is None else str(value)
-                if text_value.startswith(("=", "+", "-", "@", "\t", "\r")):
-                    text_value = "'" + text_value
-                values.append(text_value)
+                values.append(spreadsheet_safe(text_value))
             writer.writerow(values)
         return Response(content=buffer.getvalue(), media_type="text/csv",
                         headers={"Content-Disposition": f'attachment; filename="{entity_type}.csv"'})

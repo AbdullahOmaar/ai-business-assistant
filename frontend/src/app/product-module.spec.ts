@@ -66,3 +66,15 @@ test('product workspace provides tenant-scoped list, detail, descriptive edit an
   assert.match(workspace, /if \(request > 0\) void this\.loadProducts\(true\)/);
   assert.doesNotMatch(workspace, /createProduct|unit_price|opening_quantity|stock_quantity/);
 });
+
+test('T18 U03: product profile heading wraps on words and price/stock stay intact', () => {
+  assert.match(profile, /product-profile h2\{[^}]*overflow-wrap:normal/);
+  assert.doesNotMatch(profile, /product-profile h2\{[^}]*overflow-wrap:anywhere/);
+  assert.match(profile, /product-profile__price\{[^}]*white-space:nowrap/);
+  assert.match(profile, /product-profile__stock bdi\{[^}]*white-space:nowrap/);
+  // Below 380px the header stacks (mark above the name) so the name gets the full card width.
+  assert.match(profile, /@media\(max-width:380px\)[\s\S]*?\.product-profile header\{flex-direction:column;align-items:flex-start/);
+  // No import control and no balance edit in the profile.
+  assert.doesNotMatch(profile, /Import/);
+  assert.doesNotMatch(profile, /adjustStock|stock_quantity =/);
+});

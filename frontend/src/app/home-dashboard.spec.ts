@@ -11,6 +11,7 @@ const appSource = expandTranslationCalls(
 const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const backendSource = readFileSync(new URL('../../../backend/app/core_features_api.py', import.meta.url), 'utf8');
 const metricCardSource = readFileSync(new URL('./shared/ui/aba-metric-card.component.ts', import.meta.url), 'utf8');
+const skeletonSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-skeleton.component.ts', import.meta.url), 'utf8'));
 const mobileHeaderCssSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
 const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
 const quickAccessCardSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8'));
@@ -130,7 +131,16 @@ test('shared metric cards style projected amounts and source-basis notes legibly
   assert.match(metricCardSource, /aba-metric-card__values strong/);
   assert.match(metricCardSource, /font-variant-numeric:tabular-nums/);
   assert.match(metricCardSource, /aba-metric-card__values \.metric-basis/);
-  assert.match(metricCardSource, /overflow-wrap:anywhere/);
+  // T18 Slice U01 follow-up (2026-11-21): the amount value must stay on one
+  // line — `overflow-wrap:anywhere` on it split "548525.00 EGP" inside the
+  // number at 220px and 390px (owner render). The strong is nowrap now and
+  // the supporting small wraps on words (no anywhere), so a long count or
+  // basis note can wrap between words but never inside a number.
+  const strongRule = metricCardSource.match(/\.aba-metric-card__values strong\{([^}]*)\}/)?.[1] ?? '';
+  const smallRule = metricCardSource.match(/\.aba-metric-card__values small\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(strongRule, /white-space:nowrap/);
+  assert.doesNotMatch(strongRule, /overflow-wrap:anywhere/);
+  assert.doesNotMatch(smallRule, /overflow-wrap:anywhere/);
 });
 
 
@@ -174,11 +184,16 @@ test('Home preserves the reporting-period hierarchy while KPI data is loading', 
   const loadingEnd = home.indexOf('} @else if (!error)', loadingStart);
   const loading = home.slice(loadingStart, loadingEnd);
   assert.ok(loadingStart >= 0 && loadingEnd > loadingStart);
-  assert.match(loading, /dashboard-period dashboard-period--skeleton" aria-hidden="true"/);
-  assert.match(loading, /t\('ملخص النشاط', 'Business summary'\)/);
-  assert.match(loading, /t\('آخر 30 يومًا', 'Last 30 days'\)/);
-  assert.match(loading, /dashboard-period-skeleton__details/);
-  assert.match(appSource, /\.dashboard-period--skeleton\{min-height:66px\}/);
+  // T18 Slice C (2026-11-21): the bespoke period skeleton block was
+  // extracted into aba-skeleton (detail variant). The shell now passes the
+  // real heading/subtitle as inputs; the component owns the section markup,
+  // the aria-hidden root and the 66px reserved space.
+  assert.match(loading, /<aba-skeleton variant="detail" \[title\]="t\('ملخص النشاط', 'Business summary'\)" \[subtitle\]="t\('آخر 30 يومًا', 'Last 30 days'\)" \/>/);
+  assert.match(skeletonSource, /<section class="aba-skeleton aba-skeleton--detail" aria-hidden="true">/);
+  assert.match(skeletonSource, /<h2 class="aba-skeleton__title">\{\{ title\(\) \}\}<\/h2>/);
+  assert.match(skeletonSource, /<strong class="aba-skeleton__subtitle">\{\{ subtitle\(\) \}\}<\/strong>/);
+  assert.match(skeletonSource, /<div class="aba-skeleton__details">/);
+  assert.match(skeletonSource, /\.aba-skeleton--detail\{[^}]*min-height:66px/);
 });
 
 
@@ -216,10 +231,16 @@ test('Home reporting metadata and KPI detail text remain comfortably readable', 
 
 
 test('Home exposes its business summary as a navigable section heading', () => {
-  assert.equal(home.split('<h2 class="dashboard-period__title">').length - 1, 2,
-    'the ready and loading Home period sections must share one level-two heading each');
+  // T18 Slice C (2026-11-21): the loading-state h2 moved into aba-skeleton
+  // (detail variant, rendered from its title input). The shell keeps one
+  // dashboard-period__title h2 (the ready state); the skeleton component
+  // renders the second one while loading.
+  assert.equal(home.split('<h2 class="dashboard-period__title">').length - 1, 1,
+    'the ready Home period section keeps its level-two heading in the shell');
+  assert.ok(skeletonSource.includes('<h2 class="aba-skeleton__title">{{ title() }}</h2>'),
+    'the loading Home period section keeps its level-two heading in the skeleton component');
   assert.match(home, /<h2 class="dashboard-period__title">\{\{ t\('ملخص النشاط', 'Business summary'\) \}\}<\/h2>/);
-  assert.match(home, /<section class="dashboard-period dashboard-period--skeleton" aria-hidden="true">[\s\S]*?<h2 class="dashboard-period__title">/);
+  assert.match(skeletonSource, /<section class="aba-skeleton aba-skeleton--detail" aria-hidden="true">[\s\S]*?<h2 class="aba-skeleton__title">/);
   assert.match(appSource, /\.dashboard-period__title\{[^}]*font-size:14px/);
 });
 
@@ -274,6 +295,11 @@ test('Mobile Home KPI and module surfaces stay in compact two-column grids at na
   assert.ok(quickAccessCardSource.includes('grid-template-columns:32px minmax(0,1fr)'));
   assert.ok(quickAccessCardSource.includes('-webkit-line-clamp:2'));
   assert.ok(home.includes('homeModuleCards'));
+  // T18 Slice U01 (2026-11-21): the quick-access launcher is hidden on
+  // mobile — it duplicates the bottom dock (Overview/Invoices/Customers +
+  // More) and the module directory. The markup and desktop rendering stay.
+  assert.ok(appSource.includes('.module-launcher{display:none}'),
+    'the Home quick-access launcher must be hidden below the mobile breakpoint');
 });
 
 
@@ -282,7 +308,12 @@ test('Home loading skeleton uses the current bilingual Business Summary heading'
   const loadingEnd = home.indexOf('} @else if (!error)', loadingStart);
   const loading = home.slice(loadingStart, loadingEnd);
   assert.ok(loadingStart >= 0 && loadingEnd > loadingStart);
-  assert.match(loading, /<h2 class="dashboard-period__title">\{\{ t\('ملخص النشاط', 'Business summary'\) \}\}<\/h2>/);
+  // T18 Slice C (2026-11-21): the heading text moved from inline shell
+  // markup into the detail skeleton's title/subtitle inputs; the component
+  // renders them as the h2/strong. The bilingual copy is unchanged.
+  assert.match(loading, /<aba-skeleton variant="detail" \[title\]="t\('ملخص النشاط', 'Business summary'\)" \[subtitle\]="t\('آخر 30 يومًا', 'Last 30 days'\)" \/>/);
+  assert.ok(skeletonSource.includes('<h2 class="aba-skeleton__title">{{ title() }}</h2>'));
+  assert.ok(skeletonSource.includes('<strong class="aba-skeleton__subtitle">{{ subtitle() }}</strong>'));
   assert.doesNotMatch(loading, /BUSINESS SUMMARY/);
 });
 

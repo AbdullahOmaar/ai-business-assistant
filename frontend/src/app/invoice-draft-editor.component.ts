@@ -28,7 +28,7 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
         <div class="invoice-details-grid">
           <label class="field">
             <span>{{ t('ui.m_1et6j5w') }} *</span>
-            <input name="invoiceNumber" [(ngModel)]="invoiceNumber" (ngModelChange)="markDirty()" maxlength="64" autocomplete="off" [disabled]="locked" [placeholder]="t('ui.m_937ke4')" />
+            <input name="invoiceNumber" dir="ltr" [(ngModel)]="invoiceNumber" (ngModelChange)="markDirty()" maxlength="64" autocomplete="off" [disabled]="locked" [placeholder]="t('ui.m_937ke4')" />
           </label>
           <label class="field">
             <span>{{ t('ui.m_1jd5ck6') }}</span>
@@ -36,7 +36,7 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
           </label>
           <label class="field customer-field">
             <span>{{ t('ui.m_ubgrc2') }} *</span>
-            <select class="invoice-customer-select" name="customerId" [(ngModel)]="customerId" (ngModelChange)="markDirty()" [disabled]="locked">
+            <select class="invoice-customer-select" name="customerId" [(ngModel)]="customerId" (ngModelChange)="markDirty()" [disabled]="locked" [attr.dir]="customerSelectDir">
               <option value="">{{ t('ui.m_1oqobkx') }}</option>
               @for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }
             </select>
@@ -62,9 +62,11 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
             <article class="line-card">
               <div class="line-card-heading">
                 <strong>{{ t('ui.m_lofxac') }} {{ index + 1 }}</strong>
-                <button type="button" class="remove-line" (click)="removeLine(index)" [disabled]="locked || lines.length <= 1" [attr.aria-label]="t('ui.m_1hepg03') + ' ' + (index + 1)">
-                  <span aria-hidden="true">×</span><span>{{ t('ui.m_i15g6p') }}</span>
-                </button>
+                @if (lines.length > 1) {
+                  <button type="button" class="remove-line" (click)="removeLine(index)" [disabled]="locked" [attr.aria-label]="t('ui.m_1hepg03') + ' ' + (index + 1)">
+                    <span aria-hidden="true">×</span><span>{{ t('ui.m_i15g6p') }}</span>
+                  </button>
+                }
               </div>
               <div class="line-kind-switch" role="group" [attr.aria-label]="t('ui.m_8e5oum')">
                 <button type="button" class="kind-option" [class.active]="line.kind === 'product'" [attr.aria-pressed]="line.kind === 'product' ? 'true' : 'false'" (click)="changeKind(line, 'product')" [disabled]="locked">{{ t('ui.m_13rez2z') }}</button>
@@ -188,7 +190,7 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
     .section-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}.section-heading h4{margin:0;font-size:15px;line-height:1.4;font-weight:750;color:var(--aba-color-text-primary,#172033)}
     .invoice-details-grid{display:grid;grid-template-columns:minmax(0,.85fr) minmax(140px,.55fr) minmax(0,1.6fr);gap:12px;align-items:end;min-width:0}
     .field{display:grid;gap:7px;min-width:0;color:var(--aba-color-text-secondary,#475569);font-size:12px;font-weight:600}.field>span{line-height:1.4}
-    input,select,textarea{width:100%;min-width:0;box-sizing:border-box;border:1px solid var(--aba-color-border,#d0d5dd);border-radius:10px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font:inherit;font-size:13px;font-weight:400}
+    input,select,textarea{width:100%;min-width:0;box-sizing:border-box;border:1px solid var(--aba-color-border,#d0d5dd);border-radius:11px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font:inherit;font-size:13px;font-weight:400}
     input,select{min-height:44px;padding:10px 12px}textarea{min-height:92px;padding:11px 12px;resize:vertical;line-height:1.55}
     input:focus-visible,select:focus-visible,textarea:focus-visible,button:focus-visible{outline:3px solid var(--aba-color-focus,#0f766e);outline-offset:2px}
     .readonly-field,.rate-field input[readonly]{background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#475569)}
@@ -212,7 +214,7 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
     .editor-error{margin:0;padding:12px 14px;border:1px solid var(--aba-color-danger-border,#fecdca);border-radius:10px;background:var(--aba-color-danger-soft,#fef3f2);color:var(--aba-color-danger-text,#b42318);font-size:12px;line-height:1.5}.blocked-message p{margin:0 0 8px}
     button:disabled,input:disabled,select:disabled,textarea:disabled{opacity:.58;cursor:not-allowed}
     @media(max-width:760px){.invoice-details-grid{grid-template-columns:minmax(0,1fr) minmax(110px,.6fr)}.customer-field,.customer-more{grid-column:1/-1}.product-line,.service-line{grid-template-columns:minmax(0,1fr)}.line-kind-switch{width:100%}.editor-actions{align-items:stretch;flex-direction:column}.action-buttons{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}.primary-action,.secondary-action{width:100%}}
-    @media(max-width:380px){.editor-card{padding:13px}.editor-title h3{font-size:16px}.draft-status{padding-inline:7px}.readonly-rates{gap:7px}.rate-field{padding:8px}.rate-field input{padding-inline:8px}}
+    @media(max-width:380px){.editor-card{padding:13px}.editor-topbar{grid-template-columns:42px minmax(0,1fr)}.editor-title h3{font-size:16px;overflow-wrap:normal}.draft-status{grid-column:1/-1;justify-self:start;padding-inline:7px}.invoice-details-grid{grid-template-columns:minmax(0,1fr)}.line-card{padding:10px}.line-card-heading{flex-wrap:wrap}.remove-line{white-space:nowrap}.line-kind-switch{grid-template-columns:minmax(0,1fr)}.kind-option{padding:7px 8px;overflow-wrap:normal}.readonly-rates{grid-template-columns:minmax(0,1fr);gap:7px}.rate-field{padding:8px}.rate-field input{padding-inline:8px}.editor-actions{padding:12px}.action-buttons{grid-template-columns:minmax(0,1fr)}.primary-action,.secondary-action{white-space:normal}}
   @media(max-width:760px){.editor-actions{bottom:calc(102px + env(safe-area-inset-bottom));}}\n    `],
 })
 export class InvoiceDraftEditorComponent implements OnChanges {
@@ -258,6 +260,24 @@ export class InvoiceDraftEditorComponent implements OnChanges {
   }
 
   get locked(): boolean { return this.saving || this.blocked || !!this.serverSummary; }
+
+  // U04 fix (2026-11-21): a native select clips the selected value at the end
+  // its direction points to, so the direction must follow the selected name's
+  // script, not the UI language. A Latin name in an RTL select shows only its
+  // tail ("Company"), and an Arabic name in an LTR select shows only its tail
+  // too. `unicode-bidi: plaintext` does not change select rendering in
+  // Chromium (verified by experiment), so the direction is set from the first
+  // strong directional character of the name; with no customer selected the
+  // UI language direction applies.
+  get customerSelectDir(): 'ltr' | 'rtl' {
+    const selected = this.customers.find(customer => customer.id === this.customerId);
+    const name = selected?.name ?? '';
+    for (const char of name) {
+      if (/[\u0590-\u05FF\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/.test(char)) return 'rtl';
+      if (/[A-Za-z]/.test(char)) return 'ltr';
+    }
+    return this.language === 'ar' ? 'rtl' : 'ltr';
+  }
 
   startNewDraft(): void {
     if (this.saving || this.blocked) return;

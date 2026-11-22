@@ -43,7 +43,7 @@ type PurchaseAction = 'approve' | 'cancel';
         <div class="pw__toolbar">
           <label class="pw__search">
             <span class="pw__sr-only">{{ t('search') }}</span>
-            <input type="search" [value]="search()" (input)="search.set(readValue($event))" [placeholder]="t('search')" />
+            <input type="search" [value]="search()" (input)="search.set(readValue($event))" [placeholder]="isNarrow() ? t('searchShort') : t('search')" />
           </label>
           @if (loading()) { <span class="pw__muted" role="status">{{ t('loading') }}</span> }
         </div>
@@ -137,14 +137,14 @@ type PurchaseAction = 'approve' | 'cancel';
             <div class="pw__summary">
               <div><small>{{ t('supplier') }}</small><strong>{{ order.supplier.name }}</strong></div>
               <div><small>{{ t('currency') }}</small><strong>{{ order.currency_code }}</strong></div>
-              <div><small>{{ t('total') }}</small><strong>{{ order.total }} {{ order.currency_code }}</strong></div>
+              <div><small>{{ t('total') }}</small><strong class="pw__summary-total">{{ order.total }} {{ order.currency_code }}</strong></div>
             </div>
             <div class="pw__table">
               <div class="pw__table-head"><span>{{ t('product') }}</span><span>{{ t('ordered') }}</span><span>{{ t('received') }}</span><span>{{ t('remaining') }}</span><span>{{ t('unitCost') }}</span></div>
               @for (line of order.lines; track line.id) {
                 <div class="pw__table-row">
                   <strong>{{ line.product?.name || productName(line.product_id) }}</strong>
-                  <span>{{ line.quantity }}</span><span>{{ line.received_quantity }}</span><span>{{ line.remaining_quantity }}</span><span>{{ line.unit_cost }} {{ order.currency_code }}</span>
+                  <span [attr.data-label]="t('ordered')">{{ line.quantity }}</span><span [attr.data-label]="t('received')">{{ line.received_quantity }}</span><span [attr.data-label]="t('remaining')">{{ line.remaining_quantity }}</span><span [attr.data-label]="t('unitCost')">{{ line.unit_cost }} {{ order.currency_code }}</span>
                 </div>
               }
             </div>
@@ -229,25 +229,27 @@ type PurchaseAction = 'approve' | 'cancel';
     .pw__search input{width:100%;min-height:44px;box-sizing:border-box}
     .pw__cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
     .pw__card,.pw__panel{display:grid;gap:13px;min-width:0;padding:14px;border:1px solid var(--aba-color-border,#dbe3ec);border-radius:14px;background:var(--aba-color-surface,#fff);box-shadow:0 2px 8px #0f172a08}
-    .pw__card p{margin:0;color:var(--aba-color-text-secondary,#64748b);font-size:13px;overflow-wrap:anywhere}
+    .pw__card p{margin:0;color:var(--aba-color-text-secondary,#64748b);font-size:13px;overflow-wrap:normal}
     .pw__card-meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--aba-color-text-secondary,#64748b)}
+    .pw__card-meta strong{white-space:nowrap}
     .pw__status{display:inline-flex;align-items:center;min-height:27px;padding:4px 9px;border-radius:999px;border:1px solid var(--aba-color-border,#dbe3ec);background:var(--aba-color-surface-subtle,#f8fafc);font-size:11px;font-weight:800;white-space:nowrap}
     .pw__status--draft{color:#475569}.pw__status--approved{color:#1d4ed8}.pw__status--partially_received{color:#92400e}.pw__status--received{color:#047857}.pw__status--cancelled{color:#991b1b}
     .pw__form{display:grid;gap:13px}
     .pw__form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
     .pw__line-form{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(100px,.7fr) minmax(110px,.8fr) 42px;align-items:end;gap:9px;padding:10px;border:1px solid var(--aba-color-border,#dbe3ec);border-radius:12px;background:var(--aba-color-surface-subtle,#f8fafc)}
     .pw__line-form label,.pw__form-grid label,.pw__receipt label{display:grid;gap:5px;min-width:0;font-size:11px;font-weight:700}
-    .pw__line-form input,.pw__line-form select,.pw__form-grid input,.pw__form-grid select,.pw__receipt input,.pw__search input{width:100%;min-width:0;min-height:44px;box-sizing:border-box;padding:9px 10px;border:1px solid var(--aba-color-border-strong,#cbd5e1);border-radius:9px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font:inherit;font-size:13px}
+    .pw__line-form input,.pw__line-form select,.pw__form-grid input,.pw__form-grid select,.pw__receipt input,.pw__search input{width:100%;min-width:0;min-height:44px;box-sizing:border-box;padding:9px 10px;border:1px solid var(--aba-color-border-strong,#cbd5e1);border-radius:11px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font:inherit;font-size:13px}
     .pw__remove{min-width:42px;min-height:44px;border:1px solid #fecaca!important;background:#fff7f7!important;color:#b42318!important;font-size:20px!important}
     .pw__table{display:grid;min-width:0;overflow-x:auto;border:1px solid var(--aba-color-border,#dbe3ec);border-radius:12px}
     .pw__table-head,.pw__table-row{display:grid;grid-template-columns:minmax(130px,1.5fr) repeat(4,minmax(78px,.7fr));gap:8px;align-items:center;min-width:590px;padding:10px 12px;font-size:12px}
     .pw__table-head{background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#64748b);font-size:10px;font-weight:800}
     .pw__table-row{border-top:1px solid var(--aba-color-border-subtle,#edf1f5);font-variant-numeric:tabular-nums}
-    .pw__table-row strong{overflow-wrap:anywhere}
+    .pw__table-row strong{overflow-wrap:normal}
     .pw__summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
     .pw__summary>div{display:grid;gap:5px;min-width:0;padding:10px;border-radius:10px;background:var(--aba-color-surface-subtle,#f8fafc)}
     .pw__summary small{color:var(--aba-color-text-secondary,#64748b);font-size:10px}
-    .pw__summary strong{font-size:13px;overflow-wrap:anywhere}
+    .pw__summary strong{font-size:13px;overflow-wrap:normal}
+    .pw__summary-total{white-space:nowrap}
     .pw__actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .purchasing-workspace button{min-height:42px;padding:8px 12px;border:1px solid var(--aba-color-border-strong,#cbd5e1);border-radius:10px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font:inherit;font-size:12px;font-weight:750;cursor:pointer}
     .purchasing-workspace button:disabled{opacity:.55;cursor:wait}
@@ -263,13 +265,15 @@ type PurchaseAction = 'approve' | 'cancel';
     .pw__history{padding-top:12px;border-top:1px solid var(--aba-color-border,#dbe3ec)}
     .pw__history-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
     .pw__history-item{display:grid;gap:4px;padding:9px 0;border-bottom:1px solid var(--aba-color-border-subtle,#edf1f5);min-width:0}
-    .pw__history-item strong{font-size:12px;overflow-wrap:anywhere}.pw__history-item small{font-size:10px;color:var(--aba-color-text-secondary,#64748b);overflow-wrap:anywhere}
+    .pw__history-item strong{font-size:12px;overflow-wrap:normal}.pw__history-item small{font-size:10px;color:var(--aba-color-text-secondary,#64748b);overflow-wrap:normal}
     .pw__sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
     .purchasing-workspace :is(button,input,select):focus-visible{outline:3px solid var(--aba-color-focus,#2563eb);outline-offset:2px}
     @media(max-width:760px){.pw__form-grid{grid-template-columns:minmax(0,1fr)}.pw__line-form{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:end}.pw__line-form label:first-child{grid-column:1/-1}.pw__remove{grid-column:2;justify-self:end}.pw__summary{grid-template-columns:repeat(2,minmax(0,1fr))}.pw__history-grid{grid-template-columns:minmax(0,1fr)}.pw__heading{align-items:flex-start;flex-direction:column}.pw__heading .pw__primary{width:100%}.pw__actions button{flex:1 1 auto;min-height:44px}}
     @media(max-width:380px){.pw__summary{grid-template-columns:minmax(0,1fr)}.pw__line-form{grid-template-columns:minmax(0,1fr)}.pw__remove{grid-column:1;justify-self:start}}
     @media(prefers-reduced-motion:reduce){.purchasing-workspace *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
     @media(forced-colors:active){.purchasing-workspace button,.purchasing-workspace input,.purchasing-workspace select{border:1px solid CanvasText}.purchasing-workspace :is(button,input,select):focus-visible{outline-color:Highlight}}
+    @media(max-width:480px){.pw__table-head{display:none}.pw__table-row{display:grid;grid-template-columns:minmax(0,1fr);gap:8px;min-width:0}.pw__table-row>span{display:grid;gap:2px;min-width:0;white-space:nowrap}.pw__table-row>span::before{content:attr(data-label);color:var(--aba-color-text-secondary,#64748b);font-size:10px;font-weight:800}}
+    @media(max-width:380px){.pw__card-head,.pw__detail-head{flex-direction:column;align-items:flex-start;gap:6px}}
   `],
 })
 export class PurchasingWorkspaceComponent {
@@ -286,6 +290,15 @@ export class PurchasingWorkspaceComponent {
   readonly language = input<'ar' | 'en'>('ar');
 
   readonly mode = signal<'list' | 'detail' | 'create' | 'edit'>('list');
+
+  /** Tracks the ≤220px breakpoint for the narrow search placeholder
+   * (narrow-input fix 2026-11-22): the full "Search order, supplier or
+   * status" placeholder is ~165px at the 11px placeholder size and still
+   * clips the 151px area at 195px, so the short form shows there. Guarded
+   * for the node unit runner, which has no `window`. */
+  private readonly narrowQuery = typeof window !== 'undefined'
+    ? window.matchMedia('(max-width: 220px)') : null;
+  protected readonly isNarrow = signal(this.narrowQuery?.matches ?? false);
   readonly orders = signal<PurchaseOrder[]>([]);
   readonly suppliers = signal<Supplier[]>([]);
   readonly products = signal<Product[]>([]);
@@ -328,6 +341,7 @@ export class PurchasingWorkspaceComponent {
   private editingOrderId: string | null = null;
 
   constructor() {
+    this.narrowQuery?.addEventListener('change', (event) => this.isNarrow.set(event.matches));
     effect(() => {
       const context = this.context();
       untracked(() => {

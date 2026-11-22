@@ -68,10 +68,18 @@ def parse_import_csv(content: str, *, entity_type: str) -> list[dict[str, str]]:
         raise CsvValidationError("CSV could not be parsed") from exc
 
 
-def _spreadsheet_safe(value: object) -> str:
+def spreadsheet_safe(value: object) -> str:
+    """Prefix spreadsheet formula initiators to reduce CSV formula-injection risk.
+
+    Spreadsheet applications trim leading whitespace before interpreting a cell,
+    so the check must look at the first significant character, not just the
+    first character: " =2+5", "\\t=2+5" and "\\n-2+5" are formulas once opened.
+    A leading tab, carriage return or newline is prefixed as well, matching
+    the platform-admin export rule.
+    """
     text = "" if value is None else str(value)
-    # Prefix spreadsheet formula initiators to reduce CSV formula-injection risk.
-    if text[:1] in {"=", "+", "-", "@", "\t", "\r"}:
+    significant = text.lstrip(" \t\r\n")
+    if text.startswith(("\t", "\r", "\n")) or significant.startswith(("=", "+", "-", "@")):
         return "'" + text
     return text
 
@@ -86,5 +94,5 @@ def export_csv(
     writer = csv.DictWriter(buffer, fieldnames=list(columns), extrasaction="ignore")
     writer.writeheader()
     for row in rows:
-        writer.writerow({column: _spreadsheet_safe(row.get(column)) for column in columns})
+        writer.writerow({column: spreadsheet_safe(row.get(column)) for column in columns})
     return buffer.getvalue()

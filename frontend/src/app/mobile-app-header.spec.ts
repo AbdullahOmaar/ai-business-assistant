@@ -124,10 +124,23 @@ test('mobile app header and install guidance stay in normal document flow', () =
   assert.match(appSource, /class="install-help install-help-inline"/);
   assert.match(appSource, /mobile-install-button/);
   assert.doesNotMatch(appSource, /install-cta-visible|install-help-open|install-floating|install-help-floating/);
+  // Narrow-input fix (2026-11-22): at ≤220px the install banner's copy
+  // column is narrower than the longest title word ("assistant"), so the
+  // title's last line slid under the Install button. The card stacks: the
+  // title gets the full width and the button goes full-width below. NEW
+  // assertions (no old assertions — the card was a row at every width).
+  assert.match(appSource, /@media\(max-width:220px\)\{[\s\S]*?\.mobile-install-card\{flex-direction:column;align-items:stretch\}/);
+  assert.match(appSource, /@media\(max-width:220px\)\{[\s\S]*?\.mobile-install-button\{width:100%\}/);
 });
 
 test('mobile page title changes are announced politely without moving focus', () => {
+  // T18 Slice H: the h1 keeps its polite live region. The amber octagram
+  // marker is a ::before pseudo-element (design-system.css), not a DOM span
+  // inside the h1: a real span adds a second box to Range.getClientRects(),
+  // which the mobile E2E title check reads as a second rendered line
+  // (2026-11-21 regression at b558cbd). The h1 holds only the title text.
   assert.match(source, /<h1 aria-live="polite" aria-atomic="true">\{\{ pageTitle \}\}<\/h1>/);
+  assert.doesNotMatch(source, /aiba-page-title-marker/);
 });
 
 

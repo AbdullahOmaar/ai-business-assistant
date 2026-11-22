@@ -3,7 +3,7 @@ import io
 
 import pytest
 
-from app.data_exchange import CsvValidationError, export_csv, parse_import_csv
+from app.data_exchange import CsvValidationError, export_csv, parse_import_csv, spreadsheet_safe
 
 
 def test_customer_import_accepts_only_allowlisted_fields():
@@ -44,3 +44,27 @@ def test_export_quotes_csv_and_neutralizes_spreadsheet_formulas():
         "name": "'=HYPERLINK(\"https://bad.example\",\"click\")",
         "notes": "a,b",
     }]
+
+
+@pytest.mark.parametrize(
+    "value,expected",
+    [
+        (" =2+5", "' =2+5"),
+        ("\t=2+5", "'\t=2+5"),
+        ("\n-2+5", "'\n-2+5"),
+        ("  @SUM(1,1)", "'  @SUM(1,1)"),
+        ("=HYPERLINK(\"x\",\"y\")", "'=HYPERLINK(\"x\",\"y\")"),
+        ("+2+5", "'+2+5"),
+        ("-2+5", "'-2+5"),
+        ("@SUM(1,1)", "'@SUM(1,1)"),
+        ("\r=1+1", "'\r=1+1"),
+        ("\nHello", "'\nHello"),
+        ("\tHello", "'\tHello"),
+        (" Hello", " Hello"),
+        ("Normal", "Normal"),
+        ("", ""),
+        (None, ""),
+    ],
+)
+def test_spreadsheet_safe_neutralizes_whitespace_hidden_formulas(value, expected):
+    assert spreadsheet_safe(value) == expected

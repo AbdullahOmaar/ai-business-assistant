@@ -151,7 +151,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     .primary{background:var(--aba-color-primary,#0f766e);border-color:var(--aba-color-primary,#0f766e);color:var(--aba-color-on-primary,#fff)}
     .primary:hover:not(:disabled){background:var(--aba-color-primary-strong,#115e59)}
     button:disabled{opacity:.55;cursor:not-allowed}
-    input,select{width:100%;max-width:100%;min-width:0;border:1px solid var(--aba-color-border-strong,#d1d5db);border-radius:9px;background:var(--aba-color-surface,#fff);padding:11px 12px;font-size:12px;color:var(--aba-color-text-primary,#111827)}
+    input,select{width:100%;max-width:100%;min-width:0;border:1px solid var(--aba-color-border-strong,#d1d5db);border-radius:11px;background:var(--aba-color-surface,#fff);padding:11px 12px;font-size:12px;color:var(--aba-color-text-primary,#111827)}
     .error{color:var(--aba-color-danger-text,#991b1b);background:var(--aba-color-danger-soft,#fef2f2);border:1px solid var(--aba-color-danger-border,#fecaca);border-radius:10px;padding:12px;font-size:12px;line-height:1.6}
     .notice{display:flex;gap:12px;background:var(--aba-color-success-soft,#ecfdf5);border:1px solid var(--aba-color-success-border,#bbf7d0);border-radius:12px;padding:14px;margin-top:15px;color:var(--aba-color-success-text,#065f46);font-size:11px;line-height:1.6}
     .warning-notice{background:var(--aba-color-warning-soft,#fffbeb);border-color:var(--aba-color-warning-border,#fde68a);color:var(--aba-color-warning-text,#92400e)}

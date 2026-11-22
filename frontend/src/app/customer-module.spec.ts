@@ -119,3 +119,63 @@ test('customer and product workspaces are mounted in the authenticated app shell
   assert.doesNotMatch(shell, /@ViewChild\(ProductWorkspaceComponent\)/);
 });
 
+
+
+// T18 Slice U02 (2026-11-21): every customer profile action has an icon,
+// the profile heading wraps on words, and the phone number never splits.
+test('customer profile actions carry icons and the heading wraps on words', () => {
+  assert.ok(profile.includes("import { AbaIconComponent } from './shared/ui/aba-icon.component';"));
+  assert.ok(profile.includes('imports: [AbaStateMessageComponent, AbaIconComponent]'));
+  assert.ok(profile.includes('<aba-icon name="edit" />'));
+  assert.ok(profile.includes('<aba-icon name="document" />'));
+  assert.ok(profile.includes('<aba-icon name="statement" />'));
+  assert.match(profile, /\.customer-profile button\{[^}]*display:inline-flex;align-items:center;justify-content:center;gap:6px/);
+  assert.match(profile, /\.customer-profile button aba-icon\{width:15px;height:15px\}/);
+  // The heading wraps on words (no anywhere): "Cairo Corner Shop" must not
+  // break mid-word, and the phone number is one value that never splits.
+  assert.match(profile, /\.customer-profile__identity h2\{[^}]*overflow-wrap:normal/);
+  assert.doesNotMatch(profile, /\.customer-profile__identity h2\{[^}]*overflow-wrap:anywhere/);
+  assert.match(profile, /\.customer-profile__item a\[href\^="tel:"\]\{white-space:nowrap\}/);
+});
+
+// U02 follow-up (2026-11-21): at <=380px the profile hero stacks (avatar above
+// the name) so a long name has the full card width and stays inside the card —
+// the row layout left the h2 a 70-76px column beside the 46px avatar and
+// "Al Nour Trading and Wholesale Company" spilled out of the card at 195/220px.
+// NEW assertions (no old assertions — the hero had no <=380px stacking rule).
+test('customer profile hero stacks at narrow widths so a long name stays inside the card', () => {
+  assert.match(profile, /@media\(max-width:380px\)\{\.customer-profile__hero\{flex-direction:column;align-items:flex-start/);
+  // The heading still wraps on words (no anywhere) — the stack gives it room,
+  // it does not break the name mid-word.
+  assert.match(profile, /\.customer-profile__identity h2\{[^}]*overflow-wrap:normal/);
+});
+
+// T18 Slice U02 (2026-11-21): on mobile the tools sit above the search
+// (New customer first), and back-navigation preserves the list position.
+test('customer workspace puts the tools above the mobile search and preserves the list on back-navigation', () => {
+  assert.ok(workspace.includes("import { AbaIconComponent } from './shared/ui/aba-icon.component';"));
+  assert.ok(workspace.includes('<aba-icon name="search" />'));
+  assert.ok(workspace.includes('<aba-icon name="add" />'));
+  assert.ok(workspace.includes('<aba-icon name="chevron-left" />'));
+  assert.match(workspace, /\.customer-workspace button\{[^}]*display:inline-flex;align-items:center;justify-content:center;gap:6px/);
+  // Below 520px the New customer button is ordered before the search field.
+  assert.match(workspace, /@media\(max-width:520px\)\{[\s\S]*?\.customer-workspace__create\{order:-1;width:100%\}/);
+  // Back-navigation: the list scroll is saved when leaving the list and
+  // restored when coming back (profile and editor-cancel paths).
+  assert.match(workspace, /private listScrollY = 0;/);
+  assert.match(workspace, /private saveListScroll\(\): void \{ this\.listScrollY = window\.scrollY; \}/);
+  assert.match(workspace, /private restoreListScroll\(\): void \{[\s\S]*?requestAnimationFrame\(\(\) => window\.scrollTo\(0, y\)\)/);
+  assert.match(workspace, /if \(this\.mode\(\) === 'list'\) this\.saveListScroll\(\);/);
+  assert.match(workspace, /backToDirectory\(\): void \{[\s\S]*?this\.restoreListScroll\(\);/);
+  assert.match(workspace, /else \{ this\.mode\.set\('list'\); this\.restoreListScroll\(\); \}/);
+});
+
+// U02 follow-up (2026-11-21): at <=220px the search field stacks full-width
+// above the Search button so the placeholder is not clipped to "Searc" — the
+// side-by-side row left the input ~80-105px wide at 195/220px. NEW assertions
+// (no old assertions — the search had no <=220px stacking rule).
+test('customer workspace search stacks full-width at narrow widths so the placeholder is visible', () => {
+  assert.match(workspace, /@media\(max-width:220px\)\{\.customer-workspace__search\{flex-direction:column\}/);
+  assert.match(workspace, /@media\(max-width:220px\)\{[\s\S]*?\.customer-workspace__search input\{width:100%\}/);
+  assert.match(workspace, /@media\(max-width:220px\)\{[\s\S]*?\.customer-workspace__search button\{width:100%\}/);
+});

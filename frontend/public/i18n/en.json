@@ -457,6 +457,7 @@
     "m_9ckn2u": "Pricing rule",
     "m_11q6v6c": "Filter",
     "m_1np7zc4": "Clear filters",
+    "m_4k8q2zr": "Clear search",
     "m_j3pe5o": "Activity log table",
     "m_19p9gnl": "Loading activity log…",
     "m_1en86jm": "No activity yet",
@@ -1528,6 +1529,7 @@
     "customerStatementEvent": {
       "invoice_issued": "Invoice issued",
       "payment_allocation": "Payment allocation",
+      "payment_received": "Payment received",
       "currency_mismatch_allocation": "Currency-mismatch allocation"
     },
     "invoiceStatus": {
@@ -1831,7 +1833,7 @@
     "unitPlaceholder": "piece, kg, hour",
     "unitRequired": "Unit is required",
     "descriptionLabel": "Description",
-    "descriptionPlaceholder": "A short product or service description",
+    "descriptionPlaceholder": "Short description",
     "cancel": "Cancel",
     "save": "Save changes",
     "saving": "Saving…",
@@ -1860,6 +1862,7 @@
     "subtitle": "Manage purchase orders, receipts and their audit history.",
     "newOrder": "New purchase order",
     "search": "Search order, supplier or status",
+    "searchShort": "Search orders",
     "loading": "Loading purchase orders…",
     "emptyTitle": "No purchase orders yet",
     "emptyDescription": "Create a multi-line purchase order to get started.",

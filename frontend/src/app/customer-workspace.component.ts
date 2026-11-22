@@ -4,6 +4,7 @@ import type { CustomerEditorValue } from './customer-editor.component';
 import { CustomerDirectoryComponent } from './customer-directory.component';
 import { CustomerEditorComponent } from './customer-editor.component';
 import { CustomerProfileComponent } from './customer-profile.component';
+import { AbaIconComponent } from './shared/ui/aba-icon.component';
 import type { AbaRecordTableActionEvent } from './shared/ui/aba-record-table.component';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { LocalizationService } from './localization.service';
@@ -14,7 +15,7 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
 @Component({
   selector: 'aba-customer-workspace',
   standalone: true,
-  imports: [CustomerDirectoryComponent, CustomerEditorComponent, CustomerProfileComponent],
+  imports: [CustomerDirectoryComponent, CustomerEditorComponent, CustomerProfileComponent, AbaIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="customer-workspace" [attr.aria-label]="t('customerWorkspace.directory')">
@@ -25,9 +26,9 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
             <input id="customer-workspace-search" type="search" maxlength="120" autocomplete="off"
               [value]="searchDraft()" (input)="searchDraft.set(readValue($event))"
               [placeholder]="t('customerWorkspace.searchPlaceholder')">
-            <button type="submit" [disabled]="loading()">{{ t('customerWorkspace.search') }}</button>
+            <button type="submit" [disabled]="loading()"><aba-icon name="search" />{{ t('customerWorkspace.search') }}</button>
           </form>
-          <button class="customer-workspace__create" type="button" (click)="createCustomer()">{{ t('customerWorkspace.newCustomer') }}</button>
+          <button class="customer-workspace__create" type="button" (click)="createCustomer()"><aba-icon name="add" />{{ t('customerWorkspace.newCustomer') }}</button>
         </header>
         <aba-customer-directory
           [ariaLabel]="t('customerWorkspace.directory')"
@@ -53,7 +54,7 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
           (save)="saveCustomer($event)"
           (cancel)="cancelEditor()" />
       } @else {
-        <button class="customer-workspace__back" type="button" (click)="backToDirectory()">{{ t('customerWorkspace.back') }}</button>
+        <button class="customer-workspace__back" type="button" (click)="backToDirectory()"><aba-icon name="chevron-left" />{{ t('customerWorkspace.back') }}</button>
         <aba-customer-profile
           [customer]="selectedCustomer()"
           [loading]="detailLoading()"
@@ -69,15 +70,22 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
     :host{display:block;min-width:0}.customer-workspace{display:grid;gap:12px;min-width:0}
     .customer-workspace__toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0}
     .customer-workspace__search{display:flex;flex:1;gap:7px;min-width:0}
-    .customer-workspace__search input{box-sizing:border-box;flex:1;min-width:0;min-height:44px;padding:9px 12px;border:1px solid var(--aiba-line-strong,#cbd5e1);border-radius:10px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);font:inherit;font-size:13px}
-    .customer-workspace button{min-height:44px;padding:8px 13px;border:1px solid var(--aiba-line-strong,#cbd5e1);border-radius:10px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+    .customer-workspace__search input{box-sizing:border-box;flex:1;min-width:0;min-height:44px;padding:9px 12px;border:1px solid var(--aiba-line-strong,#cbd5e1);border-radius:11px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);font:inherit;font-size:13px}
+    .customer-workspace button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 13px;border:1px solid var(--aiba-line-strong,#cbd5e1);border-radius:10px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);font:inherit;font-size:12px;font-weight:750;cursor:pointer}
+    .customer-workspace button aba-icon{width:15px;height:15px}
     .customer-workspace__search button,.customer-workspace__create{border-color:var(--aiba-brand,#0f766e)!important;background:var(--aiba-brand,#0f766e)!important;color:#fff!important}
     .customer-workspace__load-more{justify-self:center;min-width:min(100%,220px)}
     .customer-workspace__back{justify-self:start}
     .customer-workspace button:disabled{opacity:.55;cursor:wait}
     .customer-workspace :is(button,input):focus-visible{outline:3px solid var(--aiba-focus,#2563eb);outline-offset:2px}
     .customer-workspace__sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
-    @media(max-width:520px){.customer-workspace__toolbar{align-items:stretch;flex-direction:column}.customer-workspace__create{width:100%}.customer-workspace__search{width:100%}}
+    /* T18 Slice U02 (2026-11-21): on mobile the tools sit above the search —
+     * the New customer button is the first thing in the toolbar, not buried
+     * below the search field. The order property only changes the visual
+     * order; the DOM order (search first) is unchanged, so desktop layout is
+     * unaffected. */
+    @media(max-width:520px){.customer-workspace__toolbar{align-items:stretch;flex-direction:column}.customer-workspace__create{order:-1;width:100%}.customer-workspace__search{width:100%}}
+    @media(max-width:220px){.customer-workspace__search{flex-direction:column}.customer-workspace__search input{width:100%}.customer-workspace__search button{width:100%}}
     @media(max-width:760px){.customer-workspace__search input{min-height:48px;font-size:16px}.customer-workspace__search button,.customer-workspace__create{min-height:48px}}
     @media(forced-colors:active){.customer-workspace button,.customer-workspace input{border:1px solid CanvasText}.customer-workspace :is(button,input):focus-visible{outline-color:Highlight}}
   `],
@@ -116,6 +124,18 @@ export class CustomerWorkspaceComponent {
   readonly searchQuery = signal('');
   private readonly pageSize = 50;
   private selectedCustomerId: string | null = null;
+  /* T18 Slice U02 (2026-11-21): back-navigation preserves the list. The
+   * window scroll position is saved when leaving the list (profile or
+   * editor) and restored when coming back, so the user lands where they
+   * were instead of at the top of a long list. */
+  private listScrollY = 0;
+
+  private saveListScroll(): void { this.listScrollY = window.scrollY; }
+
+  private restoreListScroll(): void {
+    const y = this.listScrollY;
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  }
 
   constructor() {
     effect(() => {
@@ -203,6 +223,7 @@ export class CustomerWorkspaceComponent {
   loadMore(): void { if (this.hasMore() && !this.loading()) void this.loadCustomers(false); }
   retry(): void { void this.loadCustomers(true); }
   createCustomer(): void {
+    this.saveListScroll();
     this.selectedCustomer.set(null);
     this.selectedCustomerId = null;
     this.editorError.set('');
@@ -212,6 +233,9 @@ export class CustomerWorkspaceComponent {
   async openCustomer(customerId: string): Promise<void> {
     const requested = this.context();
     const version = this.detailGuard.begin();
+    // Only the list position is worth restoring: a profile retry (already
+    // on the profile) must not overwrite it with the profile's own scroll.
+    if (this.mode() === 'list') this.saveListScroll();
     this.selectedCustomerId = customerId;
     this.selectedCustomer.set(null);
     this.detailError.set('');
@@ -267,7 +291,7 @@ export class CustomerWorkspaceComponent {
   cancelEditor(): void {
     this.editorError.set('');
     if (this.mode() === 'edit' && this.selectedCustomerId) this.mode.set('profile');
-    else this.mode.set('list');
+    else { this.mode.set('list'); this.restoreListScroll(); }
   }
 
   backToDirectory(): void {
@@ -275,6 +299,7 @@ export class CustomerWorkspaceComponent {
     this.detailLoading.set(false);
     this.detailError.set('');
     this.mode.set('list');
+    this.restoreListScroll();
   }
 
   retryProfile(): void { if (this.selectedCustomerId) void this.openCustomer(this.selectedCustomerId); }

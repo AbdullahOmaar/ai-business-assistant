@@ -172,3 +172,28 @@ test('stock movement quantities are isolated from surrounding RTL labels in card
   assert.match(component, /inventory-ledger__table-quantity[^>]*><bdi dir="ltr">/);
   assert.match(component, /inventory-ledger__table-quantity\{font-variant-numeric:tabular-nums;direction:ltr;unicode-bidi:isolate\}/);
 });
+
+test('T18 U03: movement quantities stay on one line, headings wrap on words, and history stays in the Products section', () => {
+  // Quantity + unit never split (nowrap); at ≤380px the type shrinks to 14px so the longest quantity fits at 195px.
+  assert.match(component, /inventory-ledger__quantity\{[^}]*white-space:nowrap/);
+  assert.match(component, /@media\(max-width:380px\)[\s\S]*?\.inventory-ledger__quantity\{font-size:14px\}/);
+  // Headings wrap on words, never mid-word (explicit normal beats the anywhere inherited from the abaCard host).
+  assert.match(component, /inventory-ledger__header h2\{[^}]*overflow-wrap:normal/);
+  assert.match(component, /inventory-ledger__card-top strong\{[^}]*overflow-wrap:normal/);
+  assert.doesNotMatch(component, /inventory-ledger__header h2\{[^}]*overflow-wrap:anywhere/);
+  assert.doesNotMatch(component, /inventory-ledger__card-top strong\{[^}]*overflow-wrap:anywhere/);
+  // The type badge never breaks vertically; below 380px the card-top wraps so the badge drops below the name.
+  assert.match(component, /inventory-ledger__type\{[^}]*white-space:nowrap/);
+  assert.match(component, /@media\(max-width:380px\)[\s\S]*?\.inventory-ledger__card-top\{flex-wrap:wrap\}/);
+  // Below 380px the header stacks (title above Refresh, full width).
+  assert.match(component, /@media\(max-width:380px\)[\s\S]*?\.inventory-ledger__header\{flex-direction:column;align-items:flex-start\}/);
+  // The 44px filter controls are unchanged.
+  assert.match(component, /inventory-ledger select\{[^}]*min-height:44px/);
+  // Movement history stays in the Products section (no new tab): the ledger is rendered inside the products tab, and no inventory tab exists.
+  assert.match(shell, /<aba-inventory-movement-ledger/);
+  assert.match(shell, /tab === 'products'/);
+  assert.doesNotMatch(shell, /tab === 'inventory'/);
+  // No import control and no balance edit in the ledger (read-only).
+  assert.doesNotMatch(component, /Import/);
+  assert.doesNotMatch(component, /createMovement|updateMovement|deleteMovement|adjustStock/);
+});

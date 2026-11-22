@@ -38,7 +38,16 @@ test('mobile KPI labels and supporting values retain a readable minimum size', (
   assert.match(metricCard, /\.aba-metric-card__label\{display:block;[^}]*font-size:var\(--aba-font-size-sm, 12px\)/);
   assert.match(metricCard, /@media\(max-width:760px\)\{[\s\S]*:host\{--aba-font-size-2xs:12px\}/);
   assert.doesNotMatch(metricCard, /\.aba-metric-card__values small\{[^}]*font-size:/);
-  assert.match(metricCard, /overflow-wrap:anywhere/);
+  // T18 Slice U01 follow-up (2026-11-21): the amount value must stay on one
+  // line — `overflow-wrap:anywhere` on it split "548525.00 EGP" inside the
+  // number at 220px and 390px (owner render). The strong is nowrap now and
+  // the supporting small wraps on words (no anywhere), so a long count or
+  // basis note can wrap between words but never inside a number.
+  const strongRule = metricCard.match(/\.aba-metric-card__values strong\{([^}]*)\}/)?.[1] ?? '';
+  const smallRule = metricCard.match(/\.aba-metric-card__values small\{([^}]*)\}/)?.[1] ?? '';
+  assert.match(strongRule, /white-space:nowrap/);
+  assert.doesNotMatch(strongRule, /overflow-wrap:anywhere/);
+  assert.doesNotMatch(smallRule, /overflow-wrap:anywhere/);
 });
 
 test('mobile module cards preserve touch-friendly height and readable two-line descriptions', () => {

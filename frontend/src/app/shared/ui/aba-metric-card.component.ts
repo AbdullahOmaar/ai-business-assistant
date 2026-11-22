@@ -17,8 +17,8 @@ import { ChangeDetectionStrategy, Component } from '@angular/core';
     .aba-metric-card::before{content:"";position:absolute;inset-block-start:0;inset-inline:14px;height:3px;border-radius:0 0 999px 999px;background:linear-gradient(90deg,var(--aba-color-primary,#0f766e),var(--aba-color-info,#3b82f6));opacity:.82}
     .aba-metric-card__label{display:block;min-height:1.5em;margin-bottom:var(--aba-space-3, 12px);color:var(--aba-color-text-muted, #475569);font-size:var(--aba-font-size-sm, 12px);line-height:var(--aba-line-height-normal, 1.5);font-weight:var(--aba-font-weight-semibold, 600)}
     .aba-metric-card__values{display:grid;gap:var(--aba-space-2, 8px);min-width:0}
-    .aba-metric-card__values strong{display:block;min-width:0;overflow-wrap:anywhere;color:var(--aba-color-text-primary,#172033);font-size:19px;line-height:1.35;font-variant-numeric:tabular-nums}
-    .aba-metric-card__values small{display:block;min-width:0;overflow-wrap:anywhere;color:var(--aba-color-text-secondary,#64748b);line-height:1.5}
+    .aba-metric-card__values strong{display:block;min-width:0;white-space:nowrap;color:var(--aba-color-text-primary,#172033);font-size:19px;line-height:1.35;font-variant-numeric:tabular-nums}
+    .aba-metric-card__values small{display:block;min-width:0;color:var(--aba-color-text-secondary,#64748b);line-height:1.5}
     .aba-metric-card__values .metric-basis{margin-top:3px;padding-top:8px;border-top:1px solid var(--aba-color-border-subtle,#e2e8f0);color:var(--aba-color-text-muted,#475569)}
     @media(max-width:760px){
       :host{--aba-font-size-2xs:12px}

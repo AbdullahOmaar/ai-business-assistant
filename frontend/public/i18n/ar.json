@@ -457,6 +457,7 @@
     "m_9ckn2u": "قاعدة تسعير",
     "m_11q6v6c": "تصفية",
     "m_1np7zc4": "مسح الفلاتر",
+    "m_4k8q2zr": "مسح البحث",
     "m_j3pe5o": "جدول سجل العمليات",
     "m_19p9gnl": "جارٍ تحميل سجل النشاط…",
     "m_1en86jm": "لا توجد أحداث",
@@ -1528,6 +1529,7 @@
     "customerStatementEvent": {
       "invoice_issued": "إصدار فاتورة",
       "payment_allocation": "تخصيص دفعة",
+      "payment_received": "استلام دفعة",
       "currency_mismatch_allocation": "تخصيص بعملة غير مطابقة"
     },
     "invoiceStatus": {
@@ -1831,7 +1833,7 @@
     "unitPlaceholder": "قطعة، كجم، ساعة",
     "unitRequired": "وحدة القياس مطلوبة",
     "descriptionLabel": "الوصف",
-    "descriptionPlaceholder": "وصف مختصر للمنتج أو الخدمة",
+    "descriptionPlaceholder": "وصف مختصر",
     "cancel": "إلغاء",
     "save": "حفظ التعديلات",
     "saving": "جارٍ الحفظ…",
@@ -1860,6 +1862,7 @@
     "subtitle": "إدارة أوامر الشراء والاستلام ومراجعة سجل الحركة.",
     "newOrder": "أمر شراء جديد",
     "search": "ابحث برقم الأمر أو المورد أو الحالة",
+    "searchShort": "ابحث في الطلبات",
     "loading": "جاري تحميل أوامر الشراء…",
     "emptyTitle": "لا توجد أوامر شراء بعد",
     "emptyDescription": "أنشئ أمر شراء متعدد البنود للبدء.",
