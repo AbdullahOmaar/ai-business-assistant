@@ -1935,7 +1935,11 @@
     "statusApproved": "معتمد",
     "statusPartial": "استلام جزئي",
     "statusReceived": "مستلم بالكامل",
-    "statusCancelled": "ملغي"
+    "statusCancelled": "ملغي",
+    "activityCreated": "أُنشئت مسودة الأمر",
+    "activityApproved": "اعتُمد الأمر",
+    "activityReceived": "سُجّل استلام",
+    "activityRecorded": "نشاط مسجل"
   },
   "inventoryLedger": {
     "title": "سجل حركة المخزون",

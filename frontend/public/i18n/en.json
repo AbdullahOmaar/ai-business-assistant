@@ -1935,7 +1935,11 @@
     "statusApproved": "Approved",
     "statusPartial": "Partially received",
     "statusReceived": "Received",
-    "statusCancelled": "Cancelled"
+    "statusCancelled": "Cancelled",
+    "activityCreated": "Order draft created",
+    "activityApproved": "Order approved",
+    "activityReceived": "Receipt recorded",
+    "activityRecorded": "Activity recorded"
   },
   "inventoryLedger": {
     "title": "Inventory movement ledger",

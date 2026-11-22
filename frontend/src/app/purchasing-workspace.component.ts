@@ -127,7 +127,7 @@ type PurchaseAction = 'approve' | 'cancel';
         </section>
       } @else {
         <button class="pw__back" type="button" (click)="backToList()">{{ t('back') }}</button>
-        @if (detailLoading()) { <div class="pw__state" role="status">{{ t('loading') }}</div> }
+        @if (detailLoading()) { <div class="pw__state pw__skeletons" role="status"><span class="pw__sr-only">{{ t('loading') }}</span>@for (row of [1, 2, 3]; track row) { <aba-skeleton variant="list-row" /> }</div> }
         @if (detailError()) { <p class="pw__notice pw__notice--error" role="alert">{{ detailError() }} <button type="button" (click)="retryDetail()">{{ t('retry') }}</button></p> }
         @if (selectedOrder(); as order) {
           <section class="pw__panel">
@@ -203,8 +203,8 @@ type PurchaseAction = 'approve' | 'cancel';
                     @if (!historyLoading() && !historyError() && activities().length) {
                       @for (event of activities(); track event.id) {
                         <article class="pw__history-item">
-                          <strong>{{ event.action }}</strong>
-                          <small>{{ formatDate(event.created_at) }} · {{ activitySummary(event) }}</small>
+                          <strong>{{ activityLabel(event) }}</strong>
+                          <small>{{ formatDate(event.created_at) }}@if (activitySummary(event)) { · {{ activitySummary(event) }} }</small>
                         </article>
                       }
                     } @else if (!historyLoading() && !historyError()) { <p class="pw__muted">{{ t('noActivity') }}</p> }
@@ -424,10 +424,23 @@ export class PurchasingWorkspaceComponent {
     return this.localization.formatDate(date, { dateStyle: 'medium', timeStyle: 'short' });
   }
 
+  /** 3A-371 (U08): activity shows a localized, human-readable label mapped
+   * from the audit action — never the raw technical key. */
+  activityLabel(event: PurchaseOrderActivity): string {
+    const labels: Record<string, string> = {
+      'purchase_order.created': 'activityCreated',
+      'purchase_order.approved': 'activityApproved',
+      'purchase_order.received': 'activityReceived',
+    };
+    return this.t(labels[event.action] ?? 'activityRecorded');
+  }
+
   activitySummary(event: PurchaseOrderActivity): string {
-    if (typeof event.change_summary === 'string') return event.change_summary;
-    if (event.change_summary && typeof event.change_summary === 'object') return JSON.stringify(event.change_summary);
-    return '—';
+    // Known actions are fully described by their localized label, and a
+    // structured change_summary is never rendered as raw JSON. Unknown
+    // actions keep the server sentence when one exists.
+    if (event.action === 'purchase_order.created' || event.action === 'purchase_order.approved' || event.action === 'purchase_order.received') return '';
+    return typeof event.change_summary === 'string' ? event.change_summary : '';
   }
 
   canEdit(order: PurchaseOrder): boolean { return this.isOwner() && order.status === 'draft'; }
