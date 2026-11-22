@@ -38,6 +38,24 @@ test('secondary text on light surfaces meets WCAG AA normal-text contrast', () =
   }
 });
 
+test('product catalog SKU label uses the AA-readable muted tone (3A-329)', () => {
+  const catalogCss = readFileSync(new URL('./product-catalog.component.css', import.meta.url), 'utf8');
+  const designSystem = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
+  assert.match(
+    catalogCss,
+    /\.product-catalog__sku>span\{[^}]*color:\s*var\(--aiba-muted,#5f6e83\)/,
+    'the SKU label is content text and must use the readable muted token, not muted-soft (#94a3b8, 2.56:1)',
+  );
+  const mutedToken = designSystem.match(/--aiba-muted:\s*(#[0-9a-fA-F]{6})\s*;/);
+  assert.ok(mutedToken, 'the muted token must be a concrete six-digit color');
+  for (const background of ['#ffffff', '#f8fafc']) {
+    assert.ok(
+      contrastRatio(mutedToken[1], background) >= 4.5,
+      `${mutedToken[1]} must reach 4.5:1 on ${background}`,
+    );
+  }
+});
+
 test('light-surface contrast override does not target dark sidebar labels', () => {
   assert.doesNotMatch(
     styles,
