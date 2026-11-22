@@ -919,16 +919,17 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @if (tab === 'taxes' && business.role === 'owner') {
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ui.m_nxo405')" [description]="t('ui.m_1dw63nh')" />
-                <form class="inline-form" (ngSubmit)="loadTaxSummary()">
+                <form class="inline-form tax-form" (ngSubmit)="loadTaxSummary()">
                   <aba-date-range [showClear]="true" [hasValue]="taxStartDate !== '' || taxEndDate !== ''" [clearLabel]="t('ui.m_1np7zc4')" (clear)="taxStartDate = ''; taxEndDate = ''">
                   <label>{{ t('ui.m_10pndrs') }}<input name="taxStartDate" type="date" [(ngModel)]="taxStartDate"></label>
                   <label>{{ t('ui.m_aulmks') }}<input name="taxEndDate" type="date" [(ngModel)]="taxEndDate"></label>
                   </aba-date-range>
                   <button class="primary" type="submit" [disabled]="taxLoading">{{ taxLoading ? t('ui.m_1k98007') : t('ui.m_10jsbot') }}</button>
                 </form>
+                <p class="footnote">{{ t('ui.taxOperationalNote') }}</p>
                 @if (taxError) { <aba-state-message kind="error" [description]="taxError" /> }
                 @if (taxSummaryReport) {
-                  <aba-record-table [ariaLabel]="t('ui.m_1ciqipn')" [columns]="taxTableColumns" [rows]="taxTableRows" [emptyTitle]="t('ui.m_1xb2mzp')" [emptyDescription]="t('ui.m_j6qlz4')" />
+                  <aba-record-table [ariaLabel]="t('ui.m_1ciqipn')" [columns]="taxTableColumns" [rows]="taxTableRows" [loading]="taxLoading" [loadingDescription]="t('ui.m_1oo6dkn')" [emptyTitle]="t('ui.m_1xb2mzp')" [emptyDescription]="t('ui.m_j6qlz4')" />
                   @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ reportLimitationLabel(limitation) }}</p> }
                 }
               </section>

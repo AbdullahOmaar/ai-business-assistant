@@ -1083,7 +1083,8 @@
     "m_1k5kzkx": "Ask assistant",
     "m_1l0ize9": "Account options",
     "m_2ifq4l": "Change workspace",
-    "actions": "Actions"
+    "actions": "Actions",
+    "taxOperationalNote": "Operational summary from saved invoice data — not an official tax filing."
   },
   "common": {
     "app_title": "AI Business Assistant",
