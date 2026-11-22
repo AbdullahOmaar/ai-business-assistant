@@ -38,6 +38,7 @@ import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecord
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 import { AbaLoadingLogoComponent } from './shared/ui/aba-loading-logo.component';
 import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
+import { AbaDeferPlaceholderComponent } from './shared/ui/aba-defer-placeholder.component';
 import { AbaSearchFieldComponent } from './shared/ui/aba-search-field.component';
 import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';
 import { AbaDateRangeComponent } from './shared/ui/aba-date-range.component';
@@ -60,7 +61,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -237,9 +238,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @defer (when tab === 'platform-admin' && platformAdminAvailable) {
               <aba-platform-admin [language]="language" [userEmail]="userEmail" (signOutRequested)="logout()" (languageToggleRequested)="toggleLanguage()" />
             } @placeholder {
-              <section abaCard class="panel narrow">
-                <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_icu2ib') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
-              </section>
+              <aba-defer-placeholder [description]="t('ui.m_icu2ib')" />
             } @error {
                   <section abaCard class="panel narrow">
                     <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -297,7 +296,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @defer (when tab === 'overview') {
               <aba-overview-workspace [businessId]="business?.id || null" [dashboard]="dashboard" [loading]="loading" [error]="error" [role]="business?.role" [platformAdminAvailable]="platformAdminAvailable" [language]="language" (navigate)="setTab($event)" (newInvoiceDraft)="startNewInvoiceDraft()" (newCustomer)="customerCreateOpen = true" (newProduct)="productCreateOpen = true" (invitationsAccepted)="loadBusinesses()" />
             } @placeholder {
-              <section abaCard class="panel narrow"><div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_1xguwi5') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div></section>
+              <aba-defer-placeholder [description]="t('ui.m_1xguwi5')" />
             } @error {
               <section abaCard class="panel narrow">
                 <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -308,7 +307,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               @defer (when tab === 'notifications') {
                 <aba-notifications-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [activeTab]="tab" />
               } @placeholder {
-                <section abaCard class="panel narrow"><div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_1xguwi5') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div></section>
+                <aba-defer-placeholder [description]="t('ui.m_1xguwi5')" />
               } @error {
                 <section abaCard class="panel narrow">
                   <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -358,9 +357,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   [currencyCode]="business.currency_code"
                   [language]="language" />
               } @placeholder {
-                <section abaCard class="panel narrow">
-                  <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_1oo6dkn') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
-                </section>
+                <aba-defer-placeholder [description]="t('ui.m_1oo6dkn')" />
               } @error {
                   <section abaCard class="panel narrow">
                     <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -419,9 +416,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               @defer (when tab === 'reports') {
                 <aba-reports-workspace [businessId]="business.id" [language]="language" />
               } @placeholder {
-                <section abaCard class="panel narrow">
-                  <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_1oo6dkn') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
-                </section>
+                <aba-defer-placeholder [description]="t('ui.m_1oo6dkn')" />
               } @error {
                 <section abaCard class="panel narrow">
                   <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -433,9 +428,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               @defer (when tab === 'team' && business?.id) {
                 <aba-workspace-invitations mode="manage" [businessId]="business?.id || ''" [language]="language" />
               } @placeholder {
-                <section abaCard class="panel narrow">
-                  <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_icu2ib') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
-                </section>
+                <aba-defer-placeholder [description]="t('ui.m_icu2ib')" />
               } @error {
                 <section abaCard class="panel narrow">
                   <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -480,9 +473,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     (statementRequested)="openCustomerStatementById($event)"
                     (customerSaved)="onWorkspaceCustomerSaved($event)" />
                 } @placeholder {
-                  <section abaCard class="panel narrow">
-                    <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_1oo6dkn') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
-                  </section>
+                  <aba-defer-placeholder [description]="t('ui.m_1oo6dkn')" />
                 } @error {
                   <section abaCard class="panel narrow">
                     <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -591,9 +582,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     [currencyCode]="business?.currency_code || ''"
                     [refreshRequest]="productRefreshRequest" />
                 } @placeholder {
-                  <section abaCard class="panel narrow">
-                    <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_1oo6dkn') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
-                  </section>
+                  <aba-defer-placeholder [description]="t('ui.m_1oo6dkn')" />
                 } @error {
                   <section abaCard class="panel narrow">
                     <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -608,9 +597,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     [language]="language"
                     [loadPage]="loadInventoryMovementPage" />
                 } @placeholder {
-                  <section abaCard class="panel narrow">
-                    <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_1oo6dkn') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
-                  </section>
+                  <aba-defer-placeholder [description]="t('ui.m_1oo6dkn')" />
                 } @error {
                   <section abaCard class="panel narrow">
                     <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -640,9 +627,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                           (saveDraft)="saveInvoiceDraft($event)" (newDraft)="startNewInvoiceDraft()"
                           (cancel)="cancelInvoiceEdit()" (refreshStatus)="refreshInvoiceDraftStatus()" />
                       } @placeholder {
-                        <section abaCard class="panel narrow">
-                          <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_1oo6dkn') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
-                        </section>
+                        <aba-defer-placeholder [description]="t('ui.m_1oo6dkn')" />
                       } @error {
                   <section abaCard class="panel narrow">
                     <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -942,9 +927,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   [role]="business.role === 'owner' ? 'owner' : 'staff'"
                   [language]="language" />
               } @placeholder {
-                <section abaCard class="panel narrow">
-                  <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_1oo6dkn') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
-                </section>
+                <aba-defer-placeholder [description]="t('ui.m_1oo6dkn')" />
               } @error {
                   <section abaCard class="panel narrow">
                     <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -968,9 +951,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   (targetTypeChange)="auditTargetType=$event"
                   (loadPage)="loadAuditEvents($event)" />
               } @placeholder {
-                <section abaCard class="panel narrow">
-                  <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_1oo6dkn') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
-                </section>
+                <aba-defer-placeholder [description]="t('ui.m_1oo6dkn')" />
               } @error {
                   <section abaCard class="panel narrow">
                     <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -982,9 +963,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               @defer (when tab === 'release-guide') {
                 <aba-release-guide [language]="language" [appVersion]="appVersion" />
               } @placeholder {
-                <section abaCard class="panel narrow">
-                  <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_111geup') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
-                </section>
+                <aba-defer-placeholder [description]="t('ui.m_111geup')" />
               } @error {
                   <section abaCard class="panel narrow">
                     <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -996,9 +975,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               @defer (when tab === 'employees' && business.role === 'owner') {
                 <aba-employee-payroll [businessId]="business.id" [currencyCode]="business.currency_code" [language]="language" (payrollPaid)="refreshAfterPayrollPayment()"></aba-employee-payroll>
               } @placeholder {
-                <section abaCard class="panel narrow">
-                  <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_9hwp1p') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
-                </section>
+                <aba-defer-placeholder [description]="t('ui.m_9hwp1p')" />
               } @error {
                   <section abaCard class="panel narrow">
                     <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -1010,7 +987,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               @defer (when tab === 'expenses') {
                 <aba-expenses-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [currencyCode]="business.currency_code" [loading]="loading" [refreshTick]="expensesRefreshTick" (dashboardChanged)="dashboard = $event" (errorNotice)="error = $event" />
               } @placeholder {
-                <section abaCard class="panel narrow"><div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_1xguwi5') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div></section>
+                <aba-defer-placeholder [description]="t('ui.m_1xguwi5')" />
               } @error {
                 <section abaCard class="panel narrow">
                   <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
@@ -1042,7 +1019,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @defer (when tab === 'assistant') {
               <aba-assistant-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [language]="language" />
             } @placeholder {
-              <section abaCard class="panel narrow"><div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_1xguwi5') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div></section>
+              <aba-defer-placeholder [description]="t('ui.m_1xguwi5')" />
             } @error {
               <section abaCard class="panel narrow">
                 <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />

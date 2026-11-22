@@ -27,7 +27,7 @@ CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 
 app = FastAPI(
     title="AI Business Assistant API",
-    version="1.8.1",
+    version="1.9.0",
     description=(
         "Business workflows with PostgreSQL, Firebase ID-token verification, "
         "tenant-scoped authorization, and grounded assistant chat."

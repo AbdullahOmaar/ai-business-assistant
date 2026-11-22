@@ -1164,7 +1164,10 @@
       "v170_payroll_currency": "Version 1.7.0: Payroll amounts now stay joined to their currency and long text wraps on whole words, so figures stay readable on narrow phone cards.",
       "v171_bundle": "Version 1.7.1: The app now loads faster on first open - the reports, assistant, Home, expenses and notifications sections load only when you open them, so the first download is under 700 kB. Nothing else changed: the same screens, the same data, the same behaviour.",
       "v180_screens": "Version 1.8.0: Screens now follow the agreed layout rules - the expense form opens only when you add an expense, the customer tools (add, import, export) sit together above the list and the account statement opens as its own clear view, loading lists show place-holding skeletons instead of text, invoice price and quantity share one row on phones, product prices stay joined to their currency, the reports date field no longer stretches across the screen, and the startup screen shows the assistant character with the app name.",
-      "v181_monitoring": "Version 1.8.1: The app and its API now report unexpected errors automatically to the team's private monitoring, so problems are spotted and fixed faster. Error reports never include your business data, passwords or personal details, and a separate uptime check watches the API around the clock."
+      "v181_monitoring": "Version 1.8.1: The app and its API now report unexpected errors automatically to the team's private monitoring, so problems are spotted and fixed faster. Error reports never include your business data, passwords or personal details, and a separate uptime check watches the API around the clock.",
+      "v190_skeletons": "Version 1.9.0: lists that still loaded with a text message — record tables, deferred sections, profiles and the invoice list — now reserve their space with skeleton rows while loading.",
+      "v190_purchasing": "Purchasing activity history now shows plain-language labels instead of technical keys, and order details load with skeletons.",
+      "v190_tax": "Tax summary: the period no longer stretches across wide screens, an operational-summary note was added, and export buttons carry icons."
     },
     "catalog": {
       "m_aba150_title": "Workspace and purchasing workflows",
@@ -1316,7 +1319,8 @@
       "v170_title": "Version 1.7.0 - Your loading character and tidier payroll amounts",
       "v171_title": "Version 1.7.1 - Faster first open: sections load when you need them",
       "v180_title": "Version 1.8.0 - Tidier screens: on-demand forms, grouped customer tools and clearer loading",
-      "v181_title": "Version 1.8.1 - Behind-the-scenes reliability: automatic error monitoring and uptime checks"
+      "v181_title": "Version 1.8.1 - Behind-the-scenes reliability: automatic error monitoring and uptime checks",
+      "v190_title": "Screens remainder: loading, purchasing and tax polish"
     }
   },
   "catalog": {

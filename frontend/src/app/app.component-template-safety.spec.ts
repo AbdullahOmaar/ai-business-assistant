@@ -1426,11 +1426,11 @@ test('OWNER payroll view is loaded only after selecting Employees', () => {
   assert.equal((source.match(/<aba-employee-payroll\b/g) || []).length, 1,
     'the payroll component must not be referenced outside its lazy boundary');
   const loadingView = source.slice(placeholder, end);
-  // 3A-371: defer placeholders are skeleton list-rows in a status region
-  // (G4 fixed loading); the loading text stays for assistive tech.
-  assert.match(loadingView, /defer-skeleton" role="status"/);
-  assert.match(loadingView, /<aba-skeleton variant="list-row" \/>/);
-  assert.match(loadingView, /Loading employees &amp; payroll|Loading employees & payroll/);
+  // 3A-371: defer placeholders render the shared skeleton placeholder
+  // component (G4 fixed loading), not a text message; the component keeps
+  // the loading description in a status region for assistive tech.
+  assert.match(loadingView, /<aba-defer-placeholder \[description\]="t\([^)]*Loading employees & payroll/);
+  assert.match(source, /AbaDeferPlaceholderComponent/);
   assert.match(source, /imports: \[[^\]]*EmployeePayrollComponent/);
   assert.match(source, /@if \(tab === 'employees' && business\.role === 'owner'\)/);
 });
