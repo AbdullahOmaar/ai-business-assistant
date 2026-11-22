@@ -83,7 +83,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .count{font-size:10px;font-weight:700;color:var(--aba-color-primary,#0f766e);background:#ecfdf5;padding:7px 9px;border-radius:999px;white-space:nowrap}
 .inline-form{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:var(--aba-color-surface-subtle,#f8fafc);border:1px solid #edf0f5;border-radius:11px}
 .payment-form{grid-template-columns:repeat(3,minmax(0,1fr))}
-.expense-form{grid-template-columns:repeat(3,minmax(0,1fr))}
 .danger{color:#b91c1c;border-color:#fecaca}
 .stack{display:grid;gap:14px;margin-top:20px}
 .stack label{display:grid;gap:7px;font-size:12px;font-weight:700;color:#374151}
@@ -241,15 +240,13 @@ footer span{color:var(--aba-color-nav-muted,#9ca3af)}
 .invoice-toolbar{display:flex;flex-direction:column;gap:12px;margin-top:12px}
 .customer-invoice-filter{order:1;width:100%;margin:0}
 .invoice-lines,.invoice-lines-heading{min-width:0}
-.expense-form{display:grid;grid-template-columns:minmax(150px,1fr) minmax(180px,1.5fr) minmax(100px,.65fr) minmax(170px,1fr) minmax(130px,.8fr) minmax(120px,.8fr);align-items:end;gap:10px}
-.expense-form .expense-category-field{min-width:0}
 .shell input,.shell select,.shell textarea{min-width:0;max-width:100%;padding:9px 11px;font-size:14px;border-radius:11px}
 .shell input[type="number"]{font-variant-numeric:tabular-nums}
 .shell label{min-width:0;gap:6px}
 .list-row{min-width:0;overflow-wrap:anywhere}
 .auth-retry{margin-top:12px}
-@media(max-width:900px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.expense-form{grid-template-columns:repeat(2,minmax(0,1fr))}.expense-form input[name="expenseDescription"]{grid-column:1/-1}.expense-form input[name="expenseDate"]{grid-column:1/-1}}
-@media(max-width:600px){.workspace-bar{grid-template-columns:minmax(0,1fr);padding:12px;gap:10px}.workspace-bar select{width:100%;max-width:none}.workspace-release-meta-inline{gap:6px;padding-top:10px}.expense-form{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.expense-form input[name="expenseDescription"],.expense-form input[name="expenseDate"]{grid-column:1/-1}.expense-cash-semantics{margin:10px 0 0;padding:9px 11px;border-inline-start:3px solid var(--aba-color-info,#3b82f6);border-radius:8px;background:var(--aba-color-surface-subtle,#f8fafc);color:var(--aba-color-text-secondary,#475569);font-size:12px;line-height:1.55}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metric{padding:12px}.metric strong{font-size:17px}.list-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:8px;padding:12px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px;background:var(--aba-color-surface,#fff)}.list-row .grow{min-width:0;width:100%}.list-row>button,.list-row>strong{justify-self:start;max-width:100%}.notice{align-items:flex-start;flex-wrap:wrap}.notice strong{white-space:normal}.table-wrap table{min-width:560px}}
+@media(max-width:900px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.workspace-bar{grid-template-columns:minmax(0,1fr);padding:12px;gap:10px}.workspace-bar select{width:100%;max-width:none}.workspace-release-meta-inline{gap:6px;padding-top:10px}.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.metric{padding:12px}.metric strong{font-size:17px}.list-row{display:grid;grid-template-columns:minmax(0,1fr);align-items:start;gap:8px;padding:12px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:12px;background:var(--aba-color-surface,#fff)}.list-row .grow{min-width:0;width:100%}.list-row>button,.list-row>strong{justify-self:start;max-width:100%}.notice{align-items:flex-start;flex-wrap:wrap}.notice strong{white-space:normal}.table-wrap table{min-width:560px}}
 /* Keep release metadata centered on the same row as the current workspace on desktop. */
     .workspace-bar{grid-template-columns:minmax(0,1fr) auto minmax(180px,260px)}
 .workspace-release-meta-inline{grid-column:auto;border-top:0;padding:0;justify-content:center;min-width:0}

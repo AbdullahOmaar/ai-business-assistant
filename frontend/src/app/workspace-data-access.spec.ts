@@ -3,6 +3,9 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-351: the expense and notification lists moved into their workspaces.
+const expensesSource = readFileSync(new URL('./expenses-workspace.component.ts', import.meta.url), 'utf8');
+const notificationsSource = readFileSync(new URL('./notifications-workspace.component.ts', import.meta.url), 'utf8');
 
 test('workspace bootstrap fetches payment records only for roles authorized to open Payments', () => {
   const start = source.indexOf('async loadWorkspaceData(): Promise<void>');
@@ -10,8 +13,14 @@ test('workspace bootstrap fetches payment records only for roles authorized to o
   assert.ok(start >= 0 && end > start, 'workspace bootstrap method must exist');
   const method = source.slice(start, end);
   assert.match(method, /const paymentsRequest = this\.canAccessTab\('payments'\) \? this\.api\.payments\(id\) : Promise\.resolve\(\[\]\);/);
-  assert.match(method, /this\.api\.invoices\(id\), paymentsRequest, this\.api\.expenses\(id\)/);
+  // 3A-351: the shell no longer fetches expenses in the bootstrap; the
+  // expenses workspace loads them itself (tenant-scoped, on init and on
+  // business change).
+  assert.match(method, /this\.api\.invoices\(id\), paymentsRequest/);
+  assert.doesNotMatch(method, /this\.api\.expenses\(id\)/);
   assert.doesNotMatch(method, /this\.api\.invoices\(id\), this\.api\.payments\(id\), this\.api\.expenses\(id\)/);
+  assert.match(expensesSource, /async loadExpenses\(\): Promise<void>/);
+  assert.match(expensesSource, /\(\) => this\.api\.expenses\(requestContext\.workspaceId\)/);
 });
 
 test('denied direct tab navigation returns before changing the selected tab or loading route data', () => {
@@ -94,9 +103,13 @@ test('workspace changes clear local operation-list searches with the previous wo
   const start = source.indexOf('private clearWorkspaceData(): void');
   const end = source.indexOf('\n  }', start);
   const method = source.slice(start, end);
-  for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch', 'notificationSearch']) {
+  for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch']) {
     assert.ok(method.includes(`this.${field} = '';`), `${field} is reset on workspace change`);
   }
+  // 3A-351: the notification search resets in the notifications workspace's
+  // business-change handler now.
+  assert.ok(notificationsSource.includes("this.notificationSearch = '';"),
+    'notificationSearch is reset on workspace change in its workspace');
 });
 
 
@@ -105,5 +118,8 @@ test('workspace changes also clear payment and expense search state', () => {
   const end = source.indexOf('\n  }', start);
   const method = source.slice(start, end);
   assert.ok(method.includes("this.paymentSearch = '';"));
-  assert.ok(method.includes("this.expenseSearch = '';"));
+  // 3A-351: the expense search resets in the expenses workspace's
+  // business-change handler now.
+  assert.ok(expensesSource.includes("this.expenseSearch = '';"),
+    'expenseSearch is reset on workspace change in its workspace');
 });

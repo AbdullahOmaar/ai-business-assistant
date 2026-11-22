@@ -23,6 +23,8 @@ import { AuditEventsWorkspaceComponent } from './audit-events-workspace.componen
 import { ReportsWorkspaceComponent } from './reports-workspace.component';
 import { AssistantWorkspaceComponent } from './assistant-workspace.component';
 import { OverviewWorkspaceComponent } from './overview-workspace.component';
+import { ExpensesWorkspaceComponent } from './expenses-workspace.component';
+import { NotificationsWorkspaceComponent } from './notifications-workspace.component';
 import { reportLimitationKey } from './report-labels';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
@@ -58,7 +60,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -303,43 +305,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
 
             @if (tab === 'notifications') {
-              <section abaCard class="panel">
-                <aba-section-header [title]=" t('ui.m_6wit46') " [description]=" t('ui.m_1a21njv') "><span class="count">{{ filteredNotifications.length }} / {{ notifications.length }}</span></aba-section-header>
-                @if (business?.role === 'owner') {
-                <form #notificationForm="ngForm" class="stack" (ngSubmit)="notificationForm.valid && createNotification()">
-                  <label>{{ t('ui.m_1ulxyq2') }}<select #notificationKindControl="ngModel" name="notificationKind" required [attr.aria-invalid]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'notification-kind-error' : null" [(ngModel)]="notificationKind">
-                    <option value="business">{{ t('ui.m_1821fhb') }}</option>
-                    <option value="invoices">{{ t('ui.m_1h7f08p') }}</option>
-                    <option value="payments">{{ t('ui.m_14ms9re') }}</option>
-                    <option value="expenses">{{ t('ui.m_l71hva') }}</option>
-                    <option value="inventory">{{ t('ui.m_1w4exkr') }}</option>
-                    <option value="reminders">{{ t('ui.m_1f2h79i') }}</option>
-                    <option value="reports">{{ t('ui.m_zmcikc') }}</option>
-                    <option value="suppliers">{{ t('ui.m_1yzd6rs') }}</option>
-                    <option value="purchases">{{ t('ui.m_57w0yx') }}</option>
-                    <option value="recurring">{{ t('ui.m_11lck86') }}</option>
-                    <option value="assistant">{{ t('ui.m_dzn3ev') }}</option>
-                    <option value="system">{{ t('ui.m_kl4jvd') }}</option>
-                  </select></label>
-                  <label>{{ t('ui.m_1m8bms') }}<input #notificationTitleControl="ngModel" name="notificationTitle" required maxlength="160" [attr.aria-invalid]="notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted) ? 'notification-title-error' : null" [(ngModel)]="notificationTitle"></label>
-                  <label>{{ t('ui.m_cjak9a') }}<textarea #notificationBodyControl="ngModel" name="notificationBody" required maxlength="1000" rows="3" [attr.aria-invalid]="notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted) ? 'notification-body-error' : null" [(ngModel)]="notificationBody"></textarea></label>
-                  <label>{{ t('ui.m_1ocecai') }}<input name="notificationScheduledAt" type="datetime-local" [(ngModel)]="notificationScheduledAt"></label>
-                  <button class="primary" type="submit" [disabled]="notificationsLoading">{{ t('ui.m_d76gji') }}</button>
-                </form>
-                @if ((notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted)) || (notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted)) || (notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted))) {
-                  <div class="form-validation" aria-live="polite">
-                    @if (notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted)) { <small id="notification-kind-error" class="field-error">{{ t('ui.m_guqotm') }}</small> }
-                    @if (notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted)) { <small id="notification-title-error" class="field-error">{{ t('ui.m_92hmvu') }}</small> }
-                    @if (notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted)) { <small id="notification-body-error" class="field-error">{{ t('ui.m_1qli6jw') }}</small> }
-                  </div>
-                }
-                } @else { <aba-state-message kind="info" [description]="t('ui.m_1oi5fhe')" /> }
-                @if (operationsError && operationsErrorTab === 'notifications') { <aba-state-message kind="error" [description]="operationsError" /> }
-                @if (operationsWarning && operationsMessageTab === 'notifications') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
-                @if (operationsMessageTab === 'notifications' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="notificationSearch" [hasActiveFilter]="notificationSearch.trim() !== ''" (clear)="notificationSearch = ''"><aba-search-field name="notificationSearch" [ariaLabel]="t('ui.m_1qze32v')" [placeholder]="t('ui.m_1aqo4qr')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="notificationSearch" /></aba-filter-bar></div>
-                <aba-record-table [ariaLabel]="t('ui.m_1qfr3uw')" [columns]="notificationTableColumns" [rows]="notificationTableRows" [loading]="notificationsLoading && !notifications.length" [loadingDescription]="t('ui.m_fwia2s')" [emptyTitle]="t('ui.m_1mw6u5')" [emptyDescription]="notificationSearch.trim() ? t('ui.m_23ba9u') : t('ui.m_1yt5n1a')" />
-              </section>
+              @defer (when tab === 'notifications') {
+                <aba-notifications-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [activeTab]="tab" />
+              } @placeholder {
+                <section abaCard class="panel narrow"><aba-state-message kind="loading" [description]="t('ui.m_1xguwi5')" /></section>
+              } @error {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                </section>
+              }
             }
 
 
@@ -1028,44 +1002,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
 
             @if (tab === 'expenses') {
-              <section abaCard class="panel">
-                <aba-section-header [title]="t('ui.m_p4p38y')" [description]="t('ui.m_ehnfke')" [count]="filteredExpenses.length + ' / ' + expenses.length + ' ' + t('ui.m_7rwk8h')" />
-                <form #expenseForm="ngForm" class="inline-form expense-form" (ngSubmit)="expenseForm.valid && createExpense()">
-                  <label class="expense-category-field">{{ t('ui.m_10l7fjw') }}<select #expenseCategoryControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_10l7fjw')" [attr.aria-invalid]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'expense-category-error' : null" name="expenseCategory" required [(ngModel)]="expenseCategory">
-                    <option value="General">{{ t('ui.m_uchan8') }}</option>
-                    <option value="Supplies">{{ t('ui.m_rsaf82') }}</option>
-                    <option value="Rent">{{ t('ui.m_9liqbp') }}</option>
-                    <option value="Utilities">{{ t('ui.m_sgynvi') }}</option>
-                    <option value="Transport">{{ t('ui.m_dby46m') }}</option>
-                    <option value="Marketing">{{ t('ui.m_1psm7ne') }}</option>
-                    <option value="Payroll">{{ t('ui.m_vn50om') }}</option>
-                    <option value="Maintenance">{{ t('ui.m_db4mz5') }}</option>
-                    <option value="Other">{{ t('ui.m_47rh1w') }}</option>
-                  </select></label>
-                  <input #expenseDescriptionControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_tfnzm8')" [attr.aria-invalid]="expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted) ? 'expense-description-error' : null" name="expenseDescription" maxlength="500" [placeholder]="t('ui.m_1552j8m')" required [(ngModel)]="expenseDescription">
-                  <input #expenseAmountControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_19u7acj')" [attr.aria-invalid]="expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted) ? 'expense-amount-error' : null" name="expenseAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_i3lh6b')" required [(ngModel)]="expenseAmount">
-                  <input #expenseDateControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_1tz0tea')" [attr.aria-invalid]="expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted) ? 'expense-date-error' : null" name="expenseDate" type="datetime-local" required [(ngModel)]="expenseDate">
-                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_w7k03r')" name="expenseVendor" maxlength="160" [placeholder]="t('ui.m_1klr7r6')" [(ngModel)]="expenseVendor">
-                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_8m31k6')" name="expenseReference" maxlength="128" [placeholder]="t('ui.m_v160u1')" [(ngModel)]="expenseReference">
-                  <button class="primary" type="submit" [disabled]="loading || expenseSubmissionUncertain">{{ t('ui.m_xi9fpn') }}</button>
-                </form>
-                @if ((expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted)) || (expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted)) || (expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted)) || (expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted))) {
-                  <div class="expense-validation" aria-live="polite">
-                    @if (expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted)) { <small id="expense-category-error" class="field-error">{{ t('ui.m_hshr2e') }}</small> }
-                    @if (expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted)) { <small id="expense-description-error" class="field-error">{{ t('ui.m_pzmh99') }}</small> }
-                    @if (expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted)) { <small id="expense-amount-error" class="field-error">{{ t('ui.m_1sa72kc') }}</small> }
-                    @if (expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted)) { <small id="expense-date-error" class="field-error">{{ t('ui.m_17vb8am') }}</small> }
-                  </div>
-                }
-                <p class="expense-cash-semantics">{{ t('ui.m_xenywp') }}</p>
-                <p class="footnote">{{ t('ui.m_ks5nuz') }} {{ business.currency_code }}. {{ t('ui.m_1r2awxh') }}</p>
-                @if (expenseMessage) { <aba-state-message kind="success" [description]="expenseMessage" /> }
-                @if (expenseSubmissionUncertain) {
-                  <aba-state-message kind="error" [description]="t('ui.m_bv3h04')" [actionLabel]="t('ui.m_r6p4yr')" [actionDisabled]="loading" (action)="checkExpenseSubmissionOutcome()" />
-                }
-                <div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="expenseSearch" [hasActiveFilter]="expenseSearch.trim() !== ''" (clear)="expenseSearch = ''"><aba-search-field name="expenseSearch" [ariaLabel]="t('ui.m_qat44q')" [placeholder]="t('ui.m_34prmq')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="expenseSearch" /></aba-filter-bar></div>
-                <aba-record-table [ariaLabel]="t('ui.m_zyptez')" [columns]="expenseTableColumns" [rows]="expenseTableRows" [loading]="loading && !expenses.length" [loadingDescription]="t('ui.m_luj2e5')" [emptyTitle]="t('ui.m_ia2bhy')" [emptyDescription]="expenseSearch.trim() ? t('ui.m_1ow9n49') : t('ui.m_1xx6js5')" />
-              </section>
+              @defer (when tab === 'expenses') {
+                <aba-expenses-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [currencyCode]="business.currency_code" [loading]="loading" [refreshTick]="expensesRefreshTick" (dashboardChanged)="dashboard = $event" (errorNotice)="error = $event" />
+              } @placeholder {
+                <section abaCard class="panel narrow"><aba-state-message kind="loading" [description]="t('ui.m_1xguwi5')" /></section>
+              } @error {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                </section>
+              }
             }
 
             @if (tab === 'integrity' && business.role === 'owner') {
@@ -1275,11 +1220,9 @@ export class AppComponent implements OnInit, OnDestroy {
   productSearch = '';
   invoiceSearch = '';
   paymentSearch = '';
-  expenseSearch = '';
   supplierSearch = '';
   purchaseSearch = '';
   recurringSearch = '';
-  notificationSearch = '';
   invoiceStatusFilter: 'all' | 'draft' | 'issued' | 'void' = 'all';
   invoiceDensity: 'comfortable' | 'compact' = 'comfortable';
   invoiceSortKey: InvoiceSortKey = 'issue_date';
@@ -1293,20 +1236,12 @@ export class AppComponent implements OnInit, OnDestroy {
   private invoiceDetailRequestVersion = 0;
   private invoiceDetailTrigger: HTMLElement | null = null;
   payments: Payment[] = [];
-  expenses: Expense[] = [];
   suppliers: Supplier[] = [];
   purchaseOrders: PurchaseOrder[] = [];
   recurringSchedules: RecurringInvoiceSchedule[] = [];
-  notifications: NotificationRecord[] = [];
   operationalHealth: OperationalHealth | null = null;
   healthLoading = false;
   healthError = '';
-  notificationsLoading = false;
-  notificationKind = 'business';
-  notificationTitle = '';
-  notificationBody = '';
-  notificationDeduplicationKey = 'manual-' + Date.now();
-  notificationScheduledAt = '';
   suppliersLoading = false;
   purchasesLoading = false;
   recurringLoading = false;
@@ -1316,6 +1251,7 @@ export class AppComponent implements OnInit, OnDestroy {
   operationsMessage = '';
   operationsMessageTab: OperationsMessageTab | null = null;
   operationsWarning = '';
+  expensesRefreshTick = 0;
   supplierName = '';
   supplierEmail = '';
   supplierPhone = '';
@@ -1329,14 +1265,6 @@ export class AppComponent implements OnInit, OnDestroy {
   recurringIntervalDays = '30';
   recurringNextRunAt = new Date(Date.now() + 86400000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   recurringTimezone = 'UTC';
-  expenseCategory = 'General';
-  expenseDescription = '';
-  expenseAmount = '';
-  expenseDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-  expenseVendor = '';
-  expenseReference = '';
-  expenseMessage = '';
-  expenseSubmissionUncertain = false;
   businessName = '';
   currencyCode = 'EGP';
   customerCreateOpen = false;
@@ -1790,13 +1718,7 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
-  get filteredNotifications(): NotificationRecord[] {
-    return filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind), status => this.notificationStatusLabel(status), this.localization.locale);
-  }
 
-  get filteredExpenses(): Expense[] {
-    return filterExpenses(this.expenses, this.expenseSearch, category => this.expenseCategoryLabel(category), this.localization.locale);
-  }
 
   get filteredPayments(): Payment[] {
     return filterPayments(
@@ -1823,18 +1745,6 @@ export class AppComponent implements OnInit, OnDestroy {
     received:this.formatRecordDate(item.received_at),method:item.method?this.paymentMethodLabel(item.method):this.t('ui.m_1q43mlw'),
     reference:item.reference||'—',allocation:item.allocations.length?`${item.allocations.length} ${this.t('ui.m_3fih4j')}`:this.t('ui.m_lcn3j8'),
   }})); }
-  get expenseTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'date',label:this.t('ui.m_1fcm91o')},
-    {key:'description',label:this.t('ui.m_1552j8m'),primary:true},
-    {key:'category',label:this.t('ui.m_1ebfv92'),kind:'status'},
-    {key:'vendor',label:this.t('ui.m_w7k03r')},
-    {key:'reference',label:this.t('ui.m_eimrhe')},
-    {key:'amount',label:this.t('ui.m_i3lh6b'),kind:'numeric'},
-  ]; }
-  get expenseTableRows(): readonly AbaRecordTableRow[] { return this.filteredExpenses.map(item=>({id:item.id,cells:{
-    date:this.formatRecordDate(item.incurred_at),description:item.description,category:this.expenseCategoryLabel(item.category),
-    vendor:item.vendor_name||this.t('ui.m_xt63l4'),reference:item.reference||'—',amount:`${item.amount} ${item.currency_code}`,
-  }})); }
   get recurringTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'customer',label:this.t('ui.m_ubgrc2'),primary:true},
     {key:'interval',label:this.t('ui.m_soswtl')},
@@ -1846,18 +1756,6 @@ export class AppComponent implements OnInit, OnDestroy {
     customer:item.customer_id?this.customerNameForInvoice(item.customer_id):this.t('ui.m_j3ewjv'),
     interval:`${item.interval_days} ${this.t('ui.m_5mk40x')}`,nextRun:this.formatRecordDate(item.next_run_at),timezone:item.timezone,
     status:item.is_active?this.t('ui.m_1vhpjk3'):this.t('ui.m_vspcsf'),
-  }})); }
-  get notificationTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'title',label:this.t('ui.m_r04zvh'),primary:true},
-    {key:'kind',label:this.t('ui.m_1uc2roh'),kind:'status'},
-    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
-    {key:'scheduled',label:this.t('ui.m_15oe042')},
-    {key:'created',label:this.t('ui.m_1pb5uxl')},
-    {key:'body',label:this.t('ui.m_cjak9a')},
-  ]; }
-  get notificationTableRows(): readonly AbaRecordTableRow[] { return this.filteredNotifications.map(item=>({id:item.id,cells:{
-    title:item.title,kind:this.notificationKindLabel(item.kind),status:this.notificationStatusLabel(item.status),
-    scheduled:item.scheduled_at?this.formatRecordDate(item.scheduled_at):this.t('ui.m_6apaf4'),created:this.formatRecordDate(item.created_at,'short'),body:item.body,
   }})); }
   get auditTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'date',label:this.t('ui.m_1fcm91o')},
@@ -2285,7 +2183,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.products = [];
     this.invoices = [];
     this.payments = [];
-    this.expenses = [];
     this.customerPickerLoadGuard.invalidate();
     this.productPickerLoadGuard.invalidate();
     this.invoiceListLoadGuard.invalidate();
@@ -2305,13 +2202,10 @@ export class AppComponent implements OnInit, OnDestroy {
     this.suppliers = [];
     this.purchaseOrders = [];
     this.recurringSchedules = [];
-    this.notifications = [];
     this.supplierSearch = '';
     this.paymentSearch = '';
-    this.expenseSearch = '';
     this.purchaseSearch = '';
     this.recurringSearch = '';
-    this.notificationSearch = '';
     this.operationalHealth = null;
     this.operationsError = '';
     this.operationsErrorTab = null;
@@ -2319,8 +2213,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.operationsMessageTab = null;
     this.operationsWarning = '';
     this.healthError = '';
-    this.notificationTitle = '';
-    this.notificationBody = '';
     this.supplierName = '';
     this.purchaseOrderNumber = '';
     this.purchaseSupplierId = '';
@@ -2334,15 +2226,10 @@ export class AppComponent implements OnInit, OnDestroy {
     this.recurringIntervalDays = '30';
     this.recurringNextRunAt = new Date(Date.now() + 86400000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     this.recurringTimezone = 'UTC';
-    this.notificationScheduledAt = '';
-    this.notificationDeduplicationKey = 'manual-' + Date.now();
     this.suppliersLoading = false;
     this.purchasesLoading = false;
     this.recurringLoading = false;
-    this.notificationsLoading = false;
     this.healthLoading = false;
-    this.expenseMessage = '';
-    this.expenseSubmissionUncertain = false;
     this.invoiceCustomerId = '';
     this.invoiceProductId = '';
     this.invoiceQuantity = '1';
@@ -2469,8 +2356,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.error = '';
     try {
       const paymentsRequest = this.canAccessTab('payments') ? this.api.payments(id) : Promise.resolve([]);
-      const [dashboard, customerPage, productPage, invoicePage, paymentPage, expensePage] = await Promise.all([
-        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), paymentsRequest, this.api.expenses(id)
+      const [dashboard, customerPage, productPage, invoicePage, paymentPage] = await Promise.all([
+        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), paymentsRequest
       ]);
       if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
       this.dashboard = dashboard;
@@ -2480,7 +2367,6 @@ export class AppComponent implements OnInit, OnDestroy {
       this.setProductPage(productPage);
       this.setInvoicePage(invoicePage);
       this.setPaymentPage(paymentPage);
-      this.expenses = expensePage;
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
       if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
     } catch (error) {
@@ -2665,16 +2551,15 @@ export class AppComponent implements OnInit, OnDestroy {
       requestContext,
       () => this.currentChatRequestContext(),
       async () => {
-        const [expenses, dashboard] = await Promise.all([
-          this.api.expenses(requestContext.workspaceId),
-          this.api.dashboard(requestContext.workspaceId),
-        ]);
-        return { expenses, dashboard };
+        // 3A-351: expenses are owned by the expenses workspace now; the shell
+        // only refreshes the dashboard here and signals the workspace to reload.
+        const dashboard = await this.api.dashboard(requestContext.workspaceId);
+        return { dashboard };
       },
       {
-        onSuccess: ({ expenses, dashboard }) => {
-          this.expenses = expenses;
+        onSuccess: ({ dashboard }) => {
           this.dashboard = dashboard;
+          this.expensesRefreshTick++;
           if (this.error === this.homeDashboardError) this.error = '';
           this.homeDashboardError = '';
         },
@@ -2817,16 +2702,6 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  expenseCategoryLabel(category: string): string {
-    const keys: Record<string, string> = {
-      General: 'app.expenseCategory.general', Supplies: 'app.expenseCategory.supplies',
-      Rent: 'app.expenseCategory.rent', Utilities: 'app.expenseCategory.utilities',
-      Transport: 'app.expenseCategory.transport', Marketing: 'app.expenseCategory.marketing',
-      Payroll: 'app.expenseCategory.payroll', Maintenance: 'app.expenseCategory.maintenance',
-      Other: 'app.expenseCategory.other',
-    };
-    return keys[category] ? this.t(keys[category]) : category;
-  }
 
   paymentMethodLabel(method: string): string {
     const keys: Record<string, string> = {
@@ -2849,26 +2724,7 @@ export class AppComponent implements OnInit, OnDestroy {
     return keys[normalized] ? this.t(keys[normalized]) : normalized;
   }
 
-  notificationStatusLabel(status: string): string {
-    const keys: Record<string, string> = {
-      pending: 'app.notificationStatus.pending', sent: 'app.notificationStatus.sent',
-      failed: 'app.notificationStatus.failed', cancelled: 'app.notificationStatus.cancelled',
-    };
-    return keys[status] ? this.t(keys[status]) : status || this.t('app.labels.unknownStatus');
-  }
 
-  notificationKindLabel(kind: string): string {
-    const keys: Record<string, string> = {
-      business: 'app.notificationKind.business', businesses: 'app.notificationKind.businesses',
-      invoices: 'app.notificationKind.invoices', payments: 'app.notificationKind.payments',
-      expenses: 'app.notificationKind.expenses', inventory: 'app.notificationKind.inventory',
-      reminders: 'app.notificationKind.reminders', reports: 'app.notificationKind.reports',
-      suppliers: 'app.notificationKind.suppliers', purchases: 'app.notificationKind.purchases',
-      recurring: 'app.notificationKind.recurring', assistant: 'app.notificationKind.assistant',
-      system: 'app.notificationKind.system',
-    };
-    return keys[kind] ? this.t(keys[kind]) : kind;
-  }
 
   customerStatementEventLabel(eventType: string): string {
     const keys: Record<string, string> = {
@@ -3058,51 +2914,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.operationsErrorTab = tab;
   }
 
-  private async loadNotifications(): Promise<void> {
-    if (!this.business) return;
-    const businessId = this.business.id;
-    this.notificationsLoading = true;
-    this.operationsError = '';
-    this.operationsErrorTab = null;
-    try {
-      const items = await this.api.notifications(businessId);
-      if (this.business?.id === businessId) this.notifications = items;
-    } catch (error) {
-      if (this.business?.id === businessId) {
-        this.operationsError = this.message(error);
-        this.operationsErrorTab = 'notifications';
-      }
-    } finally {
-      if (this.business?.id === businessId) this.notificationsLoading = false;
-    }
-  }
-  async createNotification(): Promise<void> {
-    if (!this.business || this.business.role !== 'owner' || !this.notificationTitle.trim() || !this.notificationBody.trim()) return;
-    const businessId = this.business.id;
-    this.beginOperationsAction();
-    this.notificationsLoading = true;
-    try {
-      await this.api.createNotification(businessId, {
-        kind: this.notificationKind.trim() || 'business',
-        title: this.notificationTitle.trim(),
-        body: this.notificationBody.trim(),
-        deduplication_key: this.notificationDeduplicationKey,
-        scheduled_at: this.notificationScheduledAt ? new Date(this.notificationScheduledAt).toISOString() : undefined,
-      });
-      if (this.business?.id !== businessId) return;
-      this.setOperationsSuccess('notifications', this.t('ui.m_1618gqb'));
-      this.notificationTitle = '';
-      this.notificationBody = '';
-      this.notificationScheduledAt = '';
-      this.notificationDeduplicationKey = 'manual-' + Date.now();
-      const items = await this.api.notifications(businessId);
-      if (this.business?.id === businessId) this.notifications = items;
-    } catch (error) {
-      if (this.business?.id === businessId) this.setOperationsFailure('notifications', error);
-    } finally {
-      if (this.business?.id === businessId) this.notificationsLoading = false;
-    }
-  }
 
   private async loadSuppliers(): Promise<void> {
     if (!this.business) return;
@@ -3474,7 +3285,6 @@ export class AppComponent implements OnInit, OnDestroy {
     if (tab === 'suppliers') void this.loadSuppliers();
     if (tab === 'purchases') { void this.loadSuppliers(); void this.loadPurchaseOrders(); }
     if (tab === 'recurring') void this.loadRecurringSchedules();
-    if (tab === 'notifications') void this.loadNotifications();
     if (tab === 'health' && this.business?.role === 'owner') void this.loadOperationalHealth();
   }
 
@@ -4435,89 +4245,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.paymentMessageKind = 'info';
   }
 
-  async createExpense(): Promise<void> {
-    if (!this.business || this.expenseSubmissionUncertain) return;
-    const businessId = this.business.id;
-    const category = this.expenseCategory.trim();
-    const description = this.expenseDescription.trim();
-    const amount = Number(this.expenseAmount);
-    const occurredAt = new Date(this.expenseDate);
-    if (!category || !description || !String(this.expenseAmount ?? '').trim() || !Number.isFinite(amount) || amount <= 0) {
-      this.error = this.t('ui.m_i7atfd');
-      return;
-    }
-    if (!this.expenseDate || !Number.isFinite(occurredAt.getTime())) {
-      this.error = this.t('ui.m_10t3tvt');
-      return;
-    }
-    const currencyCode = this.business.currency_code;
-    this.loading = true;
-    this.error = '';
-    this.expenseMessage = '';
-    try {
-      await this.api.createExpense(businessId, {
-        category,
-        description,
-        amount: String(this.expenseAmount ?? '').trim(),
-        currency_code: currencyCode,
-        incurred_at: occurredAt.toISOString(),
-        vendor_name: this.expenseVendor.trim() || undefined,
-        reference: this.expenseReference.trim() || undefined
-      });
-      if (this.business?.id !== businessId) return;
-      this.expenseCategory = 'General';
-      this.expenseDescription = '';
-      this.expenseAmount = '';
-      this.expenseDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-      this.expenseVendor = '';
-      this.expenseReference = '';
-      this.expenseMessage = this.t('ui.m_h0kei5');
-      try {
-        const [expenses, dashboard] = await Promise.all([
-          this.api.expenses(businessId),
-          this.api.dashboard(businessId)
-        ]);
-        if (this.business?.id !== businessId) return;
-        this.expenses = expenses;
-        this.dashboard = dashboard;
-      } catch {
-        if (this.business?.id === businessId) {
-          this.error = this.t('ui.m_14xth7t');
-        }
-      }
-    } catch (error) {
-      if (this.business?.id === businessId) {
-        this.expenseSubmissionUncertain = true;
-        this.error = this.t('ui.m_1womw08') + ' ' + this.message(error);
-      }
-    } finally {
-      // Slice B: release this operation's own count; the guard above still protects the data writes.
-      this.loading = false;
-    }
-  }
 
-  async checkExpenseSubmissionOutcome(): Promise<void> {
-    if (!this.business) return;
-    const businessId = this.business.id;
-    this.loading = true;
-    this.error = '';
-    try {
-      const [expenses, dashboard] = await Promise.all([
-        this.api.expenses(businessId),
-        this.api.dashboard(businessId)
-      ]);
-      if (this.business?.id !== businessId) return;
-      this.expenses = expenses;
-      this.dashboard = dashboard;
-      this.expenseSubmissionUncertain = false;
-      this.expenseMessage = this.t('ui.m_1arh565');
-    } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
-    } finally {
-      // Slice B: release this operation's own count; the guard above still protects the data writes.
-      this.loading = false;
-    }
-  }
 
   exportPaymentsCsv(): void {
     if (!this.business || this.business.role !== 'owner' || !this.payments.length) return;

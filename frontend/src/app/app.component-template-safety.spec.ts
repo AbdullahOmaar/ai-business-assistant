@@ -32,6 +32,9 @@ const reportsWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./re
 const overviewWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./overview-workspace.component.ts', import.meta.url), 'utf8'));
 // 3A-351: the AI assistant tab moved into its own deferred workspace component.
 const assistantWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./assistant-workspace.component.ts', import.meta.url), 'utf8'));
+// 3A-351: the expenses and notifications tabs moved into their own deferred workspaces.
+const expensesWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./expenses-workspace.component.ts', import.meta.url), 'utf8'));
+const notificationsWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./notifications-workspace.component.ts', import.meta.url), 'utf8'));
 const reportLabelsSource = expandTranslationCalls(readFileSync(new URL('./report-labels.ts', import.meta.url), 'utf8'));
 const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
 const workspaceInvitationsSource = readFileSync(new URL('./workspace-invitations.component.ts', import.meta.url), 'utf8');
@@ -96,13 +99,15 @@ test('the new invoice editor replaces the old disclosure before invoice search a
 });
 
 test('expense and notification types use selectable, localized options', () => {
-  assert.match(source, /name="expenseCategory" required \[\(ngModel\)\]="expenseCategory"/);
-  assert.match(source, /<option value="General">\{\{ t\('عام', 'General'\) \}\}<\/option>/);
-  assert.match(source, /<select[^>]*name="notificationKind"[^>]*required[^>]*\[\(ngModel\)\]="notificationKind"/);
-  assert.match(source, /<option value="inventory">/);
-  assert.match(source, /<option value="reminders">/);
-  assert.match(source, /<option value="suppliers">/);
-  assert.match(source, /notificationKindLabel\(item\.kind\)/);
+  // 3A-351: the expense category select lives in the expenses workspace now.
+  assert.match(expensesWorkspaceSource, /name="expenseCategory" required \[\(ngModel\)\]="expenseCategory"/);
+  assert.match(expensesWorkspaceSource, /<option value="General">\{\{ t\('عام', 'General'\) \}\}<\/option>/);
+  // 3A-351: the notification kind select lives in the notifications workspace now.
+  assert.match(notificationsWorkspaceSource, /<select[^>]*name="notificationKind"[^>]*required[^>]*\[\(ngModel\)\]="notificationKind"/);
+  assert.match(notificationsWorkspaceSource, /<option value="inventory">/);
+  assert.match(notificationsWorkspaceSource, /<option value="reminders">/);
+  assert.match(notificationsWorkspaceSource, /<option value="suppliers">/);
+  assert.match(notificationsWorkspaceSource, /notificationKindLabel\(item\.kind\)/);
 });
 
 test('AI suggestions live outside the chat panel in a compact responsive prompt rail', () => {
@@ -313,7 +318,9 @@ test('workspace empty states use the shared accessible state component', () => {
   assert.doesNotMatch(source, /class="error-banner"/);
   assert.doesNotMatch(source, /class="error" role="alert"/);
   assert.match(recordTableSource, /<aba-state-message kind="loading"/, "shared record tables provide an accessible loading state");
-  assert.ok((source.match(/<aba-state-message kind="success"/g) || []).length >= 4);
+  // 3A-351: the expense and notification success states moved into their
+  // workspaces; the count spans the shell and both workspaces.
+  assert.ok(((source + expensesWorkspaceSource + notificationsWorkspaceSource).match(/<aba-state-message kind="success"/g) || []).length >= 4);
   assert.ok(source.includes('<aba-state-message [kind]'));
   assert.doesNotMatch(source, /<p class="muted" role="status">/);
   assert.doesNotMatch(source, /<p role="status">/);
@@ -669,18 +676,25 @@ test('permission-denied feedback offers a safe return home instead of retrying a
 
 test('operations forms distinguish successful mutations from failed list refreshes', () => {
   const helpersStart = source.indexOf('private beginOperationsAction()');
-  const helpersEnd = source.indexOf('private async loadNotifications()', helpersStart);
+  // 3A-351: loadNotifications moved into the notifications workspace; the
+  // next helper-adjacent method in the shell is the suppliers loader.
+  const helpersEnd = source.indexOf('private async loadSuppliers()', helpersStart);
   const helpers = source.slice(helpersStart, helpersEnd);
   assert.match(helpers, /private setOperationsSuccess\(tab: OperationsMessageTab/);
   assert.match(helpers, /private setOperationsFailure\(tab: OperationsMessageTab/);
   assert.match(helpers, /The operation succeeded, but the list could not be refreshed/);
-  const notification = source.slice(source.indexOf('async createNotification()'), source.indexOf('private async loadSuppliers()'));
+  // 3A-351: createNotification lives in the notifications workspace now;
+  // the next method after it there is the shared date formatter.
+  const notification = notificationsWorkspaceSource.slice(notificationsWorkspaceSource.indexOf('async createNotification()'), notificationsWorkspaceSource.indexOf('  formatRecordDate('));
   const supplier = source.slice(source.indexOf('async createSupplier()'), source.indexOf('async createPurchaseOrder()'));
   const recurring = source.slice(source.indexOf('async createRecurringSchedule()'), source.indexOf('get maxIntegrityTotal()'));
-  for (const method of [notification, supplier, recurring]) {
+  for (const method of [supplier, recurring]) {
     assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/,
       'stale operation completions must not update the newly selected workspace');
   }
+  // 3A-351: the notifications workspace guards on its businessId input.
+  assert.match(notification, /if \(this\.businessId\(\) !== businessId\) return;/,
+    'stale operation completions must not update the newly selected workspace');
   assert.match(notification, /delivery to recipients is not confirmed/);
   assert.match(recurring, /does not generate invoices automatically/);
   assert.ok(purchasingWorkspaceSource.includes('this.isCurrent(this.listGuard, version, requested)'));
@@ -747,7 +761,8 @@ test('invalid authentication, workspace, customer, invoice, payment and expense 
   assert.match(customerWorkspaceSource, /<form class="customer-workspace__search"[^>]*\(submit\)="submitSearch\(\$event\)"/);
   assert.match(customerEditorSource, /<form \(submit\)="submit\(\$event\)"/);
   assert.match(customerEditorSource, /if \(!name \|\| this\.emailInvalid\(\) \|\| this\.busy\(\)\) return/);
-  assert.match(source, /<form #expenseForm="ngForm"/);
+  // 3A-351: the expense form lives in the expenses workspace now.
+  assert.match(expensesWorkspaceSource, /<form #expenseForm="ngForm"/);
   const paymentStart = source.indexOf('<form #paymentForm="ngForm"');
   const paymentEnd = source.indexOf('</form>', paymentStart);
   const paymentForm = source.slice(paymentStart, paymentEnd);
@@ -1003,11 +1018,10 @@ test('owner-only invoice mutations fail closed before showing confirmation or ca
 });
 
 test('owner-only notification and recurring creation controls stay hidden from staff while lists remain visible', () => {
-  const notificationStart = source.indexOf("@if (tab === 'notifications')");
-  const notificationEnd = source.indexOf("@if (tab === 'suppliers')", notificationStart);
-  const notificationView = source.slice(notificationStart, notificationEnd);
-  assert.ok(notificationStart >= 0 && notificationEnd > notificationStart);
-  assert.match(notificationView, /@if \(business\?\.role === 'owner'\) \{\s*<form #notificationForm="ngForm"/);
+  // 3A-351: the notifications view lives in its workspace now; the form
+  // stays owner-gated through the role input.
+  const notificationView = notificationsWorkspaceSource;
+  assert.match(notificationView, /@if \(role\(\) === 'owner'\) \{\s*<form #notificationForm="ngForm"/);
   assert.match(notificationView, /Only workspace owners can queue notifications/);
   assert.match(notificationView, /<aba-record-table[^>]*\[rows\]="notificationTableRows"/);
 
@@ -1019,9 +1033,9 @@ test('owner-only notification and recurring creation controls stay hidden from s
   assert.match(recurringView, /Only workspace owners can create recurring invoice schedules/);
   assert.match(recurringView, /<aba-record-table[^>]*\[rows\]="recurringTableRows"/);
 
-  const notificationMethodStart = source.indexOf('async createNotification(): Promise<void>');
-  const notificationMethodEnd = source.indexOf('private async loadSuppliers()', notificationMethodStart);
-  assert.match(source.slice(notificationMethodStart, notificationMethodEnd), /this\.business\.role !== 'owner'/);
+  const notificationMethodStart = notificationsWorkspaceSource.indexOf('async createNotification(): Promise<void>');
+  const notificationMethodEnd = notificationsWorkspaceSource.indexOf('  formatRecordDate(', notificationMethodStart);
+  assert.match(notificationsWorkspaceSource.slice(notificationMethodStart, notificationMethodEnd), /this\.role\(\) !== 'owner'/);
   const recurringMethodStart = source.indexOf('async createRecurringSchedule(): Promise<void>');
   const recurringMethodEnd = source.indexOf('get maxIntegrityTotal()', recurringMethodStart);
   assert.match(source.slice(recurringMethodStart, recurringMethodEnd), /this\.business\.role !== 'owner'/);
@@ -1063,9 +1077,11 @@ test('assistant source citations use bilingual labels and localized expense cate
 });
 
 test('expense categories are localized in the list and available to local search', () => {
-  assert.match(source, /category:this\.expenseCategoryLabel\(item\.category\)/);
-  assert.match(source, /category => this\.expenseCategoryLabel\(category\)/);
-  assert.match(source, /Transport: 'app\.expenseCategory\.transport'/);
+  // 3A-351: the expense table and its category labels live in the expenses
+  // workspace now.
+  assert.match(expensesWorkspaceSource, /category:this\.expenseCategoryLabel\(item\.category\)/);
+  assert.match(expensesWorkspaceSource, /category => this\.expenseCategoryLabel\(category\)/);
+  assert.match(expensesWorkspaceSource, /Transport: 'app\.expenseCategory\.transport'/);
 });
 
 test('payment methods are localized in the list and available to local search', () => {
@@ -1075,10 +1091,12 @@ test('payment methods are localized in the list and available to local search', 
 });
 
 test('notification status labels are localized in the list and available to local search', () => {
-  assert.match(source, /notificationStatusLabel\(item\.status\)/);
-  assert.match(source, /notificationStatusLabel\(status\)/);
-  assert.match(source, /failed: 'app\.notificationStatus\.failed'/);
-  assert.match(source, /status \|\| this\.t\('حالة غير محددة', 'Unknown status'/);
+  // 3A-351: the notification table and its status labels live in the
+  // notifications workspace now.
+  assert.match(notificationsWorkspaceSource, /notificationStatusLabel\(item\.status\)/);
+  assert.match(notificationsWorkspaceSource, /notificationStatusLabel\(status\)/);
+  assert.match(notificationsWorkspaceSource, /failed: 'app\.notificationStatus\.failed'/);
+  assert.match(notificationsWorkspaceSource, /status \|\| this\.t\('حالة غير محددة', 'Unknown status'/);
 });
 
 test('operational health status uses a localized label instead of raw API codes', () => {
@@ -1187,9 +1205,10 @@ test('shared state feedback exposes correct alert, status, and reduced-motion se
 });
 
 test('notification and supplier forms expose localized field validation without changing optional fields', () => {
-  const notificationStart = source.indexOf('<form #notificationForm="ngForm"');
-  const notificationEnd = source.indexOf('</form>', notificationStart);
-  const notification = source.slice(notificationStart, notificationEnd);
+  // 3A-351: the notification form lives in the notifications workspace now.
+  const notificationStart = notificationsWorkspaceSource.indexOf('<form #notificationForm="ngForm"');
+  const notificationEnd = notificationsWorkspaceSource.indexOf('</form>', notificationStart);
+  const notification = notificationsWorkspaceSource.slice(notificationStart, notificationEnd);
   assert.ok(notification.includes('notificationForm.valid && createNotification()'));
   for (const [control, id] of [
     ['notificationKindControl', 'notification-kind-error'],
@@ -1200,14 +1219,14 @@ test('notification and supplier forms expose localized field validation without 
     const association = `[attr.aria-describedby]="${control}.invalid && (${control}.touched || notificationForm.submitted) ? '${id}' : null"`;
     assert.ok(notification.includes(association), control + ' error association');
     assert.ok(notification.includes(`[attr.aria-invalid]="${control}.invalid && (${control}.touched || notificationForm.submitted) ? 'true' : null"`), control + ' invalid state');
-    assert.ok(source.includes('id="' + id + '"'), id);
+    assert.ok(notificationsWorkspaceSource.includes('id="' + id + '"'), id);
   }
   assert.match(notification, /<option value="business">/);
   assert.doesNotMatch(notification, /<option value="businesses">/);
-  assert.match(source, /notificationKind = 'business';/);
+  assert.match(notificationsWorkspaceSource, /notificationKind = 'business';/);
   assert.match(notification, /name="notificationTitle" required maxlength="160"/);
   assert.match(notification, /name="notificationBody" required maxlength="1000"/);
-  assert.match(source, /class="form-validation" aria-live="polite"/);
+  assert.match(notificationsWorkspaceSource, /class="form-validation" aria-live="polite"/);
 
   const supplierStart = source.indexOf('<form #supplierForm="ngForm"');
   const supplierEnd = source.indexOf('</form>', supplierStart);
@@ -1310,10 +1329,14 @@ test('workspace build metadata is presented once in the workspace context, not d
 
 test('operations errors stay scoped to the module that produced them', () => {
   assert.match(source, /operationsErrorTab: OperationsMessageTab \| null = null/);
-  for (const tab of ['notifications', 'suppliers', 'recurring']) {
+  // 3A-351: the notifications error scope lives in the notifications
+  // workspace now (its own operations state copy); the other tabs stay.
+  for (const tab of ['suppliers', 'recurring']) {
     assert.ok(source.includes(`@if (operationsError && operationsErrorTab === '${tab}')`), tab);
     assert.ok(source.includes(`this.operationsErrorTab = '${tab}'`), tab + ' load/validation error scope');
   }
+  assert.ok(notificationsWorkspaceSource.includes(`@if (operationsError && operationsErrorTab === 'notifications')`), 'notifications');
+  assert.ok(notificationsWorkspaceSource.includes(`this.operationsErrorTab = 'notifications'`), 'notifications load/validation error scope');
   assert.match(source, /this\.operationsErrorTab = tab;/);
   assert.match(source, /private beginOperationsAction\(\): void \{/);
   assert.ok(purchasingWorkspaceSource.includes("readonly error = signal('')"));
@@ -1439,10 +1462,10 @@ test('release guide content is loaded only after navigating to the guide', () =>
 
 test('reports and expense forms disclose their preliminary and incurred-not-paid semantics', () => {
   // 3A-351: the P&L title and limitation text live in the deferred reports
-  // workspace now; the expense semantics stay in the shell.
+  // workspace now; the expense semantics live in the expenses workspace.
   assert.match(reportsWorkspaceSource, /t\('نتيجة التشغيل الأولية', 'Preliminary operating result'\)/);
   assert.match(reportsWorkspaceSource, /cost of goods sold is not deducted/);
-  assert.match(source, /Recording an expense captures when it was incurred; it does not confirm that cash was paid or settled/);
+  assert.match(expensesWorkspaceSource, /Recording an expense captures when it was incurred; it does not confirm that cash was paid or settled/);
 });
 
 
@@ -1479,17 +1502,18 @@ test('Home dashboard uses the shared page-level error and retry banner without d
 test('operations lists filter locally by their visible business fields', () => {
   assert.match(source, /get filteredSuppliers\(\): Supplier\[\]/);
   assert.match(source, /get filteredRecurringSchedules\(\): RecurringInvoiceSchedule\[\]/);
-  assert.match(source, /get filteredNotifications\(\): NotificationRecord\[\]/);
+  // 3A-351: the notifications filter lives in the notifications workspace now.
+  assert.match(notificationsWorkspaceSource, /get filteredNotifications\(\): NotificationRecord\[\]/);
   assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch, this\.localization\.locale\)/);
   assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules/);
-  assert.match(source, /filterNotifications\(this\.notifications/);
+  assert.match(notificationsWorkspaceSource, /filterNotifications\(this\.notifications/);
   assert.ok(purchasingWorkspaceSource.includes('readonly filteredOrders = computed'));
   assert.ok(purchasingWorkspaceSource.includes('this.search().trim().toLocaleLowerCase()'));
   assert.ok(purchasingWorkspaceSource.includes('this.supplierName(order.supplier_id)'));
   assert.ok(purchasingWorkspaceSource.includes('this.statusLabel(order.status)'));
   assert.match(source, /supplierSearch\.trim\(\) \? t\(/);
   assert.match(source, /recurringSearch\.trim\(\) \? t\(/);
-  assert.match(source, /notificationSearch\.trim\(\) \? t\(/);
+  assert.match(notificationsWorkspaceSource, /notificationSearch\.trim\(\) \? t\(/);
 });
 
 test('customer section markup does not render stray closing-tag text', () => {
@@ -1499,23 +1523,26 @@ test('customer section markup does not render stray closing-tag text', () => {
 
 test('payment and expense lists expose local search and distinguish no-match from no-record states', () => {
   assert.match(source, /get filteredPayments\(\): Payment\[\]/);
-  assert.match(source, /get filteredExpenses\(\): Expense\[\]/);
+  // 3A-351: the expenses filter lives in the expenses workspace now.
+  assert.match(expensesWorkspaceSource, /get filteredExpenses\(\): Expense\[\]/);
   assert.match(source, /filterPayments\(\s*this\.payments,\s*this\.paymentSearch/);
-  assert.match(source, /filterExpenses\(this\.expenses, this\.expenseSearch, category => this\.expenseCategoryLabel\(category\), this\.localization\.locale\)/);
+  assert.match(expensesWorkspaceSource, /filterExpenses\(this\.expenses, this\.expenseSearch, category => this\.expenseCategoryLabel\(category\), this\.localization\.locale\)/);
   assert.match(source, /paymentSearch\.trim\(\) \? t\(/);
-  assert.match(source, /expenseSearch\.trim\(\) \? t\(/);
+  assert.match(expensesWorkspaceSource, /expenseSearch\.trim\(\) \? t\(/);
   // T18 Slice E (2026-11-21): the payment/expense searches are aba-search-field
   // components now; the type="search" input lives inside the component, and the
   // shell keeps the same name and [(ngModel)] binding on the component element.
   assert.match(source, /<aba-search-field name="paymentSearch"/);
-  assert.match(source, /<aba-search-field name="expenseSearch"/);
+  assert.match(expensesWorkspaceSource, /<aba-search-field name="expenseSearch"/);
 });
 
 
 test('notification kind localization covers the current business form value and legacy plural value', () => {
-  assert.match(source, /<option value="business">/);
-  assert.match(source, /business: 'app\.notificationKind\.business'/);
-  assert.match(source, /businesses: 'app\.notificationKind\.businesses'/);
+  // 3A-351: the notification kind options and labels live in the
+  // notifications workspace now.
+  assert.match(notificationsWorkspaceSource, /<option value="business">/);
+  assert.match(notificationsWorkspaceSource, /business: 'app\.notificationKind\.business'/);
+  assert.match(notificationsWorkspaceSource, /businesses: 'app\.notificationKind\.businesses'/);
 });
 
 

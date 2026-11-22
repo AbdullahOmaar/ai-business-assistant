@@ -115,20 +115,27 @@ test('search field uses the --aiba-* tokens, hides the native search decorations
 // 3A-351: the module-directory search moved with the Home tab into the
 // overview workspace; the shell keeps the other six.
 const overviewSource = readFileSync(new URL('./overview-workspace.component.ts', import.meta.url), 'utf8');
+// 3A-351: the expense and notification searches moved into their workspaces.
+const expensesSource = readFileSync(new URL('./expenses-workspace.component.ts', import.meta.url), 'utf8');
+const notificationsSource = readFileSync(new URL('./notifications-workspace.component.ts', import.meta.url), 'utf8');
 const shellSearches: Array<{ name: string; ariaKey: string; placeholderKey: string; binding: string }> = [
-  { name: 'notificationSearch', ariaKey: 'ui.m_1qze32v', placeholderKey: 'ui.m_1aqo4qr', binding: 'notificationSearch' },
   { name: 'supplierSearch', ariaKey: 'ui.m_1mc30sn', placeholderKey: 'ui.m_jtec0a', binding: 'supplierSearch' },
   { name: 'recurringSearch', ariaKey: 'ui.m_aljqyp', placeholderKey: 'ui.m_z7f6xc', binding: 'recurringSearch' },
   { name: 'invoiceSearch', ariaKey: 'ui.m_qwjq9v', placeholderKey: 'ui.m_2onysz', binding: 'invoiceSearch' },
   { name: 'paymentSearch', ariaKey: 'ui.m_nmj0be', placeholderKey: 'ui.m_hoei9y', binding: 'paymentSearch' },
-  { name: 'expenseSearch', ariaKey: 'ui.m_qat44q', placeholderKey: 'ui.m_34prmq', binding: 'expenseSearch' },
+];
+// 3A-351: the expense and notification searches live in their workspaces now.
+const movedSearches: Array<{ name: string; ariaKey: string; placeholderKey: string; binding: string; source: string }> = [
+  { name: 'expenseSearch', ariaKey: 'ui.m_qat44q', placeholderKey: 'ui.m_34prmq', binding: 'expenseSearch', source: expensesSource },
+  { name: 'notificationSearch', ariaKey: 'ui.m_1qze32v', placeholderKey: 'ui.m_1aqo4qr', binding: 'notificationSearch', source: notificationsSource },
 ];
 
 test('all 7 search inputs use aba-search-field with their original name, aria-label, placeholder and [(ngModel)] binding', () => {
-  // 3A-351: 6 searches stay in the shell; the module-directory search lives
-  // in the overview workspace and is pinned separately below.
-  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 6,
-    'exactly the 6 shell searches migrate; no more, no fewer');
+  // 3A-351: 4 searches stay in the shell; the module-directory search lives
+  // in the overview workspace and the expense/notification searches live in
+  // their own workspaces, pinned separately below.
+  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 4,
+    'exactly the 4 shell searches migrate; no more, no fewer');
   assert.ok(overviewSource.includes('<aba-search-field class="module-directory-search" name="homeModuleSearch" autocomplete="off"'),
     'the overview search keeps its module-directory-search hook and autocomplete="off"');
   assert.ok(overviewSource.includes("[ariaLabel]=\"t('ui.m_1yd5km1')\""),
@@ -154,6 +161,20 @@ test('all 7 search inputs use aba-search-field with their original name, aria-la
     assert.ok(appSourceRaw.includes(`[clearLabel]="t('ui.m_4k8q2zr')"`),
       `${search.name} must label its clear button with the shared clear-search key`);
     assert.ok(appSourceRaw.includes(`[(ngModel)]="${search.binding}"`),
+      `${search.name} must keep its [(ngModel)] binding`);
+  }
+  for (const search of movedSearches) {
+    assert.ok(search.source.includes(`<aba-search-field name="${search.name}"`),
+      `missing aba-search-field usage for ${search.name} in its workspace`);
+    assert.ok(search.source.includes(`[ariaLabel]="t('${search.ariaKey}')"`) ,
+      `${search.name} must keep its aria-label key ${search.ariaKey}`);
+    assert.ok(search.source.includes(`[placeholder]="t('${search.placeholderKey}')"`),
+      `${search.name} must keep its placeholder key ${search.placeholderKey}`);
+    assert.ok(search.source.includes(`[placeholderNarrow]="t('ui.m_11ucx5t')"`),
+      `${search.name} must pass the short narrow placeholder key ui.m_11ucx5t`);
+    assert.ok(search.source.includes(`[clearLabel]="t('ui.m_4k8q2zr')"`),
+      `${search.name} must label its clear button with the shared clear-search key`);
+    assert.ok(search.source.includes(`[(ngModel)]="${search.binding}"`),
       `${search.name} must keep its [(ngModel)] binding`);
   }
   assert.ok(appSourceRaw.includes('import { AbaSearchFieldComponent } from \'./shared/ui/aba-search-field.component\';'),

@@ -12,6 +12,12 @@ const app = expandTranslationCalls(
   + readFileSync(new URL('./audit-events-workspace.component.ts', import.meta.url), 'utf8')
 );
 const component = expandTranslationCalls(readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8'));
+// 3A-351: the expenses list (and its loading description) moved into the
+// deferred expenses workspace.
+const expensesWorkspace = expandTranslationCalls(readFileSync(new URL('./expenses-workspace.component.ts', import.meta.url), 'utf8'));
+// 3A-351: the notifications list (and its loading description) moved into
+// the deferred notifications workspace too.
+const notificationsWorkspace = expandTranslationCalls(readFileSync(new URL('./notifications-workspace.component.ts', import.meta.url), 'utf8'));
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const guide = expandDictionaryBackedProperties(readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8'));
 const access = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
@@ -128,10 +134,15 @@ test('a successful payroll payment refreshes workspace data only for the same au
   const refresh = app.slice(refreshStart, refreshEnd);
   assert.match(refresh, /requestContext\.role !== 'owner'/);
   assert.match(refresh, /runTenantScopedRequest\(\s*this\.payrollRefreshGuard/);
-  assert.match(refresh, /this\.api\.expenses\(requestContext\.workspaceId\)/);
+  // 3A-351: expenses are owned by the expenses workspace now; the shell
+  // refreshes only the dashboard here and bumps the tick that tells the
+  // workspace to reload its list.
+  assert.doesNotMatch(refresh, /this\.api\.expenses\(requestContext\.workspaceId\)/);
   assert.match(refresh, /this\.api\.dashboard\(requestContext\.workspaceId\)/);
-  assert.match(refresh, /this\.expenses = expenses;/);
   assert.match(refresh, /this\.dashboard = dashboard;/);
+  assert.match(refresh, /this\.expensesRefreshTick\+\+;/);
+  assert.match(expensesWorkspace, /changes\['refreshTick'\]/);
+  assert.match(expensesWorkspace, /void this\.loadExpenses\(\);/);
   assert.match(refresh, /onError: error =>/);
   assert.match(refresh, /this\.dashboard = null;/);
   assert.match(refresh, /this\.homeDashboardError = this\.message\(error\);/);
@@ -237,14 +248,18 @@ test('mobile payroll keeps its period filter with history and restores focus aft
 test('employee table action heading and remaining record loading descriptions respect Arabic locale', () => {
   assert.match(component, /\[actionsHeading\]="t\('الإجراءات',\s*'Actions'\)"/);
   for (const fragment of [
-    "[loadingDescription]=\"t('جارٍ تحميل الإشعارات…', 'Loading notifications…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل الجداول الدورية…', 'Loading recurring schedules…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل المدفوعات…', 'Loading payments…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل سجل النشاط…', 'Loading activity log…')\"",
-    "[loadingDescription]=\"t('جارٍ تحميل المصروفات…', 'Loading expenses…')\"",
     "t('عميل الدفعة:', 'Payment customer:')",
     "t('عميل الفاتورة:', 'Invoice customer:')",
   ]) assert.ok(app.includes(fragment), 'missing localized record UX: '+fragment);
+  // 3A-351: the expenses loading description lives in the expenses workspace now.
+  assert.ok(expensesWorkspace.includes("[loadingDescription]=\"t('جارٍ تحميل المصروفات…', 'Loading expenses…')\""),
+    'missing localized record UX: expenses loading description');
+  // 3A-351: the notifications loading description lives in the notifications workspace now.
+  assert.ok(notificationsWorkspace.includes("[loadingDescription]=\"t('جارٍ تحميل الإشعارات…', 'Loading notifications…')\""),
+    'missing localized record UX: notifications loading description');
 });
 
 // T18 Slice U12 (2026-11-22): payroll money cells join each amount to its

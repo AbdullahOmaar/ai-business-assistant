@@ -13,6 +13,9 @@ const productWorkspace=readFileSync(new URL('./product-workspace.component.ts',i
 const purchasingWorkspace=readFileSync(new URL('./purchasing-workspace.component.ts',import.meta.url),'utf8');
 // 3A-351: the ageing due-date call site moved with the reports workspace.
 const reportsWorkspace=expandTranslationCalls(readFileSync(new URL('./reports-workspace.component.ts',import.meta.url),'utf8'));
+// 3A-351: the expense and notification date call sites moved with their workspaces.
+const expensesWorkspace=expandTranslationCalls(readFileSync(new URL('./expenses-workspace.component.ts',import.meta.url),'utf8'));
+const notificationsWorkspace=expandTranslationCalls(readFileSync(new URL('./notifications-workspace.component.ts',import.meta.url),'utf8'));
 test('shared record table exposes semantic columns and stable row actions',()=>{
   assert.match(component,/<table>/);assert.match(component,/<caption class="aba-record-table__visually-hidden">/);
   assert.match(component,/<th scope="col" \[attr\.aria-sort\]="sortAria\(column\.key\)"/);assert.match(component,/<th scope="row"/);
@@ -62,9 +65,7 @@ test('record table labels and loading states follow the selected app locale',()=
 test('record dates remain localized after moving legacy lists into tables', () => {
   for (const fragment of [
     'formatRecordDate(item.received_at)',
-    'formatRecordDate(item.incurred_at)',
     'formatRecordDate(item.next_run_at)',
-    'formatRecordDate(item.scheduled_at)',
     "formatRecordDate(item.created_at,'short')",
     'map((event,index)=>({',
     'event.source_id',
@@ -74,6 +75,12 @@ test('record dates remain localized after moving legacy lists into tables', () =
   // 3A-351: the ageing due date formats inside the reports workspace now.
   assert.ok(reportsWorkspace.includes("formatRecordDate(invoice.due_date,'date')"),
     'missing localized date or stable key: formatRecordDate(invoice.due_date,\'date\')');
+  // 3A-351: the expense incurred date and the notification scheduled date
+  // format inside their own workspaces now.
+  assert.ok(expensesWorkspace.includes('formatRecordDate(item.incurred_at)'),
+    'missing localized date or stable key: formatRecordDate(item.incurred_at)');
+  assert.ok(notificationsWorkspace.includes('formatRecordDate(item.scheduled_at)'),
+    'missing localized date or stable key: formatRecordDate(item.scheduled_at)');
 });
 
 
@@ -108,16 +115,16 @@ test('mobile record cards surface primary fields before secondary date metadata'
   assert.match(css, /\.aba-record-table tbody :is\(td,th\)\.aba-record-table__primary-cell\{grid-column:1\/-1;order:-1;/);
 
   const contracts = [
-    ['expenseTableColumns', 'date', 'description'],
-    ['auditTableColumns', 'date', 'action'],
-    ['customerStatementTableColumns', 'date', 'event'],
+    ['expenseTableColumns', 'date', 'description', expensesWorkspace],
+    ['auditTableColumns', 'date', 'action', app],
+    ['customerStatementTableColumns', 'date', 'event', app],
   ];
 
-  for (const [getter, dateKey, primaryKey] of contracts) {
-    const start = app.indexOf('get ' + getter);
+  for (const [getter, dateKey, primaryKey, owner] of contracts) {
+    const start = owner.indexOf('get ' + getter);
     assert.ok(start >= 0, 'missing column contract: ' + getter);
-    const next = app.indexOf('\n  get ', start + 4);
-    const block = app.slice(start, next < 0 ? app.length : next);
+    const next = owner.indexOf('\n  get ', start + 4);
+    const block = owner.slice(start, next < 0 ? owner.length : next);
     const datePosition = block.indexOf("key:'" + dateKey + "'");
     const primaryPosition = block.indexOf("key:'" + primaryKey + "'");
     assert.ok(datePosition >= 0 && primaryPosition > datePosition, 'expected date-first source order: ' + getter);
