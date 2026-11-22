@@ -10,6 +10,8 @@ const app = expandTranslationCalls(
   + '\n'
   + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8')
 );
+// 3A-351: the Home tab lives in the deferred overview workspace now.
+const overviewSource = expandTranslationCalls(readFileSync(new URL('./overview-workspace.component.ts', import.meta.url), 'utf8'));
 const localization = readFileSync(new URL('./localization.service.ts', import.meta.url), 'utf8');
 const globalStyles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const indexHtml = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
@@ -188,7 +190,7 @@ test('the complete Home dashboard screen uses the new hero, metric and quick-acc
     '.dashboard-trust-note', '.metric-grid', '.home-shortcut-list',
     '.home-shortcut-link', '.module-directory-summary',
   ]) {
-    assert.ok(app.includes(selector.slice(1)), 'missing Home dashboard markup: ' + selector);
+    assert.ok(app.includes(selector.slice(1)) || overviewSource.includes(selector.slice(1)), 'missing Home dashboard markup: ' + selector);
     assert.ok(css.includes(selector), 'missing dashboard styling: ' + selector);
   }
 });
@@ -244,7 +246,8 @@ test('Home period header stays small and KPI cards keep two flexible columns', (
   // takes the full row.
   assert.match(css, /@media \(max-width: 380px\)[\s\S]*?\.dashboard-period__heading\s*\{\s*flex-wrap:\s*wrap/);
   assert.match(css, /@media \(max-width: 380px\)[\s\S]*?\.dashboard-period__title\s*\{\s*flex:\s*1 1 100%/);
-  const heroTitleRule = app.match(/\.dashboard-period__title\{([^}]*)\}/)?.[1] ?? '';
+  // 3A-351: the base period-title rule moved with the overview workspace.
+  const heroTitleRule = (app + overviewSource).match(/\.dashboard-period__title\{([^}]*)\}/)?.[1] ?? '';
   assert.match(heroTitleRule, /overflow-wrap:normal/);
   assert.doesNotMatch(heroTitleRule, /overflow-wrap:anywhere/);
   // KPI amounts never split: the base amount rule is nowrap with a

@@ -60,7 +60,9 @@ test('uncertain invoice writes are stored before mutation and verified without r
 test('invoice outcome recovery is restored only for the same authenticated user and workspace', () => {
   assert.match(source, /this\.invoiceDraftOutcomeVault\.get\(this\.currentAuthUid, id\)/);
   assert.match(source, /this\.invoiceDraftUncertain = true/);
-  const pay = methodBetween('payInvoice(invoice: Invoice)', 'async createExpense()');
+  // 3A-351: createExpense moved into the expenses workspace; the next
+  // method after payInvoice in the shell is the payments CSV export.
+  const pay = methodBetween('payInvoice(invoice: Invoice)', 'exportPaymentsCsv(): void {');
   assert.match(pay, /this\.paymentRetryPending/);
 });
 

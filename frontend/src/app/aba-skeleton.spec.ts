@@ -7,11 +7,11 @@ const componentSource = readFileSync(new URL('./shared/ui/aba-skeleton.component
 const appSource = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
 const appStyles = readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
 
-const homeStart = appSource.indexOf("@if (tab === 'overview') {");
-const homeEnd = appSource.indexOf("@if (tab === 'notifications')", homeStart);
-const home = appSource.slice(homeStart, homeEnd);
-const loadingStart = home.indexOf('} @else if (loading) {');
-const loadingEnd = home.indexOf('} @else if (!error)', loadingStart);
+// 3A-351: the Home tab lives in the deferred overview workspace now.
+const overviewSource = expandTranslationCalls(readFileSync(new URL('./overview-workspace.component.ts', import.meta.url), 'utf8'));
+const home = overviewSource;
+const loadingStart = home.indexOf('} @else if (loading()) {');
+const loadingEnd = home.indexOf('} @else if (!error())', loadingStart);
 const loading = home.slice(loadingStart, loadingEnd);
 
 // T18 Slice C: shared skeleton component (variants: metric-card, list-row,
@@ -141,9 +141,9 @@ test('Overview loading state uses the skeleton component for the period and the 
     'the four KPI cards must each render a metric-card skeleton');
   assert.match(loading, /<section class="metric-grid metric-grid--skeleton" aria-hidden="true">/,
     'the metric grid wrapper stays in the shell: its grid layout is shared with the loaded cards');
-  assert.ok(appSource.includes("import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';"),
-    'shell must import the skeleton component');
-  assert.ok(appSource.includes('AbaSkeletonComponent'), 'shell must register the skeleton component');
+  assert.ok(overviewSource.includes("import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';"),
+    'the overview workspace must import the skeleton component');
+  assert.ok(overviewSource.includes('AbaSkeletonComponent'), 'the overview workspace must register the skeleton component');
 });
 
 test('the old bespoke Overview skeleton markup and CSS are gone from the shell', () => {
@@ -159,9 +159,10 @@ test('the old bespoke Overview skeleton markup and CSS are gone from the shell',
     'the bespoke period-skeleton rule must be gone from app.component.css');
   assert.equal(appStyles.includes('dashboard-period-skeleton__details'), false,
     'the bespoke period details rules must be gone from app.component.css');
-  // The ready-state period rules stay: the loaded section still uses them.
-  assert.ok(appStyles.includes('.dashboard-period{display:flex;'), 'ready-state period layout must stay in the shell CSS');
-  assert.ok(appStyles.includes('.dashboard-period__details{display:flex;'), 'ready-state period details must stay in the shell CSS');
+  // 3A-351: the ready-state period rules moved with the Home tab into the
+  // overview workspace; the loaded section still uses them there.
+  assert.ok(overviewSource.includes('.dashboard-period{display:flex;'), 'ready-state period layout must stay in the overview CSS');
+  assert.ok(overviewSource.includes('.dashboard-period__details{display:flex;'), 'ready-state period details must stay in the overview CSS');
 });
 
 test('metric-skeleton class is kept on the component root for the Playwright route sweeps', () => {

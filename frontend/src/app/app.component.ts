@@ -2,12 +2,12 @@ import { CommonModule } from '@angular/common';
 import { LocalizationService } from './localization.service';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, ApiRequestError, AuditEvent, Business, ChatReply, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, InvoiceDetail, Payment, Product, ProfitLossReport, ReceivablesAgingReport, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
+import { ApiService, ApiRequestError, AuditEvent, Business, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, InvoiceDetail, Payment, Product, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
 import { createServiceWorkerUpdateHandler } from './service-worker-update';
 import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
-import { buildCsv, CSV_FORMULA_TRIGGER_ASCII, escapeCsvFormulaPrefix } from './csv-export';
+import { buildCsv } from './csv-export';
 import { auditActionLabel as formatAuditActionLabel, auditTargetLabel as formatAuditTargetLabel } from './audit-labels';
 import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers, firstRecordPage, mergeRecordPage } from './record-filters';
 import { countInvoiceStatuses, paginateInvoiceRecords, sortInvoiceRecords, type InvoiceSortDirection, type InvoiceSortKey, type InvoiceStatusCounts } from './invoice-list';
@@ -20,6 +20,12 @@ import { InventoryMovementLedgerComponent, type InventoryMovementLoader } from '
 import { PurchasingWorkspaceComponent } from './purchasing-workspace.component';
 import { CreditNoteIssuanceComponent } from './credit-note-issuance.component';
 import { AuditEventsWorkspaceComponent } from './audit-events-workspace.component';
+import { ReportsWorkspaceComponent } from './reports-workspace.component';
+import { AssistantWorkspaceComponent } from './assistant-workspace.component';
+import { OverviewWorkspaceComponent } from './overview-workspace.component';
+import { ExpensesWorkspaceComponent } from './expenses-workspace.component';
+import { NotificationsWorkspaceComponent } from './notifications-workspace.component';
+import { reportLimitationKey } from './report-labels';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
 import { filterWorkspaceModules, selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
@@ -54,7 +60,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -288,174 +294,26 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               (languageToggleRequested)="toggleLanguage()"
               (signOutRequested)="logout()" />
 
-            @if (tab === 'overview') {
-              @defer (when tab === 'overview') {
-                <aba-workspace-invitations mode="accept" [businessId]="business?.id || null" [language]="language" (accepted)="loadBusinesses()" />
+            @defer (when tab === 'overview') {
+              <aba-overview-workspace [businessId]="business?.id || null" [dashboard]="dashboard" [loading]="loading" [error]="error" [role]="business?.role" [platformAdminAvailable]="platformAdminAvailable" [language]="language" (navigate)="setTab($event)" (newInvoiceDraft)="startNewInvoiceDraft()" (newCustomer)="customerCreateOpen = true" (newProduct)="productCreateOpen = true" (invitationsAccepted)="loadBusinesses()" />
+            } @placeholder {
+              <section abaCard class="panel narrow"><aba-state-message kind="loading" [description]="t('ui.m_1xguwi5')" /></section>
+            } @error {
+              <section abaCard class="panel narrow">
+                <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+              </section>
+            }
+
+            @if (tab === 'notifications') {
+              @defer (when tab === 'notifications') {
+                <aba-notifications-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [activeTab]="tab" />
+              } @placeholder {
+                <section abaCard class="panel narrow"><aba-state-message kind="loading" [description]="t('ui.m_1xguwi5')" /></section>
               } @error {
                 <section abaCard class="panel narrow">
                   <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
                 </section>
               }
-
-              @if (dashboard) {
-                <section class="dashboard-period" [attr.aria-label]="t('ui.m_14yh7ls')">
-                  <div class="dashboard-period__heading">
-                    <h2 class="dashboard-period__title">{{ t('ui.m_1wch2zm') }}</h2>
-                    <strong>{{ t('ui.m_1ql1fm2') }}</strong>
-                  </div>
-                  <div class="dashboard-period__details">
-                    <span>{{ t('ui.m_15qcbwy') }} <bdi dir="ltr">{{ dashboard.period.start_date || '—' }}</bdi> {{ t('ui.m_8f9vz0') }} <bdi dir="ltr">{{ dashboard.period.end_date || '—' }}</bdi></span>
-                    <span>{{ t('ui.m_j805b6') }}: <bdi>{{ dashboard.period.timezone || '—' }}</bdi></span>
-                  </div>
-                </section>
-                <section class="metric-grid" [attr.aria-label]="t('ui.m_1gk81ud')">
-                  <aba-metric-card class="metric-card-action" role="button" tabindex="0" [attr.aria-label]="t('ui.m_fnf54u')" (click)="setTab('invoices')" (keydown.enter)="setTab('invoices')" (keydown.space)="$event.preventDefault(); setTab('invoices')"><span metricLabel>{{ t('ui.m_fnf54u') }}</span>
-                    @for (item of dashboard.invoiced_sales; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('ui.m_18n4mlp') }}</small> } @if (!dashboard.invoiced_sales.length) { <strong>—</strong><small>{{ t('ui.m_e17yyr') }}</small> }<small class="metric-basis">{{ t('ui.m_zszhha') }}</small></aba-metric-card>
-                  <aba-metric-card class="metric-card-action" role="button" tabindex="0" [attr.aria-label]="t('ui.m_1ukns6h')" (click)="setTab('payments')" (keydown.enter)="setTab('payments')" (keydown.space)="$event.preventDefault(); setTab('payments')"><span metricLabel>{{ t('ui.m_1ukns6h') }}</span>
-                    @for (item of dashboard.collected_payments; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('ui.m_1dedwxn') }}</small> } @if (!dashboard.collected_payments.length) { <strong>—</strong><small>{{ t('ui.m_5s5eo') }}</small> }<small class="metric-basis">{{ t('ui.m_nbfv39') }}</small></aba-metric-card>
-                  <aba-metric-card class="metric-card-action" role="button" tabindex="0" [attr.aria-label]="t('ui.m_l71hva')" (click)="setTab('expenses')" (keydown.enter)="setTab('expenses')" (keydown.space)="$event.preventDefault(); setTab('expenses')"><span metricLabel>{{ t('ui.m_l71hva') }}</span>
-                    @for (item of dashboard.expenses; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('ui.m_jgq8i') }}</small> } @if (!dashboard.expenses.length) { <strong>—</strong><small>{{ t('ui.m_53hyf8') }}</small> }<small class="metric-basis">{{ t('ui.m_1mhn6p1') }}</small></aba-metric-card>
-                  <aba-metric-card class="metric-card-action" role="button" tabindex="0" [attr.aria-label]="t('ui.m_v5uwri')" (click)="setTab('invoices')" (keydown.enter)="setTab('invoices')" (keydown.space)="$event.preventDefault(); setTab('invoices')"><span metricLabel>{{ t('ui.m_v5uwri') }}</span>
-                    @for (item of dashboard.outstanding_balances; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small class="metric-basis">{{ t('ui.m_1wagqaw') }}</small> } @if (!dashboard.outstanding_balances.length) { <strong>—</strong><small>{{ t('ui.m_1k06qyq') }}</small> }</aba-metric-card>
-                </section>
-                <section class="dashboard-actions" [attr.aria-label]="t('ui.m_1423muo')">
-                  @if (canAccessTab('invoices')) {
-                    <button class="dashboard-action dashboard-action--primary" type="button"
-                      (click)="setTab('invoices'); startNewInvoiceDraft()">
-                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
-                      <span class="dashboard-action__copy">
-                        <strong>{{ t('ui.m_12vszs4') }}</strong>
-                        <small>{{ t('ui.m_61q6l7') }}</small>
-                      </span>
-                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
-                    </button>
-                  }
-                  @if (canAccessTab('expenses')) {
-                    <button class="dashboard-action" type="button" (click)="setTab('expenses')">
-                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
-                      <span class="dashboard-action__copy">
-                        <strong>{{ t('ui.m_p4p38y') }}</strong>
-                        <small>{{ t('ui.m_ehnfke') }}</small>
-                      </span>
-                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
-                    </button>
-                  }
-                  @if (canAccessTab('customers')) {
-                    <button class="dashboard-action" type="button" (click)="setTab('customers'); customerCreateOpen = true">
-                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
-                      <span class="dashboard-action__copy">
-                        <strong>{{ t('ui.m_1yvcfg6') }}</strong>
-                        <small>{{ t('ui.m_15gmqko') }}</small>
-                      </span>
-                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
-                    </button>
-                  }
-                  @if (canAccessTab('products')) {
-                    <button class="dashboard-action" type="button" (click)="setTab('products'); productCreateOpen = true">
-                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
-                      <span class="dashboard-action__copy">
-                        <strong>{{ t('ui.m_1nbakc8') }}</strong>
-                        <small>{{ t('ui.m_snu8sb') }}</small>
-                      </span>
-                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
-                    </button>
-                  }
-                </section>
-                <section class="notice dashboard-trust-note" role="note"><strong>{{ t('ui.m_lgrza4') }}</strong><span>{{ t('ui.m_1yfmgqi') }}</span></section>
-              } @else if (loading) {
-                <aba-skeleton variant="detail" [title]="t('ui.m_1wch2zm')" [subtitle]="t('ui.m_1ql1fm2')" />
-                <section class="metric-grid metric-grid--skeleton" aria-hidden="true">
-                  <aba-skeleton variant="metric-card" />
-                  <aba-skeleton variant="metric-card" />
-                  <aba-skeleton variant="metric-card" />
-                  <aba-skeleton variant="metric-card" />
-                </section>
-
-              } @else if (!error) {
-                <aba-state-message kind="empty" [description]="t('ui.m_1x7j987')" />
-              }
-              <section abaCard class="panel module-launcher" aria-labelledby="module-launcher-title">
-                <aba-section-header [titleId]="'module-launcher-title'" [title]="t('ui.m_1423muo')" [description]="t('ui.m_1srbbxd')" [count]="homeQuickAccessCards.length" />
-                <nav class="home-shortcut-list" [attr.aria-label]="t('ui.m_1ufo715')">
-                  @for (module of homeQuickAccessCards; track module.tab) {
-                    <button class="home-shortcut-link" type="button" (click)="setTab(module.tab)">
-                      <span class="home-shortcut-link__icon" aria-hidden="true">{{ module.icon }}</span>
-                      <span class="home-shortcut-link__label">{{ t(module.titleKey) }}</span>
-                    </button>
-                  }
-                </nav>
-              </section>
-              <section abaCard class="panel module-directory" aria-labelledby="module-directory-title">
-                <details class="module-directory-disclosure">
-                  <summary class="module-directory-summary">
-                    <span class="module-directory-summary__copy">
-                      <span class="module-directory-summary__title" role="heading" aria-level="2" id="module-directory-title">{{ t('ui.m_1h6gxl7') }}</span>
-                      <small>{{ t('ui.m_ytvtiu') }}</small>
-                    </span>
-                    <span class="count">{{ homeModuleCards.length }}</span>
-                    <span class="module-directory-toggle" aria-hidden="true">＋</span>
-                  </summary>
-                  <aba-search-field class="module-directory-search" name="homeModuleSearch" autocomplete="off"
-                    [ariaLabel]="t('ui.m_1yd5km1')"
-                    [placeholder]="t('ui.m_3bdru5')" [placeholderNarrow]="t('ui.m_11ucx5t')"
-                    [clearLabel]="t('ui.m_4k8q2zr')"
-                    [(ngModel)]="homeModuleSearch" />
-                  @if (filteredHomeModuleCards.length) {
-                  <div class="module-directory-grid">
-                    @for (module of filteredHomeModuleCards; track module.tab) {
-                      <aba-quick-access-card
-                        [icon]="module.icon"
-                        [title]="t(module.titleKey)"
-                        [description]="t(module.descriptionKey)"
-                        (activated)="setTab(module.tab)" />
-                    }
-                  </div>
-                  } @else {
-                    <p class="module-directory-empty" role="status">{{ t('ui.m_c4eu5t') }}</p>
-                  }
-                </details>
-              </section>
-              
-            }
-
-            @if (tab === 'notifications') {
-              <section abaCard class="panel">
-                <aba-section-header [title]=" t('ui.m_6wit46') " [description]=" t('ui.m_1a21njv') "><span class="count">{{ filteredNotifications.length }} / {{ notifications.length }}</span></aba-section-header>
-                @if (business?.role === 'owner') {
-                <form #notificationForm="ngForm" class="stack" (ngSubmit)="notificationForm.valid && createNotification()">
-                  <label>{{ t('ui.m_1ulxyq2') }}<select #notificationKindControl="ngModel" name="notificationKind" required [attr.aria-invalid]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted) ? 'notification-kind-error' : null" [(ngModel)]="notificationKind">
-                    <option value="business">{{ t('ui.m_1821fhb') }}</option>
-                    <option value="invoices">{{ t('ui.m_1h7f08p') }}</option>
-                    <option value="payments">{{ t('ui.m_14ms9re') }}</option>
-                    <option value="expenses">{{ t('ui.m_l71hva') }}</option>
-                    <option value="inventory">{{ t('ui.m_1w4exkr') }}</option>
-                    <option value="reminders">{{ t('ui.m_1f2h79i') }}</option>
-                    <option value="reports">{{ t('ui.m_zmcikc') }}</option>
-                    <option value="suppliers">{{ t('ui.m_1yzd6rs') }}</option>
-                    <option value="purchases">{{ t('ui.m_57w0yx') }}</option>
-                    <option value="recurring">{{ t('ui.m_11lck86') }}</option>
-                    <option value="assistant">{{ t('ui.m_dzn3ev') }}</option>
-                    <option value="system">{{ t('ui.m_kl4jvd') }}</option>
-                  </select></label>
-                  <label>{{ t('ui.m_1m8bms') }}<input #notificationTitleControl="ngModel" name="notificationTitle" required maxlength="160" [attr.aria-invalid]="notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted) ? 'notification-title-error' : null" [(ngModel)]="notificationTitle"></label>
-                  <label>{{ t('ui.m_cjak9a') }}<textarea #notificationBodyControl="ngModel" name="notificationBody" required maxlength="1000" rows="3" [attr.aria-invalid]="notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted) ? 'true' : null" [attr.aria-describedby]="notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted) ? 'notification-body-error' : null" [(ngModel)]="notificationBody"></textarea></label>
-                  <label>{{ t('ui.m_1ocecai') }}<input name="notificationScheduledAt" type="datetime-local" [(ngModel)]="notificationScheduledAt"></label>
-                  <button class="primary" type="submit" [disabled]="notificationsLoading">{{ t('ui.m_d76gji') }}</button>
-                </form>
-                @if ((notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted)) || (notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted)) || (notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted))) {
-                  <div class="form-validation" aria-live="polite">
-                    @if (notificationKindControl.invalid && (notificationKindControl.touched || notificationForm.submitted)) { <small id="notification-kind-error" class="field-error">{{ t('ui.m_guqotm') }}</small> }
-                    @if (notificationTitleControl.invalid && (notificationTitleControl.touched || notificationForm.submitted)) { <small id="notification-title-error" class="field-error">{{ t('ui.m_92hmvu') }}</small> }
-                    @if (notificationBodyControl.invalid && (notificationBodyControl.touched || notificationForm.submitted)) { <small id="notification-body-error" class="field-error">{{ t('ui.m_1qli6jw') }}</small> }
-                  </div>
-                }
-                } @else { <aba-state-message kind="info" [description]="t('ui.m_1oi5fhe')" /> }
-                @if (operationsError && operationsErrorTab === 'notifications') { <aba-state-message kind="error" [description]="operationsError" /> }
-                @if (operationsWarning && operationsMessageTab === 'notifications') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
-                @if (operationsMessageTab === 'notifications' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="notificationSearch" [hasActiveFilter]="notificationSearch.trim() !== ''" (clear)="notificationSearch = ''"><aba-search-field name="notificationSearch" [ariaLabel]="t('ui.m_1qze32v')" [placeholder]="t('ui.m_1aqo4qr')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="notificationSearch" /></aba-filter-bar></div>
-                <aba-record-table [ariaLabel]="t('ui.m_1qfr3uw')" [columns]="notificationTableColumns" [rows]="notificationTableRows" [loading]="notificationsLoading && !notifications.length" [loadingDescription]="t('ui.m_fwia2s')" [emptyTitle]="t('ui.m_1mw6u5')" [emptyDescription]="notificationSearch.trim() ? t('ui.m_23ba9u') : t('ui.m_1yt5n1a')" />
-              </section>
             }
 
 
@@ -556,48 +414,19 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               </section>
             }
 
-@if (tab === 'reports') {
-              <section abaCard class="panel">
-                <aba-section-header [title]=" t('ui.m_1k2jewg') " [description]=" t('ui.m_7hhfvq') "><span class="count">{{ t('ui.m_7xexd4') }}</span></aba-section-header>
-                <form #profitLossForm="ngForm" class="inline-form" (ngSubmit)="profitLossForm.valid && loadProfitLoss()">
-                  <select name="profitLossPeriod" [attr.aria-label]="t('ui.m_cwfche')" [(ngModel)]="profitLossPeriod"><option value="30d">{{ t('ui.m_1ql1fm2') }}</option><option value="month">{{ t('ui.m_1sm3j94') }}</option><option value="all">{{ t('ui.m_bp8vk5') }}</option><option value="custom">{{ t('ui.m_57v6ro') }}</option></select>
-                  @if (profitLossPeriod === 'custom') {
-                    <aba-date-range [showClear]="true" [hasValue]="profitLossStart !== '' || profitLossEnd !== ''" [clearLabel]="t('ui.m_1np7zc4')" (clear)="profitLossStart = ''; profitLossEnd = ''">
-                    <label>{{ t('ui.m_15qcbwy') }}<input #profitLossStartControl="ngModel" type="date" name="profitLossStart" required [attr.aria-invalid]="profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted) ? 'true' : null" [attr.aria-describedby]="profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted) ? 'profit-loss-start-error' : null" [(ngModel)]="profitLossStart">@if (profitLossStartControl.invalid && (profitLossStartControl.touched || profitLossForm.submitted)) { <small id="profit-loss-start-error" class="field-error" role="alert">{{ t('ui.m_c9vs17') }}</small> }</label>
-                    <label>{{ t('ui.m_8ibmd8') }}<input #profitLossEndControl="ngModel" type="date" name="profitLossEnd" required [attr.aria-invalid]="profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted) ? 'true' : null" [attr.aria-describedby]="profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted) ? 'profit-loss-end-error' : null" [(ngModel)]="profitLossEnd">@if (profitLossEndControl.invalid && (profitLossEndControl.touched || profitLossForm.submitted)) { <small id="profit-loss-end-error" class="field-error" role="alert">{{ t('ui.m_146gz4o') }}</small> }</label>
-                    </aba-date-range>
-                  }
-                  <button class="primary" type="submit" [disabled]="reportLoading">{{ reportLoading ? t('ui.m_1k98007') : t('ui.m_10jsbot') }}</button>
-                </form>
-                @if (reportError) { <aba-state-message kind="error" [description]="reportError" /> }
-                @if (profitLoss) {
-                  <p class="muted">{{ profitLoss.period.start_date || t('ui.m_ixi82b') }} — {{ profitLoss.period.end_date || t('ui.m_1pfkmow') }} · {{ profitLoss.period.timezone || 'UTC' }}</p>
-                  <p class="muted"><strong>{{ t('ui.m_8hpy6m') }}</strong> {{ revenueBasisLabel(profitLoss.revenue_basis) }}</p>
-                  <aba-record-table [ariaLabel]="t('ui.m_1irq6mk')" [columns]="profitLossTableColumns" [rows]="profitLossTableRows" [emptyTitle]="t('ui.m_zlnr36')" [emptyDescription]="t('ui.m_q1rdjf')" />
-                  <div class="notice"><strong>{{ t('ui.m_1tz1k9k') }}</strong><span>{{ t('ui.m_ujpaej') }}</span></div>
-                }
-                <div class="divider"></div>
-                <aba-section-header [level]="3" [title]="t('ui.m_2oaefr')" [description]="t('ui.m_1dmo8qz')" />
-                <form #agingForm="ngForm" class="inline-form" (ngSubmit)="agingForm.valid && loadReceivablesAging()"><label>{{ t('ui.m_tyw1lj') }}<input #agingAsOfControl="ngModel" type="date" name="agingAsOf" required [attr.aria-invalid]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'true' : null" [attr.aria-describedby]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'aging-as-of-error' : null" [(ngModel)]="agingAsOf">@if (agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted)) { <small id="aging-as-of-error" class="field-error" role="alert">{{ t('ui.m_4apqf4') }}</small> }</label><button class="primary" type="submit" [disabled]="agingLoading">{{ agingLoading ? t('ui.m_1rza5t5') : t('ui.m_1gsyti0') }}</button></form>
-                @if (agingError) { <aba-state-message kind="error" [description]="agingError" /> }
-                @if (agingReport) {
-                  <div class="section-head"><p class="muted">{{ t('ui.m_vnv6l5') }} {{ agingReport.as_of_date }} · {{ agingReport.invoice_count }} {{ t('ui.m_pe8fvb') }}</p><button class="secondary" type="button" (click)="exportReceivablesAgingCsv()" [disabled]="!agingReport.invoices.length">{{ t('ui.m_nbsw3y') }}</button></div>
-                  @for (summary of agingReport.by_currency; track summary.currency_code) {
-                    <article class="metric"><span>{{ t('ui.m_1dusybc') }} · {{ summary.currency_code }}</span><strong>{{ summary.total_outstanding }} {{ summary.currency_code }}</strong><div class="aging-buckets">@for (bucket of summary.buckets; track bucket.bucket) { <div><small>{{ agingBucketLabel(bucket.bucket) }}</small><strong>{{ bucket.outstanding_amount }} {{ summary.currency_code }}</strong></div> }</div></article>
-                  }
-                  @if (agingReport.data_quality_warnings.length) {
-                    <div class="notice warning-notice"><strong>{{ t('ui.m_fhk738') }}</strong>
-                      @for (warning of agingReport.data_quality_warnings; track warning.invoice_id + warning.type) {
-                        <p><strong>{{ warning.invoice_number }}</strong> — {{ agingWarningLabel(warning.type) }}</p>
-                        @if (warning.excess_allocated) { <p>{{ t('ui.m_29qoiu') }} <span class="amount-pair">{{ warning.excess_allocated }} {{ warning.invoice_currency || '' }}</span></p> }
-                        @if (warning.mismatched_allocations_amount) { <p>{{ t('ui.m_1hrsgrk') }} {{ warning.mismatched_allocations_amount }}</p> }
-                      }
-                    </div>
-                  }
-                  <aba-record-table [ariaLabel]="t('ui.m_15doge2')" [columns]="agingTableColumns" [rows]="agingTableRows" [emptyTitle]="t('ui.m_1fbb4i1')" [emptyDescription]="t('ui.m_18nc6st')" />
-                  @if (agingReport.limitations.length) { <div class="notice"><strong>{{ t('ui.m_akne82') }}</strong>@for (limitation of agingReport.limitations; track limitation) { <p>{{ reportLimitationLabel(limitation) }}</p> }</div> }
-                }
-              </section>
+
+            @if (tab === 'reports') {
+              @defer (when tab === 'reports') {
+                <aba-reports-workspace [businessId]="business.id" [language]="language" />
+              } @placeholder {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="loading" [description]="t('ui.m_1oo6dkn')" />
+                </section>
+              } @error {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                </section>
+              }
             }
 
             @if (tab === 'team' && business?.id) {
@@ -1173,44 +1002,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
 
             @if (tab === 'expenses') {
-              <section abaCard class="panel">
-                <aba-section-header [title]="t('ui.m_p4p38y')" [description]="t('ui.m_ehnfke')" [count]="filteredExpenses.length + ' / ' + expenses.length + ' ' + t('ui.m_7rwk8h')" />
-                <form #expenseForm="ngForm" class="inline-form expense-form" (ngSubmit)="expenseForm.valid && createExpense()">
-                  <label class="expense-category-field">{{ t('ui.m_10l7fjw') }}<select #expenseCategoryControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_10l7fjw')" [attr.aria-invalid]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'expense-category-error' : null" name="expenseCategory" required [(ngModel)]="expenseCategory">
-                    <option value="General">{{ t('ui.m_uchan8') }}</option>
-                    <option value="Supplies">{{ t('ui.m_rsaf82') }}</option>
-                    <option value="Rent">{{ t('ui.m_9liqbp') }}</option>
-                    <option value="Utilities">{{ t('ui.m_sgynvi') }}</option>
-                    <option value="Transport">{{ t('ui.m_dby46m') }}</option>
-                    <option value="Marketing">{{ t('ui.m_1psm7ne') }}</option>
-                    <option value="Payroll">{{ t('ui.m_vn50om') }}</option>
-                    <option value="Maintenance">{{ t('ui.m_db4mz5') }}</option>
-                    <option value="Other">{{ t('ui.m_47rh1w') }}</option>
-                  </select></label>
-                  <input #expenseDescriptionControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_tfnzm8')" [attr.aria-invalid]="expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted) ? 'expense-description-error' : null" name="expenseDescription" maxlength="500" [placeholder]="t('ui.m_1552j8m')" required [(ngModel)]="expenseDescription">
-                  <input #expenseAmountControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_19u7acj')" [attr.aria-invalid]="expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted) ? 'expense-amount-error' : null" name="expenseAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_i3lh6b')" required [(ngModel)]="expenseAmount">
-                  <input #expenseDateControl="ngModel" [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_1tz0tea')" [attr.aria-invalid]="expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted) ? 'expense-date-error' : null" name="expenseDate" type="datetime-local" required [(ngModel)]="expenseDate">
-                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_w7k03r')" name="expenseVendor" maxlength="160" [placeholder]="t('ui.m_1klr7r6')" [(ngModel)]="expenseVendor">
-                  <input [disabled]="loading || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_8m31k6')" name="expenseReference" maxlength="128" [placeholder]="t('ui.m_v160u1')" [(ngModel)]="expenseReference">
-                  <button class="primary" type="submit" [disabled]="loading || expenseSubmissionUncertain">{{ t('ui.m_xi9fpn') }}</button>
-                </form>
-                @if ((expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted)) || (expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted)) || (expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted)) || (expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted))) {
-                  <div class="expense-validation" aria-live="polite">
-                    @if (expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted)) { <small id="expense-category-error" class="field-error">{{ t('ui.m_hshr2e') }}</small> }
-                    @if (expenseDescriptionControl.invalid && (expenseDescriptionControl.touched || expenseForm.submitted)) { <small id="expense-description-error" class="field-error">{{ t('ui.m_pzmh99') }}</small> }
-                    @if (expenseAmountControl.invalid && (expenseAmountControl.touched || expenseForm.submitted)) { <small id="expense-amount-error" class="field-error">{{ t('ui.m_1sa72kc') }}</small> }
-                    @if (expenseDateControl.invalid && (expenseDateControl.touched || expenseForm.submitted)) { <small id="expense-date-error" class="field-error">{{ t('ui.m_17vb8am') }}</small> }
-                  </div>
-                }
-                <p class="expense-cash-semantics">{{ t('ui.m_xenywp') }}</p>
-                <p class="footnote">{{ t('ui.m_ks5nuz') }} {{ business.currency_code }}. {{ t('ui.m_1r2awxh') }}</p>
-                @if (expenseMessage) { <aba-state-message kind="success" [description]="expenseMessage" /> }
-                @if (expenseSubmissionUncertain) {
-                  <aba-state-message kind="error" [description]="t('ui.m_bv3h04')" [actionLabel]="t('ui.m_r6p4yr')" [actionDisabled]="loading" (action)="checkExpenseSubmissionOutcome()" />
-                }
-                <div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="expenseSearch" [hasActiveFilter]="expenseSearch.trim() !== ''" (clear)="expenseSearch = ''"><aba-search-field name="expenseSearch" [ariaLabel]="t('ui.m_qat44q')" [placeholder]="t('ui.m_34prmq')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="expenseSearch" /></aba-filter-bar></div>
-                <aba-record-table [ariaLabel]="t('ui.m_zyptez')" [columns]="expenseTableColumns" [rows]="expenseTableRows" [loading]="loading && !expenses.length" [loadingDescription]="t('ui.m_luj2e5')" [emptyTitle]="t('ui.m_ia2bhy')" [emptyDescription]="expenseSearch.trim() ? t('ui.m_1ow9n49') : t('ui.m_1xx6js5')" />
-              </section>
+              @defer (when tab === 'expenses') {
+                <aba-expenses-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [currencyCode]="business.currency_code" [loading]="loading" [refreshTick]="expensesRefreshTick" (dashboardChanged)="dashboard = $event" (errorNotice)="error = $event" />
+              } @placeholder {
+                <section abaCard class="panel narrow"><aba-state-message kind="loading" [description]="t('ui.m_1xguwi5')" /></section>
+              } @error {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                </section>
+              }
             }
 
             @if (tab === 'integrity' && business.role === 'owner') {
@@ -1234,43 +1034,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               </section>
             }
 
-            @if (tab === 'assistant') {
-              <div class="assistant-workspace" [class.has-chat]="chatMessages.length > 0">
-              <section abaCard class="panel chat-panel">
-                <aba-section-header [title]=" t('ui.m_1ajyrpz') " [description]=" t('ui.m_1yriqyt') ">
-                  <div class="chat-header-actions">
-                    <span class="count">{{ t('ui.m_1bvwx8l') }}</span>
-                    <button type="button" class="chat-new-button" (click)="startNewChat()" [disabled]="chatSending || (!chatMessages.length && !chatDraft.trim())">{{ t('ui.m_gz9o3g') }}</button>
-                  </div>
-                </aba-section-header>
-                <div #chatLog class="chat-log" role="log" tabindex="0" aria-live="polite" aria-relevant="additions" aria-atomic="false" [attr.aria-busy]="chatSending ? 'true' : null" [attr.aria-label]="t('ui.m_180k0we')">
-                  @if (!chatMessages.length) { <aba-state-message kind="empty" [description]="t('ui.m_1dsxkpa')" /> }
-                  @for (message of chatMessages; track $index; let messageIndex = $index) {
-                    <article class="chat-message" [class.user-message]="message.role === 'user'">
-                      <div class="chat-message-head">
-                        <span>{{ message.role === 'user' ? t('ui.m_ma3u89') : t('ui.m_dzn3ev') }}</span>
-                        @if (message.role === 'assistant') {
-                          <button type="button" class="chat-copy-button" (click)="copyAssistantMessage(message.content, messageIndex)" [attr.aria-label]="t('ui.m_14dh0xk')">
-                            <span aria-live="polite">{{ chatCopyStatus?.index === messageIndex ? (chatCopyStatus?.success ? t('ui.m_d2vkge') : t('ui.m_qenrab')) : t('ui.m_1dtdc5p') }}</span>
-                          </button>
-                        }
-                      </div>
-                      @if (message.mode === 'local-fallback') { <small class="source-list">{{ t('ui.m_1raguvh') }}</small> }
-                      <p>{{ message.content }}</p>
-                      @if (message.sources?.length) { <small class="source-list">{{ t('ui.m_1uui693') }} @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? t('ui.m_1nfhuv2') : (source.type === 'expense' ? t('ui.m_q7obp1') : source.type) }} · {{ source.invoice_number || (source.type === 'expense' && source.category ? expenseCategoryLabel(source.category) : (source.category || source.id)) }}</span> }</small> }
-                    </article>
-                  }
-                </div>
-                
-                @if (chatError) { <aba-state-message kind="error" [description]="chatError" [actionLabel]="chatConfigurationMissing ? '' : t('ui.m_worzj7')" [actionDisabled]="chatSending || !chatDraft.trim()" (action)="sendChat()" /> }
-                @if (chatSending) { <aba-state-message kind="loading" [description]="t('ui.m_1xguwi5')" /> }
-                <form #chatForm="ngForm" class="chat-form" (ngSubmit)="chatForm.valid && chatDraft.trim() && sendChat()"><textarea #chatMessageControl="ngModel" name="chatMessage" rows="2" maxlength="2000" enterkeyhint="send" (keydown.enter)="handleChatKeydown($any($event))" [attr.aria-label]="t('ui.m_1d2fatg')" [attr.aria-invalid]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'true' : null" [attr.aria-describedby]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'chat-message-hint chat-message-error' : 'chat-message-hint'" [placeholder]="t('ui.m_1pafgoq')" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t('ui.m_1sgwbzd') : t('ui.m_rf7y63') }}</button></form>
-                <div class="chat-composer-meta"><small id="chat-message-hint">{{ t('ui.m_vdvf9x') }}</small><small>{{ chatDraft.length }} / 2000</small></div>
-                @if ((chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted)) { <small id="chat-message-error" class="field-error" role="alert">{{ t('ui.m_18j0gfn') }}</small> }
-                <p class="footnote">{{ t('ui.m_118u9lx') }}</p>
+            @defer (when tab === 'assistant') {
+              <aba-assistant-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [language]="language" />
+            } @placeholder {
+              <section abaCard class="panel narrow"><aba-state-message kind="loading" [description]="t('ui.m_1xguwi5')" /></section>
+            } @error {
+              <section abaCard class="panel narrow">
+                <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
               </section>
-              <aside class="assistant-suggestions" aria-label="{{ t('ui.m_1is9ve0') }}"><p>{{ t('ui.m_lxd4e7') }}</p><div class="suggestion-grid"><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_1clvjpr'))"><span class="suggestion-icon">↗</span><strong>{{ t('ui.m_1dkpjlm') }}</strong><small>{{ t('ui.m_70o2ur') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_1ij9tr8'))"><span class="suggestion-icon">✦</span><strong>{{ t('ui.m_159lqb4') }}</strong><small>{{ t('ui.m_1ktypo7') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_4tgkt3'))"><span class="suggestion-icon">▦</span><strong>{{ t('ui.m_yezco3') }}</strong><small>{{ t('ui.m_1a12moo') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_xc417r'))"><span class="suggestion-icon">◎</span><strong>{{ t('ui.m_b2oroc') }}</strong><small>{{ t('ui.m_ap19ks') }}</small></button></div></aside>
-              </div>
             }
           }
           <footer>{{ t('ui.m_1ajyrpz') }} <span>{{ t('ui.m_1f5dk3e') }}</span></footer>
@@ -1414,21 +1185,11 @@ export class AppComponent implements OnInit, OnDestroy {
   business: Business | null = null;
   selectedBusinessId = '';
   dashboard: Dashboard | null = null;
-  profitLoss: ProfitLossReport | null = null;
-  profitLossPeriod: '30d' | 'month' | 'all' | 'custom' = '30d';
-  profitLossStart = '';
-  profitLossEnd = '';
-  reportLoading = false;
-  reportError = '';
   taxSummaryReport: TaxSummaryReport | null = null;
   taxLoading = false;
   taxError = '';
   taxStartDate = '';
   taxEndDate = '';
-  agingReport: ReceivablesAgingReport | null = null;
-  agingLoading = false;
-  agingError = '';
-  agingAsOf = new Date().toISOString().slice(0, 10);
   customers: Customer[] = [];
   customerStatement: CustomerStatement | null = null;
   statementLoading = false;
@@ -1459,11 +1220,9 @@ export class AppComponent implements OnInit, OnDestroy {
   productSearch = '';
   invoiceSearch = '';
   paymentSearch = '';
-  expenseSearch = '';
   supplierSearch = '';
   purchaseSearch = '';
   recurringSearch = '';
-  notificationSearch = '';
   invoiceStatusFilter: 'all' | 'draft' | 'issued' | 'void' = 'all';
   invoiceDensity: 'comfortable' | 'compact' = 'comfortable';
   invoiceSortKey: InvoiceSortKey = 'issue_date';
@@ -1477,20 +1236,12 @@ export class AppComponent implements OnInit, OnDestroy {
   private invoiceDetailRequestVersion = 0;
   private invoiceDetailTrigger: HTMLElement | null = null;
   payments: Payment[] = [];
-  expenses: Expense[] = [];
   suppliers: Supplier[] = [];
   purchaseOrders: PurchaseOrder[] = [];
   recurringSchedules: RecurringInvoiceSchedule[] = [];
-  notifications: NotificationRecord[] = [];
   operationalHealth: OperationalHealth | null = null;
   healthLoading = false;
   healthError = '';
-  notificationsLoading = false;
-  notificationKind = 'business';
-  notificationTitle = '';
-  notificationBody = '';
-  notificationDeduplicationKey = 'manual-' + Date.now();
-  notificationScheduledAt = '';
   suppliersLoading = false;
   purchasesLoading = false;
   recurringLoading = false;
@@ -1500,6 +1251,7 @@ export class AppComponent implements OnInit, OnDestroy {
   operationsMessage = '';
   operationsMessageTab: OperationsMessageTab | null = null;
   operationsWarning = '';
+  expensesRefreshTick = 0;
   supplierName = '';
   supplierEmail = '';
   supplierPhone = '';
@@ -1513,14 +1265,6 @@ export class AppComponent implements OnInit, OnDestroy {
   recurringIntervalDays = '30';
   recurringNextRunAt = new Date(Date.now() + 86400000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   recurringTimezone = 'UTC';
-  expenseCategory = 'General';
-  expenseDescription = '';
-  expenseAmount = '';
-  expenseDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-  expenseVendor = '';
-  expenseReference = '';
-  expenseMessage = '';
-  expenseSubmissionUncertain = false;
   businessName = '';
   currencyCode = 'EGP';
   customerCreateOpen = false;
@@ -1592,20 +1336,12 @@ export class AppComponent implements OnInit, OnDestroy {
   showPaymentForm = false;
   private pendingPaymentRetrySnapshot: PaymentRetrySnapshot | null = null;
   private readonly paymentRetryVault = new PaymentRetryVault();
-  chatDraft = '';
-  chatMessages: Array<{ role: 'user' | 'assistant'; content: string; sources?: ChatReply['sources']; mode?: string }> = [];
-  chatSending = false;
-  chatError = '';
-  chatConfigurationMissing = false;
-  chatCopyStatus: { index: number; success: boolean } | null = null;
   keyboardOpen = false;
   mobileMoreOpen = false;
-  homeModuleSearch = '';
   @ViewChild('mobileMoreTrigger') private mobileMoreTrigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('mobileMoreMenu') private mobileMoreMenu?: ElementRef<HTMLElement>;
   @ViewChild('invoiceDetailClose') private invoiceDetailCloseButton?: ElementRef<HTMLButtonElement>;
   @ViewChild('invoiceDetailDrawer') invoiceDetailDrawer?: ElementRef<HTMLElement>;
-  @ViewChild('chatLog') private chatLog?: ElementRef<HTMLElement>;
   isInstalled = false;
   installHelp = false;
   appUpdateAvailable = false;
@@ -1982,13 +1718,7 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
-  get filteredNotifications(): NotificationRecord[] {
-    return filterNotifications(this.notifications, this.notificationSearch, kind => this.notificationKindLabel(kind), status => this.notificationStatusLabel(status), this.localization.locale);
-  }
 
-  get filteredExpenses(): Expense[] {
-    return filterExpenses(this.expenses, this.expenseSearch, category => this.expenseCategoryLabel(category), this.localization.locale);
-  }
 
   get filteredPayments(): Payment[] {
     return filterPayments(
@@ -2015,18 +1745,6 @@ export class AppComponent implements OnInit, OnDestroy {
     received:this.formatRecordDate(item.received_at),method:item.method?this.paymentMethodLabel(item.method):this.t('ui.m_1q43mlw'),
     reference:item.reference||'—',allocation:item.allocations.length?`${item.allocations.length} ${this.t('ui.m_3fih4j')}`:this.t('ui.m_lcn3j8'),
   }})); }
-  get expenseTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'date',label:this.t('ui.m_1fcm91o')},
-    {key:'description',label:this.t('ui.m_1552j8m'),primary:true},
-    {key:'category',label:this.t('ui.m_1ebfv92'),kind:'status'},
-    {key:'vendor',label:this.t('ui.m_w7k03r')},
-    {key:'reference',label:this.t('ui.m_eimrhe')},
-    {key:'amount',label:this.t('ui.m_i3lh6b'),kind:'numeric'},
-  ]; }
-  get expenseTableRows(): readonly AbaRecordTableRow[] { return this.filteredExpenses.map(item=>({id:item.id,cells:{
-    date:this.formatRecordDate(item.incurred_at),description:item.description,category:this.expenseCategoryLabel(item.category),
-    vendor:item.vendor_name||this.t('ui.m_xt63l4'),reference:item.reference||'—',amount:`${item.amount} ${item.currency_code}`,
-  }})); }
   get recurringTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'customer',label:this.t('ui.m_ubgrc2'),primary:true},
     {key:'interval',label:this.t('ui.m_soswtl')},
@@ -2038,18 +1756,6 @@ export class AppComponent implements OnInit, OnDestroy {
     customer:item.customer_id?this.customerNameForInvoice(item.customer_id):this.t('ui.m_j3ewjv'),
     interval:`${item.interval_days} ${this.t('ui.m_5mk40x')}`,nextRun:this.formatRecordDate(item.next_run_at),timezone:item.timezone,
     status:item.is_active?this.t('ui.m_1vhpjk3'):this.t('ui.m_vspcsf'),
-  }})); }
-  get notificationTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'title',label:this.t('ui.m_r04zvh'),primary:true},
-    {key:'kind',label:this.t('ui.m_1uc2roh'),kind:'status'},
-    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
-    {key:'scheduled',label:this.t('ui.m_15oe042')},
-    {key:'created',label:this.t('ui.m_1pb5uxl')},
-    {key:'body',label:this.t('ui.m_cjak9a')},
-  ]; }
-  get notificationTableRows(): readonly AbaRecordTableRow[] { return this.filteredNotifications.map(item=>({id:item.id,cells:{
-    title:item.title,kind:this.notificationKindLabel(item.kind),status:this.notificationStatusLabel(item.status),
-    scheduled:item.scheduled_at?this.formatRecordDate(item.scheduled_at):this.t('ui.m_6apaf4'),created:this.formatRecordDate(item.created_at,'short'),body:item.body,
   }})); }
   get auditTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'date',label:this.t('ui.m_1fcm91o')},
@@ -2064,31 +1770,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }})); }
 
 
-  get agingTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'invoice',label:this.t('ui.m_rblc1v'),primary:true},
-    {key:'outstanding',label:this.t('ui.m_11hlijv'),kind:'numeric'},
-    {key:'bucket',label:this.t('ui.m_bgcabs'),kind:'status'},
-    {key:'dueDate',label:this.t('ui.m_1i1a5f0')},
-    {key:'customer',label:this.t('ui.m_1c1fxy9'),kind:'status'},
-  ]; }
-  get agingTableRows(): readonly AbaRecordTableRow[] { return (this.agingReport?.invoices||[]).map(invoice=>({id:invoice.invoice_id,cells:{
-    invoice:invoice.invoice_number,outstanding:`${invoice.outstanding_amount} ${invoice.currency_code}`,
-    bucket:this.agingBucketLabel(invoice.aging_bucket),dueDate:invoice.due_date?this.formatRecordDate(invoice.due_date,'date'):this.t('ui.m_frwrnt'),
-    customer:invoice.customer_link_missing?this.t('ui.m_15owwjm'):this.t('ui.m_e1gxkn'),
-  }})); }
-  get profitLossTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'currency',label:this.t('ui.m_1jd5ck6'),primary:true},
-    {key:'revenue',label:this.t('ui.m_4635nj'),kind:'numeric'},
-    {key:'returns',label:this.t('ui.m_x5f4g8'),kind:'numeric'},
-    {key:'expenses',label:this.t('ui.m_l71hva'),kind:'numeric'},
-    {key:'result',label:this.t('ui.m_1jzh8n6'),kind:'numeric'},
-  ]; }
-  get profitLossTableRows(): readonly AbaRecordTableRow[] { return (this.profitLoss?.currencies||[]).map(row=>({id:row.currency_code,cells:{
-    currency:row.currency_code,revenue:`${row.revenue} · ${row.revenue_invoice_count} ${this.t('ui.m_pe8fvb')}`,
-    returns:`${row.approved_return_total} · ${row.approved_return_count} ${this.t('ui.m_1wap8ub')}`,
-    expenses:`${row.expenses} · ${row.expense_count} ${this.t('ui.m_1ghkia')}`,
-    result:row.operating_result_before_cost_of_goods,
-  }})); }
   get taxTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'currency',label:this.t('ui.m_1jd5ck6'),primary:true},
     {key:'tax',label:this.t('ui.m_129leiq'),kind:'numeric'},
@@ -2451,7 +2132,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.pendingPurchaseApproval = null;
     this.purchaseApprovalError = '';
     this.confirmationReturnFocus = null;
-    this.chatRequestGuard.invalidate();
     this.payrollRefreshGuard.invalidate();
     this.dataIntegrityLoadGuard.invalidate();
     this.operationalHealthLoadGuard.invalidate();
@@ -2459,7 +2139,6 @@ export class AppComponent implements OnInit, OnDestroy {
     // Invalidate the top-level workspace load too; otherwise an old load's finally
     // block can still mutate loading state while a new identity is being resolved.
     this.workspaceLoadGuard.invalidate();
-    this.profitLossLoadGuard.invalidate();
     this.auditLoadGuard.invalidate();
     this.statementLoadGuard.invalidate();
     this.auditEvents = [];
@@ -2476,10 +2155,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.statementCustomerName = '';
     this.statementCustomerId = '';
     this.statementOffset = 0;
-    this.receivablesAgingLoadGuard.invalidate();
     this.dashboard = null;
     this.homeDashboardError = '';
-    this.profitLoss = null;
     this.taxSummaryReport = null;
     this.dataIntegrityReport = null;
     this.integrityError = '';
@@ -2487,7 +2164,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.integrityOffset = 0;
     this.taxError = '';
     this.taxLoading = false;
-    this.agingReport = null;
     // Never carry an OWNER-only opening-stock value into another workspace or role.
     this.productOpeningQuantity = '0';
     // Import previews are workspace-scoped; never carry a pending CSV into another business.
@@ -2507,7 +2183,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.products = [];
     this.invoices = [];
     this.payments = [];
-    this.expenses = [];
     this.customerPickerLoadGuard.invalidate();
     this.productPickerLoadGuard.invalidate();
     this.invoiceListLoadGuard.invalidate();
@@ -2527,13 +2202,10 @@ export class AppComponent implements OnInit, OnDestroy {
     this.suppliers = [];
     this.purchaseOrders = [];
     this.recurringSchedules = [];
-    this.notifications = [];
     this.supplierSearch = '';
     this.paymentSearch = '';
-    this.expenseSearch = '';
     this.purchaseSearch = '';
     this.recurringSearch = '';
-    this.notificationSearch = '';
     this.operationalHealth = null;
     this.operationsError = '';
     this.operationsErrorTab = null;
@@ -2541,8 +2213,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.operationsMessageTab = null;
     this.operationsWarning = '';
     this.healthError = '';
-    this.notificationTitle = '';
-    this.notificationBody = '';
     this.supplierName = '';
     this.purchaseOrderNumber = '';
     this.purchaseSupplierId = '';
@@ -2556,25 +2226,10 @@ export class AppComponent implements OnInit, OnDestroy {
     this.recurringIntervalDays = '30';
     this.recurringNextRunAt = new Date(Date.now() + 86400000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
     this.recurringTimezone = 'UTC';
-    this.notificationScheduledAt = '';
-    this.notificationDeduplicationKey = 'manual-' + Date.now();
     this.suppliersLoading = false;
     this.purchasesLoading = false;
     this.recurringLoading = false;
-    this.notificationsLoading = false;
     this.healthLoading = false;
-    this.expenseMessage = '';
-    this.expenseSubmissionUncertain = false;
-    this.chatSending = false;
-    this.chatMessages = [];
-    this.chatDraft = '';
-    this.chatError = '';
-    this.chatConfigurationMissing = false;
-    this.chatCopyStatus = null;
-    this.reportError = '';
-    this.agingError = '';
-    this.reportLoading = false;
-    this.agingLoading = false;
     this.invoiceCustomerId = '';
     this.invoiceProductId = '';
     this.invoiceQuantity = '1';
@@ -2608,9 +2263,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.productName = '';
     this.productPrice = '';
     this.stockTracked = false;
-    this.profitLossPeriod = '30d';
-    this.profitLossStart = '';
-    this.profitLossEnd = '';
     this.tab = 'overview';
   }
 
@@ -2657,13 +2309,10 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly productPickerLoadGuard = new WorkspaceLoadGuard();
   private readonly invoiceListLoadGuard = new WorkspaceLoadGuard();
   private readonly paymentListLoadGuard = new WorkspaceLoadGuard();
-  private readonly chatRequestGuard = new WorkspaceLoadGuard();
   private readonly payrollRefreshGuard = new WorkspaceLoadGuard();
   private readonly dataIntegrityLoadGuard = new WorkspaceLoadGuard();
   private readonly operationalHealthLoadGuard = new WorkspaceLoadGuard();
   private readonly taxSummaryLoadGuard = new WorkspaceLoadGuard();
-  private readonly profitLossLoadGuard = new WorkspaceLoadGuard();
-  private readonly receivablesAgingLoadGuard = new WorkspaceLoadGuard();
   private readonly invoiceSaveGuard = new WorkspaceLoadGuard();
   private readonly invoiceEditRequestGuard = new WorkspaceLoadGuard();
   private readonly invoiceMutationGuard = new WorkspaceLoadGuard();
@@ -2707,19 +2356,17 @@ export class AppComponent implements OnInit, OnDestroy {
     this.error = '';
     try {
       const paymentsRequest = this.canAccessTab('payments') ? this.api.payments(id) : Promise.resolve([]);
-      const [dashboard, customerPage, productPage, invoicePage, paymentPage, expensePage] = await Promise.all([
-        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), paymentsRequest, this.api.expenses(id)
+      const [dashboard, customerPage, productPage, invoicePage, paymentPage] = await Promise.all([
+        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), paymentsRequest
       ]);
       if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
       this.dashboard = dashboard;
       this.homeDashboardError = '';
-      this.profitLoss = null;
       this.setCustomerPage(customerPage);
       if (!this.invoiceCustomerId && this.customers.length) this.invoiceCustomerId = this.customers[0].id;
       this.setProductPage(productPage);
       this.setInvoicePage(invoicePage);
       this.setPaymentPage(paymentPage);
-      this.expenses = expensePage;
       if (!this.invoiceProductId && this.products.length) this.invoiceProductId = this.products[0].id;
       if (!this.paymentInvoiceId) this.paymentInvoiceId = this.invoices.find(item => item.status === 'issued')?.id || '';
     } catch (error) {
@@ -2904,19 +2551,17 @@ export class AppComponent implements OnInit, OnDestroy {
       requestContext,
       () => this.currentChatRequestContext(),
       async () => {
-        const [expenses, dashboard] = await Promise.all([
-          this.api.expenses(requestContext.workspaceId),
-          this.api.dashboard(requestContext.workspaceId),
-        ]);
-        return { expenses, dashboard };
+        // 3A-351: expenses are owned by the expenses workspace now; the shell
+        // only refreshes the dashboard here and signals the workspace to reload.
+        const dashboard = await this.api.dashboard(requestContext.workspaceId);
+        return { dashboard };
       },
       {
-        onSuccess: ({ expenses, dashboard }) => {
-          this.expenses = expenses;
+        onSuccess: ({ dashboard }) => {
           this.dashboard = dashboard;
+          this.expensesRefreshTick++;
           if (this.error === this.homeDashboardError) this.error = '';
           this.homeDashboardError = '';
-          this.profitLoss = null;
         },
         onError: error => {
           // A failed current refresh must not leave pre-payment dashboard metrics visible.
@@ -2929,60 +2574,8 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
-  exportReceivablesAgingCsv(): void {
-    if (!this.agingReport || !this.agingReport.invoices.length) return;
-    const warnings = new Map<string, string[]>();
-    for (const warning of this.agingReport.data_quality_warnings) {
-      const current = warnings.get(warning.invoice_id) || [];
-      current.push(this.agingWarningLabel(warning.type));
-      warnings.set(warning.invoice_id, current);
-    }
-    const rows: string[][] = [[
-      'as_of_date', 'invoice_number', 'customer_id', 'currency_code', 'due_date', 'aging_bucket',
-      'invoice_total', 'allocated_payments', 'outstanding_amount', 'customer_link_missing', 'accounting_warnings'
-    ]];
-    for (const invoice of this.agingReport.invoices) {
-      rows.push([
-        this.agingReport.as_of_date, invoice.invoice_number, invoice.customer_id || '', invoice.currency_code,
-        invoice.due_date || '', invoice.aging_bucket, invoice.invoice_total, invoice.allocated_payments,
-        invoice.outstanding_amount, invoice.customer_link_missing ? 'true' : 'false',
-        (warnings.get(invoice.invoice_id) || []).join('; ')
-      ]);
-    }
-    const csv = '\uFEFF' + rows.map(row => row.map(value => {
-      const raw = String(value);
-      // Prevent spreadsheet formula execution for user-controlled cells such as invoice numbers.
-      // Uses the shared helper with the ASCII-only trigger so this export's output is unchanged.
-      const safe = escapeCsvFormulaPrefix(raw, CSV_FORMULA_TRIGGER_ASCII);
-      return '"' + safe.replace(/"/g, '""') + '"';
-    }).join(',')).join('\r\n');
-    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'receivables-aging-' + this.agingReport.as_of_date + '.csv';
-    link.click();
-    URL.revokeObjectURL(url);
-  }
 
-  agingBucketLabel(bucket: string): string {
-    const keys: Record<string, string> = {
-      not_due: 'app.agingBucket.not_due',
-      '1_30_days': 'app.agingBucket.1_30_days',
-      '31_60_days': 'app.agingBucket.31_60_days',
-      '61_90_days': 'app.agingBucket.61_90_days',
-      over_90_days: 'app.agingBucket.over_90_days',
-      no_due_date: 'app.agingBucket.no_due_date',
-    };
-    return keys[bucket] ? this.t(keys[bucket]) : bucket;
-  }
 
-  agingWarningLabel(type: string): string {
-    const keys: Record<string, string> = {
-      payment_currency_mismatch: 'app.agingWarning.payment_currency_mismatch',
-      allocations_exceed_invoice_total: 'app.agingWarning.allocations_exceed_invoice_total',
-    };
-    return keys[type] ? this.t(keys[type]) : type;
-  }
 
 
   toggleMobileMore(): void {
@@ -3109,16 +2702,6 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  expenseCategoryLabel(category: string): string {
-    const keys: Record<string, string> = {
-      General: 'app.expenseCategory.general', Supplies: 'app.expenseCategory.supplies',
-      Rent: 'app.expenseCategory.rent', Utilities: 'app.expenseCategory.utilities',
-      Transport: 'app.expenseCategory.transport', Marketing: 'app.expenseCategory.marketing',
-      Payroll: 'app.expenseCategory.payroll', Maintenance: 'app.expenseCategory.maintenance',
-      Other: 'app.expenseCategory.other',
-    };
-    return keys[category] ? this.t(keys[category]) : category;
-  }
 
   paymentMethodLabel(method: string): string {
     const keys: Record<string, string> = {
@@ -3141,26 +2724,7 @@ export class AppComponent implements OnInit, OnDestroy {
     return keys[normalized] ? this.t(keys[normalized]) : normalized;
   }
 
-  notificationStatusLabel(status: string): string {
-    const keys: Record<string, string> = {
-      pending: 'app.notificationStatus.pending', sent: 'app.notificationStatus.sent',
-      failed: 'app.notificationStatus.failed', cancelled: 'app.notificationStatus.cancelled',
-    };
-    return keys[status] ? this.t(keys[status]) : status || this.t('app.labels.unknownStatus');
-  }
 
-  notificationKindLabel(kind: string): string {
-    const keys: Record<string, string> = {
-      business: 'app.notificationKind.business', businesses: 'app.notificationKind.businesses',
-      invoices: 'app.notificationKind.invoices', payments: 'app.notificationKind.payments',
-      expenses: 'app.notificationKind.expenses', inventory: 'app.notificationKind.inventory',
-      reminders: 'app.notificationKind.reminders', reports: 'app.notificationKind.reports',
-      suppliers: 'app.notificationKind.suppliers', purchases: 'app.notificationKind.purchases',
-      recurring: 'app.notificationKind.recurring', assistant: 'app.notificationKind.assistant',
-      system: 'app.notificationKind.system',
-    };
-    return keys[kind] ? this.t(keys[kind]) : kind;
-  }
 
   customerStatementEventLabel(eventType: string): string {
     const keys: Record<string, string> = {
@@ -3180,13 +2744,6 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.t(formatAuditTargetLabel(target));
   }
 
-  revenueBasisLabel(value: string): string {
-    const normalized = value.trim().toLowerCase().replace(/[_-]+/g, ' ');
-    if (normalized.includes('gross issued invoice totals before sales returns')) return this.t('ui.m_19xyqei');
-    if (normalized === 'gross issued invoice total' || normalized === 'gross issued invoice totals') return this.t('ui.m_rms1b9');
-    if (normalized === 'issued invoices' || normalized === 'issued invoice total') return this.t('ui.m_9mwoh2');
-    return value;
-  }
 
   integrityWarningLabel(value: string): string {
     const normalized = value.trim().toLowerCase();
@@ -3196,29 +2753,11 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   reportLimitationLabel(value: string): string {
-    const normalized = value.trim().toLowerCase();
-    const keys: Record<string, string> = {
-  "manual review only": "app.reportLimitation.1",
-  "report is read-only": "app.reportLimitation.2",
-  "amounts are separated by currency": "app.reportLimitation.3",
-  "uses saved tax totals on issued invoices; it does not recalculate historical taxes.": "app.reportLimitation.4",
-  "currency totals are kept separate and are not converted.": "app.reportLimitation.5",
-  "this is an operational summary, not a jurisdiction-specific tax filing.": "app.reportLimitation.6",
-  "revenue is based on issued invoice totals, not cash collected.": "app.reportLimitation.7",
-  "invoice totals include stored tax amounts; approved sales returns are not netted from this figure.": "app.reportLimitation.8",
-  "this result subtracts recorded expenses only and excludes cost of goods sold because product purchase costs are not yet linked to sales.": "app.reportLimitation.9",
-  "tax liability treatment and tax allocation to returns are not represented as a complete accounting ledger.": "app.reportLimitation.10",
-  "currency totals are kept separate and are never converted.": "app.reportLimitation.11",
-  "only issued invoices with a positive remaining balance appear in aging buckets; drafts and void invoices are excluded.": "app.reportLimitation.12",
-  "fully settled invoices are excluded from open receivables aging.": "app.reportLimitation.13",
-  "overallocated invoices are excluded from receivable balances and shown as positive-excess data-quality warnings.": "app.reportLimitation.14",
-  "invoices without due dates are reported separately and are not assumed current.": "app.reportLimitation.15",
-  "legacy invoices without customer links are flagged for review, not auto-corrected.": "app.reportLimitation.16",
-  "currency-mismatched allocations are listed as warnings and never reduce receivables.": "app.reportLimitation.17",
-  "this is an accounts-receivable aging report, not net profit or a full general ledger.": "app.reportLimitation.18"
-};
-    return keys[normalized] ? this.t(keys[normalized]) : value;
+    // Shared with the reports workspace: the key map lives in report-labels.ts.
+    const key = reportLimitationKey(value);
+    return key ? this.t(key) : value;
   }
+
 
   operationalHealthStatusLabel(status: string): string {
     if (status === 'ok') return this.t('ui.m_1nehj8y');
@@ -3269,55 +2808,7 @@ export class AppComponent implements OnInit, OnDestroy {
     return this.t(keys[this.tab]);
   }
 
-  async loadReceivablesAging(): Promise<void> {
-    if (!this.business) return;
-    const loadVersion = this.receivablesAgingLoadGuard.begin();
-    const businessId = this.business.id;
-    this.agingLoading = true;
-    this.agingError = '';
-    try {
-      const report = await this.api.receivablesAging(businessId, this.agingAsOf);
-      if (!this.receivablesAgingLoadGuard.isCurrent(loadVersion, this.business?.id, businessId)) return;
-      this.agingReport = report;
-    } catch (error) {
-      if (this.receivablesAgingLoadGuard.isCurrent(loadVersion, this.business?.id, businessId)) {
-        this.agingError = this.message(error);
-      }
-    } finally {
-      if (this.receivablesAgingLoadGuard.isLatest(loadVersion)) this.agingLoading = false;
-    }
-  }
 
-  async loadProfitLoss(): Promise<void> {
-    if (!this.business) return;
-    if (this.profitLossPeriod === 'custom' && (!this.profitLossStart || !this.profitLossEnd)) {
-      this.profitLossLoadGuard.invalidate();
-      this.profitLoss = null;
-      this.reportLoading = false;
-      this.reportError = this.t('ui.m_unhyh1');
-      return;
-    }
-    const loadVersion = this.profitLossLoadGuard.begin();
-    const businessId = this.business.id;
-    this.reportLoading = true;
-    this.reportError = '';
-    try {
-      const report = await this.api.profitLoss(
-        businessId,
-        this.profitLossPeriod,
-        this.profitLossPeriod === 'custom' ? this.profitLossStart : undefined,
-        this.profitLossPeriod === 'custom' ? this.profitLossEnd : undefined
-      );
-      if (!this.profitLossLoadGuard.isCurrent(loadVersion, this.business?.id, businessId)) return;
-      this.profitLoss = report;
-    } catch (error) {
-      if (this.profitLossLoadGuard.isCurrent(loadVersion, this.business?.id, businessId)) {
-        this.reportError = this.message(error);
-      }
-    } finally {
-      if (this.profitLossLoadGuard.isLatest(loadVersion)) this.reportLoading = false;
-    }
-  }
 
 
   async loadTaxSummary(): Promise<void> {
@@ -3423,51 +2914,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.operationsErrorTab = tab;
   }
 
-  private async loadNotifications(): Promise<void> {
-    if (!this.business) return;
-    const businessId = this.business.id;
-    this.notificationsLoading = true;
-    this.operationsError = '';
-    this.operationsErrorTab = null;
-    try {
-      const items = await this.api.notifications(businessId);
-      if (this.business?.id === businessId) this.notifications = items;
-    } catch (error) {
-      if (this.business?.id === businessId) {
-        this.operationsError = this.message(error);
-        this.operationsErrorTab = 'notifications';
-      }
-    } finally {
-      if (this.business?.id === businessId) this.notificationsLoading = false;
-    }
-  }
-  async createNotification(): Promise<void> {
-    if (!this.business || this.business.role !== 'owner' || !this.notificationTitle.trim() || !this.notificationBody.trim()) return;
-    const businessId = this.business.id;
-    this.beginOperationsAction();
-    this.notificationsLoading = true;
-    try {
-      await this.api.createNotification(businessId, {
-        kind: this.notificationKind.trim() || 'business',
-        title: this.notificationTitle.trim(),
-        body: this.notificationBody.trim(),
-        deduplication_key: this.notificationDeduplicationKey,
-        scheduled_at: this.notificationScheduledAt ? new Date(this.notificationScheduledAt).toISOString() : undefined,
-      });
-      if (this.business?.id !== businessId) return;
-      this.setOperationsSuccess('notifications', this.t('ui.m_1618gqb'));
-      this.notificationTitle = '';
-      this.notificationBody = '';
-      this.notificationScheduledAt = '';
-      this.notificationDeduplicationKey = 'manual-' + Date.now();
-      const items = await this.api.notifications(businessId);
-      if (this.business?.id === businessId) this.notifications = items;
-    } catch (error) {
-      if (this.business?.id === businessId) this.setOperationsFailure('notifications', error);
-    } finally {
-      if (this.business?.id === businessId) this.notificationsLoading = false;
-    }
-  }
 
   private async loadSuppliers(): Promise<void> {
     if (!this.business) return;
@@ -3772,15 +3218,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   /** Home quick access stays focused on the five existing key destinations. */
-  get filteredHomeModuleCards(): readonly WorkspaceModuleCard[] {
-    return filterWorkspaceModules(
-      this.homeModuleCards,
-      this.homeModuleSearch,
-      this.localization.locale,
-      key => this.t(key),
-    );
-  }
-
   get homeQuickAccessCards(): readonly WorkspaceModuleCard[] {
     return selectHomeQuickAccessModules(this.homeModuleCards);
   }
@@ -3842,14 +3279,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.syncWorkspaceUrl(tab);
     this.error = tab === 'overview' && this.homeDashboardError ? this.homeDashboardError : '';
     this.mobileMoreOpen = false;
-    if (tab === 'reports') void this.loadProfitLoss();
     if (tab === 'taxes' && this.business?.role === 'owner') void this.loadTaxSummary();
     if (tab === 'audit') void this.loadAuditEvents(0);
     if (tab === 'integrity' && this.business?.role === 'owner') void this.loadDataIntegrity(0);
     if (tab === 'suppliers') void this.loadSuppliers();
     if (tab === 'purchases') { void this.loadSuppliers(); void this.loadPurchaseOrders(); }
     if (tab === 'recurring') void this.loadRecurringSchedules();
-    if (tab === 'notifications') void this.loadNotifications();
     if (tab === 'health' && this.business?.role === 'owner') void this.loadOperationalHealth();
   }
 
@@ -4810,89 +4245,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.paymentMessageKind = 'info';
   }
 
-  async createExpense(): Promise<void> {
-    if (!this.business || this.expenseSubmissionUncertain) return;
-    const businessId = this.business.id;
-    const category = this.expenseCategory.trim();
-    const description = this.expenseDescription.trim();
-    const amount = Number(this.expenseAmount);
-    const occurredAt = new Date(this.expenseDate);
-    if (!category || !description || !String(this.expenseAmount ?? '').trim() || !Number.isFinite(amount) || amount <= 0) {
-      this.error = this.t('ui.m_i7atfd');
-      return;
-    }
-    if (!this.expenseDate || !Number.isFinite(occurredAt.getTime())) {
-      this.error = this.t('ui.m_10t3tvt');
-      return;
-    }
-    const currencyCode = this.business.currency_code;
-    this.loading = true;
-    this.error = '';
-    this.expenseMessage = '';
-    try {
-      await this.api.createExpense(businessId, {
-        category,
-        description,
-        amount: String(this.expenseAmount ?? '').trim(),
-        currency_code: currencyCode,
-        incurred_at: occurredAt.toISOString(),
-        vendor_name: this.expenseVendor.trim() || undefined,
-        reference: this.expenseReference.trim() || undefined
-      });
-      if (this.business?.id !== businessId) return;
-      this.expenseCategory = 'General';
-      this.expenseDescription = '';
-      this.expenseAmount = '';
-      this.expenseDate = new Date(Date.now() - new Date().getTimezoneOffset() * 60_000).toISOString().slice(0, 16);
-      this.expenseVendor = '';
-      this.expenseReference = '';
-      this.expenseMessage = this.t('ui.m_h0kei5');
-      try {
-        const [expenses, dashboard] = await Promise.all([
-          this.api.expenses(businessId),
-          this.api.dashboard(businessId)
-        ]);
-        if (this.business?.id !== businessId) return;
-        this.expenses = expenses;
-        this.dashboard = dashboard;
-      } catch {
-        if (this.business?.id === businessId) {
-          this.error = this.t('ui.m_14xth7t');
-        }
-      }
-    } catch (error) {
-      if (this.business?.id === businessId) {
-        this.expenseSubmissionUncertain = true;
-        this.error = this.t('ui.m_1womw08') + ' ' + this.message(error);
-      }
-    } finally {
-      // Slice B: release this operation's own count; the guard above still protects the data writes.
-      this.loading = false;
-    }
-  }
 
-  async checkExpenseSubmissionOutcome(): Promise<void> {
-    if (!this.business) return;
-    const businessId = this.business.id;
-    this.loading = true;
-    this.error = '';
-    try {
-      const [expenses, dashboard] = await Promise.all([
-        this.api.expenses(businessId),
-        this.api.dashboard(businessId)
-      ]);
-      if (this.business?.id !== businessId) return;
-      this.expenses = expenses;
-      this.dashboard = dashboard;
-      this.expenseSubmissionUncertain = false;
-      this.expenseMessage = this.t('ui.m_1arh565');
-    } catch (error) {
-      if (this.business?.id === businessId) this.error = this.message(error);
-    } finally {
-      // Slice B: release this operation's own count; the guard above still protects the data writes.
-      this.loading = false;
-    }
-  }
 
   exportPaymentsCsv(): void {
     if (!this.business || this.business.role !== 'owner' || !this.payments.length) return;
@@ -5020,80 +4373,6 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  useAssistantSuggestion(question: string): void {
-    if (this.chatSending || !question.trim()) return;
-    this.chatDraft = question;
-    void this.sendChat();
-  }
-
-  handleChatKeydown(event: KeyboardEvent): void {
-    if (event.key !== 'Enter' || event.shiftKey || event.isComposing) return;
-    event.preventDefault();
-    if (!this.chatDraft.trim() || this.chatSending) return;
-    void this.sendChat();
-  }
-
-  startNewChat(): void {
-    if (this.chatSending) return;
-    this.chatMessages = [];
-    this.chatDraft = '';
-    this.chatError = '';
-    this.chatConfigurationMissing = false;
-    this.chatCopyStatus = null;
-  }
-
-  async copyAssistantMessage(content: string, index: number): Promise<void> {
-    try {
-      if (navigator.clipboard?.writeText) {
-        try {
-          await navigator.clipboard.writeText(content);
-        } catch {
-          this.copyTextWithSelectionFallback(content);
-        }
-      } else {
-        this.copyTextWithSelectionFallback(content);
-      }
-      this.chatCopyStatus = { index, success: true };
-    } catch {
-      this.chatCopyStatus = { index, success: false };
-    }
-  }
-
-  private copyTextWithSelectionFallback(content: string): void {
-    const temporaryInput = document.createElement('textarea');
-    temporaryInput.value = content;
-    temporaryInput.setAttribute('readonly', '');
-    temporaryInput.setAttribute('aria-hidden', 'true');
-    temporaryInput.style.position = 'fixed';
-    temporaryInput.style.opacity = '0';
-    temporaryInput.style.pointerEvents = 'none';
-    temporaryInput.style.insetInlineStart = '-9999px';
-    document.body.appendChild(temporaryInput);
-    let copied = false;
-    try {
-      temporaryInput.select();
-      temporaryInput.setSelectionRange(0, temporaryInput.value.length);
-      copied = document.execCommand('copy');
-    } finally {
-      temporaryInput.remove();
-    }
-    if (!copied) throw new Error('Clipboard copy command failed');
-  }
-
-  private isChatLogNearBottom(): boolean {
-    const log = this.chatLog?.nativeElement;
-    if (!log) return true;
-    return log.scrollHeight - log.scrollTop - log.clientHeight <= 120;
-  }
-
-  private scrollChatToLatest(force = false): void {
-    requestAnimationFrame(() => {
-      const log = this.chatLog?.nativeElement;
-      if (!log || (!force && !this.isChatLogNearBottom())) return;
-      const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      log.scrollTo({ top: log.scrollHeight, behavior: reducedMotion ? 'auto' : 'smooth' });
-    });
-  }
 
   private captureTenantRequest(workspaceId: string): TenantRequestContext {
     return {
@@ -5126,57 +4405,6 @@ export class AppComponent implements OnInit, OnDestroy {
       role: this.business?.role ?? null,
       signedIn: this.signedIn,
     };
-  }
-
-  async sendChat(): Promise<void> {
-    if (!this.business || !this.chatDraft.trim() || this.chatSending) return;
-    const requestContext = this.currentChatRequestContext();
-    // Fail closed if the request cannot be tied to an authenticated user and current role.
-    if (!requestContext.signedIn || !requestContext.userId || !requestContext.role || !requestContext.workspaceId) return;
-
-    const question = this.chatDraft.trim();
-    const history = this.chatMessages.slice(-8);
-    const shouldFollowLatest = this.isChatLogNearBottom();
-    this.chatMessages = [...this.chatMessages, { role: 'user', content: question }];
-    this.chatDraft = '';
-    this.chatSending = true;
-    this.chatError = '';
-    this.chatCopyStatus = null;
-    this.error = '';
-    this.scrollChatToLatest(shouldFollowLatest);
-
-    await runTenantScopedRequest(
-      this.chatRequestGuard,
-      requestContext,
-      () => this.currentChatRequestContext(),
-      () => this.api.chat(requestContext.workspaceId, question, history),
-      {
-        onSuccess: (reply: ChatReply) => {
-          const shouldFollowLatest = this.isChatLogNearBottom();
-          this.chatMessages = [...this.chatMessages, { role: 'assistant', content: reply.answer, sources: reply.sources, mode: reply.mode }];
-          this.scrollChatToLatest(shouldFollowLatest);
-        },
-        onError: error => {
-          this.chatMessages = this.chatMessages.slice(0, -1);
-          this.chatDraft = question;
-          const rawMessage = error instanceof Error ? error.message : '';
-          this.chatConfigurationMissing = /AI chat is not configured/i.test(rawMessage);
-          this.chatError = this.message(error);
-        },
-        onFinally: () => {
-          this.chatSending = false;
-        },
-        onStale: () => {
-          // The latest request lost its identity/role context without a workspace clear.
-          this.chatSending = false;
-          this.chatMessages = [];
-          this.chatDraft = '';
-          this.chatError = '';
-          this.chatConfigurationMissing = false;
-          this.chatCopyStatus = null;
-        },
-      },
-    );
   }
 
   private lastErrorKind: 'session-expired' | 'access-denied' | null = null;

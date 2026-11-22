@@ -17,20 +17,23 @@ const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared
 const quickAccessCardSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-quick-access-card.component.ts', import.meta.url), 'utf8'));
 const moduleCatalogSource = expandDictionaryBackedProperties(readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8'));
 
-const homeStart = appSource.indexOf("@if (tab === 'overview') {");
-const homeEnd = appSource.indexOf("@if (tab === 'notifications')", homeStart);
-const home = appSource.slice(homeStart, homeEnd);
+// 3A-351: the Home (overview) tab lives in the deferred overview workspace
+// now — its template, styles and module-directory search moved with it, so
+// the Home slice is read from that component. The dashboard data itself
+// (loadWorkspaceData, refreshAfterPayrollPayment, clearWorkspaceData, setTab)
+// stays in the shell and is still asserted on appSource below.
+const overviewSource = expandTranslationCalls(readFileSync(new URL('./overview-workspace.component.ts', import.meta.url), 'utf8'));
+const home = overviewSource;
 
 test('Home keeps the canonical four source-backed metrics and currency-separated rows', () => {
-  assert.ok(homeStart >= 0 && homeEnd > homeStart);
   for (const field of ['invoiced_sales', 'collected_payments', 'expenses', 'outstanding_balances']) {
-    assert.ok(home.includes('dashboard.' + field), 'expected source-backed metric ' + field);
+    assert.ok(home.includes('dash.' + field), 'expected source-backed metric ' + field);
   }
   assert.equal(home.split('<aba-metric-card class="metric-card-action" role="button" tabindex="0"').length - 1, 4,
     'the four KPI cards remain keyboard-operable navigation controls');
-  assert.equal(home.split('(keydown.enter)="setTab(').length - 1, 4,
+  assert.equal(home.split('(keydown.enter)="navigate.emit(').length - 1, 4,
     'each KPI card supports Enter activation');
-  assert.equal(home.split('(keydown.space)="$event.preventDefault(); setTab(').length - 1, 4,
+  assert.equal(home.split('(keydown.space)="$event.preventDefault(); navigate.emit(').length - 1, 4,
     'each KPI card supports Space activation');
 
   assert.match(home, /item\.currency_code/);
@@ -40,7 +43,7 @@ test('Home keeps the canonical four source-backed metrics and currency-separated
     'only the three source-backed metric counts are rendered and isolated');
 
   assert.match(home, /item\.count/);
-  const outstandingStart = home.indexOf("dashboard.outstanding_balances");
+  const outstandingStart = home.indexOf("dash.outstanding_balances");
   const outstandingEnd = home.indexOf("</aba-metric-card>", outstandingStart);
   const outstandingCard = home.slice(outstandingStart, outstandingEnd);
   assert.doesNotMatch(outstandingCard, /item\.count/,
@@ -67,11 +70,11 @@ test('Home KPI cards render visible localized labels separately from projected v
 });
 
 test('Home reports the backend business-local period without generating a client date window', () => {
-  assert.match(home, /dashboard\.period\.start_date/);
-  assert.match(home, /dashboard\.period\.end_date/);
-  assert.match(home, /dashboard\.period\.timezone/);
-  assert.ok(home.includes('<bdi dir="ltr">{{ dashboard.period.start_date || \'—\' }}</bdi>'));
-  assert.ok(home.includes('<bdi dir="ltr">{{ dashboard.period.end_date || \'—\' }}</bdi>'));
+  assert.match(home, /dash\.period\.start_date/);
+  assert.match(home, /dash\.period\.end_date/);
+  assert.match(home, /dash\.period\.timezone/);
+  assert.ok(home.includes('<bdi dir="ltr">{{ dash.period.start_date || \'—\' }}</bdi>'));
+  assert.ok(home.includes('<bdi dir="ltr">{{ dash.period.end_date || \'—\' }}</bdi>'));
 
   assert.match(home, /Last 30 days/);
   assert.match(apiSource, /dashboard\(businessId: string\): Promise<Dashboard>/);
@@ -83,12 +86,12 @@ test('Home reports the backend business-local period without generating a client
 test('empty Home metric groups do not imply a currency-less monetary zero', () => {
   const fields = ['invoiced_sales', 'collected_payments', 'expenses', 'outstanding_balances'];
   const emptyGroups = fields.filter(field =>
-    home.includes('@if (!dashboard.' + field + '.length) { <strong>—</strong>'),
+    home.includes('@if (!dash.' + field + '.length) { <strong>—</strong>'),
   );
   assert.equal(emptyGroups.length, 4,
     'empty metric groups use a neutral placeholder because no currency amount exists to label');
   for (const field of fields) {
-    assert.ok(!home.includes('@if (!dashboard.' + field + '.length) { <strong>0</strong>'),
+    assert.ok(!home.includes('@if (!dash.' + field + '.length) { <strong>0</strong>'),
       field + ' must not render an unqualified zero with no currency code');
   }
 });
@@ -123,8 +126,8 @@ test('Home page identity and responsive metric hierarchy follow the UX handoff',
   assert.match(appSource, /\.metric-grid\{display:grid;grid-template-columns:repeat\(4,minmax\(0,1fr\)\)/);
   assert.match(appSource, /@media\(max-width:1050px\)\{\.metric-grid\{grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
   assert.ok(appSource.includes('.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}'));
-  assert.ok(appSource.includes('.module-directory-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}'));
-  assert.match(appSource, /dashboard-period__details/);
+  assert.ok(overviewSource.includes('.module-directory-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}'));
+  assert.match(overviewSource, /dashboard-period__details/);
 });
 
 test('shared metric cards style projected amounts and source-basis notes legibly', () => {
@@ -146,11 +149,11 @@ test('shared metric cards style projected amounts and source-basis notes legibly
 
 test('Home keeps the full role-filtered module directory discoverable but collapsed by default', () => {
   assert.match(home, /<details class="module-directory-disclosure">/);
-  assert.match(appSource, /\.module-directory-summary\{[^}]*min-height:44px/);
+  assert.match(overviewSource, /\.module-directory-summary\{[^}]*min-height:44px/);
   assert.match(home, /<summary class="module-directory-summary">/);
   assert.match(home, /<span class="module-directory-summary__title" role="heading" aria-level="2" id="module-directory-title">/);
   assert.doesNotMatch(home, /<summary[^>]*>[\s\S]*?<h[1-6]\b/, 'native summary content must stay phrasing-only');
-  assert.match(appSource, /\.module-directory-summary__title\{margin:0;/);
+  assert.match(overviewSource, /\.module-directory-summary__title\{margin:0;/);
   assert.doesNotMatch(home, /<details[^>]*\bopen\b/);
   assert.match(appSource, /WORKSPACE_MODULE_CATALOG\.filter\(module => this\.canAccessTab\(module\.tab\)\)/);
   assert.match(appSource, /selectHomeQuickAccessModules\(this\.homeModuleCards\)/);
@@ -165,23 +168,23 @@ test('Home quick access uses compact links instead of a second module-card grid'
   assert.match(shortcuts, /<button class="home-shortcut-link"/);
   assert.doesNotMatch(shortcuts, /aba-quick-access-card/,
     'quick shortcuts must remain compact links, not a duplicate module-card surface');
-  assert.ok(appSource.includes('.home-shortcut-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'));
-  assert.match(appSource, /\.home-shortcut-link\{[^}]*min-height:44px/);
-  assert.match(appSource, /\.home-shortcut-link\{[^}]*font-size:var\(--aba-font-size-base,14px\)/, 'navigation controls use the shared readable base font size');
-  assert.match(appSource, /\.home-shortcut-link:focus-visible/);
-  assert.match(appSource, /\.home-shortcut-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
-  assert.ok(appSource.includes('.home-shortcut-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-block-start:10px}'));
+  assert.ok(overviewSource.includes('.home-shortcut-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))'));
+  assert.match(overviewSource, /\.home-shortcut-link\{[^}]*min-height:44px/);
+  assert.match(overviewSource, /\.home-shortcut-link\{[^}]*font-size:var\(--aba-font-size-base,14px\)/, 'navigation controls use the shared readable base font size');
+  assert.match(overviewSource, /\.home-shortcut-link:focus-visible/);
+  assert.match(overviewSource, /\.home-shortcut-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  assert.ok(overviewSource.includes('.home-shortcut-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-block-start:10px}'));
   assert.ok(quickAccessCardSource.includes(':host-context(.module-directory-grid) .aba-quick-access{min-height:96px;display:grid;grid-template-columns:32px minmax(0,1fr)'));
   assert.ok(quickAccessCardSource.includes('-webkit-line-clamp:2'));
   assert.ok(quickAccessCardSource.includes('.aba-quick-access__arrow{display:none}'));
   assert.match(home, /dashboard-trust-note" role="note"/);
-  assert.match(appSource, /\.dashboard-trust-note\{background:var\(--aba-color-surface-subtle/);
+  assert.match(overviewSource, /\.dashboard-trust-note\{background:var\(--aba-color-surface-subtle/);
 });
 
 
 test('Home preserves the reporting-period hierarchy while KPI data is loading', () => {
-  const loadingStart = home.indexOf('} @else if (loading) {');
-  const loadingEnd = home.indexOf('} @else if (!error)', loadingStart);
+  const loadingStart = home.indexOf('} @else if (loading()) {');
+  const loadingEnd = home.indexOf('} @else if (!error())', loadingStart);
   const loading = home.slice(loadingStart, loadingEnd);
   assert.ok(loadingStart >= 0 && loadingEnd > loadingStart);
   // T18 Slice C (2026-11-21): the bespoke period skeleton block was
@@ -220,9 +223,9 @@ test('Home clears tenant-scoped metrics before loading another workspace', () =>
 
 
 test('Home reporting metadata and KPI detail text remain comfortably readable', () => {
-  assert.match(appSource, /\.dashboard-period__details\{[^}]*font-size:12px/);
-  assert.match(appSource, /\.metric-grid aba-metric-card small\{font-size:12px;line-height:1\.55\}/);
-  assert.match(appSource, /\.dashboard-trust-note\{[^}]*font-size:12px;line-height:1\.65/);
+  assert.match(overviewSource, /\.dashboard-period__details\{[^}]*font-size:12px/);
+  assert.match(overviewSource, /\.metric-grid aba-metric-card small\{font-size:12px;line-height:1\.55\}/);
+  assert.match(overviewSource, /\.dashboard-trust-note\{[^}]*font-size:12px;line-height:1\.65/);
   assert.match(home, /dashboard-period__details/);
   assert.match(home, /class="notice dashboard-trust-note" role="note"/);
   assert.match(home, /t\('ملاحظات على المؤشرات', 'Metric notes'\)/);
@@ -241,7 +244,7 @@ test('Home exposes its business summary as a navigable section heading', () => {
     'the loading Home period section keeps its level-two heading in the skeleton component');
   assert.match(home, /<h2 class="dashboard-period__title">\{\{ t\('ملخص النشاط', 'Business summary'\) \}\}<\/h2>/);
   assert.match(skeletonSource, /<section class="aba-skeleton aba-skeleton--detail" aria-hidden="true">[\s\S]*?<h2 class="aba-skeleton__title">/);
-  assert.match(appSource, /\.dashboard-period__title\{[^}]*font-size:14px/);
+  assert.match(overviewSource, /\.dashboard-period__title\{[^}]*font-size:14px/);
 });
 
 
@@ -288,7 +291,7 @@ test('Mobile app header preserves all navigation, account, workspace and keyboar
  
 test('Mobile Home KPI and module surfaces stay in compact two-column grids at narrow widths', () => {
   assert.ok(appSource.includes('.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}'));
-  assert.ok(appSource.includes('.home-shortcut-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-block-start:10px}'));
+  assert.ok(overviewSource.includes('.home-shortcut-list{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-block-start:10px}'));
   assert.ok(appSource.includes('@media(max-width:380px)'));
   assert.ok(metricCardSource.includes('.aba-metric-card{min-height:112px;padding:12px}'));
   assert.ok(metricCardSource.includes('.aba-metric-card{min-height:104px;padding:10px}'));
@@ -298,14 +301,14 @@ test('Mobile Home KPI and module surfaces stay in compact two-column grids at na
   // T18 Slice U01 (2026-11-21): the quick-access launcher is hidden on
   // mobile — it duplicates the bottom dock (Overview/Invoices/Customers +
   // More) and the module directory. The markup and desktop rendering stay.
-  assert.ok(appSource.includes('.module-launcher{display:none}'),
+  assert.ok(overviewSource.includes('.module-launcher{display:none}'),
     'the Home quick-access launcher must be hidden below the mobile breakpoint');
 });
 
 
 test('Home loading skeleton uses the current bilingual Business Summary heading', () => {
-  const loadingStart = home.indexOf('} @else if (loading) {');
-  const loadingEnd = home.indexOf('} @else if (!error)', loadingStart);
+  const loadingStart = home.indexOf('} @else if (loading()) {');
+  const loadingEnd = home.indexOf('} @else if (!error())', loadingStart);
   const loading = home.slice(loadingStart, loadingEnd);
   assert.ok(loadingStart >= 0 && loadingEnd > loadingStart);
   // T18 Slice C (2026-11-21): the heading text moved from inline shell
@@ -328,7 +331,9 @@ test('Home uses one workspace-level loading announcement and a visual KPI skelet
 
 test('failed payroll dashboard refresh clears stale Home metrics through the current OWNER-scoped error callback', () => {
   const start = appSource.indexOf('async refreshAfterPayrollPayment(): Promise<void>');
-  const end = appSource.indexOf('exportReceivablesAgingCsv(): void', start);
+  // 3A-351: the CSV export moved out with the reports workspace; the next
+  // method after the payroll refresh is the workspace-route applier.
+  const end = appSource.indexOf('private applyInitialWorkspaceRoute(): void', start);
   const method = appSource.slice(start, end);
   const errorCallback = method.indexOf('onError: error =>');
   const staleClear = method.indexOf('this.dashboard = null;', errorCallback);

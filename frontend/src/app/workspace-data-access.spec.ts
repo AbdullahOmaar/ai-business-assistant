@@ -3,6 +3,9 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-351: the expense and notification lists moved into their workspaces.
+const expensesSource = readFileSync(new URL('./expenses-workspace.component.ts', import.meta.url), 'utf8');
+const notificationsSource = readFileSync(new URL('./notifications-workspace.component.ts', import.meta.url), 'utf8');
 
 test('workspace bootstrap fetches payment records only for roles authorized to open Payments', () => {
   const start = source.indexOf('async loadWorkspaceData(): Promise<void>');
@@ -10,8 +13,14 @@ test('workspace bootstrap fetches payment records only for roles authorized to o
   assert.ok(start >= 0 && end > start, 'workspace bootstrap method must exist');
   const method = source.slice(start, end);
   assert.match(method, /const paymentsRequest = this\.canAccessTab\('payments'\) \? this\.api\.payments\(id\) : Promise\.resolve\(\[\]\);/);
-  assert.match(method, /this\.api\.invoices\(id\), paymentsRequest, this\.api\.expenses\(id\)/);
+  // 3A-351: the shell no longer fetches expenses in the bootstrap; the
+  // expenses workspace loads them itself (tenant-scoped, on init and on
+  // business change).
+  assert.match(method, /this\.api\.invoices\(id\), paymentsRequest/);
+  assert.doesNotMatch(method, /this\.api\.expenses\(id\)/);
   assert.doesNotMatch(method, /this\.api\.invoices\(id\), this\.api\.payments\(id\), this\.api\.expenses\(id\)/);
+  assert.match(expensesSource, /async loadExpenses\(\): Promise<void>/);
+  assert.match(expensesSource, /\(\) => this\.api\.expenses\(requestContext\.workspaceId\)/);
 });
 
 test('denied direct tab navigation returns before changing the selected tab or loading route data', () => {
@@ -24,15 +33,22 @@ test('denied direct tab navigation returns before changing the selected tab or l
   const selectedTabMutation = method.indexOf('this.tab = tab;');
   assert.ok(guard >= 0 && deniedReturn > guard && selectedTabMutation > deniedReturn,
     'denied navigation must exit before selecting a tab');
-  const routeLoads = ['loadProfitLoss()', 'loadTaxSummary()', 'loadAuditEvents(0)', 'loadDataIntegrity(0)', 'loadOperationalHealth()'];
+  // 3A-351: loadProfitLoss() left setTab with the reports workspace — the
+  // workspace loads the P&L in its own ngOnInit, and it is only instantiated
+  // behind @defer after setTab passes the guard, so the same ordering holds.
+  const routeLoads = ['loadTaxSummary()', 'loadAuditEvents(0)', 'loadDataIntegrity(0)', 'loadOperationalHealth()'];
   for (const load of routeLoads) {
     assert.ok(method.indexOf(load) > selectedTabMutation, `${load} must run only after the access guard`);
   }
+  assert.ok(source.includes("@defer (when tab === 'reports')"),
+    'the reports workspace renders only behind a defer that setTab guards');
 });
 
 test('payroll post-payment refresh discards responses after owner role, identity, or workspace changes', () => {
   const start = source.indexOf('async refreshAfterPayrollPayment(): Promise<void>');
-  const end = source.indexOf('\n  exportReceivablesAgingCsv()', start);
+  // 3A-351: the CSV export moved out with the reports workspace; the next
+  // method after the payroll refresh is the workspace-route applier.
+  const end = source.indexOf('\n  private applyInitialWorkspaceRoute()', start);
   assert.ok(start >= 0 && end > start, 'payroll refresh method must exist');
   const method = source.slice(start, end);
   assert.match(method, /const requestContext = this\.currentChatRequestContext\(\)/);
@@ -87,9 +103,13 @@ test('workspace changes clear local operation-list searches with the previous wo
   const start = source.indexOf('private clearWorkspaceData(): void');
   const end = source.indexOf('\n  }', start);
   const method = source.slice(start, end);
-  for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch', 'notificationSearch']) {
+  for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch']) {
     assert.ok(method.includes(`this.${field} = '';`), `${field} is reset on workspace change`);
   }
+  // 3A-351: the notification search resets in the notifications workspace's
+  // business-change handler now.
+  assert.ok(notificationsSource.includes("this.notificationSearch = '';"),
+    'notificationSearch is reset on workspace change in its workspace');
 });
 
 
@@ -98,5 +118,8 @@ test('workspace changes also clear payment and expense search state', () => {
   const end = source.indexOf('\n  }', start);
   const method = source.slice(start, end);
   assert.ok(method.includes("this.paymentSearch = '';"));
-  assert.ok(method.includes("this.expenseSearch = '';"));
+  // 3A-351: the expense search resets in the expenses workspace's
+  // business-change handler now.
+  assert.ok(expensesSource.includes("this.expenseSearch = '';"),
+    'expenseSearch is reset on workspace change in its workspace');
 });

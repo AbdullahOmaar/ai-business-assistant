@@ -25,6 +25,8 @@ const designSystem = readFileSync(new URL('../design-system.css', import.meta.ur
 const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const appCss = readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
 const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-351: the three reports field errors moved with the reports workspace.
+const reportsSource = readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8');
 
 const ruleBlock = (css: string, selectorStart: string): string => {
   const start = css.indexOf(selectorStart);
@@ -113,14 +115,14 @@ test('field errors that sit next to their field live inside the field label', ()
   // expense-ui.spec.ts, so it belongs to the follow-up field-component
   // slice, not Slice I. Each of those controls already links to its error
   // via aria-describedby.
-  for (const id of [
-    'auth-email-error', 'auth-password-error', 'workspace-name-error',
-    'profit-loss-start-error', 'profit-loss-end-error', 'aging-as-of-error',
-    'product-name-error', 'product-price-error', 'product-opening-quantity-error',
+  for (const [id, home] of [
+    ['auth-email-error', appSource], ['auth-password-error', appSource], ['workspace-name-error', appSource],
+    ['profit-loss-start-error', reportsSource], ['profit-loss-end-error', reportsSource], ['aging-as-of-error', reportsSource],
+    ['product-name-error', appSource], ['product-price-error', appSource], ['product-opening-quantity-error', appSource],
   ]) {
-    const at = appSource.indexOf(`id="${id}"`);
+    const at = home.indexOf(`id="${id}"`);
     assert.ok(at >= 0, 'missing error: ' + id);
-    const before = appSource.slice(0, at);
+    const before = home.slice(0, at);
     assert.ok(before.lastIndexOf('<label') > before.lastIndexOf('</label>'),
       id + ' must sit inside its field label');
   }

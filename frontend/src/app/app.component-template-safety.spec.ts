@@ -27,6 +27,15 @@ const customerWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./c
 const purchasingWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./purchasing-workspace.component.ts', import.meta.url), 'utf8'));
 const customerEditorSource = expandTranslationCalls(readFileSync(new URL('./customer-editor.component.ts', import.meta.url), 'utf8'));
 const auditLabelsSource = expandTranslationCalls(readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8'));
+const reportsWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8'));
+// 3A-351: the Home (overview) tab lives in the deferred overview workspace.
+const overviewWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./overview-workspace.component.ts', import.meta.url), 'utf8'));
+// 3A-351: the AI assistant tab moved into its own deferred workspace component.
+const assistantWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./assistant-workspace.component.ts', import.meta.url), 'utf8'));
+// 3A-351: the expenses and notifications tabs moved into their own deferred workspaces.
+const expensesWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./expenses-workspace.component.ts', import.meta.url), 'utf8'));
+const notificationsWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./notifications-workspace.component.ts', import.meta.url), 'utf8'));
+const reportLabelsSource = expandTranslationCalls(readFileSync(new URL('./report-labels.ts', import.meta.url), 'utf8'));
 const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
 const workspaceInvitationsSource = readFileSync(new URL('./workspace-invitations.component.ts', import.meta.url), 'utf8');
 
@@ -90,31 +99,35 @@ test('the new invoice editor replaces the old disclosure before invoice search a
 });
 
 test('expense and notification types use selectable, localized options', () => {
-  assert.match(source, /name="expenseCategory" required \[\(ngModel\)\]="expenseCategory"/);
-  assert.match(source, /<option value="General">\{\{ t\('عام', 'General'\) \}\}<\/option>/);
-  assert.match(source, /<select[^>]*name="notificationKind"[^>]*required[^>]*\[\(ngModel\)\]="notificationKind"/);
-  assert.match(source, /<option value="inventory">/);
-  assert.match(source, /<option value="reminders">/);
-  assert.match(source, /<option value="suppliers">/);
-  assert.match(source, /notificationKindLabel\(item\.kind\)/);
+  // 3A-351: the expense category select lives in the expenses workspace now.
+  assert.match(expensesWorkspaceSource, /name="expenseCategory" required \[\(ngModel\)\]="expenseCategory"/);
+  assert.match(expensesWorkspaceSource, /<option value="General">\{\{ t\('عام', 'General'\) \}\}<\/option>/);
+  // 3A-351: the notification kind select lives in the notifications workspace now.
+  assert.match(notificationsWorkspaceSource, /<select[^>]*name="notificationKind"[^>]*required[^>]*\[\(ngModel\)\]="notificationKind"/);
+  assert.match(notificationsWorkspaceSource, /<option value="inventory">/);
+  assert.match(notificationsWorkspaceSource, /<option value="reminders">/);
+  assert.match(notificationsWorkspaceSource, /<option value="suppliers">/);
+  assert.match(notificationsWorkspaceSource, /notificationKindLabel\(item\.kind\)/);
 });
 
 test('AI suggestions live outside the chat panel in a compact responsive prompt rail', () => {
-  const assistantStart = source.indexOf('<div class="assistant-workspace"');
-  const chatStart = source.indexOf('<section abaCard class="panel chat-panel">', assistantStart);
-  const chatEnd = source.indexOf('</section>', chatStart);
-  const suggestionsStart = source.indexOf('<aside class="assistant-suggestions"', chatEnd);
-  const workspaceEnd = source.indexOf('</div>\n            }', suggestionsStart);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const assistantStart = assistantWorkspaceSource.indexOf('<div class="assistant-workspace"');
+  const chatStart = assistantWorkspaceSource.indexOf('<section abaCard class="panel chat-panel">', assistantStart);
+  const chatEnd = assistantWorkspaceSource.indexOf('</section>', chatStart);
+  const suggestionsStart = assistantWorkspaceSource.indexOf('<aside class="assistant-suggestions"', chatEnd);
+  // 3A-351: the component template ends with the assistant-workspace </div>.
+  const workspaceEnd = assistantWorkspaceSource.indexOf('</div>', suggestionsStart);
   assert.ok(assistantStart >= 0 && chatStart > assistantStart);
   assert.ok(chatEnd > chatStart && suggestionsStart > chatEnd,
     'suggestions must be a sibling of the chat panel, not inside it');
   assert.ok(workspaceEnd > suggestionsStart, 'suggestions must remain inside the assistant layout');
-  assert.ok(source.includes('.assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px'));
-  assert.ok(source.includes('.assistant-workspace:not(.has-chat) .assistant-suggestions{grid-row:1}'));
-  assert.ok(source.includes('.assistant-workspace:not(.has-chat) .chat-panel{grid-row:2}'));
-  assert.ok(source.includes('.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr)'));
-  assert.ok(source.includes('@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}'));
-  assert.match(source, /class="suggestion-card"/);
+  assert.ok(assistantWorkspaceSource.includes('.assistant-workspace{display:grid;grid-template-columns:minmax(0,1fr) 228px'));
+  assert.ok(assistantWorkspaceSource.includes('.assistant-workspace:not(.has-chat) .assistant-suggestions{grid-row:1}'));
+  assert.ok(assistantWorkspaceSource.includes('.assistant-workspace:not(.has-chat) .chat-panel{grid-row:2}'));
+  assert.ok(assistantWorkspaceSource.includes('.suggestion-grid{display:grid;grid-template-columns:minmax(0,1fr)'));
+  assert.ok(assistantWorkspaceSource.includes('@media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}'));
+  assert.match(assistantWorkspaceSource, /class="suggestion-card"/);
 });
 
 test('audit actions and record types have Arabic display labels', () => {
@@ -168,8 +181,9 @@ test('invoice list uses compact responsive cards with readable financial and sta
 });
 
 test('financial and integrity report basis labels are localized', () => {
-  assert.match(source, /revenueBasisLabel\(profitLoss\.revenue_basis\)/);
-  assert.match(source, /Gross issued invoice total/);
+  // 3A-351: the P&L basis line lives in the deferred reports workspace now.
+  assert.match(reportsWorkspaceSource, /revenueBasisLabel\(profitLoss\.revenue_basis\)/);
+  assert.match(reportsWorkspaceSource, /Gross issued invoice total/);
   assert.match(source, /integrityWarningLabel\(dataIntegrityReport\.warning\)/);
   assert.match(source, /reportLimitationLabel\(limitation\)/);
 });
@@ -190,11 +204,14 @@ test('API requests abort when the backend stalls instead of blocking workspace s
 });
 
 test('report labels translate the actual backend revenue-basis and integrity-warning wording', () => {
-  assert.match(source, /normalized\.includes\('gross issued invoice totals before sales returns'\)/);
-  assert.match(source, /Gross issued invoice totals before sales returns/i);
+  // 3A-351: the revenue-basis labels moved with the reports workspace; the
+  // limitation key map moved to report-labels.ts (shared by the shell's
+  // taxes section and the workspace).
+  assert.match(reportsWorkspaceSource, /normalized\.includes\('gross issued invoice totals before sales returns'\)/);
+  assert.match(reportsWorkspaceSource, /Gross issued invoice totals before sales returns/i);
   assert.match(source, /This report identifies records for manual review only/i);
-  assert.match(source, /\"uses saved tax totals on issued invoices; it does not recalculate historical taxes\.\": \"app\.reportLimitation\.4\"/);
-  assert.match(source, /\"legacy invoices without customer links are flagged for review, not auto-corrected\.\": \"app\.reportLimitation\.16\"/);
+  assert.match(reportLabelsSource, /\"uses saved tax totals on issued invoices; it does not recalculate historical taxes\.\": \"app\.reportLimitation\.4\"/);
+  assert.match(reportLabelsSource, /\"legacy invoices without customer links are flagged for review, not auto-corrected\.\": \"app\.reportLimitation\.16\"/);
 });
 
 
@@ -301,7 +318,9 @@ test('workspace empty states use the shared accessible state component', () => {
   assert.doesNotMatch(source, /class="error-banner"/);
   assert.doesNotMatch(source, /class="error" role="alert"/);
   assert.match(recordTableSource, /<aba-state-message kind="loading"/, "shared record tables provide an accessible loading state");
-  assert.ok((source.match(/<aba-state-message kind="success"/g) || []).length >= 4);
+  // 3A-351: the expense and notification success states moved into their
+  // workspaces; the count spans the shell and both workspaces.
+  assert.ok(((source + expensesWorkspaceSource + notificationsWorkspaceSource).match(/<aba-state-message kind="success"/g) || []).length >= 4);
   assert.ok(source.includes('<aba-state-message [kind]'));
   assert.doesNotMatch(source, /<p class="muted" role="status">/);
   assert.doesNotMatch(source, /<p role="status">/);
@@ -313,13 +332,12 @@ test('workspace panels reuse one section header component instead of duplicating
 });
 
 test('Home quick access shows only the five key destinations from the shared role-filtered catalogue', () => {
-  const overviewStart = source.indexOf("@if (tab === 'overview')");
-  const overviewEnd = source.indexOf("@if (tab === 'notifications')", overviewStart);
-  const overview = source.slice(overviewStart, overviewEnd);
+  // 3A-351: the overview tab lives in the deferred overview workspace now.
+  const overview = overviewWorkspaceSource;
   const quickStart = overview.indexOf("Quick access");
   const directoryStart = overview.indexOf("All workspace modules");
   const quickAccess = overview.slice(quickStart, directoryStart);
-  assert.ok(source.includes('class="panel module-launcher"'));
+  assert.ok(overviewWorkspaceSource.includes('class="panel module-launcher"'));
   assert.match(source, /get homeQuickAccessCards\(\): readonly WorkspaceModuleCard\[\]/);
   assert.match(source, /return selectHomeQuickAccessModules\(this\.homeModuleCards\)/);
   assert.match(source, /selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG/);
@@ -329,39 +347,46 @@ test('Home quick access shows only the five key destinations from the shared rol
   assert.doesNotMatch(quickAccess, /homeModuleCards/);
   assert.match(overview, /@for \(module of filteredHomeModuleCards; track module\.tab\)/);
   assert.match(overview, /All workspace modules/);
-  assert.match(overview, /activated\)="setTab\(module\.tab\)"/);
+  // 3A-351: navigation from the overview workspace goes through its navigate output.
+  assert.match(overview, /activated\)="navigate\.emit\(module\.tab\)"/);
   assert.doesNotMatch(source, /class="quick-card"/);
 });
 
 
 test('chat requests are fenced by workspace, authenticated UID, role and request generation', () => {
-  assert.match(source, /private readonly chatRequestGuard = new WorkspaceLoadGuard\(\)/);
-  assert.match(source, /private currentChatRequestContext\(\): TenantRequestContext/);
-  assert.match(source, /runTenantScopedRequest\([\s\S]*this\.chatRequestGuard/);
-  const clearStart = source.indexOf('private clearWorkspaceData(): void');
-  const clearEnd = source.indexOf('async createWorkspace(): Promise<void>', clearStart);
-  const clear = source.slice(clearStart, clearEnd);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  // The shell keeps its own currentChatRequestContext for its remaining loaders.
+  assert.match(assistantWorkspaceSource, /private readonly chatRequestGuard = new WorkspaceLoadGuard\(\)/);
+  assert.match(assistantWorkspaceSource, /private chatRequestContext\(\): TenantRequestContext/);
+  assert.match(assistantWorkspaceSource, /runTenantScopedRequest\([\s\S]*this\.chatRequestGuard/);
+  const clearStart = assistantWorkspaceSource.indexOf('ngOnChanges(changes: SimpleChanges): void');
+  const clearEnd = assistantWorkspaceSource.indexOf('private chatRequestContext', clearStart);
+  const clear = assistantWorkspaceSource.slice(clearStart, clearEnd);
   assert.match(clear, /this\.chatRequestGuard\.invalidate\(\)/);
   assert.match(clear, /this\.chatSending = false/);
-  assert.match(source, /if \(!requestContext\.signedIn \|\| !requestContext\.userId \|\| !requestContext\.role \|\| !requestContext\.workspaceId\) return/);
+  assert.match(assistantWorkspaceSource, /if \(!requestContext\.signedIn \|\| !requestContext\.userId \|\| !requestContext\.role \|\| !requestContext\.workspaceId\) return/);
+  assert.match(source, /private currentChatRequestContext\(\): TenantRequestContext/);
 });
 
 test('mobile chat adapts to the visual viewport and keeps the composer above the bottom dock', () => {
+  // 3A-351: the chat-form layout rules moved with the assistant workspace;
+  // the visual-viewport handling and the shell-chrome rules stay in the shell.
   assert.match(source, /window\.visualViewport\?\.addEventListener\('resize'/);
   assert.match(source, /window\.visualViewport\?\.removeEventListener\('resize'/);
   assert.match(source, /--aba-keyboard-inset/);
   assert.match(source, /\[class\.keyboard-open\]="keyboardOpen"/);
-  assert.match(source, /\.chat-form\{position:sticky;bottom:calc\(var\(--aba-keyboard-inset,0px\) \+ 8px\)/);
-  assert.match(source, /\.shell\.keyboard-open \.chat-form\{position:fixed;inset-inline:12px;bottom:calc\(var\(--aba-keyboard-inset,0px\) \+ 8px\)/);
+  assert.match(assistantWorkspaceSource, /\.chat-form\{position:sticky;bottom:calc\(var\(--aba-keyboard-inset,0px\) \+ 8px\)/);
+  assert.match(assistantWorkspaceSource, /\.shell\.keyboard-open \.chat-form\{position:fixed;inset-inline:12px;bottom:calc\(var\(--aba-keyboard-inset,0px\) \+ 8px\)/);
   assert.match(source, /\.shell\.keyboard-open \.sidebar/);
   assert.match(source, /\.shell:has\(\.chat-form textarea:focus\) \.sidebar/);
-  assert.match(source, /max-height:25dvh/);
+  assert.match(assistantWorkspaceSource, /max-height:25dvh/);
 });
 
 test('chat send preserves retry draft behavior and keeps the existing API contract', () => {
-  const start = source.indexOf('async sendChat(): Promise<void>');
-  const end = source.indexOf('private message(error:', start);
-  const method = source.slice(start, end);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const start = assistantWorkspaceSource.indexOf('async sendChat(): Promise<void>');
+  const end = assistantWorkspaceSource.indexOf('private message(error:', start);
+  const method = assistantWorkspaceSource.slice(start, end);
   assert.match(method, /this\.api\.chat\(requestContext\.workspaceId, question, history\)/);
   assert.match(method, /this\.chatDraft = question/);
   assert.match(method, /onFinally: \(\) => \{\s*this\.chatSending = false;/);
@@ -528,8 +553,9 @@ test('mobile workspace view retains the active page title through the extracted 
 
 
 test('mobile module directory and Home shortcuts use adaptive balanced grids', () => {
-  assert.match(source, /\.module-directory-grid\{display:grid;grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,190px\),1fr\)\)/);
-  assert.match(source, /\.home-shortcut-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  // 3A-351: the module-directory and shortcut grids moved with the overview workspace.
+  assert.match(overviewWorkspaceSource, /\.module-directory-grid\{display:grid;grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,190px\),1fr\)\)/);
+  assert.match(overviewWorkspaceSource, /\.home-shortcut-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
 
 
@@ -650,18 +676,25 @@ test('permission-denied feedback offers a safe return home instead of retrying a
 
 test('operations forms distinguish successful mutations from failed list refreshes', () => {
   const helpersStart = source.indexOf('private beginOperationsAction()');
-  const helpersEnd = source.indexOf('private async loadNotifications()', helpersStart);
+  // 3A-351: loadNotifications moved into the notifications workspace; the
+  // next helper-adjacent method in the shell is the suppliers loader.
+  const helpersEnd = source.indexOf('private async loadSuppliers()', helpersStart);
   const helpers = source.slice(helpersStart, helpersEnd);
   assert.match(helpers, /private setOperationsSuccess\(tab: OperationsMessageTab/);
   assert.match(helpers, /private setOperationsFailure\(tab: OperationsMessageTab/);
   assert.match(helpers, /The operation succeeded, but the list could not be refreshed/);
-  const notification = source.slice(source.indexOf('async createNotification()'), source.indexOf('private async loadSuppliers()'));
+  // 3A-351: createNotification lives in the notifications workspace now;
+  // the next method after it there is the shared date formatter.
+  const notification = notificationsWorkspaceSource.slice(notificationsWorkspaceSource.indexOf('async createNotification()'), notificationsWorkspaceSource.indexOf('  formatRecordDate('));
   const supplier = source.slice(source.indexOf('async createSupplier()'), source.indexOf('async createPurchaseOrder()'));
   const recurring = source.slice(source.indexOf('async createRecurringSchedule()'), source.indexOf('get maxIntegrityTotal()'));
-  for (const method of [notification, supplier, recurring]) {
+  for (const method of [supplier, recurring]) {
     assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/,
       'stale operation completions must not update the newly selected workspace');
   }
+  // 3A-351: the notifications workspace guards on its businessId input.
+  assert.match(notification, /if \(this\.businessId\(\) !== businessId\) return;/,
+    'stale operation completions must not update the newly selected workspace');
   assert.match(notification, /delivery to recipients is not confirmed/);
   assert.match(recurring, /does not generate invoices automatically/);
   assert.ok(purchasingWorkspaceSource.includes('this.isCurrent(this.listGuard, version, requested)'));
@@ -708,8 +741,9 @@ test('invoice success messages support warning state and reset with workspace co
 });
 
 test('payment completion cannot clear the loading state of a newly selected workspace', () => {
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
   const start = source.indexOf('async createPayment(): Promise<void>');
-  const end = source.indexOf('useAssistantSuggestion(', start);
+  const end = source.indexOf('private captureTenantRequest(', start);
   const method = source.slice(start, end);
   assert.ok(start >= 0 && end > start);
   assert.match(method, /const businessSnapshot = this\.business/);
@@ -727,7 +761,8 @@ test('invalid authentication, workspace, customer, invoice, payment and expense 
   assert.match(customerWorkspaceSource, /<form class="customer-workspace__search"[^>]*\(submit\)="submitSearch\(\$event\)"/);
   assert.match(customerEditorSource, /<form \(submit\)="submit\(\$event\)"/);
   assert.match(customerEditorSource, /if \(!name \|\| this\.emailInvalid\(\) \|\| this\.busy\(\)\) return/);
-  assert.match(source, /<form #expenseForm="ngForm"/);
+  // 3A-351: the expense form lives in the expenses workspace now.
+  assert.match(expensesWorkspaceSource, /<form #expenseForm="ngForm"/);
   const paymentStart = source.indexOf('<form #paymentForm="ngForm"');
   const paymentEnd = source.indexOf('</form>', paymentStart);
   const paymentForm = source.slice(paymentStart, paymentEnd);
@@ -983,11 +1018,10 @@ test('owner-only invoice mutations fail closed before showing confirmation or ca
 });
 
 test('owner-only notification and recurring creation controls stay hidden from staff while lists remain visible', () => {
-  const notificationStart = source.indexOf("@if (tab === 'notifications')");
-  const notificationEnd = source.indexOf("@if (tab === 'suppliers')", notificationStart);
-  const notificationView = source.slice(notificationStart, notificationEnd);
-  assert.ok(notificationStart >= 0 && notificationEnd > notificationStart);
-  assert.match(notificationView, /@if \(business\?\.role === 'owner'\) \{\s*<form #notificationForm="ngForm"/);
+  // 3A-351: the notifications view lives in its workspace now; the form
+  // stays owner-gated through the role input.
+  const notificationView = notificationsWorkspaceSource;
+  assert.match(notificationView, /@if \(role\(\) === 'owner'\) \{\s*<form #notificationForm="ngForm"/);
   assert.match(notificationView, /Only workspace owners can queue notifications/);
   assert.match(notificationView, /<aba-record-table[^>]*\[rows\]="notificationTableRows"/);
 
@@ -999,9 +1033,9 @@ test('owner-only notification and recurring creation controls stay hidden from s
   assert.match(recurringView, /Only workspace owners can create recurring invoice schedules/);
   assert.match(recurringView, /<aba-record-table[^>]*\[rows\]="recurringTableRows"/);
 
-  const notificationMethodStart = source.indexOf('async createNotification(): Promise<void>');
-  const notificationMethodEnd = source.indexOf('private async loadSuppliers()', notificationMethodStart);
-  assert.match(source.slice(notificationMethodStart, notificationMethodEnd), /this\.business\.role !== 'owner'/);
+  const notificationMethodStart = notificationsWorkspaceSource.indexOf('async createNotification(): Promise<void>');
+  const notificationMethodEnd = notificationsWorkspaceSource.indexOf('  formatRecordDate(', notificationMethodStart);
+  assert.match(notificationsWorkspaceSource.slice(notificationMethodStart, notificationMethodEnd), /this\.role\(\) !== 'owner'/);
   const recurringMethodStart = source.indexOf('async createRecurringSchedule(): Promise<void>');
   const recurringMethodEnd = source.indexOf('get maxIntegrityTotal()', recurringMethodStart);
   assert.match(source.slice(recurringMethodStart, recurringMethodEnd), /this\.business\.role !== 'owner'/);
@@ -1035,16 +1069,19 @@ test('CSV import preview and write controls are owner-only without restricting m
 });
 
 test('assistant source citations use bilingual labels and localized expense categories', () => {
-  assert.match(source, /t\('المصادر:', 'Sources:'\)/);
-  assert.match(source, /source\.type === 'invoice' \? t\('فاتورة', 'Invoice'\)/);
-  assert.match(source, /source\.type === 'expense' \? t\('مصروف', 'Expense'\)/);
-  assert.match(source, /expenseCategoryLabel\(source\.category\)/);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  assert.match(assistantWorkspaceSource, /t\('المصادر:', 'Sources:'\)/);
+  assert.match(assistantWorkspaceSource, /source\.type === 'invoice' \? t\('فاتورة', 'Invoice'\)/);
+  assert.match(assistantWorkspaceSource, /source\.type === 'expense' \? t\('مصروف', 'Expense'\)/);
+  assert.match(assistantWorkspaceSource, /expenseCategoryLabel\(source\.category\)/);
 });
 
 test('expense categories are localized in the list and available to local search', () => {
-  assert.match(source, /category:this\.expenseCategoryLabel\(item\.category\)/);
-  assert.match(source, /category => this\.expenseCategoryLabel\(category\)/);
-  assert.match(source, /Transport: 'app\.expenseCategory\.transport'/);
+  // 3A-351: the expense table and its category labels live in the expenses
+  // workspace now.
+  assert.match(expensesWorkspaceSource, /category:this\.expenseCategoryLabel\(item\.category\)/);
+  assert.match(expensesWorkspaceSource, /category => this\.expenseCategoryLabel\(category\)/);
+  assert.match(expensesWorkspaceSource, /Transport: 'app\.expenseCategory\.transport'/);
 });
 
 test('payment methods are localized in the list and available to local search', () => {
@@ -1054,10 +1091,12 @@ test('payment methods are localized in the list and available to local search', 
 });
 
 test('notification status labels are localized in the list and available to local search', () => {
-  assert.match(source, /notificationStatusLabel\(item\.status\)/);
-  assert.match(source, /notificationStatusLabel\(status\)/);
-  assert.match(source, /failed: 'app\.notificationStatus\.failed'/);
-  assert.match(source, /status \|\| this\.t\('حالة غير محددة', 'Unknown status'/);
+  // 3A-351: the notification table and its status labels live in the
+  // notifications workspace now.
+  assert.match(notificationsWorkspaceSource, /notificationStatusLabel\(item\.status\)/);
+  assert.match(notificationsWorkspaceSource, /notificationStatusLabel\(status\)/);
+  assert.match(notificationsWorkspaceSource, /failed: 'app\.notificationStatus\.failed'/);
+  assert.match(notificationsWorkspaceSource, /status \|\| this\.t\('حالة غير محددة', 'Unknown status'/);
 });
 
 test('operational health status uses a localized label instead of raw API codes', () => {
@@ -1075,6 +1114,7 @@ test('purchase-order status labels are localized in the list and available to lo
 });
 
 test('purchase orders remain creatable by members while approval, receiving and payment writes are owner-only', () => {
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
   assert.ok(purchasingWorkspaceSource.includes("startCreate(): void"));
   assert.ok(purchasingWorkspaceSource.includes("this.api.createPurchaseOrder"));
   assert.ok(purchasingWorkspaceSource.includes("async saveDraft(): Promise<void>"));
@@ -1086,7 +1126,7 @@ test('purchase orders remain creatable by members while approval, receiving and 
   assert.ok(purchasingWorkspaceSource.includes("this.api.cancelPurchaseOrder"));
   assert.ok(purchasingWorkspaceSource.includes("this.api.receivePurchaseOrder"));
   const paymentStart = source.indexOf('async createPayment(): Promise<void>');
-  const paymentEnd = source.indexOf('useAssistantSuggestion(', paymentStart);
+  const paymentEnd = source.indexOf('private captureTenantRequest(', paymentStart);
   const payment = source.slice(paymentStart, paymentEnd);
   assert.match(payment, /businessSnapshot\.role !== 'owner'/);
 });
@@ -1115,16 +1155,17 @@ test('workspace switcher announces the current business context accessibly', () 
 });
 
 test('shared shell uses logical inline positioning for Arabic RTL and English LTR', () => {
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
   assert.match(source, /\.sidebar\{position:fixed;inset-block:0;inset-inline-end:0;/);
   assert.match(source, /\.main\{margin-inline-end:var\(--aba-layout-sidebar,245px\);/);
   assert.match(source, /\.nav-item\{[^}]*text-align:start;/);
-  assert.match(source, /\.home-shortcut-link\{[^}]*text-align:start;/);
-  assert.match(source, /\.chat-message\.user-message\{margin-inline-end:auto;margin-inline-start:0;/);
+  assert.match(overviewWorkspaceSource, /\.home-shortcut-link\{[^}]*text-align:start;/);
+  assert.match(assistantWorkspaceSource, /\.chat-message\.user-message\{margin-inline-end:auto;margin-inline-start:0;/);
   assert.match(source, /\.nav-item\.active\{[^}]*border-inline-start:3px solid/);
   assert.doesNotMatch(source, /\.shell\.english \.sidebar\{inset:0 0 0 auto\}/);
   assert.doesNotMatch(source, /\.shell\.english \.main\{margin-left:0;margin-right:/);
   assert.doesNotMatch(source, /\.shell\.english \.home-shortcut-link\{text-align:left/);
-  assert.doesNotMatch(source, /\.shell\.english \.chat-message\.user-message\{margin-right:auto/);
+  assert.doesNotMatch(assistantWorkspaceSource, /\.shell\.english \.chat-message\.user-message\{margin-right:auto/);
 });
 
 
@@ -1164,9 +1205,10 @@ test('shared state feedback exposes correct alert, status, and reduced-motion se
 });
 
 test('notification and supplier forms expose localized field validation without changing optional fields', () => {
-  const notificationStart = source.indexOf('<form #notificationForm="ngForm"');
-  const notificationEnd = source.indexOf('</form>', notificationStart);
-  const notification = source.slice(notificationStart, notificationEnd);
+  // 3A-351: the notification form lives in the notifications workspace now.
+  const notificationStart = notificationsWorkspaceSource.indexOf('<form #notificationForm="ngForm"');
+  const notificationEnd = notificationsWorkspaceSource.indexOf('</form>', notificationStart);
+  const notification = notificationsWorkspaceSource.slice(notificationStart, notificationEnd);
   assert.ok(notification.includes('notificationForm.valid && createNotification()'));
   for (const [control, id] of [
     ['notificationKindControl', 'notification-kind-error'],
@@ -1177,14 +1219,14 @@ test('notification and supplier forms expose localized field validation without 
     const association = `[attr.aria-describedby]="${control}.invalid && (${control}.touched || notificationForm.submitted) ? '${id}' : null"`;
     assert.ok(notification.includes(association), control + ' error association');
     assert.ok(notification.includes(`[attr.aria-invalid]="${control}.invalid && (${control}.touched || notificationForm.submitted) ? 'true' : null"`), control + ' invalid state');
-    assert.ok(source.includes('id="' + id + '"'), id);
+    assert.ok(notificationsWorkspaceSource.includes('id="' + id + '"'), id);
   }
   assert.match(notification, /<option value="business">/);
   assert.doesNotMatch(notification, /<option value="businesses">/);
-  assert.match(source, /notificationKind = 'business';/);
+  assert.match(notificationsWorkspaceSource, /notificationKind = 'business';/);
   assert.match(notification, /name="notificationTitle" required maxlength="160"/);
   assert.match(notification, /name="notificationBody" required maxlength="1000"/);
-  assert.match(source, /class="form-validation" aria-live="polite"/);
+  assert.match(notificationsWorkspaceSource, /class="form-validation" aria-live="polite"/);
 
   const supplierStart = source.indexOf('<form #supplierForm="ngForm"');
   const supplierEnd = source.indexOf('</form>', supplierStart);
@@ -1234,9 +1276,10 @@ test('purchase order and recurring schedule forms expose accessible localized va
 });
 
 test('custom report date filters expose localized errors and never submit invalid dates', () => {
-  const profitStart = source.indexOf('<form #profitLossForm="ngForm"');
-  const profitEnd = source.indexOf('</form>', profitStart);
-  const profit = source.slice(profitStart, profitEnd);
+  // 3A-351: both report forms live in the deferred reports workspace now.
+  const profitStart = reportsWorkspaceSource.indexOf('<form #profitLossForm="ngForm"');
+  const profitEnd = reportsWorkspaceSource.indexOf('</form>', profitStart);
+  const profit = reportsWorkspaceSource.slice(profitStart, profitEnd);
   assert.ok(profit.includes('profitLossForm.valid && loadProfitLoss()'));
   for (const [control, id] of [
     ['profitLossStartControl', 'profit-loss-start-error'],
@@ -1249,19 +1292,20 @@ test('custom report date filters expose localized errors and never submit invali
   assert.match(profit, /name="profitLossStart" required/);
   assert.match(profit, /name="profitLossEnd" required/);
 
-  const agingStart = source.indexOf('<form #agingForm="ngForm"');
-  const agingEnd = source.indexOf('</form>', agingStart);
-  const aging = source.slice(agingStart, agingEnd);
+  const agingStart = reportsWorkspaceSource.indexOf('<form #agingForm="ngForm"');
+  const agingEnd = reportsWorkspaceSource.indexOf('</form>', agingStart);
+  const aging = reportsWorkspaceSource.slice(agingStart, agingEnd);
   assert.ok(aging.includes('agingForm.valid && loadReceivablesAging()'));
   assert.ok(aging.includes('#agingAsOfControl="ngModel"'));
   assert.ok(aging.includes(`[attr.aria-describedby]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'aging-as-of-error' : null"`));
-  assert.ok(source.includes('id="aging-as-of-error"'));
+  assert.ok(reportsWorkspaceSource.includes('id="aging-as-of-error"'));
 });
 
 test('chat composer announces empty and whitespace-only drafts without sending a request', () => {
-  const start = source.indexOf('<form #chatForm="ngForm" class="chat-form"');
-  const end = source.indexOf('</form>', start);
-  const form = source.slice(start, end);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const start = assistantWorkspaceSource.indexOf('<form #chatForm="ngForm" class="chat-form"');
+  const end = assistantWorkspaceSource.indexOf('</form>', start);
+  const form = assistantWorkspaceSource.slice(start, end);
   assert.ok(form.includes('chatForm.valid && chatDraft.trim() && sendChat()'));
   assert.ok(form.includes('#chatMessageControl="ngModel"'));
   assert.match(form, /maxlength="2000"[\s\S]*?\brequired/);
@@ -1271,9 +1315,9 @@ test('chat composer announces empty and whitespace-only drafts without sending a
   assert.ok(textarea.includes('[disabled]=\"chatSending\"'));
   assert.ok(!textarea.includes('[disabled]=\"chatSending || !chatDraft.trim()\"'));
   assert.ok(sendButton.includes('[disabled]=\"chatSending || !chatDraft.trim()\"'));
-  assert.ok(source.includes('id="chat-message-error"'));
-  assert.ok(source.includes('Enter your question before sending (up to 2000 characters).'));
-  assert.ok(source.includes("if (!this.business || !this.chatDraft.trim() || this.chatSending) return;"));
+  assert.ok(assistantWorkspaceSource.includes('id="chat-message-error"'));
+  assert.ok(assistantWorkspaceSource.includes('Enter your question before sending (up to 2000 characters).'));
+  assert.ok(assistantWorkspaceSource.includes("if (!this.businessId() || !this.chatDraft.trim() || this.chatSending) return;"));
 });
 
 test('workspace build metadata is presented once in the workspace context, not duplicated in the page header', () => {
@@ -1285,10 +1329,14 @@ test('workspace build metadata is presented once in the workspace context, not d
 
 test('operations errors stay scoped to the module that produced them', () => {
   assert.match(source, /operationsErrorTab: OperationsMessageTab \| null = null/);
-  for (const tab of ['notifications', 'suppliers', 'recurring']) {
+  // 3A-351: the notifications error scope lives in the notifications
+  // workspace now (its own operations state copy); the other tabs stay.
+  for (const tab of ['suppliers', 'recurring']) {
     assert.ok(source.includes(`@if (operationsError && operationsErrorTab === '${tab}')`), tab);
     assert.ok(source.includes(`this.operationsErrorTab = '${tab}'`), tab + ' load/validation error scope');
   }
+  assert.ok(notificationsWorkspaceSource.includes(`@if (operationsError && operationsErrorTab === 'notifications')`), 'notifications');
+  assert.ok(notificationsWorkspaceSource.includes(`this.operationsErrorTab = 'notifications'`), 'notifications load/validation error scope');
   assert.match(source, /this\.operationsErrorTab = tab;/);
   assert.match(source, /private beginOperationsAction\(\): void \{/);
   assert.ok(purchasingWorkspaceSource.includes("readonly error = signal('')"));
@@ -1350,8 +1398,9 @@ test('quick-access keyboard focus fallback meets the shared semantic focus token
 
 
 test('AI chat composer placeholder follows selected language', () => {
-  assert.match(source, /\[placeholder\]="t\('اكتب سؤالك عن نشاطك…', 'Ask a question about your business…'\)"/);
-  assert.doesNotMatch(source, /placeholder="اكتب سؤالك عن نشاطك…"/);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  assert.match(assistantWorkspaceSource, /\[placeholder\]="t\('اكتب سؤالك عن نشاطك…', 'Ask a question about your business…'\)"/);
+  assert.doesNotMatch(assistantWorkspaceSource, /placeholder="اكتب سؤالك عن نشاطك…"/);
 });
 
 
@@ -1412,16 +1461,19 @@ test('release guide content is loaded only after navigating to the guide', () =>
 
 
 test('reports and expense forms disclose their preliminary and incurred-not-paid semantics', () => {
-  assert.match(source, /t\('نتيجة التشغيل الأولية', 'Preliminary operating result'\)/);
-  assert.match(source, /cost of goods sold is not deducted/);
-  assert.match(source, /Recording an expense captures when it was incurred; it does not confirm that cash was paid or settled/);
+  // 3A-351: the P&L title and limitation text live in the deferred reports
+  // workspace now; the expense semantics live in the expenses workspace.
+  assert.match(reportsWorkspaceSource, /t\('نتيجة التشغيل الأولية', 'Preliminary operating result'\)/);
+  assert.match(reportsWorkspaceSource, /cost of goods sold is not deducted/);
+  assert.match(expensesWorkspaceSource, /Recording an expense captures when it was incurred; it does not confirm that cash was paid or settled/);
 });
 
 
 test('Home lists every role-authorized module in addition to the five quick-access shortcuts', () => {
-  const start = source.indexOf("@if (tab === 'overview')");
-  const end = source.indexOf("@if (tab === 'notifications')", start);
-  const overview = source.slice(start, end);
+  // 3A-351: the overview tab lives in the deferred overview workspace now.
+  const overview = overviewWorkspaceSource;
+  const start = 0;
+  const end = overview.length;
   assert.ok(start >= 0 && end > start);
   assert.match(overview, /homeQuickAccessCards/);
   assert.match(overview, /All workspace modules/);
@@ -1432,16 +1484,17 @@ test('Home lists every role-authorized module in addition to the five quick-acce
 });
 
 test('Home dashboard uses the shared page-level error and retry banner without duplicate alert announcements', () => {
-  const start = source.indexOf("@if (tab === 'overview')");
-  const end = source.indexOf("@if (tab === 'notifications')", start);
-  const overview = source.slice(start, end);
+  // 3A-351: the overview tab lives in the deferred overview workspace now.
+  const overview = overviewWorkspaceSource;
+  const start = 0;
+  const end = overview.length;
   const sharedError = source.indexOf('@if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="sessionExpired');
   assert.ok(sharedError >= 0, 'the shared workspace error banner must remain available');
   assert.match(source.slice(sharedError, sharedError + 650), /\[actionLabel\].*Retry/);
   assert.ok(overview.includes('metric-grid--skeleton'), 'Home keeps its non-data KPI skeleton while the shared workspace banner announces loading');
   assert.doesNotMatch(overview, /kind="error" \[description\]="error"/,
     'the Home metrics panel must not repeat the same global error alert');
-  assert.match(overview, /@else if \(!error\)[\s\S]*kind="empty"[^>]*No business metrics are available yet/,
+  assert.match(overview, /@else if \(!error\(\)\)[\s\S]*kind="empty"[^>]*No business metrics are available yet/,
     'the empty state must not mislabel a failed dashboard load as a genuine empty result');
 });
 
@@ -1449,17 +1502,18 @@ test('Home dashboard uses the shared page-level error and retry banner without d
 test('operations lists filter locally by their visible business fields', () => {
   assert.match(source, /get filteredSuppliers\(\): Supplier\[\]/);
   assert.match(source, /get filteredRecurringSchedules\(\): RecurringInvoiceSchedule\[\]/);
-  assert.match(source, /get filteredNotifications\(\): NotificationRecord\[\]/);
+  // 3A-351: the notifications filter lives in the notifications workspace now.
+  assert.match(notificationsWorkspaceSource, /get filteredNotifications\(\): NotificationRecord\[\]/);
   assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch, this\.localization\.locale\)/);
   assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules/);
-  assert.match(source, /filterNotifications\(this\.notifications/);
+  assert.match(notificationsWorkspaceSource, /filterNotifications\(this\.notifications/);
   assert.ok(purchasingWorkspaceSource.includes('readonly filteredOrders = computed'));
   assert.ok(purchasingWorkspaceSource.includes('this.search().trim().toLocaleLowerCase()'));
   assert.ok(purchasingWorkspaceSource.includes('this.supplierName(order.supplier_id)'));
   assert.ok(purchasingWorkspaceSource.includes('this.statusLabel(order.status)'));
   assert.match(source, /supplierSearch\.trim\(\) \? t\(/);
   assert.match(source, /recurringSearch\.trim\(\) \? t\(/);
-  assert.match(source, /notificationSearch\.trim\(\) \? t\(/);
+  assert.match(notificationsWorkspaceSource, /notificationSearch\.trim\(\) \? t\(/);
 });
 
 test('customer section markup does not render stray closing-tag text', () => {
@@ -1469,23 +1523,26 @@ test('customer section markup does not render stray closing-tag text', () => {
 
 test('payment and expense lists expose local search and distinguish no-match from no-record states', () => {
   assert.match(source, /get filteredPayments\(\): Payment\[\]/);
-  assert.match(source, /get filteredExpenses\(\): Expense\[\]/);
+  // 3A-351: the expenses filter lives in the expenses workspace now.
+  assert.match(expensesWorkspaceSource, /get filteredExpenses\(\): Expense\[\]/);
   assert.match(source, /filterPayments\(\s*this\.payments,\s*this\.paymentSearch/);
-  assert.match(source, /filterExpenses\(this\.expenses, this\.expenseSearch, category => this\.expenseCategoryLabel\(category\), this\.localization\.locale\)/);
+  assert.match(expensesWorkspaceSource, /filterExpenses\(this\.expenses, this\.expenseSearch, category => this\.expenseCategoryLabel\(category\), this\.localization\.locale\)/);
   assert.match(source, /paymentSearch\.trim\(\) \? t\(/);
-  assert.match(source, /expenseSearch\.trim\(\) \? t\(/);
+  assert.match(expensesWorkspaceSource, /expenseSearch\.trim\(\) \? t\(/);
   // T18 Slice E (2026-11-21): the payment/expense searches are aba-search-field
   // components now; the type="search" input lives inside the component, and the
   // shell keeps the same name and [(ngModel)] binding on the component element.
   assert.match(source, /<aba-search-field name="paymentSearch"/);
-  assert.match(source, /<aba-search-field name="expenseSearch"/);
+  assert.match(expensesWorkspaceSource, /<aba-search-field name="expenseSearch"/);
 });
 
 
 test('notification kind localization covers the current business form value and legacy plural value', () => {
-  assert.match(source, /<option value="business">/);
-  assert.match(source, /business: 'app\.notificationKind\.business'/);
-  assert.match(source, /businesses: 'app\.notificationKind\.businesses'/);
+  // 3A-351: the notification kind options and labels live in the
+  // notifications workspace now.
+  assert.match(notificationsWorkspaceSource, /<option value="business">/);
+  assert.match(notificationsWorkspaceSource, /business: 'app\.notificationKind\.business'/);
+  assert.match(notificationsWorkspaceSource, /businesses: 'app\.notificationKind\.businesses'/);
 });
 
 
@@ -1512,7 +1569,8 @@ test('shared workspace record tables and Platform Admin tables are named keyboar
 
 
 test('AI assistant conversation history is a named keyboard-scrollable log region', () => {
-  const log = source.match(/<div #chatLog class="chat-log"[^>]*>/)?.[0] ?? '';
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const log = assistantWorkspaceSource.match(/<div #chatLog class="chat-log"[^>]*>/)?.[0] ?? '';
   assert.match(log, /role="log"/);
   assert.match(log, /tabindex="0"/);
   assert.match(log, /\[attr\.aria-label\]=/);
@@ -1541,9 +1599,10 @@ test('unapproved discount and tax rates remain read-only and saved values are pr
 
 
 test('AI assistant new-chat control resets only in-memory conversation state', () => {
-  const start = source.indexOf('startNewChat(): void');
-  const end = source.indexOf('async copyAssistantMessage(', start);
-  const method = source.slice(start, end);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const start = assistantWorkspaceSource.indexOf('startNewChat(): void');
+  const end = assistantWorkspaceSource.indexOf('async copyAssistantMessage(', start);
+  const method = assistantWorkspaceSource.slice(start, end);
   assert.ok(method.includes('if (this.chatSending) return;'));
   assert.ok(method.includes('this.chatMessages = [];'));
   assert.ok(method.includes("this.chatDraft = '';"));
@@ -1557,11 +1616,12 @@ test('AI assistant new-chat control resets only in-memory conversation state', (
 });
 
 test('AI assistant response copy is explicitly click initiated and always removes its fallback input', () => {
-  const copyStart = source.indexOf('async copyAssistantMessage(');
-  const fallbackStart = source.indexOf('private copyTextWithSelectionFallback(', copyStart);
-  const copyEnd = source.indexOf('private isChatLogNearBottom()', fallbackStart);
-  const copy = source.slice(copyStart, fallbackStart);
-  const fallback = source.slice(fallbackStart, copyEnd);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const copyStart = assistantWorkspaceSource.indexOf('async copyAssistantMessage(');
+  const fallbackStart = assistantWorkspaceSource.indexOf('private copyTextWithSelectionFallback(', copyStart);
+  const copyEnd = assistantWorkspaceSource.indexOf('private isChatLogNearBottom()', fallbackStart);
+  const copy = assistantWorkspaceSource.slice(copyStart, fallbackStart);
+  const fallback = assistantWorkspaceSource.slice(fallbackStart, copyEnd);
   assert.ok(copy.includes('if (navigator.clipboard?.writeText)'));
   assert.ok(copy.includes('await navigator.clipboard.writeText(content);'));
   assert.ok(copy.includes('this.copyTextWithSelectionFallback(content);'));
@@ -1569,57 +1629,64 @@ test('AI assistant response copy is explicitly click initiated and always remove
   assert.ok(copy.includes('this.chatCopyStatus = { index, success: false };'));
   assert.ok(fallback.includes('finally {'));
   assert.ok(fallback.includes('temporaryInput.remove();'));
-  assert.ok(source.includes('(click)="copyAssistantMessage(message.content, messageIndex)"'));
+  assert.ok(assistantWorkspaceSource.includes('(click)="copyAssistantMessage(message.content, messageIndex)"'));
   assert.ok(!copy.includes('fetch('));
   assert.ok(!copy.includes('this.api.'));
 });
 
 test('AI assistant keyboard submission preserves multiline entry and IME composition', () => {
-  const start = source.indexOf('handleChatKeydown(event: KeyboardEvent): void');
-  const end = source.indexOf('startNewChat(): void', start);
-  const method = source.slice(start, end);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const start = assistantWorkspaceSource.indexOf('handleChatKeydown(event: KeyboardEvent): void');
+  const end = assistantWorkspaceSource.indexOf('startNewChat(): void', start);
+  const method = assistantWorkspaceSource.slice(start, end);
   assert.ok(method.includes("event.key !== 'Enter'"));
   assert.ok(method.includes('event.shiftKey'));
   assert.ok(method.includes('event.isComposing'));
   assert.ok(method.includes('event.preventDefault();'));
   assert.ok(method.includes('if (!this.chatDraft.trim() || this.chatSending) return;'));
-  assert.ok(source.includes('Shift + Enter for a new line'));
-  assert.ok(source.includes('{{ chatDraft.length }} / 2000'));
+  assert.ok(assistantWorkspaceSource.includes('Shift + Enter for a new line'));
+  assert.ok(assistantWorkspaceSource.includes('{{ chatDraft.length }} / 2000'));
 });
 
 test('AI assistant conversation log announces additions and exposes active request state', () => {
-  const logStart = source.indexOf('<div #chatLog class="chat-log"');
-  const logEnd = source.indexOf('>', logStart);
-  const log = source.slice(logStart, logEnd + 1);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const logStart = assistantWorkspaceSource.indexOf('<div #chatLog class="chat-log"');
+  const logEnd = assistantWorkspaceSource.indexOf('>', logStart);
+  const log = assistantWorkspaceSource.slice(logStart, logEnd + 1);
   assert.ok(log.includes('role="log"'));
   assert.ok(log.includes('aria-live="polite"'));
   assert.ok(log.includes('aria-relevant="additions"'));
   assert.ok(log.includes('aria-atomic="false"'));
   assert.ok(log.includes("chatSending ? 'true' : null"));
-  assert.ok(source.includes('.assistant-workspace:not(.has-chat) .assistant-suggestions{grid-row:1}'));
-  assert.ok(source.includes('.assistant-workspace:not(.has-chat) .chat-panel{grid-row:2}'));
+  assert.ok(assistantWorkspaceSource.includes('.assistant-workspace:not(.has-chat) .assistant-suggestions{grid-row:1}'));
+  assert.ok(assistantWorkspaceSource.includes('.assistant-workspace:not(.has-chat) .chat-panel{grid-row:2}'));
 });
 
 test('AI assistant template uses null-safe copy feedback and a typed key event expression', () => {
-  assert.ok(source.includes('chatCopyStatus?.success'));
-  assert.ok(source.includes('handleChatKeydown($any($event))'));
-  assert.ok(!source.includes('(keydown.enter)="handleChatKeydown($event)"'));
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  assert.ok(assistantWorkspaceSource.includes('chatCopyStatus?.success'));
+  assert.ok(assistantWorkspaceSource.includes('handleChatKeydown($any($event))'));
+  assert.ok(!assistantWorkspaceSource.includes('(keydown.enter)="handleChatKeydown($event)"'));
 });
 
 test('AI assistant resets transient copy feedback when workspace context changes', () => {
-  const start = source.indexOf('private clearWorkspaceData(): void');
-  const end = source.indexOf('async createWorkspace(): Promise<void>', start);
-  const clear = source.slice(start, end);
+  // 3A-351: the shell's clearWorkspaceData reset is now the assistant
+  // workspace's ngOnChanges on businessId.
+  const start = assistantWorkspaceSource.indexOf('ngOnChanges(changes: SimpleChanges): void');
+  const end = assistantWorkspaceSource.indexOf('private chatRequestContext', start);
+  const clear = assistantWorkspaceSource.slice(start, end);
   assert.ok(clear.includes('this.chatMessages = [];'));
   assert.ok(clear.includes('this.chatCopyStatus = null;'));
   assert.ok(clear.includes("this.chatError = '';"));
   assert.ok(clear.includes('this.chatConfigurationMissing = false;'));
+  assert.ok(clear.includes('this.chatRequestGuard.invalidate();'));
 });
 
 test('AI assistant auto-follow respects the reader position and reduced motion', () => {
-  const start = source.indexOf('private scrollChatToLatest(force = false): void');
-  const end = source.indexOf('private captureTenantRequest(', start);
-  const method = source.slice(start, end);
+  // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  const start = assistantWorkspaceSource.indexOf('private scrollChatToLatest(force = false): void');
+  const end = assistantWorkspaceSource.indexOf('async sendChat(): Promise<void>', start);
+  const method = assistantWorkspaceSource.slice(start, end);
   assert.ok(method.includes('!force && !this.isChatLogNearBottom()'));
   assert.ok(method.includes('prefers-reduced-motion'));
   assert.ok(method.includes("behavior: reducedMotion ? 'auto' : 'smooth'"));

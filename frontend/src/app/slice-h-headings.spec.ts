@@ -40,20 +40,20 @@ test('shell section headings use aba-section-header with unchanged text and leve
 test('no bare section h2/h3 remains in the shell template outside the allow-list', () => {
   // Kept deliberately, each pinned by its own spec or role:
   // - desktop-nav-group-label / mobile-more group labels (navigation, not sections)
-  // - dashboard-period__title (home-dashboard.spec.ts pins the ready-state h2)
+  // - dashboard-period__title moved with the Home tab into the overview
+  //   workspace (home-dashboard.spec.ts pins the ready-state h2 there)
   // - invoices-section-title (sr-only heading; the visible count stays as-is)
   // - invoice-detail-heading (dialog heading, aria-labelledby target)
   // - invoice-detail notes h3 (12px label inside the bordered note box, not a section)
   const allowed = new Set([
     `<h2 class="desktop-nav-group-label" [id]="'desktop-nav-' + group.id">`,
     `<h3 [id]="'mobile-more-' + group.id + '-heading'">`,
-    `<h2 class="dashboard-period__title">`,
     `<h2 id="invoices-section-title" class="sr-only">`,
     `<h2 id="invoice-detail-heading">`,
     `<h3>`,
   ]);
   const headings = [...appSource.matchAll(/<h[23]\b[^>]*>/g)].map((m) => m[0]);
-  assert.equal(headings.length, 6, `expected only the 6 allow-listed bare headings, found: ${headings.join(' | ')}`);
+  assert.equal(headings.length, 5, `expected only the 5 allow-listed bare headings, found: ${headings.join(' | ')}`);
   for (const heading of headings) {
     assert.ok(allowed.has(heading), `bare heading is not a section heading under the contract: ${heading}`);
   }

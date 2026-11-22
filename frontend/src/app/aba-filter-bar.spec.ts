@@ -4,6 +4,9 @@ import test from 'node:test';
 
 const componentSource = readFileSync(new URL('./shared/ui/aba-filter-bar.component.ts', import.meta.url), 'utf8');
 const appSourceRaw = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-351: the expense and notification searches moved into their deferred workspaces.
+const expensesWorkspaceSource = readFileSync(new URL('./expenses-workspace.component.ts', import.meta.url), 'utf8');
+const notificationsWorkspaceSource = readFileSync(new URL('./notifications-workspace.component.ts', import.meta.url), 'utf8');
 const appCss = readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
 const designSystem = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const ledgerSource = readFileSync(new URL('./inventory-movement-ledger.component.ts', import.meta.url), 'utf8');
@@ -107,18 +110,24 @@ test('filter and clear labels come from existing translated keys', () => {
 // --- Shell migration: the 5 .list-tools instances use the bar ---
 
 const shellFilters: Array<{ search: string; ariaKey: string; placeholderKey: string }> = [
-  { search: 'notificationSearch', ariaKey: 'ui.m_1qze32v', placeholderKey: 'ui.m_1aqo4qr' },
   { search: 'supplierSearch', ariaKey: 'ui.m_1mc30sn', placeholderKey: 'ui.m_jtec0a' },
   { search: 'recurringSearch', ariaKey: 'ui.m_aljqyp', placeholderKey: 'ui.m_z7f6xc' },
   { search: 'paymentSearch', ariaKey: 'ui.m_nmj0be', placeholderKey: 'ui.m_hoei9y' },
-  { search: 'expenseSearch', ariaKey: 'ui.m_qat44q', placeholderKey: 'ui.m_34prmq' },
+];
+// 3A-351: the expense and notification searches live in their deferred
+// workspaces now; the same wrapper and binding contract is pinned there.
+const movedFilters: Array<{ search: string; ariaKey: string; placeholderKey: string; source: string }> = [
+  { search: 'expenseSearch', ariaKey: 'ui.m_qat44q', placeholderKey: 'ui.m_34prmq', source: expensesWorkspaceSource },
+  { search: 'notificationSearch', ariaKey: 'ui.m_1qze32v', placeholderKey: 'ui.m_1aqo4qr', source: notificationsWorkspaceSource },
 ];
 
-test('the 5 shell .list-tools instances use aba-filter-bar with their original search bindings preserved', () => {
-  assert.equal((appSourceRaw.match(/<aba-filter-bar/g) ?? []).length, 6,
-    'exactly 6 filter bars in the shell: the 5 .list-tools instances plus the invoices chips variant');
-  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 7,
-    'still exactly the 7 shell searches; the bar wraps them, it does not add or remove one');
+test('the shell .list-tools instances use aba-filter-bar with their original search bindings preserved', () => {
+  // 3A-351: 3 .list-tools instances stay in the shell plus the invoices chips
+  // variant; the expense and notification bars moved into their workspaces.
+  assert.equal((appSourceRaw.match(/<aba-filter-bar/g) ?? []).length, 4,
+    'exactly 4 filter bars in the shell: the 3 .list-tools instances plus the invoices chips variant');
+  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 4,
+    'still exactly the 4 shell searches; the bar wraps them, it does not add or remove one');
   for (const filter of shellFilters) {
     assert.ok(appSourceRaw.includes(`<div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="${filter.search}" [hasActiveFilter]="${filter.search}.trim() !== ''" (clear)="${filter.search} = ''">`),
       `${filter.search} must sit inside the bar in its .list-tools wrapper`);
@@ -127,6 +136,12 @@ test('the 5 shell .list-tools instances use aba-filter-bar with their original s
     // passes the short narrow placeholder shown at ≤220px.
     assert.ok(appSourceRaw.includes(`<aba-search-field name="${filter.search}" [ariaLabel]="t('${filter.ariaKey}')" [placeholder]="t('${filter.placeholderKey}')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="${filter.search}"`),
       `${filter.search} must keep its name, aria-label, placeholder and [(ngModel)] binding`);
+  }
+  for (const filter of movedFilters) {
+    assert.ok(filter.source.includes(`<div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="${filter.search}" [hasActiveFilter]="${filter.search}.trim() !== ''" (clear)="${filter.search} = ''">`),
+      `${filter.search} must sit inside the bar in its .list-tools wrapper in its workspace`);
+    assert.ok(filter.source.includes(`<aba-search-field name="${filter.search}" [ariaLabel]="t('${filter.ariaKey}')" [placeholder]="t('${filter.placeholderKey}')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="${filter.search}"`),
+      `${filter.search} must keep its name, aria-label, placeholder and [(ngModel)] binding in its workspace`);
   }
   assert.ok(appSourceRaw.includes("import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';"),
     'shell must import the filter bar component');

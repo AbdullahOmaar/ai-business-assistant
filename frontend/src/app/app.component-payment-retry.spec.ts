@@ -14,7 +14,9 @@ function methodBetween(startMarker: string, endMarker: string): string {
 }
 
 test('payment retry uses the same immutable snapshot and idempotency key after uncertain outcomes', () => {
-  const payment = methodBetween('async createPayment(): Promise<void>', 'useAssistantSuggestion(');
+  // 3A-351: the chat methods moved to the assistant workspace; the next
+  // shell method after createPayment is now captureTenantRequest.
+  const payment = methodBetween('async createPayment(): Promise<void>', 'private captureTenantRequest(');
   const save = payment.indexOf('this.paymentRetryVault.save(authUid, retrySnapshot)');
   const request = payment.indexOf('await this.api.createPayment(businessId, requestPayload)');
   assert.ok(save >= 0 && request > save);
@@ -42,7 +44,7 @@ test('payment form details are locked while an uncertain request is pending', ()
 });
 
 test('numeric payment form values are normalized before creating the retry snapshot', () => {
-  const payment = methodBetween('async createPayment(): Promise<void>', 'useAssistantSuggestion(');
+  const payment = methodBetween('async createPayment(): Promise<void>', 'private captureTenantRequest(');
   assert.match(payment, /const amount = String\(this\.paymentAmount \?\? ''\)\.trim\(\)/);
   assert.match(payment, /const allocation = String\(this\.paymentAllocationAmount \?\? ''\)\.trim\(\)/);
   assert.match(payment, /amount,\s*currency_code:/);
