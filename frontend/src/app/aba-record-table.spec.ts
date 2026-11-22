@@ -25,7 +25,10 @@ test('shared record table exposes semantic columns and stable row actions',()=>{
   assert.match(component,/rowAction\.emit\(\{rowId,actionId,anchor\}\)/);
 });
 test('record table includes loading and empty recovery states',()=>{
-  assert.match(component,/kind="loading"/);assert.match(component,/kind="empty"/);assert.match(component,/rows\(\)\.length/);
+  // 3A-371: the loading state is skeleton list-rows (G4 fixed loading)
+  // inside a status region that keeps the loading description for
+  // assistive tech; the empty state stays a state message.
+  assert.match(component,/aba-record-table__skeletons/);assert.match(component,/<aba-skeleton variant="list-row" \/>/);assert.match(component,/kind="empty"/);assert.match(component,/rows\(\)\.length/);
 });
 test('phone layout renders labeled record cards with touch-sized row actions',()=>{
   assert.match(css,/\.aba-record-table tbody tr\{[^}]*grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);

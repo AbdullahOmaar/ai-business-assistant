@@ -431,3 +431,5 @@ footer span{color:var(--aba-color-nav-muted,#9ca3af)}
 .shell .primary:hover:not(:disabled){border-color:var(--aba-color-primary-strong,#115e59);background:#115e59}
 .shell .nav-item.active{border-inline-start:3px solid #0d9488;background:var(--aba-color-primary-soft,#ccfbf1);color:var(--aba-color-primary-strong,#115e59)}
 .shell :is(button,input,select,textarea,a):focus-visible{outline:3px solid var(--aba-color-focus-ring,#0f766e);outline-offset:2px}
+/* 3A-371: skeleton placeholder for deferred workspace sections (G4). */
+.defer-skeleton{display:grid;gap:10px}

@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, input, output } from '@angular/core';
 import type { Customer } from './api.service';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
+import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
 import { AbaIconComponent } from './shared/ui/aba-icon.component';
 import { LocalizationService } from './localization.service';
 
@@ -8,11 +9,16 @@ import { LocalizationService } from './localization.service';
 @Component({
   selector: 'aba-customer-profile',
   standalone: true,
-  imports: [AbaStateMessageComponent, AbaIconComponent],
+  imports: [AbaStateMessageComponent, AbaSkeletonComponent, AbaIconComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (loading()) {
-      <aba-state-message kind="loading" [description]="t('customerProfile.loading')" />
+      <div class="profile-skeleton" role="status">
+        <span class="sr-only">{{ t('customerProfile.loading') }}</span>
+        <aba-skeleton variant="detail" />
+        <aba-skeleton variant="list-row" />
+        <aba-skeleton variant="list-row" />
+      </div>
     } @else if (error()) {
       <aba-state-message kind="error" [description]="error()" [actionLabel]="t('ui.m_lr6ezy')" (action)="retry.emit()" />
     } @else if (customer(); as record) {
@@ -63,7 +69,7 @@ import { LocalizationService } from './localization.service';
     }
   `,
   styles: [`
-    :host{display:block;min-width:0}.customer-profile{display:grid;gap:18px;min-width:0;padding:clamp(16px,3vw,24px);border:1px solid var(--aiba-line,#e2e8f0);border-radius:18px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);box-shadow:0 12px 34px rgb(15 23 42 / 5%)}
+    :host{display:block;min-width:0}.profile-skeleton{display:grid;gap:10px}.customer-profile{display:grid;gap:18px;min-width:0;padding:clamp(16px,3vw,24px);border:1px solid var(--aiba-line,#e2e8f0);border-radius:18px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);box-shadow:0 12px 34px rgb(15 23 42 / 5%)}
     .customer-profile__hero{display:flex;align-items:center;gap:13px;min-width:0}.customer-profile__avatar{display:grid;place-items:center;flex:0 0 54px;width:54px;height:54px;border-radius:17px;background:var(--aiba-brand-soft,#ecfdf5);color:var(--aiba-brand-strong,#115e59);font-size:18px;font-weight:850}
     .customer-profile__identity{flex:1;min-width:0}.customer-profile__identity p{margin:0 0 3px;color:var(--aiba-brand-strong,#115e59);font-size:10px;font-weight:800;letter-spacing:.08em}.customer-profile__identity h2{margin:0;overflow-wrap:normal;font-size:20px;font-weight:800}.customer-profile__identity span{display:block;margin-block-start:4px;color:var(--aiba-muted,#64748b);font-size:11px}
     .customer-profile button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 12px;border:1px solid var(--aiba-line-strong,#cbd5e1);border-radius:10px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);font:inherit;font-size:12px;font-weight:750;cursor:pointer}.customer-profile button aba-icon{width:15px;height:15px}.customer-profile__edit{flex:0 0 auto}

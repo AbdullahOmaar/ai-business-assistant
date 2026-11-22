@@ -2,6 +2,7 @@ import { CommonModule } from '@angular/common';
 import { LocalizationService } from '../../localization.service';
 import { ChangeDetectionStrategy, Component, computed, inject, input, output, signal } from '@angular/core';
 import { AbaStateMessageComponent } from './aba-state-message.component';
+import { AbaSkeletonComponent } from './aba-skeleton.component';
 
 export interface AbaRecordTableColumn { key:string; label:string; primary?:boolean; kind?:'text'|'numeric'|'status'; }
 export interface AbaRecordTableAction { id:string; label:string; disabled?:boolean; }
@@ -10,12 +11,16 @@ export interface AbaRecordTableActionEvent { rowId:string; actionId:string; anch
 
 /** Shared record presentation; domain filtering, permissions and actions stay in the feature. */
 @Component({
-  selector:'aba-record-table', standalone:true, imports:[CommonModule,AbaStateMessageComponent],
+  selector:'aba-record-table', standalone:true, imports:[CommonModule,AbaStateMessageComponent,AbaSkeletonComponent],
   changeDetection:ChangeDetectionStrategy.OnPush,
+  styles:[`.aba-record-table__skeletons{display:grid;gap:10px}`],
   template:`
     <section class="aba-record-table">
       @if(loading()){
-        <aba-state-message kind="loading" [description]="loadingDescription()" />
+        <div class="aba-record-table__skeletons" role="status">
+          <span class="aba-record-table__visually-hidden">{{loadingDescription()}}</span>
+          @for(row of skeletonRowIndexes;track row){<aba-skeleton variant="list-row" />}
+        </div>
       } @else if(rows().length){
         <div class="aba-record-table__mobile-sort"><select class="aba-record-table__mobile-sort-select" [attr.aria-label]="sortByLabel()" [value]="mobileSortValue" (change)="onMobileSortChange($event)"><option value="">{{ sortByLabel() }}</option>@for(column of columns();track column.key){<option [value]="column.key + ':asc'">{{column.label}} ↑</option><option [value]="column.key + ':desc'">{{column.label}} ↓</option>}</select></div>
         <div class="aba-record-table__viewport" role="region" tabindex="0" [attr.aria-label]="ariaLabel()">
@@ -68,6 +73,10 @@ export class AbaRecordTableComponent {
   readonly rows=input<readonly AbaRecordTableRow[]>([]);
   readonly loading=input(false);
   readonly loadingDescription=input('Loading records…');
+  /** Skeleton list-rows shown while loading (3A-371: G4 fixed loading —
+   * the placeholder reserves the list's space instead of a text message). */
+  readonly skeletonRows=input(5);
+  get skeletonRowIndexes():readonly number[]{return Array.from({length:this.skeletonRows()},(_,index)=>index);}
   readonly emptyTitle=input('No records');
   readonly emptyDescription=input('There are no records to display.');
   readonly actionsHeading=input('');
