@@ -1158,7 +1158,9 @@
       "v163_refusal": "The built-in assistant now replies in English when you ask it to issue, void, cancel or pay an invoice in English, and says it cannot do that. Nothing is changed.",
       "v164_ui": "Version 1.6.4: workspace screens share the new responsive UI pieces, and headings use the Cairo and Tajawal fonts.",
       "v164_csv": "CSV exports now neutralize spreadsheet formulas hidden behind leading spaces, tabs or newlines.",
-      "v165_stock_retry": "Version 1.6.5: recording a stock movement is now protected against duplicate entries — if the connection drops and the request is retried, the movement is recorded only once and your stock counts stay correct."
+      "v165_stock_retry": "Version 1.6.5: recording a stock movement is now protected against duplicate entries — if the connection drops and the request is retried, the movement is recorded only once and your stock counts stay correct.",
+      "v170_identity_loader": "Version 1.7.0: Loading now shows the assistant character, gently bobbing while your data loads - the same calm indicator in the top bar and in loading placeholders, and fully still if you prefer reduced motion.",
+      "v170_payroll_currency": "Version 1.7.0: Payroll amounts now stay joined to their currency and long text wraps on whole words, so figures stay readable on narrow phone cards."
     },
     "catalog": {
       "m_aba150_title": "Workspace and purchasing workflows",
@@ -1306,7 +1308,8 @@
       "v162_title": "Lighter first load and a read-only assistant",
       "v163_title": "Loading-error handling and English assistant replies",
       "v164_title": "Workspace UI, Cairo/Tajawal headings and CSV export safety",
-      "v165_title": "Stock movement retry protection"
+      "v165_title": "Stock movement retry protection",
+      "v170_title": "Version 1.7.0 - Your loading character and tidier payroll amounts"
     }
   },
   "catalog": {
