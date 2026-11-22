@@ -1746,3 +1746,32 @@ test('overview invitation accept surface is absent when there is no invitation t
 test('desktop invoice create action stays content-sized instead of stretching the toolbar', () => {
   assert.match(globalStyles, /@media \(min-width: 761px\) \{\s*:root body \.shell \.invoice-toolbar > \.invoice-create-button \{\s*flex: 0 0 auto;\s*width: fit-content;\s*min-height: 44px;\s*align-self: flex-start;/);
 });
+
+test('every page-level deferred workspace block has an @error fallback with a localized message', () => {
+  const raw = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+  const blocks = raw.match(/@defer \((?!when pending)[^\n]*\) \{/g) ?? [];
+  const fallbacks = raw.match(/@error \{\s*<section abaCard class="panel narrow">\s*<aba-state-message kind="error" \[description\]="t\('ui\.m_deferr1'\)" \/>/g) ?? [];
+  assert.ok(blocks.length >= 10, 'expected the page-level deferred blocks');
+  assert.equal(fallbacks.length, blocks.length,
+    'a failed lazy chunk must show an error message instead of a stuck placeholder or empty view');
+});
+
+test('deferred confirmation dialogs fail closed with an error message and a cancel path', () => {
+  const raw = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+  for (const [pending, cancel] of [
+    ['pendingInvoiceVoid', 'cancelInvoiceVoid'],
+    ['pendingPurchaseApproval', 'cancelPurchaseOrderApproval'],
+    ['pendingPurchaseReceipt', 'cancelPurchaseOrderReceipt'],
+  ]) {
+    const start = raw.indexOf(`@defer (when ${pending}) {`);
+    assert.ok(start >= 0, `${pending} defer block must exist`);
+    const errorAt = raw.indexOf('@error {', start);
+    const nextDefer = raw.indexOf('@defer (', start + 1);
+    assert.ok(errorAt > start && (nextDefer < 0 || errorAt < nextDefer), `${pending} needs an @error fallback`);
+    const fallback = raw.slice(errorAt, errorAt + 420);
+    assert.match(fallback, /role="alert"/);
+    assert.match(fallback, /ui\.m_deferr2/);
+    assert.ok(fallback.includes(`(click)="${cancel}()"`), `${pending} fallback must offer the cancel action`);
+    assert.doesNotMatch(fallback, /confirm[A-Za-z]*\(\)/, 'the fallback must not offer a confirm action');
+  }
+});
