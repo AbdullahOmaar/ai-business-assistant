@@ -3,9 +3,13 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { expandTranslationCalls } from './localization-test-helpers.ts';
 
-const appSourceRaw = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-351: the reports sections moved from the shell into
+// aba-reports-workspace (deferred behind @defer), so the source assertions
+// read the workspace component — whose inline styles carry the
+// amount-pair rule that used to live in app.component.css.
+const appSourceRaw = readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8');
 const appSource = expandTranslationCalls(appSourceRaw);
-const appCss = readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
+const appCss = appSourceRaw;
 const english = JSON.parse(readFileSync(new URL('../../public/i18n/en.json', import.meta.url), 'utf8')) as Record<string, Record<string, string>>;
 const arabic = JSON.parse(readFileSync(new URL('../../public/i18n/ar.json', import.meta.url), 'utf8')) as Record<string, Record<string, string>>;
 

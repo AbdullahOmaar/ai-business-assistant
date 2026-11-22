@@ -328,7 +328,9 @@ test('Home uses one workspace-level loading announcement and a visual KPI skelet
 
 test('failed payroll dashboard refresh clears stale Home metrics through the current OWNER-scoped error callback', () => {
   const start = appSource.indexOf('async refreshAfterPayrollPayment(): Promise<void>');
-  const end = appSource.indexOf('exportReceivablesAgingCsv(): void', start);
+  // 3A-351: the CSV export moved out with the reports workspace; the next
+  // method after the payroll refresh is the workspace-route applier.
+  const end = appSource.indexOf('private applyInitialWorkspaceRoute(): void', start);
   const method = appSource.slice(start, end);
   const errorCallback = method.indexOf('onError: error =>');
   const staleClear = method.indexOf('this.dashboard = null;', errorCallback);

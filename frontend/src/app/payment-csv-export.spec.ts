@@ -24,6 +24,11 @@ test('payment CSV export includes the full ledger fields and uses the shared saf
   assert.match(handler, /payment\.allocations\.length/);
   assert.match(handler, /const csv = buildCsv\(headers, rows\)/);
   assert.match(handler, /payments-' \+ new Date\(\)\.toISOString\(\)\.slice\(0, 10\) \+ '\.csv'/);
-  assert.match(source, /import \{ buildCsv, CSV_FORMULA_TRIGGER_ASCII, escapeCsvFormulaPrefix \} from '\.\/csv-export'/);
+  // 3A-351: the shell imports only buildCsv now; the formula-escape
+  // helpers moved with the reports workspace (its ageing CSV still uses
+  // them), so the shared safe serializer stays covered from both homes.
+  assert.match(source, /import \{ buildCsv \} from '\.\/csv-export'/);
+  assert.match(readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8'),
+    /import \{ CSV_FORMULA_TRIGGER_ASCII, escapeCsvFormulaPrefix \} from '\.\/csv-export'/);
   assert.match(csvHelper, /Prevent spreadsheet formula execution/);
 });

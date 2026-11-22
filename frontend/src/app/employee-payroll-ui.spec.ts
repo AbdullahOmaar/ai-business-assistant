@@ -121,7 +121,9 @@ test('a successful payroll payment refreshes workspace data only for the same au
   assert.match(app, /\(payrollPaid\)="refreshAfterPayrollPayment\(\)"/);
 
   const refreshStart = app.indexOf('async refreshAfterPayrollPayment(): Promise<void>');
-  const refreshEnd = app.indexOf('\n  exportReceivablesAgingCsv()', refreshStart);
+  // 3A-351: the CSV export moved out with the reports workspace; the next
+  // method after the payroll refresh is the workspace-route applier.
+  const refreshEnd = app.indexOf('\n  private applyInitialWorkspaceRoute()', refreshStart);
   assert.ok(refreshStart >= 0 && refreshEnd > refreshStart);
   const refresh = app.slice(refreshStart, refreshEnd);
   assert.match(refresh, /requestContext\.role !== 'owner'/);

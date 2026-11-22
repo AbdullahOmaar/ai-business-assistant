@@ -24,15 +24,22 @@ test('denied direct tab navigation returns before changing the selected tab or l
   const selectedTabMutation = method.indexOf('this.tab = tab;');
   assert.ok(guard >= 0 && deniedReturn > guard && selectedTabMutation > deniedReturn,
     'denied navigation must exit before selecting a tab');
-  const routeLoads = ['loadProfitLoss()', 'loadTaxSummary()', 'loadAuditEvents(0)', 'loadDataIntegrity(0)', 'loadOperationalHealth()'];
+  // 3A-351: loadProfitLoss() left setTab with the reports workspace — the
+  // workspace loads the P&L in its own ngOnInit, and it is only instantiated
+  // behind @defer after setTab passes the guard, so the same ordering holds.
+  const routeLoads = ['loadTaxSummary()', 'loadAuditEvents(0)', 'loadDataIntegrity(0)', 'loadOperationalHealth()'];
   for (const load of routeLoads) {
     assert.ok(method.indexOf(load) > selectedTabMutation, `${load} must run only after the access guard`);
   }
+  assert.ok(source.includes("@defer (when tab === 'reports')"),
+    'the reports workspace renders only behind a defer that setTab guards');
 });
 
 test('payroll post-payment refresh discards responses after owner role, identity, or workspace changes', () => {
   const start = source.indexOf('async refreshAfterPayrollPayment(): Promise<void>');
-  const end = source.indexOf('\n  exportReceivablesAgingCsv()', start);
+  // 3A-351: the CSV export moved out with the reports workspace; the next
+  // method after the payroll refresh is the workspace-route applier.
+  const end = source.indexOf('\n  private applyInitialWorkspaceRoute()', start);
   assert.ok(start >= 0 && end > start, 'payroll refresh method must exist');
   const method = source.slice(start, end);
   assert.match(method, /const requestContext = this\.currentChatRequestContext\(\)/);

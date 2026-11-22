@@ -27,6 +27,8 @@ const customerWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./c
 const purchasingWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./purchasing-workspace.component.ts', import.meta.url), 'utf8'));
 const customerEditorSource = expandTranslationCalls(readFileSync(new URL('./customer-editor.component.ts', import.meta.url), 'utf8'));
 const auditLabelsSource = expandTranslationCalls(readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8'));
+const reportsWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8'));
+const reportLabelsSource = expandTranslationCalls(readFileSync(new URL('./report-labels.ts', import.meta.url), 'utf8'));
 const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
 const workspaceInvitationsSource = readFileSync(new URL('./workspace-invitations.component.ts', import.meta.url), 'utf8');
 
@@ -168,8 +170,9 @@ test('invoice list uses compact responsive cards with readable financial and sta
 });
 
 test('financial and integrity report basis labels are localized', () => {
-  assert.match(source, /revenueBasisLabel\(profitLoss\.revenue_basis\)/);
-  assert.match(source, /Gross issued invoice total/);
+  // 3A-351: the P&L basis line lives in the deferred reports workspace now.
+  assert.match(reportsWorkspaceSource, /revenueBasisLabel\(profitLoss\.revenue_basis\)/);
+  assert.match(reportsWorkspaceSource, /Gross issued invoice total/);
   assert.match(source, /integrityWarningLabel\(dataIntegrityReport\.warning\)/);
   assert.match(source, /reportLimitationLabel\(limitation\)/);
 });
@@ -190,11 +193,14 @@ test('API requests abort when the backend stalls instead of blocking workspace s
 });
 
 test('report labels translate the actual backend revenue-basis and integrity-warning wording', () => {
-  assert.match(source, /normalized\.includes\('gross issued invoice totals before sales returns'\)/);
-  assert.match(source, /Gross issued invoice totals before sales returns/i);
+  // 3A-351: the revenue-basis labels moved with the reports workspace; the
+  // limitation key map moved to report-labels.ts (shared by the shell's
+  // taxes section and the workspace).
+  assert.match(reportsWorkspaceSource, /normalized\.includes\('gross issued invoice totals before sales returns'\)/);
+  assert.match(reportsWorkspaceSource, /Gross issued invoice totals before sales returns/i);
   assert.match(source, /This report identifies records for manual review only/i);
-  assert.match(source, /\"uses saved tax totals on issued invoices; it does not recalculate historical taxes\.\": \"app\.reportLimitation\.4\"/);
-  assert.match(source, /\"legacy invoices without customer links are flagged for review, not auto-corrected\.\": \"app\.reportLimitation\.16\"/);
+  assert.match(reportLabelsSource, /\"uses saved tax totals on issued invoices; it does not recalculate historical taxes\.\": \"app\.reportLimitation\.4\"/);
+  assert.match(reportLabelsSource, /\"legacy invoices without customer links are flagged for review, not auto-corrected\.\": \"app\.reportLimitation\.16\"/);
 });
 
 
@@ -1234,9 +1240,10 @@ test('purchase order and recurring schedule forms expose accessible localized va
 });
 
 test('custom report date filters expose localized errors and never submit invalid dates', () => {
-  const profitStart = source.indexOf('<form #profitLossForm="ngForm"');
-  const profitEnd = source.indexOf('</form>', profitStart);
-  const profit = source.slice(profitStart, profitEnd);
+  // 3A-351: both report forms live in the deferred reports workspace now.
+  const profitStart = reportsWorkspaceSource.indexOf('<form #profitLossForm="ngForm"');
+  const profitEnd = reportsWorkspaceSource.indexOf('</form>', profitStart);
+  const profit = reportsWorkspaceSource.slice(profitStart, profitEnd);
   assert.ok(profit.includes('profitLossForm.valid && loadProfitLoss()'));
   for (const [control, id] of [
     ['profitLossStartControl', 'profit-loss-start-error'],
@@ -1249,13 +1256,13 @@ test('custom report date filters expose localized errors and never submit invali
   assert.match(profit, /name="profitLossStart" required/);
   assert.match(profit, /name="profitLossEnd" required/);
 
-  const agingStart = source.indexOf('<form #agingForm="ngForm"');
-  const agingEnd = source.indexOf('</form>', agingStart);
-  const aging = source.slice(agingStart, agingEnd);
+  const agingStart = reportsWorkspaceSource.indexOf('<form #agingForm="ngForm"');
+  const agingEnd = reportsWorkspaceSource.indexOf('</form>', agingStart);
+  const aging = reportsWorkspaceSource.slice(agingStart, agingEnd);
   assert.ok(aging.includes('agingForm.valid && loadReceivablesAging()'));
   assert.ok(aging.includes('#agingAsOfControl="ngModel"'));
   assert.ok(aging.includes(`[attr.aria-describedby]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'aging-as-of-error' : null"`));
-  assert.ok(source.includes('id="aging-as-of-error"'));
+  assert.ok(reportsWorkspaceSource.includes('id="aging-as-of-error"'));
 });
 
 test('chat composer announces empty and whitespace-only drafts without sending a request', () => {
@@ -1412,8 +1419,10 @@ test('release guide content is loaded only after navigating to the guide', () =>
 
 
 test('reports and expense forms disclose their preliminary and incurred-not-paid semantics', () => {
-  assert.match(source, /t\('نتيجة التشغيل الأولية', 'Preliminary operating result'\)/);
-  assert.match(source, /cost of goods sold is not deducted/);
+  // 3A-351: the P&L title and limitation text live in the deferred reports
+  // workspace now; the expense semantics stay in the shell.
+  assert.match(reportsWorkspaceSource, /t\('نتيجة التشغيل الأولية', 'Preliminary operating result'\)/);
+  assert.match(reportsWorkspaceSource, /cost of goods sold is not deducted/);
   assert.match(source, /Recording an expense captures when it was incurred; it does not confirm that cash was paid or settled/);
 });
 

@@ -4,6 +4,8 @@ import test from 'node:test';
 
 const componentSource = readFileSync(new URL('./shared/ui/aba-date-range.component.ts', import.meta.url), 'utf8');
 const appSourceRaw = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-351: the P&L date range moved with the reports workspace.
+const reportsSourceRaw = readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8');
 const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const designSystem = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const english = JSON.parse(readFileSync(new URL('../../public/i18n/en.json', import.meta.url), 'utf8')) as Record<string, Record<string, string>>;
@@ -86,9 +88,11 @@ test('clear label reuses the existing translated "Clear filters" key', () => {
 
 // --- Shell migration: exactly 3 date ranges in app.component.ts ---
 
-test('the shell uses aba-date-range exactly 3 times: P&L, statement and taxes', () => {
-  assert.equal((appSourceRaw.match(/<aba-date-range/g) ?? []).length, 3,
-    'exactly 3 date ranges in the shell (P&L, statement, taxes); the ageing single date is not one');
+test('the shell uses aba-date-range exactly 2 times: statement and taxes (P&L moved to the reports workspace)', () => {
+  assert.equal((appSourceRaw.match(/<aba-date-range/g) ?? []).length, 2,
+    'exactly 2 date ranges in the shell (statement, taxes); the P&L range lives in the deferred reports workspace and the ageing single date is not one');
+  assert.equal((reportsSourceRaw.match(/<aba-date-range/g) ?? []).length, 1,
+    'the reports workspace keeps the one P&L date range');
   assert.ok(appSourceRaw.includes("import { AbaDateRangeComponent } from './shared/ui/aba-date-range.component';"),
     'shell must import the date-range component');
   assert.ok(appSourceRaw.includes('AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent'),
@@ -96,9 +100,9 @@ test('the shell uses aba-date-range exactly 3 times: P&L, statement and taxes', 
 });
 
 test('Reports P&L pair keeps its names, required validation and submit, and gains the component clear', () => {
-  const profitStart = appSourceRaw.indexOf('<form #profitLossForm="ngForm"');
-  const profitEnd = appSourceRaw.indexOf('</form>', profitStart);
-  const profit = appSourceRaw.slice(profitStart, profitEnd);
+  const profitStart = reportsSourceRaw.indexOf('<form #profitLossForm="ngForm"');
+  const profitEnd = reportsSourceRaw.indexOf('</form>', profitStart);
+  const profit = reportsSourceRaw.slice(profitStart, profitEnd);
   assert.ok(profit.includes('profitLossForm.valid && loadProfitLoss()'), 'P&L submit behaviour is unchanged');
   assert.match(profit, /name="profitLossStart" required/);
   assert.match(profit, /name="profitLossEnd" required/);
@@ -139,9 +143,10 @@ test('Taxes pair keeps its names and form submit, and gains the component clear'
 });
 
 test('the ageing agingAsOf stays a single date input and is NOT converted to a range', () => {
-  const agingStart = appSourceRaw.indexOf('<form #agingForm="ngForm"');
-  const agingEnd = appSourceRaw.indexOf('</form>', agingStart);
-  const aging = appSourceRaw.slice(agingStart, agingEnd);
+  // 3A-351: the ageing form lives in the deferred reports workspace now.
+  const agingStart = reportsSourceRaw.indexOf('<form #agingForm="ngForm"');
+  const agingEnd = reportsSourceRaw.indexOf('</form>', agingStart);
+  const aging = reportsSourceRaw.slice(agingStart, agingEnd);
   assert.doesNotMatch(aging, /aba-date-range/, 'the ageing form must not use the date-range component');
   assert.ok(aging.includes('agingForm.valid && loadReceivablesAging()'), 'ageing submit behaviour is unchanged');
   assert.match(aging, /name="agingAsOf" required/);

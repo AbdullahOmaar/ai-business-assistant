@@ -11,6 +11,8 @@ const productCatalog=readFileSync(new URL('./product-catalog.component.ts',impor
 const customerWorkspace=readFileSync(new URL('./customer-workspace.component.ts',import.meta.url),'utf8');
 const productWorkspace=readFileSync(new URL('./product-workspace.component.ts',import.meta.url),'utf8');
 const purchasingWorkspace=readFileSync(new URL('./purchasing-workspace.component.ts',import.meta.url),'utf8');
+// 3A-351: the ageing due-date call site moved with the reports workspace.
+const reportsWorkspace=expandTranslationCalls(readFileSync(new URL('./reports-workspace.component.ts',import.meta.url),'utf8'));
 test('shared record table exposes semantic columns and stable row actions',()=>{
   assert.match(component,/<table>/);assert.match(component,/<caption class="aba-record-table__visually-hidden">/);
   assert.match(component,/<th scope="col" \[attr\.aria-sort\]="sortAria\(column\.key\)"/);assert.match(component,/<th scope="row"/);
@@ -64,12 +66,14 @@ test('record dates remain localized after moving legacy lists into tables', () =
     'formatRecordDate(item.next_run_at)',
     'formatRecordDate(item.scheduled_at)',
     "formatRecordDate(item.created_at,'short')",
-    "formatRecordDate(invoice.due_date,'date')",
     'map((event,index)=>({',
     'event.source_id',
     "event.invoice_id||''",
     'event.occurred_at',
   ]) assert.ok(app.includes(fragment), 'missing localized date or stable key: '+fragment);
+  // 3A-351: the ageing due date formats inside the reports workspace now.
+  assert.ok(reportsWorkspace.includes("formatRecordDate(invoice.due_date,'date')"),
+    'missing localized date or stable key: formatRecordDate(invoice.due_date,\'date\')');
 });
 
 
