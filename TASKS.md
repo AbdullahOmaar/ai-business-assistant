@@ -1,3 +1,12 @@
+## Version 1.9.2 candidate — accessibility audit + SKU contrast fix (Linear 3A-329) — 2026-11-22 (branch stacked on 3A-364, NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/accessibility-3a-329` stacked on `aiba/security-headers-docs-3a-364` (head `4e9fe0e`); merges after 3A-364. One PR against the stack base; manager review before merge; no release markers.
+- **Audit (local only, per the owner's 2026-11-17 CI decision):** axe-core + headless Chromium against the production build — login and sign-up in Arabic and English, at desktop width and at the 640px (200% zoom) proxy: **zero violations on every surface** (including a WCAG 2.2 AA tag run on login). Keyboard walks: logical order, solid 3px focus outline on every stop; the confirm dialog traps focus, handles Escape and restores focus. Static sweeps of all templates: no unlabelled fields, no unnamed icon buttons, no images without alt, no positive tabindex, no anchor-buttons. Token contrast computed: muted/tertiary/success/warning text all pass AA. Full record: `docs/ACCESSIBILITY_AUDIT_2026-11-22.md`.
+- **One fix:** the product-catalog SKU label was content text at 2.56:1 (`--aiba-muted-soft` #94a3b8); it now uses `--aiba-muted` (#5f6e83, 5.19:1). Regression-pinned in `accessibility-colors.spec.ts`. No other code change.
+- **Versions:** aligned at 1.9.2 — frontend package/lockfile + build-info/sw stamps regenerated, backend pyproject + FastAPI; bilingual release notes (`v192_a11y`).
+- **Local evidence:** frontend unit **774/774** (one new contrast test); backend focused set 14 passed (docs gating + monitoring + health — the backend diff is the version literal only); production build re-verified through the frontend CI job on the PR.
+- **NOT RUN (documented follow-ups in the audit doc):** authenticated-workspace dynamic axe (demo login mints Firebase custom tokens server-side — no local authenticated harness), physical iPhone, screen readers, physical Android, installed PWA. No calculation, tax, discount, payroll or permission behaviour changed.
+
 ## Version 1.9.1 candidate — web security headers + API docs restricted to local (Linear 3A-364, execution of the 3A-348 owner decision) — 2026-11-22 (branch, NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/security-headers-docs-3a-364` from main `5a7aa98` (merge of PR #426). One PR; manager review before merge; no release markers (review only, no deploy). Renumbered from the planned 1.8.2 to **1.9.1** because 1.9.0 merged first (stack order changed when the manager merged #425 and auto-merged #426).

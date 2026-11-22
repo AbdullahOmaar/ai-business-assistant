@@ -1168,7 +1168,8 @@
       "v190_skeletons": "Version 1.9.0: lists that still loaded with a text message — record tables, deferred sections, profiles and the invoice list — now reserve their space with skeleton rows while loading.",
       "v190_purchasing": "Purchasing activity history now shows plain-language labels instead of technical keys, and order details load with skeletons.",
       "v190_tax": "Tax summary: the period no longer stretches across wide screens, an operational-summary note was added, and export buttons carry icons.",
-      "v191_security": "Version 1.9.1: the web app now sends standard browser security headers (a content security policy matched to the services the app actually uses, frame and content-type protections, and camera/microphone/location switched off), and the API’s interactive documentation is no longer public in deployed environments — it stays available to developers locally."
+      "v191_security": "Version 1.9.1: the web app now sends standard browser security headers (a content security policy matched to the services the app actually uses, frame and content-type protections, and camera/microphone/location switched off), and the API’s interactive documentation is no longer public in deployed environments — it stays available to developers locally.",
+      "v192_a11y": "Version 1.9.2: a full local accessibility audit (automated checks, keyboard and 200% zoom) — every audited screen came back clean, with one fix: product SKU codes in the catalog now use a clearer, easier-to-read color."
     },
     "catalog": {
       "m_aba150_title": "Workspace and purchasing workflows",
@@ -1322,7 +1323,8 @@
       "v180_title": "Version 1.8.0 - Tidier screens: on-demand forms, grouped customer tools and clearer loading",
       "v181_title": "Version 1.8.1 - Behind-the-scenes reliability: automatic error monitoring and uptime checks",
       "v190_title": "Screens remainder: loading, purchasing and tax polish",
-      "v191_title": "Security headers and private API docs"
+      "v191_title": "Security headers and private API docs",
+      "v192_title": "Accessibility: clearer product codes"
     }
   },
   "catalog": {

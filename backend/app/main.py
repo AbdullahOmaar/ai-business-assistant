@@ -39,7 +39,7 @@ _DOCS_ENABLED = _interactive_docs_enabled()
 
 app = FastAPI(
     title="AI Business Assistant API",
-    version="1.9.1",
+    version="1.9.2",
     description=(
         "Business workflows with PostgreSQL, Firebase ID-token verification, "
         "tenant-scoped authorization, and grounded assistant chat."
