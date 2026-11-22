@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
 import { LoadingCounter } from './loading-counter.ts';
@@ -117,13 +117,12 @@ test('the shell derives its loading flag from the counter, with no competing boo
 // --- Loader component: source ---
 
 test('loader uses namespaced classes and keyframes only', () => {
-  for (const name of ['aiba-loader-rise', 'aiba-loader-pop', 'aiba-loader-breathe']) {
+  for (const name of ['aiba-loader-bob', 'aiba-loader-bob-compact', 'aiba-loader-shadow']) {
     assert.ok(componentSource.includes(`@keyframes ${name}`), `missing namespaced keyframes ${name}`);
   }
-  assert.ok(componentSource.includes('.aiba-loader__bar'), 'missing namespaced bar class');
-  assert.ok(componentSource.includes('.aiba-loader__dot'), 'missing namespaced dot class');
-  assert.ok(componentSource.includes('.aiba-loader__star'), 'missing namespaced star class');
-  for (const generic of ['@keyframes rise{', '@keyframes pop{', '@keyframes breathe{', '.bar{', '.dot{', '.star{']) {
+  assert.ok(componentSource.includes('.aiba-loader__figure'), 'missing namespaced figure class');
+  assert.ok(componentSource.includes('.aiba-loader__shadow'), 'missing namespaced shadow class');
+  for (const generic of ['@keyframes bob{', '@keyframes rise{', '@keyframes pop{', '@keyframes breathe{', '.bar{', '.dot{', '.star{']) {
     assert.equal(componentSource.includes(generic), false, `generic name must not ship: ${generic}`);
   }
   assert.equal(componentSource.includes("class=\"bar"), false);
@@ -155,54 +154,56 @@ test('loader has role=status with a visually hidden locale-aware label', () => {
   assert.equal(en.includes('AIPA'), false);
 });
 
-test('loader uses the supplied white-on-dark mark on a teal disc: dark bars on the white star', () => {
-  assert.ok(componentSource.includes('linear-gradient(180deg,var(--aiba-brand-teal-light,#1f8c96),var(--aiba-brand-teal-deep,#093a44))'), 'disc must use the teal app-icon gradient');
-  assert.ok(componentSource.includes('.aiba-loader__disc'), 'missing disc element');
-  // Owner correction 2026-11-21: Slice B shipped the two short bars WHITE,
-  // which made them invisible against the white star (only the amber bar/dot
-  // showed). The supplied mark (mark_white_on_dark.svg) has DARK short bars
-  // (#093A44) on the white star, so the fills now match it exactly: white
-  // star, dark short bars, amber tall bar and dot.
-  assert.ok(componentSource.includes('class="aiba-loader__star"'), 'missing star');
-  assert.match(componentSource, /aiba-loader__star"[^>]*fill="#ffffff"/);
-  assert.match(componentSource, /aiba-loader__bar--first"[^>]*fill="#093A44"/);
-  assert.match(componentSource, /aiba-loader__bar--second"[^>]*fill="#093A44"/);
-  assert.match(componentSource, /aiba-loader__bar--third"[^>]*fill="#f5a623"/);
-  assert.match(componentSource, /aiba-loader__dot"[^>]*fill="#f5a623"/);
-  assert.equal(componentSource.includes('fill="#0F5C68"'), false, 'teal star must not ship on the teal disc');
+test('loader renders the owner-approved character cutout as one flat decorative image', () => {
+  // Owner decision 2026-11-22 (handover batch 3A-346): the bundle identity —
+  // character + loader prototype v3 — is approved as-is. The component ships
+  // the approved transparent cutout (downscaled for the web) as ONE flat
+  // image; the superseded Slice B SVG disc mark must not remain.
+  assert.ok(componentSource.includes('src="identity/loader-character.png"'), 'loader must render the approved character asset');
+  assert.ok(componentSource.includes('class="aiba-loader__figure"'), 'missing character figure element');
+  assert.match(componentSource, /aiba-loader__figure"[^>]*alt=""/, 'character image must be decorative (empty alt)');
+  assert.match(componentSource, /aiba-loader__figure"[^>]*aria-hidden="true"/, 'character image must be hidden from assistive tech; the hidden label owns the name');
+  assert.equal(componentSource.includes('<svg'), false, 'the superseded SVG disc mark must not ship in the component');
+  assert.equal(componentSource.includes('aiba-loader__disc'), false, 'the superseded teal disc must not ship');
+  const assetUrl = new URL('../../public/identity/loader-character.png', import.meta.url);
+  assert.ok(existsSync(assetUrl), 'the approved character asset must exist under public/identity/');
+});
+
+test('loader shadow ellipse renders only at the full size, like the prototype centred variant', () => {
+  assert.ok(componentSource.includes('@if (!compact()) { <span class="aiba-loader__shadow"'), 'shadow ellipse must be full-size only');
+  assert.match(componentSource, /\.aiba-loader__shadow\{[^}]*border-radius:50%/);
 });
 
 test('loader is a fixed-size container, so it cannot shift layout', () => {
-  assert.match(componentSource, /\.aiba-loader\{[^}]*width:48px;height:48px/);
-  assert.match(componentSource, /\.aiba-loader--compact\{width:28px;height:28px\}/);
+  assert.match(componentSource, /\.aiba-loader\{[^}]*width:96px;height:108px/);
+  assert.match(componentSource, /\.aiba-loader--compact\{width:44px;height:44px\}/);
   assert.ok(componentSource.includes('readonly compact = input(false)'), 'missing compact size input');
   assert.ok(componentSource.includes('flex:0 0 auto'), 'loader must not shrink inside flex rows');
 });
 
-test('loader animates on a 1.4s loop with staggered bars and a popping dot', () => {
-  assert.ok(componentSource.includes('animation:aiba-loader-rise 1.4s'), 'bars must rise on a 1.4s loop');
-  assert.ok(componentSource.includes('animation:aiba-loader-pop 1.4s'), 'dot must pop on a 1.4s loop');
-  assert.ok(componentSource.includes('animation:aiba-loader-breathe 2.8s'), 'star must breathe on a 2.8s loop');
-  assert.ok(componentSource.includes('animation-delay:.15s'), 'second bar must be staggered');
-  assert.ok(componentSource.includes('animation-delay:.3s'), 'third bar must be staggered');
-  assert.ok(componentSource.includes('animation-delay:.45s'), 'dot must be staggered');
+test('loader bobs the whole character on the prototype v3 timing: 1.44s loop, shadow in sync', () => {
+  // Prototype v3 (owner-approved 2026-11-22): whole-character motion only,
+  // matched to the reference GIF — 24 frames x 60 ms = 1.44 s loop.
+  assert.ok(componentSource.includes('animation:aiba-loader-bob 1.44s ease-in-out infinite'), 'character must bob on the 1.44s loop');
+  assert.ok(componentSource.includes('animation:aiba-loader-shadow 1.44s ease-in-out infinite'), 'shadow must pulse on the same 1.44s loop');
+  assert.ok(componentSource.includes('animation-name:aiba-loader-bob-compact'), 'compact size must use the smaller bob');
 });
 
-test('two frames captured at different times differ: the keyframes change the rendered mark', () => {
-  // Rise: the bar is nearly flat at 0% and full height at 45% of the loop.
-  const rise = componentSource.match(/@keyframes aiba-loader-rise\{([\s\S]*?)\}\}/)?.[1] ?? '';
-  assert.ok(rise.includes('0%{transform:scaleY(.15)'), 'frame at loop start must be the low bar');
-  assert.ok(rise.includes('45%,75%{transform:scaleY(1)'), 'frame mid-loop must be the full bar');
-  // Pop: the dot is invisible at 0% and overshoots at 55% of the loop.
-  const pop = componentSource.match(/@keyframes aiba-loader-pop\{([\s\S]*?)\}\}/)?.[1] ?? '';
-  assert.ok(pop.includes('0%,35%{transform:scale(0)'), 'frame at loop start must hide the dot');
-  assert.ok(pop.includes('55%{transform:scale(1.25)'), 'frame mid-loop must show the dot popped in');
+test('two frames captured at different times differ: the keyframes move the whole character', () => {
+  // Bob: the whole figure rests at 0% and is lifted/tilted at 50%.
+  const bob = componentSource.match(/@keyframes aiba-loader-bob\{([\s\S]*?)\}\}/)?.[1] ?? '';
+  assert.ok(bob.includes('0%,100%{transform:translateY(0) rotate(0deg)'), 'frame at loop start must be the resting figure');
+  assert.ok(bob.includes('50%{transform:translateY(-7px) rotate(-1deg)'), 'frame mid-loop must be the lifted, tilted figure');
+  // Shadow: full width at rest, narrowed and faded while the figure is up.
+  const shadow = componentSource.match(/@keyframes aiba-loader-shadow\{([\s\S]*?)\}\}/)?.[1] ?? '';
+  assert.ok(shadow.includes('0%,100%{transform:scaleX(1);opacity:1'), 'frame at loop start must be the full shadow');
+  assert.ok(shadow.includes('50%{transform:scaleX(.86);opacity:.7'), 'frame mid-loop must be the narrowed shadow');
 });
 
 test('prefers-reduced-motion renders a static frame', () => {
   assert.match(
     componentSource,
-    /@media\(prefers-reduced-motion:reduce\)\{\.aiba-loader__bar,\.aiba-loader__dot,\.aiba-loader__star\{animation:none\}\}/,
+    /@media\(prefers-reduced-motion:reduce\)\{\.aiba-loader__figure,\.aiba-loader__shadow\{animation:none\}\}/,
   );
 });
 
