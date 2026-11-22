@@ -28,7 +28,6 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
               [placeholder]="t('customerWorkspace.searchPlaceholder')">
             <button type="submit" [disabled]="loading()"><aba-icon name="search" />{{ t('customerWorkspace.search') }}</button>
           </form>
-          <button class="customer-workspace__create" type="button" (click)="createCustomer()"><aba-icon name="add" />{{ t('customerWorkspace.newCustomer') }}</button>
         </header>
         <aba-customer-directory
           [ariaLabel]="t('customerWorkspace.directory')"
@@ -73,7 +72,7 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
     .customer-workspace__search input{box-sizing:border-box;flex:1;min-width:0;min-height:44px;padding:9px 12px;border:1px solid var(--aiba-line-strong,#cbd5e1);border-radius:11px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);font:inherit;font-size:13px}
     .customer-workspace button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:44px;padding:8px 13px;border:1px solid var(--aiba-line-strong,#cbd5e1);border-radius:10px;background:var(--aiba-surface,#fff);color:var(--aiba-ink,#172033);font:inherit;font-size:12px;font-weight:750;cursor:pointer}
     .customer-workspace button aba-icon{width:15px;height:15px}
-    .customer-workspace__search button,.customer-workspace__create{border-color:var(--aiba-brand,#0f766e)!important;background:var(--aiba-brand,#0f766e)!important;color:#fff!important}
+    .customer-workspace__search button{border-color:var(--aiba-brand,#0f766e)!important;background:var(--aiba-brand,#0f766e)!important;color:#fff!important}
     .customer-workspace__load-more{justify-self:center;min-width:min(100%,220px)}
     .customer-workspace__back{justify-self:start}
     .customer-workspace button:disabled{opacity:.55;cursor:wait}
@@ -84,9 +83,9 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
      * below the search field. The order property only changes the visual
      * order; the DOM order (search first) is unchanged, so desktop layout is
      * unaffected. */
-    @media(max-width:520px){.customer-workspace__toolbar{align-items:stretch;flex-direction:column}.customer-workspace__create{order:-1;width:100%}.customer-workspace__search{width:100%}}
+    @media(max-width:520px){.customer-workspace__toolbar{align-items:stretch;flex-direction:column}.customer-workspace__search{width:100%}}
     @media(max-width:220px){.customer-workspace__search{flex-direction:column}.customer-workspace__search input{width:100%}.customer-workspace__search button{width:100%}}
-    @media(max-width:760px){.customer-workspace__search input{min-height:48px;font-size:16px}.customer-workspace__search button,.customer-workspace__create{min-height:48px}}
+    @media(max-width:760px){.customer-workspace__search input{min-height:48px;font-size:16px}.customer-workspace__search button{min-height:48px}}
     @media(forced-colors:active){.customer-workspace button,.customer-workspace input{border:1px solid CanvasText}.customer-workspace :is(button,input):focus-visible{outline-color:Highlight}}
   `],
 })
@@ -103,6 +102,10 @@ export class CustomerWorkspaceComponent {
   readonly locale = input<'ar' | 'en'>('ar');
   /** Incremented by the host shell to request a list refresh (e.g. after a CSV import). */
   readonly refreshRequest = input(0);
+  /** Incremented by the host shell to request opening the create form
+   * (3A-354, 2026-11-22: the add action lives in the shell's unified
+   * customer tools row, above the search). */
+  readonly createRequest = input(0);
   readonly invoicesRequested = output<string>();
   readonly statementRequested = output<string>();
   /** Emits the server-returned record after a successful create/edit so the host shell can refresh shared pickers. */
@@ -166,6 +169,13 @@ export class CustomerWorkspaceComponent {
       const request = this.refreshRequest();
       untracked(() => {
         if (request > 0) void this.loadCustomers(true);
+      });
+    });
+    effect(() => {
+      const request = this.createRequest();
+      untracked(() => {
+        /* Never yank the user out of an in-progress editor. */
+        if (request > 0 && this.mode() !== 'edit' && this.mode() !== 'create') this.createCustomer();
       });
     });
   }

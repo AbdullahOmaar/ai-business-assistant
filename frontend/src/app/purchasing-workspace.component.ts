@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
 import {
   ApiService,
   type Product,
@@ -23,7 +24,7 @@ type PurchaseAction = 'approve' | 'cancel';
 @Component({
   selector: 'aba-purchasing-workspace',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, AbaSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="purchasing-workspace" [attr.dir]="language() === 'ar' ? 'rtl' : 'ltr'" [attr.aria-label]="t('title')">
@@ -49,7 +50,7 @@ type PurchaseAction = 'approve' | 'cancel';
         </div>
         @if (error()) { <p class="pw__notice pw__notice--error" role="alert">{{ error() }} <button type="button" (click)="load()">{{ t('retry') }}</button></p> }
         @if (loading() && !orders().length) {
-          <div class="pw__state" role="status">{{ t('loading') }}</div>
+          <div class="pw__state pw__skeletons" role="status"><span class="pw__sr-only">{{ t('loading') }}</span>@for (row of [1, 2, 3, 4]; track row) { <aba-skeleton variant="list-row" /> }</div>
         } @else if (filteredOrders().length) {
           <div class="pw__cards">
             @for (order of filteredOrders(); track order.id) {
@@ -267,6 +268,7 @@ type PurchaseAction = 'approve' | 'cancel';
     .pw__history-item{display:grid;gap:4px;padding:9px 0;border-bottom:1px solid var(--aba-color-border-subtle,#edf1f5);min-width:0}
     .pw__history-item strong{font-size:12px;overflow-wrap:normal}.pw__history-item small{font-size:10px;color:var(--aba-color-text-secondary,#64748b);overflow-wrap:normal}
     .pw__sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}
+    .pw__skeletons{display:grid;gap:10px}
     .purchasing-workspace :is(button,input,select):focus-visible{outline:3px solid var(--aba-color-focus,#2563eb);outline-offset:2px}
     @media(max-width:760px){.pw__form-grid{grid-template-columns:minmax(0,1fr)}.pw__line-form{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:end}.pw__line-form label:first-child{grid-column:1/-1}.pw__remove{grid-column:2;justify-self:end}.pw__summary{grid-template-columns:repeat(2,minmax(0,1fr))}.pw__history-grid{grid-template-columns:minmax(0,1fr)}.pw__heading{align-items:flex-start;flex-direction:column}.pw__heading .pw__primary{width:100%}.pw__actions button{flex:1 1 auto;min-height:44px}}
     @media(max-width:380px){.pw__summary{grid-template-columns:minmax(0,1fr)}.pw__line-form{grid-template-columns:minmax(0,1fr)}.pw__remove{grid-column:1;justify-self:start}}
