@@ -197,6 +197,7 @@ async function setupOwner(page: Page, options: SetupOptions = {}) {
     }],
   });
 
+  page.on('console', message => { if (message.type() === 'error' && message.text().startsWith('ERROR')) uncaughtErrors.push('console: ' + message.text().slice(0, 200)); });
   page.on('pageerror', error => uncaughtErrors.push(error.message));
   await page.addInitScript(() => window.localStorage.setItem('aba-language', 'en'));
   if (options.popupBlocked) {
@@ -356,6 +357,15 @@ async function setupOwner(page: Page, options: SetupOptions = {}) {
       authorization: request.headers()['authorization'],
       body,
     });
+
+    if ((path.endsWith('/sales-returns') || path.endsWith('/credit-notes')) && method === 'GET') {
+      await route.fulfill({
+        status: 200,
+        headers: corsHeaders,
+        body: JSON.stringify({ items: [], total: 0 }),
+      });
+      return;
+    }
 
     if (path === '/version' && method === 'GET') {
       await route.fulfill({
@@ -825,5 +835,25 @@ test('payment controls stay locked while pending and retry preserves the exact p
   expect(harness.paymentRequests[1].idempotency_key).toBe(harness.paymentRequests[0].idempotency_key);
   expect(harness.getPaymentCommitCount()).toBe(1);
   expect(harness.apiRequests.some(item => item.path.startsWith('/api/v1/businesses/business-b/'))).toBe(false);
+  expect(harness.uncaughtErrors).toEqual([]);
+});
+
+test('Void on an issued invoice opens the confirmation dialog and Cancel closes it without a write', async ({ page }) => {
+  const harness = await setupOwner(page);
+  await openInvoices(page);
+
+  const issuedCard = page.locator('article, li, .invoice-card, tr').filter({ hasText: 'INV-ISSUED-A' }).first();
+  await issuedCard.getByRole('button', { name: 'Void', exact: true }).click();
+  const dialog = page.locator('aba-confirm-dialog');
+  await expect(dialog).toHaveCount(1, { timeout: 10_000 });
+  await expect(dialog).toContainText('INV-ISSUED-A');
+  await dialog.getByRole('button').last().waitFor();
+  await page.screenshot({ path: 'test-results/void-dialog-open.png', animations: 'disabled' });
+  await page.keyboard.press('Escape');
+  const cancel = dialog.getByRole('button', { name: /cancel|keep/i });
+  if (await dialog.count()) await cancel.first().click();
+  await expect(dialog).toHaveCount(0);
+
+  expect(harness.apiRequests.filter(item => ['POST', 'PATCH', 'PUT', 'DELETE'].includes(item.method))).toHaveLength(0);
   expect(harness.uncaughtErrors).toEqual([]);
 });

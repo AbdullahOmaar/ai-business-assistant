@@ -1,0 +1,14 @@
+# Local and build artifacts (adding this file does not untrack anything already committed)
+node_modules/
+dist/
+.angular/
+test-results/
+playwright-report/
+.vercel/
+.DS_Store
+
+# Secrets stay ignored; committed templates stay visible
+.env
+.env.*
+!.env.example
+!.env.sample

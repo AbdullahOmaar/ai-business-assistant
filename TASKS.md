@@ -1,3 +1,28 @@
+## Version 1.6.2 candidate — 2026-11-21 (local prep, NOT pushed, NOT deployed)
+
+- **Candidate:** branch `master/p2-verified-1.6.2` cut from main `a150cc230ebb9b67a8dd7bee7f2cedc14edb80b6`. Not pushed; no PR; no SHA assigned yet.
+- **Change:** customers and products workspaces load on demand (#242 bundle reduction, initial bundle 952.04 kB to 749.94 kB on the combined tree; the 700 kB target is NOT met and stays open); assistant refuses explicit invoice action requests and answers read-only questions (heuristic matcher, invoice-scoped; pronoun, passive and compound requests are answered, not refused); #402 mocked-API journey and route-matrix e2e specs and starter-prompt text; shared CSV formula-prefix helper (behavior-preserving refactor); void-invoice dialog regression test; version 1.6.2 aligned in frontend/package.json, package-lock.json (root fields), build-info.ts fallback, backend/pyproject.toml, backend/app/main.py and sw.js fallback cache name; release notes in release-guide.ts and en/ar i18n.
+- **Local evidence:** on the pre-version combined tree: backend assistant tests 132 passed, frontend unit 601/601, `ng build` exit 0 (749.94 kB), mocked-API Playwright 46/46. On the 1.6.2 version tree: frontend unit 601/601, backend assistant 132 passed, `ng build` exit 0 (749.94 kB), Playwright startup, invoice-payment and workspace-routing 25/25. CI must re-run everything on the exact PR head (`all-checks-passed`).
+- **Open acceptance:** 700 kB bundle target; real-backend, physical Android, installed-PWA update, screen-reader and authenticated real-account journeys (G7) are NOT RUN. Playwright coverage uses mocked APIs only.
+
+## Version 1.6.1 post-merge record — 2026-11-21
+
+- **Merged:** PR #413 squash-merged as `a150cc230ebb9b67a8dd7bee7f2cedc14edb80b6` (single parent `35caf299`); head merged was `c2f229a36b375ce2607e63e0dd8975ea58d2c4d0`. Title carries `[release-web] [release-api]`.
+- **CI:** required `all-checks-passed` green at the exact head before and after marking Ready, and green on the merge commit; `authenticated-api-smoke` was skipped (not a pass); the non-required Semaphore status was failing with an unreadable cause.
+- **Deployment:** web and API production deployments Ready at `a150cc2`; API `/version` 1.6.1 at `a150cc230ebb`; `/readyz` ready; web cache `aba-shell-v1.6.1-a150cc230ebb`.
+- **Smoke:** partial demo-session page and list checks plus assistant queries (the assistant POST may persist conversation state). Not a real-account authentication test.
+- **Open acceptance:** physical Android and PWA install, screen reader, authenticated real-account journeys. The entry below titled "Version/docs candidate 1.6.1" is historical and is kept as written.
+
+## Version/docs candidate 1.6.1 — 2026-11-21 (local prep, NOT pushed, NOT approved)
+
+- **Candidate:** PR #413 head `578c0b4a` plus the version/docs commit (local only, unpushed; no SHA assigned). Branch `master/p2-copilot-repairs`, base main `35caf299`. Base/source head stays `578c0b4a`.
+- **Change:** version 1.6.1 aligned in frontend/package.json, package-lock.json (root fields only), build-info.ts fallback, backend/pyproject.toml and backend/app/main.py; `frontend/public/sw.js` fallback cache name `aba-shell-v1.6.1-unknown-v3`; new RELEASE_HISTORY 1.6.1 entry (reliability fixes: recurring schedules, CSV transport, assistant counts) under a distinct title key; docs/RELEASE_HISTORY.md 1.6.1 entry (release candidate; NOT deployed) plus a dated 1.5.0 correction.
+- **i18n keys:** already existed, left unchanged — `release.catalog.v161_title` (November-branch text), `release.changes.v161_purchasing`, `v161_inventory`, `v161_credit_notes`. New in this commit (en+ar) — `release.catalog.v161_reliability_title`, `release.changes.v161_schedule`, `v161_transport`, `v161_assistant`.
+- **Checks (Muse-local):** focused i18n/release-guide specs 152/152; full frontend unit 600/600; production build reads 1.6.1; backend `/version` via TestClient returns 1.6.1. CI: pending.
+- **Merge state:** open draft (PR #413). **Deployment state:** not deployed. **Approval state:** not approved.
+
+---
+
 ## MASTER CI selector audit — 2026-11-19
 
 - **Active candidate:** `master/nov-2026-phase-1-runtime-qa`, PR #401, head `d37b66b68421e0db0fd1cceaefbaa06381a544f3`; no new branch or PR.

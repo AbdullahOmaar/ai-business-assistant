@@ -76,6 +76,8 @@ export class ProductWorkspaceComponent {
   readonly role = input.required<'owner' | 'staff'>();
   readonly locale = input<'ar' | 'en'>('ar');
   readonly currencyCode = input('');
+  /** Incremented by the host shell to request a list refresh (e.g. after a CSV import). */
+  readonly refreshRequest = input(0);
 
   readonly mode = signal<'list' | 'profile' | 'edit'>('list');
   readonly products = signal<Product[]>([]);
@@ -114,6 +116,12 @@ export class ProductWorkspaceComponent {
         this.detailError.set('');
         this.editorError.set('');
         if (context.businessId && context.userId) void this.loadProducts(true);
+      });
+    });
+    effect(() => {
+      const request = this.refreshRequest();
+      untracked(() => {
+        if (request > 0) void this.loadProducts(true);
       });
     });
   }
