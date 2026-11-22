@@ -22,6 +22,7 @@ import { CreditNoteIssuanceComponent } from './credit-note-issuance.component';
 import { AuditEventsWorkspaceComponent } from './audit-events-workspace.component';
 import { ReportsWorkspaceComponent } from './reports-workspace.component';
 import { AssistantWorkspaceComponent } from './assistant-workspace.component';
+import { OverviewWorkspaceComponent } from './overview-workspace.component';
 import { reportLimitationKey } from './report-labels';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
@@ -57,7 +58,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -291,134 +292,14 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               (languageToggleRequested)="toggleLanguage()"
               (signOutRequested)="logout()" />
 
-            @if (tab === 'overview') {
-              @defer (when tab === 'overview') {
-                <aba-workspace-invitations mode="accept" [businessId]="business?.id || null" [language]="language" (accepted)="loadBusinesses()" />
-              } @error {
-                <section abaCard class="panel narrow">
-                  <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
-                </section>
-              }
-
-              @if (dashboard) {
-                <section class="dashboard-period" [attr.aria-label]="t('ui.m_14yh7ls')">
-                  <div class="dashboard-period__heading">
-                    <h2 class="dashboard-period__title">{{ t('ui.m_1wch2zm') }}</h2>
-                    <strong>{{ t('ui.m_1ql1fm2') }}</strong>
-                  </div>
-                  <div class="dashboard-period__details">
-                    <span>{{ t('ui.m_15qcbwy') }} <bdi dir="ltr">{{ dashboard.period.start_date || '—' }}</bdi> {{ t('ui.m_8f9vz0') }} <bdi dir="ltr">{{ dashboard.period.end_date || '—' }}</bdi></span>
-                    <span>{{ t('ui.m_j805b6') }}: <bdi>{{ dashboard.period.timezone || '—' }}</bdi></span>
-                  </div>
-                </section>
-                <section class="metric-grid" [attr.aria-label]="t('ui.m_1gk81ud')">
-                  <aba-metric-card class="metric-card-action" role="button" tabindex="0" [attr.aria-label]="t('ui.m_fnf54u')" (click)="setTab('invoices')" (keydown.enter)="setTab('invoices')" (keydown.space)="$event.preventDefault(); setTab('invoices')"><span metricLabel>{{ t('ui.m_fnf54u') }}</span>
-                    @for (item of dashboard.invoiced_sales; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('ui.m_18n4mlp') }}</small> } @if (!dashboard.invoiced_sales.length) { <strong>—</strong><small>{{ t('ui.m_e17yyr') }}</small> }<small class="metric-basis">{{ t('ui.m_zszhha') }}</small></aba-metric-card>
-                  <aba-metric-card class="metric-card-action" role="button" tabindex="0" [attr.aria-label]="t('ui.m_1ukns6h')" (click)="setTab('payments')" (keydown.enter)="setTab('payments')" (keydown.space)="$event.preventDefault(); setTab('payments')"><span metricLabel>{{ t('ui.m_1ukns6h') }}</span>
-                    @for (item of dashboard.collected_payments; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('ui.m_1dedwxn') }}</small> } @if (!dashboard.collected_payments.length) { <strong>—</strong><small>{{ t('ui.m_5s5eo') }}</small> }<small class="metric-basis">{{ t('ui.m_nbfv39') }}</small></aba-metric-card>
-                  <aba-metric-card class="metric-card-action" role="button" tabindex="0" [attr.aria-label]="t('ui.m_l71hva')" (click)="setTab('expenses')" (keydown.enter)="setTab('expenses')" (keydown.space)="$event.preventDefault(); setTab('expenses')"><span metricLabel>{{ t('ui.m_l71hva') }}</span>
-                    @for (item of dashboard.expenses; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small><bdi dir="ltr">{{ item.count }}</bdi> {{ t('ui.m_jgq8i') }}</small> } @if (!dashboard.expenses.length) { <strong>—</strong><small>{{ t('ui.m_53hyf8') }}</small> }<small class="metric-basis">{{ t('ui.m_1mhn6p1') }}</small></aba-metric-card>
-                  <aba-metric-card class="metric-card-action" role="button" tabindex="0" [attr.aria-label]="t('ui.m_v5uwri')" (click)="setTab('invoices')" (keydown.enter)="setTab('invoices')" (keydown.space)="$event.preventDefault(); setTab('invoices')"><span metricLabel>{{ t('ui.m_v5uwri') }}</span>
-                    @for (item of dashboard.outstanding_balances; track item.currency_code) { <strong><bdi dir="ltr">{{ item.total }} {{ item.currency_code }}</bdi></strong><small class="metric-basis">{{ t('ui.m_1wagqaw') }}</small> } @if (!dashboard.outstanding_balances.length) { <strong>—</strong><small>{{ t('ui.m_1k06qyq') }}</small> }</aba-metric-card>
-                </section>
-                <section class="dashboard-actions" [attr.aria-label]="t('ui.m_1423muo')">
-                  @if (canAccessTab('invoices')) {
-                    <button class="dashboard-action dashboard-action--primary" type="button"
-                      (click)="setTab('invoices'); startNewInvoiceDraft()">
-                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
-                      <span class="dashboard-action__copy">
-                        <strong>{{ t('ui.m_12vszs4') }}</strong>
-                        <small>{{ t('ui.m_61q6l7') }}</small>
-                      </span>
-                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
-                    </button>
-                  }
-                  @if (canAccessTab('expenses')) {
-                    <button class="dashboard-action" type="button" (click)="setTab('expenses')">
-                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
-                      <span class="dashboard-action__copy">
-                        <strong>{{ t('ui.m_p4p38y') }}</strong>
-                        <small>{{ t('ui.m_ehnfke') }}</small>
-                      </span>
-                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
-                    </button>
-                  }
-                  @if (canAccessTab('customers')) {
-                    <button class="dashboard-action" type="button" (click)="setTab('customers'); customerCreateOpen = true">
-                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
-                      <span class="dashboard-action__copy">
-                        <strong>{{ t('ui.m_1yvcfg6') }}</strong>
-                        <small>{{ t('ui.m_15gmqko') }}</small>
-                      </span>
-                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
-                    </button>
-                  }
-                  @if (canAccessTab('products')) {
-                    <button class="dashboard-action" type="button" (click)="setTab('products'); productCreateOpen = true">
-                      <span class="dashboard-action__icon" aria-hidden="true">＋</span>
-                      <span class="dashboard-action__copy">
-                        <strong>{{ t('ui.m_1nbakc8') }}</strong>
-                        <small>{{ t('ui.m_snu8sb') }}</small>
-                      </span>
-                      <span class="dashboard-action__arrow" aria-hidden="true">↗</span>
-                    </button>
-                  }
-                </section>
-                <section class="notice dashboard-trust-note" role="note"><strong>{{ t('ui.m_lgrza4') }}</strong><span>{{ t('ui.m_1yfmgqi') }}</span></section>
-              } @else if (loading) {
-                <aba-skeleton variant="detail" [title]="t('ui.m_1wch2zm')" [subtitle]="t('ui.m_1ql1fm2')" />
-                <section class="metric-grid metric-grid--skeleton" aria-hidden="true">
-                  <aba-skeleton variant="metric-card" />
-                  <aba-skeleton variant="metric-card" />
-                  <aba-skeleton variant="metric-card" />
-                  <aba-skeleton variant="metric-card" />
-                </section>
-
-              } @else if (!error) {
-                <aba-state-message kind="empty" [description]="t('ui.m_1x7j987')" />
-              }
-              <section abaCard class="panel module-launcher" aria-labelledby="module-launcher-title">
-                <aba-section-header [titleId]="'module-launcher-title'" [title]="t('ui.m_1423muo')" [description]="t('ui.m_1srbbxd')" [count]="homeQuickAccessCards.length" />
-                <nav class="home-shortcut-list" [attr.aria-label]="t('ui.m_1ufo715')">
-                  @for (module of homeQuickAccessCards; track module.tab) {
-                    <button class="home-shortcut-link" type="button" (click)="setTab(module.tab)">
-                      <span class="home-shortcut-link__icon" aria-hidden="true">{{ module.icon }}</span>
-                      <span class="home-shortcut-link__label">{{ t(module.titleKey) }}</span>
-                    </button>
-                  }
-                </nav>
+            @defer (when tab === 'overview') {
+              <aba-overview-workspace [businessId]="business?.id || null" [dashboard]="dashboard" [loading]="loading" [error]="error" [role]="business?.role" [platformAdminAvailable]="platformAdminAvailable" [language]="language" (navigate)="setTab($event)" (newInvoiceDraft)="startNewInvoiceDraft()" (newCustomer)="customerCreateOpen = true" (newProduct)="productCreateOpen = true" (invitationsAccepted)="loadBusinesses()" />
+            } @placeholder {
+              <section abaCard class="panel narrow"><aba-state-message kind="loading" [description]="t('ui.m_1xguwi5')" /></section>
+            } @error {
+              <section abaCard class="panel narrow">
+                <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
               </section>
-              <section abaCard class="panel module-directory" aria-labelledby="module-directory-title">
-                <details class="module-directory-disclosure">
-                  <summary class="module-directory-summary">
-                    <span class="module-directory-summary__copy">
-                      <span class="module-directory-summary__title" role="heading" aria-level="2" id="module-directory-title">{{ t('ui.m_1h6gxl7') }}</span>
-                      <small>{{ t('ui.m_ytvtiu') }}</small>
-                    </span>
-                    <span class="count">{{ homeModuleCards.length }}</span>
-                    <span class="module-directory-toggle" aria-hidden="true">＋</span>
-                  </summary>
-                  <aba-search-field class="module-directory-search" name="homeModuleSearch" autocomplete="off"
-                    [ariaLabel]="t('ui.m_1yd5km1')"
-                    [placeholder]="t('ui.m_3bdru5')" [placeholderNarrow]="t('ui.m_11ucx5t')"
-                    [clearLabel]="t('ui.m_4k8q2zr')"
-                    [(ngModel)]="homeModuleSearch" />
-                  @if (filteredHomeModuleCards.length) {
-                  <div class="module-directory-grid">
-                    @for (module of filteredHomeModuleCards; track module.tab) {
-                      <aba-quick-access-card
-                        [icon]="module.icon"
-                        [title]="t(module.titleKey)"
-                        [description]="t(module.descriptionKey)"
-                        (activated)="setTab(module.tab)" />
-                    }
-                  </div>
-                  } @else {
-                    <p class="module-directory-empty" role="status">{{ t('ui.m_c4eu5t') }}</p>
-                  }
-                </details>
-              </section>
-              
             }
 
             @if (tab === 'notifications') {
@@ -1529,7 +1410,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly paymentRetryVault = new PaymentRetryVault();
   keyboardOpen = false;
   mobileMoreOpen = false;
-  homeModuleSearch = '';
   @ViewChild('mobileMoreTrigger') private mobileMoreTrigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('mobileMoreMenu') private mobileMoreMenu?: ElementRef<HTMLElement>;
   @ViewChild('invoiceDetailClose') private invoiceDetailCloseButton?: ElementRef<HTMLButtonElement>;
@@ -3527,15 +3407,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   /** Home quick access stays focused on the five existing key destinations. */
-  get filteredHomeModuleCards(): readonly WorkspaceModuleCard[] {
-    return filterWorkspaceModules(
-      this.homeModuleCards,
-      this.homeModuleSearch,
-      this.localization.locale,
-      key => this.t(key),
-    );
-  }
-
   get homeQuickAccessCards(): readonly WorkspaceModuleCard[] {
     return selectHomeQuickAccessModules(this.homeModuleCards);
   }

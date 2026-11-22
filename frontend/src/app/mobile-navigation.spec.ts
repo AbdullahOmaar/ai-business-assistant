@@ -8,6 +8,9 @@ const source = expandTranslationCalls(
   + '\n'
   + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8')
 );
+// 3A-351: the Home tab (module directory + its search) lives in the deferred
+// overview workspace now.
+const overviewSource = expandTranslationCalls(readFileSync(new URL('./overview-workspace.component.ts', import.meta.url), 'utf8'));
 const moduleAccessSource = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
 const catalogueSource = expandDictionaryBackedProperties(readFileSync(new URL('./workspace-module-catalog.ts', import.meta.url), 'utf8'));
 
@@ -98,17 +101,16 @@ test('mobile More keeps grouped destinations and no longer renders a sections se
 });
 
 test('Home module directory exposes bilingual search and a localized empty state', () => {
-  const homeStart = source.indexOf('class="module-directory-disclosure"');
-  const homeEnd = source.indexOf("@if (tab === 'notifications')", homeStart);
-  assert.ok(homeStart >= 0 && homeEnd > homeStart);
-  const home = source.slice(homeStart, homeEnd);
+  const homeStart = overviewSource.indexOf('class="module-directory-disclosure"');
+  assert.ok(homeStart >= 0, 'the module directory must live in the overview workspace');
+  const home = overviewSource.slice(homeStart);
 
   assert.match(home, /name="homeModuleSearch"/);
   assert.match(home, /\[\(ngModel\)\]="homeModuleSearch"/);
-  assert.match(source, /get filteredHomeModuleCards/);
+  assert.match(overviewSource, /get filteredHomeModuleCards/);
   assert.match(home, /@for \(module of filteredHomeModuleCards; track module\.tab\)/);
   assert.match(home, /module-directory-empty" role="status"/);
-  assert.match(source, /filterWorkspaceModules\(\s*this\.homeModuleCards,\s*this\.homeModuleSearch/);
+  assert.match(overviewSource, /filterWorkspaceModules\(\s*this\.homeModuleCards,\s*this\.homeModuleSearch/);
 });
 
 test('Home module directory search is hidden below 760px and kept on desktop (owner direction Nov 20)', () => {
@@ -116,17 +118,19 @@ test('Home module directory search is hidden below 760px and kept on desktop (ow
   // (module) search on mobile. The search stays in the template and works
   // on desktop; below 760px it is display:none — gone from the layout, the
   // accessibility tree and the tab order — not a visual-only hide.
-  assert.match(source, /<aba-search-field class="module-directory-search" name="homeModuleSearch" autocomplete="off"/,
+  assert.match(overviewSource, /<aba-search-field class="module-directory-search" name="homeModuleSearch" autocomplete="off"/,
     'the desktop module search call site stays in the template');
-  assert.match(source, /\.module-directory-search\{display:block;min-width:0\}/,
+  assert.match(overviewSource, /\.module-directory-search\{display:block;min-width:0\}/,
     'the desktop base rule still renders the search');
   // The hide lives in the same <=760px block that already hides the
   // mobile-duplicate quick-access launcher (T18 Slice U01).
-  const mobileBlockStart = source.indexOf('/* T18 Slice U01 (2026-11-21): remove the mobile duplication');
+  const mobileBlockStart = overviewSource.indexOf('/* T18 Slice U01 (2026-11-21): remove the mobile duplication');
   assert.ok(mobileBlockStart >= 0, 'missing the U01 mobile block anchor');
-  const mobileBlockEnd = source.indexOf('@media(max-width:380px)', mobileBlockStart);
+  // 3A-351: the ≤380px block stayed in the shell; the cockpit block is the
+  // last styles chunk in the overview workspace, so the slice ends there.
+  const mobileBlockEnd = overviewSource.indexOf('\n  `],', mobileBlockStart);
   assert.ok(mobileBlockEnd > mobileBlockStart);
-  const mobileBlock = source.slice(mobileBlockStart, mobileBlockEnd);
+  const mobileBlock = overviewSource.slice(mobileBlockStart, mobileBlockEnd);
   assert.match(mobileBlock, /\.module-directory-search\{display:none\}/,
     'the module search is display:none below 760px');
   assert.doesNotMatch(mobileBlock, /\.module-directory-search\{[^}]*(visibility:hidden|opacity:0|clip-path|width:1px)/,

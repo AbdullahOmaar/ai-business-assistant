@@ -112,8 +112,10 @@ test('search field uses the --aiba-* tokens, hides the native search decorations
 
 // --- Shell migration: the 7 inputs use the component ---
 
+// 3A-351: the module-directory search moved with the Home tab into the
+// overview workspace; the shell keeps the other six.
+const overviewSource = readFileSync(new URL('./overview-workspace.component.ts', import.meta.url), 'utf8');
 const shellSearches: Array<{ name: string; ariaKey: string; placeholderKey: string; binding: string }> = [
-  { name: 'homeModuleSearch', ariaKey: 'ui.m_1yd5km1', placeholderKey: 'ui.m_3bdru5', binding: 'homeModuleSearch' },
   { name: 'notificationSearch', ariaKey: 'ui.m_1qze32v', placeholderKey: 'ui.m_1aqo4qr', binding: 'notificationSearch' },
   { name: 'supplierSearch', ariaKey: 'ui.m_1mc30sn', placeholderKey: 'ui.m_jtec0a', binding: 'supplierSearch' },
   { name: 'recurringSearch', ariaKey: 'ui.m_aljqyp', placeholderKey: 'ui.m_z7f6xc', binding: 'recurringSearch' },
@@ -122,9 +124,19 @@ const shellSearches: Array<{ name: string; ariaKey: string; placeholderKey: stri
   { name: 'expenseSearch', ariaKey: 'ui.m_qat44q', placeholderKey: 'ui.m_34prmq', binding: 'expenseSearch' },
 ];
 
-test('all 7 shell search inputs use aba-search-field with their original name, aria-label, placeholder and [(ngModel)] binding', () => {
-  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 7,
-    'exactly the 7 shell searches migrate; no more, no fewer');
+test('all 7 search inputs use aba-search-field with their original name, aria-label, placeholder and [(ngModel)] binding', () => {
+  // 3A-351: 6 searches stay in the shell; the module-directory search lives
+  // in the overview workspace and is pinned separately below.
+  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 6,
+    'exactly the 6 shell searches migrate; no more, no fewer');
+  assert.ok(overviewSource.includes('<aba-search-field class="module-directory-search" name="homeModuleSearch" autocomplete="off"'),
+    'the overview search keeps its module-directory-search hook and autocomplete="off"');
+  assert.ok(overviewSource.includes("[ariaLabel]=\"t('ui.m_1yd5km1')\""),
+    'homeModuleSearch must keep its aria-label key ui.m_1yd5km1');
+  assert.ok(overviewSource.includes("[placeholder]=\"t('ui.m_3bdru5')\""),
+    'homeModuleSearch must keep its placeholder key ui.m_3bdru5');
+  assert.ok(overviewSource.includes('[(ngModel)]="homeModuleSearch"'),
+    'homeModuleSearch must keep its [(ngModel)] binding');
   for (const search of shellSearches) {
     assert.ok(appSourceRaw.includes(`<aba-search-field name="${search.name}"`) ||
       appSourceRaw.includes(`<aba-search-field class="module-directory-search" name="${search.name}"`) ||
@@ -161,7 +173,7 @@ test('no duplicated raw search input remains in the shell and the old invoice-se
     'the shell no longer renders a bare search icon: the component owns it');
   assert.doesNotMatch(appSourceRaw, /<label class="module-directory-search">/,
     'the module-directory label wrapper is replaced by the component host class');
-  assert.ok(appSourceRaw.includes('<aba-search-field class="module-directory-search" name="homeModuleSearch" autocomplete="off"'),
+  assert.ok(overviewSource.includes('<aba-search-field class="module-directory-search" name="homeModuleSearch" autocomplete="off"'),
     'the overview search keeps its module-directory-search hook and autocomplete="off"');
   assert.ok(appSourceRaw.includes('<aba-search-field class="invoice-search" name="invoiceSearch"'),
     'the invoice search keeps its invoice-search hook inside .invoice-controls');

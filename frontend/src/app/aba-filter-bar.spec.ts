@@ -117,8 +117,11 @@ const shellFilters: Array<{ search: string; ariaKey: string; placeholderKey: str
 test('the 5 shell .list-tools instances use aba-filter-bar with their original search bindings preserved', () => {
   assert.equal((appSourceRaw.match(/<aba-filter-bar/g) ?? []).length, 6,
     'exactly 6 filter bars in the shell: the 5 .list-tools instances plus the invoices chips variant');
-  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 7,
-    'still exactly the 7 shell searches; the bar wraps them, it does not add or remove one');
+  // 3A-351: the shell keeps 6 searches; the module-directory search moved
+  // with the Home tab into the overview workspace (aba-search-field.spec.ts
+  // pins it there).
+  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 6,
+    'still exactly the 6 shell searches; the bar wraps them, it does not add or remove one');
   for (const filter of shellFilters) {
     assert.ok(appSourceRaw.includes(`<div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="${filter.search}" [hasActiveFilter]="${filter.search}.trim() !== ''" (clear)="${filter.search} = ''">`),
       `${filter.search} must sit inside the bar in its .list-tools wrapper`);

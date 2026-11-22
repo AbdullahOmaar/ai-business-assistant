@@ -28,6 +28,8 @@ const purchasingWorkspaceSource = expandTranslationCalls(readFileSync(new URL('.
 const customerEditorSource = expandTranslationCalls(readFileSync(new URL('./customer-editor.component.ts', import.meta.url), 'utf8'));
 const auditLabelsSource = expandTranslationCalls(readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8'));
 const reportsWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8'));
+// 3A-351: the Home (overview) tab lives in the deferred overview workspace.
+const overviewWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./overview-workspace.component.ts', import.meta.url), 'utf8'));
 // 3A-351: the AI assistant tab moved into its own deferred workspace component.
 const assistantWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./assistant-workspace.component.ts', import.meta.url), 'utf8'));
 const reportLabelsSource = expandTranslationCalls(readFileSync(new URL('./report-labels.ts', import.meta.url), 'utf8'));
@@ -323,13 +325,12 @@ test('workspace panels reuse one section header component instead of duplicating
 });
 
 test('Home quick access shows only the five key destinations from the shared role-filtered catalogue', () => {
-  const overviewStart = source.indexOf("@if (tab === 'overview')");
-  const overviewEnd = source.indexOf("@if (tab === 'notifications')", overviewStart);
-  const overview = source.slice(overviewStart, overviewEnd);
+  // 3A-351: the overview tab lives in the deferred overview workspace now.
+  const overview = overviewWorkspaceSource;
   const quickStart = overview.indexOf("Quick access");
   const directoryStart = overview.indexOf("All workspace modules");
   const quickAccess = overview.slice(quickStart, directoryStart);
-  assert.ok(source.includes('class="panel module-launcher"'));
+  assert.ok(overviewWorkspaceSource.includes('class="panel module-launcher"'));
   assert.match(source, /get homeQuickAccessCards\(\): readonly WorkspaceModuleCard\[\]/);
   assert.match(source, /return selectHomeQuickAccessModules\(this\.homeModuleCards\)/);
   assert.match(source, /selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG/);
@@ -339,7 +340,8 @@ test('Home quick access shows only the five key destinations from the shared rol
   assert.doesNotMatch(quickAccess, /homeModuleCards/);
   assert.match(overview, /@for \(module of filteredHomeModuleCards; track module\.tab\)/);
   assert.match(overview, /All workspace modules/);
-  assert.match(overview, /activated\)="setTab\(module\.tab\)"/);
+  // 3A-351: navigation from the overview workspace goes through its navigate output.
+  assert.match(overview, /activated\)="navigate\.emit\(module\.tab\)"/);
   assert.doesNotMatch(source, /class="quick-card"/);
 });
 
@@ -544,8 +546,9 @@ test('mobile workspace view retains the active page title through the extracted 
 
 
 test('mobile module directory and Home shortcuts use adaptive balanced grids', () => {
-  assert.match(source, /\.module-directory-grid\{display:grid;grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,190px\),1fr\)\)/);
-  assert.match(source, /\.home-shortcut-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
+  // 3A-351: the module-directory and shortcut grids moved with the overview workspace.
+  assert.match(overviewWorkspaceSource, /\.module-directory-grid\{display:grid;grid-template-columns:repeat\(auto-fit,minmax\(min\(100%,190px\),1fr\)\)/);
+  assert.match(overviewWorkspaceSource, /\.home-shortcut-list\{display:grid;grid-template-columns:repeat\(2,minmax\(0,1fr\)\)/);
 });
 
 
@@ -1138,7 +1141,7 @@ test('shared shell uses logical inline positioning for Arabic RTL and English LT
   assert.match(source, /\.sidebar\{position:fixed;inset-block:0;inset-inline-end:0;/);
   assert.match(source, /\.main\{margin-inline-end:var\(--aba-layout-sidebar,245px\);/);
   assert.match(source, /\.nav-item\{[^}]*text-align:start;/);
-  assert.match(source, /\.home-shortcut-link\{[^}]*text-align:start;/);
+  assert.match(overviewWorkspaceSource, /\.home-shortcut-link\{[^}]*text-align:start;/);
   assert.match(assistantWorkspaceSource, /\.chat-message\.user-message\{margin-inline-end:auto;margin-inline-start:0;/);
   assert.match(source, /\.nav-item\.active\{[^}]*border-inline-start:3px solid/);
   assert.doesNotMatch(source, /\.shell\.english \.sidebar\{inset:0 0 0 auto\}/);
@@ -1444,9 +1447,10 @@ test('reports and expense forms disclose their preliminary and incurred-not-paid
 
 
 test('Home lists every role-authorized module in addition to the five quick-access shortcuts', () => {
-  const start = source.indexOf("@if (tab === 'overview')");
-  const end = source.indexOf("@if (tab === 'notifications')", start);
-  const overview = source.slice(start, end);
+  // 3A-351: the overview tab lives in the deferred overview workspace now.
+  const overview = overviewWorkspaceSource;
+  const start = 0;
+  const end = overview.length;
   assert.ok(start >= 0 && end > start);
   assert.match(overview, /homeQuickAccessCards/);
   assert.match(overview, /All workspace modules/);
@@ -1457,16 +1461,17 @@ test('Home lists every role-authorized module in addition to the five quick-acce
 });
 
 test('Home dashboard uses the shared page-level error and retry banner without duplicate alert announcements', () => {
-  const start = source.indexOf("@if (tab === 'overview')");
-  const end = source.indexOf("@if (tab === 'notifications')", start);
-  const overview = source.slice(start, end);
+  // 3A-351: the overview tab lives in the deferred overview workspace now.
+  const overview = overviewWorkspaceSource;
+  const start = 0;
+  const end = overview.length;
   const sharedError = source.indexOf('@if (error) { <aba-state-message kind="error" [description]="error" [actionLabel]="sessionExpired');
   assert.ok(sharedError >= 0, 'the shared workspace error banner must remain available');
   assert.match(source.slice(sharedError, sharedError + 650), /\[actionLabel\].*Retry/);
   assert.ok(overview.includes('metric-grid--skeleton'), 'Home keeps its non-data KPI skeleton while the shared workspace banner announces loading');
   assert.doesNotMatch(overview, /kind="error" \[description\]="error"/,
     'the Home metrics panel must not repeat the same global error alert');
-  assert.match(overview, /@else if \(!error\)[\s\S]*kind="empty"[^>]*No business metrics are available yet/,
+  assert.match(overview, /@else if \(!error\(\)\)[\s\S]*kind="empty"[^>]*No business metrics are available yet/,
     'the empty state must not mislabel a failed dashboard load as a genuine empty result');
 });
 

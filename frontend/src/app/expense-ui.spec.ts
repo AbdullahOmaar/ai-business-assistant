@@ -4,6 +4,7 @@ import test from 'node:test';
 import { expandTranslationCalls } from './localization-test-helpers.ts';
 
 const ui = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+const overviewUi = expandTranslationCalls(readFileSync(new URL('./overview-workspace.component.ts', import.meta.url), 'utf8'));
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const moduleAccess = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
 
@@ -17,7 +18,9 @@ test('expenses use a typed workspace-scoped API', () => {
 
 test('expense view is reachable from mobile More and has bilingual labels', () => {
   assert.match(ui, /type Tab = [^;]*'expenses'/);
-  assert.match(ui, /setTab\('expenses'\)/);
+  // 3A-351: the Home KPI card and dashboard action that navigate to expenses
+  // live in the overview workspace and emit through its navigate output.
+  assert.match(overviewUi, /navigate\.emit\('expenses'\)/);
   assert.match(ui, /@if \(tab === 'expenses'\)/);
   assert.match(ui, /t\('تسجيل مصروف', 'Record an expense'\)/);
   assert.match(ui, /t\('حفظ المصروف', 'Save expense'\)/);
