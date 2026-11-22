@@ -1,5 +1,5 @@
 """SQL-side customer statement pagination, balances, currencies and timezone regressions."""
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 from sqlalchemy import create_engine, event
@@ -27,7 +27,7 @@ def _statement_workspace():
         poolclass=StaticPool,
     )
     Base.metadata.create_all(engine)
-    utc = timezone.utc
+    utc = UTC
     with Session(engine) as session:
         business = Business(
             name="Statement SQL Test",

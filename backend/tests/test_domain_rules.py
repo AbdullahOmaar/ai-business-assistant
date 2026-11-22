@@ -4,12 +4,12 @@ import pytest
 
 from app.domain_rules import (
     calculate_invoice_totals,
-    money,
     derive_stock_balance,
+    money,
     summarize_money_by_currency,
     validate_payment_allocation,
-    validate_return_quantity,
     validate_return_amount,
+    validate_return_quantity,
 )
 
 
@@ -132,6 +132,7 @@ def test_report_totals_keep_currencies_separate() -> None:
 
 def test_discounted_returnable_line_values_reconcile_many_line_discount_cents():
     from types import SimpleNamespace
+
     from app.domain_rules import discounted_return_line_total, money
 
     lines = [

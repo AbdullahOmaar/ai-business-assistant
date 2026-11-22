@@ -9,7 +9,13 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.models import Business, BusinessMembership, Expense, MembershipRole, PayrollRecord
+from app.models import (
+    Business,
+    BusinessMembership,
+    Expense,
+    MembershipRole,
+    PayrollRecord,
+)
 
 
 @dataclass(frozen=True)

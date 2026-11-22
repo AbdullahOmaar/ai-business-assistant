@@ -20,10 +20,14 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from test_api import (
+    _configure_test_identity,
+    _restore_test_identity,
+    _sales_return_fixture,
+)
 
 from app.main import app
 from app.models import Product, StockMovement
-from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
 
 
 def test_manual_stock_movement_retry_replays_without_duplicating():

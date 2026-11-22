@@ -8,7 +8,7 @@ import io
 import json
 import logging
 import os
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Literal
 from uuid import UUID
 
@@ -20,8 +20,13 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_principal, get_session
 from app.firebase_auth import get_firebase_admin_app
 from app.models import (
-    AuditEvent, Business, BusinessMembership, Invoice, Payment,
-    PlatformAdminAuditEvent, PlatformRoleGrant,
+    AuditEvent,
+    Business,
+    BusinessMembership,
+    Invoice,
+    Payment,
+    PlatformAdminAuditEvent,
+    PlatformRoleGrant,
 )
 from app.security import AuthenticatedPrincipal
 
@@ -42,7 +47,7 @@ def _log_security_event(
     """Emit a safe single-line JSON security event without credentials or request payloads."""
     payload = {
         "event": event,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": datetime.now(UTC).isoformat(),
         "request_id": getattr(request.state, "request_id", None),
         "actor_subject": actor_subject,
         "outcome": outcome,
@@ -186,8 +191,8 @@ def _normalize_datetime(value: datetime | None) -> datetime | None:
     if value is None:
         return None
     if value.tzinfo is None or value.utcoffset() is None:
-        return value.replace(tzinfo=timezone.utc)
-    return value.astimezone(timezone.utc)
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
 
 
 def _business_payload(business: Business, member_count: int | None = None) -> dict:
@@ -242,7 +247,7 @@ def platform_admin_system_status(
     if "view_system_status" not in permissions:
         _deny_platform_access(principal, request)
 
-    checked_at = datetime.now(timezone.utc).isoformat()
+    checked_at = datetime.now(UTC).isoformat()
     factory = getattr(request.app.state, "session_factory", None)
     if factory is None:
         database_status = "unconfigured"
@@ -330,7 +335,7 @@ def platform_admin_overview(
     ).all()
 
     return {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "businesses": {
             "total": business_total,
             "active": active_businesses,
@@ -667,7 +672,7 @@ def _firebase_timestamp(milliseconds: object) -> str | None:
     if not isinstance(milliseconds, (int, float)) or milliseconds <= 0:
         return None
     try:
-        return datetime.fromtimestamp(float(milliseconds) / 1000, tz=timezone.utc).isoformat()
+        return datetime.fromtimestamp(float(milliseconds) / 1000, tz=UTC).isoformat()
     except (OverflowError, OSError, ValueError):
         return None
 
@@ -868,7 +873,7 @@ def change_platform_user_role(
                 "message": "The requested role state is already in effect.",
             }
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if grant is None:
             grant = PlatformRoleGrant(
                 user_subject=target_subject,

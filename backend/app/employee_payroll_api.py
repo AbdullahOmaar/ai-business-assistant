@@ -4,8 +4,8 @@ Payroll totals are always calculated on the server. Payroll records are posted
 as one linked Payroll expense only when an approved record is marked paid.
 """
 import re
-from datetime import datetime, timezone
-from decimal import Decimal, ROUND_HALF_UP
+from datetime import UTC, datetime
+from decimal import ROUND_HALF_UP, Decimal
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -16,9 +16,18 @@ from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
 from app.models import (
-    AuditEvent, Business, Employee, Expense, MembershipRole, PayrollRecord,
+    AuditEvent,
+    Business,
+    Employee,
+    Expense,
+    MembershipRole,
+    PayrollRecord,
 )
-from app.security import AuthenticatedPrincipal, AuthorizationError, authorize_membership
+from app.security import (
+    AuthenticatedPrincipal,
+    AuthorizationError,
+    authorize_membership,
+)
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["employees and payroll"])
 CENT = Decimal("0.01")
@@ -454,7 +463,7 @@ def approve_payroll(
             )
         record.status = "approved"
         record.approved_by_subject = principal.subject
-        record.approved_at = datetime.now(timezone.utc)
+        record.approved_at = datetime.now(UTC)
         session.flush()
         _audit(session, business_id, principal.subject, "payroll.approved", "payroll", record.id,
                f"Payroll for {record.period} approved.")
@@ -495,7 +504,7 @@ def pay_payroll(
             raise HTTPException(status_code=409, detail="Payroll references are no longer available.")
         if record.net_pay <= 0:
             raise HTTPException(status_code=422, detail="Payroll net pay must be greater than zero.")
-        paid_at = datetime.now(timezone.utc)
+        paid_at = datetime.now(UTC)
         expense = Expense(
             business_id=business_id,
             category="Payroll",
