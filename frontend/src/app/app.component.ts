@@ -75,13 +75,13 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       }
       @if (!initialized) {
         <main class="auth-card" role="status" aria-live="polite">
-          <div class="brand-mark">A</div>
+          <aba-loading-logo [announce]="false" />
+          <h1>{{ t('common.app_title') }}</h1>
+          <p class="muted">{{ t('ui.m_1uzdlys') }}</p>
           <div class="splash-release-meta">
             <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
             <small class="splash-build-time">{{ t('ui.m_1y28k2h') }} {{ buildTimeLabel }}</small>
           </div>
-          <h1>{{ t('ui.m_1dygc0g') }}</h1>
-          <p class="muted">{{ t('ui.m_1uzdlys') }}</p>
         </main>
       } @else if (startupFailed) {
         <main class="auth-card">
@@ -444,7 +444,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
             @if (tab === 'customers' && business?.id) {
               <section abaCard class="panel">
+                <div [hidden]="statementVisible">
                 <aba-section-header [title]="t('ui.m_1lifkl9')" [description]="t('ui.m_15gmqko')" />
+                <button class="primary customers-tool" type="button" (click)="customerCreateRequest = customerCreateRequest + 1"><aba-icon name="add" />{{ t('customerWorkspace.newCustomer') }}</button>
                 @if (business?.role === 'owner') { <button class="secondary customers-tool" type="button" (click)="exportCurrentList()"><aba-icon name="export" />{{ t('ui.m_nbsw3y') }}</button> }
                 @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span><aba-icon name="import" />{{ t('ui.m_p4xhry') }}</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
                   <aba-section-header [level]="3" [title]="t('ui.m_p4xhry')" [description]="t('ui.m_1239wd4')" />
@@ -473,6 +475,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     [role]="business.role === 'owner' ? 'owner' : 'staff'"
                     [locale]="language"
                     [refreshRequest]="customerRefreshRequest"
+                    [createRequest]="customerCreateRequest"
                     (invoicesRequested)="createInvoiceForCustomer($event)"
                     (statementRequested)="openCustomerStatementById($event)"
                     (customerSaved)="onWorkspaceCustomerSaved($event)" />
@@ -485,6 +488,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
                   </section>
                 }
+                </div>
                 @if (statementVisible) {
                   <!-- T18 Slice G (2026-11-21): statement card redrawn per the owner ruling
                        2026-11-21 15:07 EET ("the card at the bottom, its look and design is
@@ -1195,6 +1199,7 @@ export class AppComponent implements OnInit, OnDestroy {
   statementLoading = false;
   statementError = '';
   statementVisible = false;
+  customerCreateRequest = 0;
   statementCustomerName = '';
   statementCustomerId = '';
   statementOffset = 0;

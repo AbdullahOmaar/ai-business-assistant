@@ -152,14 +152,21 @@ test('customer profile hero stacks at narrow widths so a long name stays inside 
 
 // T18 Slice U02 (2026-11-21): on mobile the tools sit above the search
 // (New customer first), and back-navigation preserves the list position.
+// 3A-354 (2026-11-22): the New customer action moved into the shell's
+// unified customer tools row (add + import + export above the workspace),
+// so the tools sit above the search at every width; the workspace opens
+// its create form when the shell bumps the createRequest input.
 test('customer workspace puts the tools above the mobile search and preserves the list on back-navigation', () => {
   assert.ok(workspace.includes("import { AbaIconComponent } from './shared/ui/aba-icon.component';"));
   assert.ok(workspace.includes('<aba-icon name="search" />'));
-  assert.ok(workspace.includes('<aba-icon name="add" />'));
+  assert.ok(appShell.includes('<aba-icon name="add" />'), 'the shell tools row carries the add icon');
+  assert.ok(appShell.includes('(click)="customerCreateRequest = customerCreateRequest + 1"'), 'the shell add button requests a create');
+  assert.ok(appShell.includes('[createRequest]="customerCreateRequest"'), 'the shell passes the create request to the workspace');
+  assert.ok(workspace.includes('readonly createRequest = input(0);'), 'the workspace exposes the create request input');
+  assert.ok(workspace.includes('this.createCustomer();'), 'the workspace opens the create form on request');
+  assert.ok(!workspace.includes('customer-workspace__create'), 'the in-workspace create button and its ordering rule are removed');
   assert.ok(workspace.includes('<aba-icon name="chevron-left" />'));
   assert.match(workspace, /\.customer-workspace button\{[^}]*display:inline-flex;align-items:center;justify-content:center;gap:6px/);
-  // Below 520px the New customer button is ordered before the search field.
-  assert.match(workspace, /@media\(max-width:520px\)\{[\s\S]*?\.customer-workspace__create\{order:-1;width:100%\}/);
   // Back-navigation: the list scroll is saved when leaving the list and
   // restored when coming back (profile and editor-cancel paths).
   assert.match(workspace, /private listScrollY = 0;/);

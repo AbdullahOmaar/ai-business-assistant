@@ -56,7 +56,7 @@ import { AbaDateRangeComponent } from './shared/ui/aba-date-range.component';
   }
   <div class="divider"></div>
   <aba-section-header [level]="3" [title]="t('ui.m_2oaefr')" [description]="t('ui.m_1dmo8qz')" />
-  <form #agingForm="ngForm" class="inline-form" (ngSubmit)="agingForm.valid && loadReceivablesAging()"><label>{{ t('ui.m_tyw1lj') }}<input #agingAsOfControl="ngModel" type="date" name="agingAsOf" required [attr.aria-invalid]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'true' : null" [attr.aria-describedby]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'aging-as-of-error' : null" [(ngModel)]="agingAsOf">@if (agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted)) { <small id="aging-as-of-error" class="field-error" role="alert">{{ t('ui.m_4apqf4') }}</small> }</label><button class="primary" type="submit" [disabled]="agingLoading">{{ agingLoading ? t('ui.m_1rza5t5') : t('ui.m_1gsyti0') }}</button></form>
+  <form #agingForm="ngForm" class="inline-form aging-form" (ngSubmit)="agingForm.valid && loadReceivablesAging()"><label>{{ t('ui.m_tyw1lj') }}<input #agingAsOfControl="ngModel" type="date" name="agingAsOf" required [attr.aria-invalid]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'true' : null" [attr.aria-describedby]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'aging-as-of-error' : null" [(ngModel)]="agingAsOf">@if (agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted)) { <small id="aging-as-of-error" class="field-error" role="alert">{{ t('ui.m_4apqf4') }}</small> }</label><button class="primary" type="submit" [disabled]="agingLoading">{{ agingLoading ? t('ui.m_1rza5t5') : t('ui.m_1gsyti0') }}</button></form>
   @if (agingError) { <aba-state-message kind="error" [description]="agingError" /> }
   @if (agingReport) {
     <div class="section-head"><p class="muted">{{ t('ui.m_vnv6l5') }} {{ agingReport.as_of_date }} · {{ agingReport.invoice_count }} {{ t('ui.m_pe8fvb') }}</p><button class="secondary" type="button" (click)="exportReceivablesAgingCsv()" [disabled]="!agingReport.invoices.length">{{ t('ui.m_nbsw3y') }}</button></div>
@@ -81,6 +81,7 @@ import { AbaDateRangeComponent } from './shared/ui/aba-date-range.component';
     .aging-buckets{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:10px;margin-top:12px}
     .aging-buckets>div{display:flex;flex-direction:column;gap:4px;padding:10px;border:1px solid #e5e7eb;border-radius:9px;background:var(--aba-color-surface-subtle,#f8fafc)}
     .warning-notice .amount-pair{white-space:nowrap;overflow-wrap:normal}
+    @media(min-width:761px){.aging-form label{flex:0 1 230px}}
   `],
 })
 export class ReportsWorkspaceComponent implements OnInit, OnChanges {

@@ -8,6 +8,7 @@ import type { AbaRecordTableColumn, AbaRecordTableRow } from './shared/ui/aba-re
 import { AbaCardComponent } from './shared/ui/aba-card.component';
 import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
+import { AbaIconComponent } from './shared/ui/aba-icon.component';
 
 @Component({
   selector: 'aba-audit-events-workspace',
@@ -19,6 +20,7 @@ import { AbaStateMessageComponent } from './shared/ui/aba-state-message.componen
     AbaSectionHeaderComponent,
     AbaRecordTableComponent,
     AbaStateMessageComponent,
+    AbaIconComponent,
   ],
   template: `
     <section abaCard class="audit-panel">
@@ -71,7 +73,7 @@ import { AbaStateMessageComponent } from './shared/ui/aba-state-message.componen
             <option value="pricing_rule">{{ t('ui.m_9ckn2u') }}</option>
           </select>
         </label>
-        <button class="primary" type="submit" [disabled]="loading">{{ t('ui.m_11q6v6c') }}</button>
+        <button class="primary audit-filter-submit" type="submit" [disabled]="loading" [attr.aria-label]="t('ui.m_11q6v6c')"><aba-icon name="filter" /></button>
         <button class="secondary" type="button" (click)="resetFilters()" [disabled]="loading">{{ t('ui.m_1np7zc4') }}</button>
       </form>
       @if (error) { <aba-state-message kind="error" [description]="error" /> }
@@ -100,6 +102,7 @@ import { AbaStateMessageComponent } from './shared/ui/aba-state-message.componen
     .audit-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:var(--aba-color-surface-subtle,#f8fafc);border:1px solid var(--aba-color-border,#edf0f5);border-radius:11px}
     .audit-filters label{display:grid;gap:7px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-secondary,#374151)}
     .audit-filters select{width:100%;min-width:0;padding:11px 12px;border:1px solid var(--aba-color-border,#d1d5db);border-radius:11px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#111827);font:inherit}
+    .audit-filter-submit{display:inline-grid;place-items:center;min-width:44px;min-height:44px;padding:0}
     .count{font-size:10px;font-weight:700;color:var(--aba-color-primary,#0f766e);background:var(--aba-color-primary-soft,#ecfdf5);padding:7px 9px;border-radius:999px;white-space:nowrap}
     .audit-pagination{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;color:var(--aba-color-text-tertiary,#6b7280);font-size:12px}
     .pagination-actions{display:flex;gap:8px;flex-wrap:wrap}

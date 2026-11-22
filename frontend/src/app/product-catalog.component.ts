@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, computed, Component, input, output, signal } from '@angular/core';
 import type { Product } from './api.service';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
+import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
 import { inject } from '@angular/core';
 import { LocalizationService } from './localization.service';
 import { filterAndSortProducts, type ProductFilter, type ProductSortField, type SortDirection } from './directory-sort';
@@ -14,12 +15,15 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
 @Component({
   selector: 'aba-product-catalog',
   standalone: true,
-  imports: [AbaStateMessageComponent],
+  imports: [AbaStateMessageComponent, AbaSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="product-catalog" [attr.aria-label]="ariaLabel()">
       @if (loading()) {
-        <aba-state-message kind="loading" [description]="loadingDescription()" />
+        <div class="product-catalog__skeletons" role="status">
+          <span class="product-catalog__sr-only">{{ loadingDescription() }}</span>
+          @for (row of [1, 2, 3, 4, 5]; track row) { <aba-skeleton variant="list-row" /> }
+        </div>
       } @else if (error()) {
         <aba-state-message kind="error" [description]="error()" [actionLabel]="t('ui.m_lr6ezy')" (action)="retry.emit()" />
       } @else {
@@ -65,7 +69,7 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
                 <tr>
                   <th scope="row" class="product-catalog__name"><button class="product-catalog__open" type="button" (click)="select.emit(product.id)">{{ product.name }}</button></th>
                   <td><bdi dir="ltr">{{ product.sku || '—' }}</bdi></td>
-                  <td class="product-catalog__price"><bdi dir="ltr">{{ product.unit_price }} {{ product.currency_code || currencyCode() }}</bdi></td>
+                  <td class="product-catalog__price"><bdi dir="ltr">{{ product.unit_price }}&nbsp;{{ product.currency_code || currencyCode() }}</bdi></td>
                   <td>
                     @if (product.is_stock_tracked) {
                       <span class="product-catalog__stock"><span class="product-catalog__dot" aria-hidden="true"></span>{{ t('productCatalog.m_1abb5if') }}</span>
@@ -85,7 +89,7 @@ import { filterAndSortProducts, type ProductFilter, type ProductSortField, type 
             <li class="product-catalog__mobile-row">
               <div class="product-catalog__main">
                 <h3><button class="product-catalog__open" type="button" (click)="select.emit(product.id)">{{ product.name }}</button></h3>
-                <strong class="product-catalog__mobile-price"><span class="product-catalog__mobile-price-label">{{ t('productCatalog.m_1iz2xk3') }}</span><bdi dir="ltr">{{ product.unit_price }} {{ product.currency_code || currencyCode() }}</bdi></strong>
+                <strong class="product-catalog__mobile-price"><span class="product-catalog__mobile-price-label">{{ t('productCatalog.m_1iz2xk3') }}</span><bdi dir="ltr">{{ product.unit_price }}&nbsp;{{ product.currency_code || currencyCode() }}</bdi></strong>
               </div>
               <div class="product-catalog__meta">
                 <span class="product-catalog__sku"><span>SKU</span> <bdi dir="ltr">{{ product.sku || '—' }}</bdi></span>

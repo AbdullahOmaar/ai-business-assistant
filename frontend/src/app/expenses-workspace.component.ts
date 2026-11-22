@@ -31,7 +31,8 @@ import { AbaSearchFieldComponent } from './shared/ui/aba-search-field.component'
   imports: [CommonModule, FormsModule, AbaCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent, AbaRecordTableComponent, AbaFilterBarComponent, AbaSearchFieldComponent],
   template: `
   <section abaCard class="panel">
-    <aba-section-header [title]="t('ui.m_p4p38y')" [description]="t('ui.m_ehnfke')" [count]="filteredExpenses.length + ' / ' + expenses.length + ' ' + t('ui.m_7rwk8h')" />
+    <aba-section-header [title]="t('ui.m_p4p38y')" [description]="t('ui.m_ehnfke')" [count]="filteredExpenses.length + ' / ' + expenses.length + ' ' + t('ui.m_7rwk8h')"><div class="section-actions"><button class="secondary" type="button" (click)="showExpenseForm = !showExpenseForm">{{ showExpenseForm ? t('ui.m_pw64as') : t('expenseWorkspace.addExpense') }}</button></div></aba-section-header>
+    @if (showExpenseForm || expenseSubmissionUncertain) {
     <form #expenseForm="ngForm" class="inline-form expense-form" (ngSubmit)="expenseForm.valid && createExpense()">
       <label class="expense-category-field">{{ t('ui.m_10l7fjw') }}<select #expenseCategoryControl="ngModel" [disabled]="loading() || submitting || expenseSubmissionUncertain" [attr.aria-label]="t('ui.m_10l7fjw')" [attr.aria-invalid]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'true' : null" [attr.aria-describedby]="expenseCategoryControl.invalid && (expenseCategoryControl.touched || expenseForm.submitted) ? 'expense-category-error' : null" name="expenseCategory" required [(ngModel)]="expenseCategory">
         <option value="General">{{ t('ui.m_uchan8') }}</option>
@@ -61,6 +62,7 @@ import { AbaSearchFieldComponent } from './shared/ui/aba-search-field.component'
     }
     <p class="expense-cash-semantics">{{ t('ui.m_xenywp') }}</p>
     <p class="footnote">{{ t('ui.m_ks5nuz') }} {{ currencyCode() }}. {{ t('ui.m_1r2awxh') }}</p>
+    }
     @if (expenseMessage) { <aba-state-message kind="success" [description]="expenseMessage" /> }
     @if (expenseSubmissionUncertain) {
       <aba-state-message kind="error" [description]="t('ui.m_bv3h04')" [actionLabel]="t('ui.m_r6p4yr')" [actionDisabled]="loading() || submitting" (action)="checkExpenseSubmissionOutcome()" />
@@ -70,6 +72,7 @@ import { AbaSearchFieldComponent } from './shared/ui/aba-search-field.component'
   </section>
   `,
   styles: [`
+.section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .expense-form{grid-template-columns:repeat(3,minmax(0,1fr))}
 .expense-form{display:grid;grid-template-columns:minmax(150px,1fr) minmax(180px,1.5fr) minmax(100px,.65fr) minmax(170px,1fr) minmax(130px,.8fr) minmax(120px,.8fr);align-items:end;gap:10px}
 .expense-form .expense-category-field{min-width:0}
@@ -104,6 +107,10 @@ export class ExpensesWorkspaceComponent implements OnInit, OnChanges {
   expenseMessage = '';
   expenseSubmissionUncertain = false;
   submitting = false;
+  /* 3A-354 (2026-11-22): the create form is on-demand (agreement G6),
+   * mirroring payments. It also stays open while a submission outcome
+   * is uncertain so the retry check remains reachable. */
+  showExpenseForm = false;
 
   ngOnInit(): void {
     void this.loadExpenses();

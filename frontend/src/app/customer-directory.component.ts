@@ -3,6 +3,7 @@ import type { Customer } from './api.service';
 import type { AbaRecordTableActionEvent } from './shared/ui/aba-record-table.component';
 import { sortCustomers, type CustomerSortField, type SortDirection } from './directory-sort';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
+import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
 import { AbaIconComponent } from './shared/ui/aba-icon.component';
 import { inject } from '@angular/core';
 import { LocalizationService } from './localization.service';
@@ -16,12 +17,15 @@ import { LocalizationService } from './localization.service';
 @Component({
   selector: 'aba-customer-directory',
   standalone: true,
-  imports: [AbaStateMessageComponent, AbaIconComponent],
+  imports: [AbaStateMessageComponent, AbaIconComponent, AbaSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="customer-directory" [attr.aria-label]="ariaLabel()">
       @if (loading()) {
-        <aba-state-message kind="loading" [description]="loadingDescription()" />
+        <div class="customer-directory__skeletons" role="status">
+          <span class="customer-directory__sr-only">{{ loadingDescription() }}</span>
+          @for (row of [1, 2, 3, 4, 5]; track row) { <aba-skeleton variant="list-row" /> }
+        </div>
       } @else if (error()) {
         <aba-state-message kind="error" [description]="error()" [actionLabel]="t('ui.m_lr6ezy')" (action)="retry.emit()" />
       } @else if (customers().length) {
