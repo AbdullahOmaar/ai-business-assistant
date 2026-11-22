@@ -578,6 +578,23 @@ jobs:
         working-directory: backend
         run: python ../scripts/release-smoke-authenticated-api.py
 
+  secrets-scan:
+    name: secrets-scan
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+      - name: Verify exact source SHA
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Scan for secrets (gitleaks)
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   all-checks-passed:
     name: all-checks-passed
     runs-on: ubuntu-latest
@@ -592,6 +609,7 @@ jobs:
       - backend-container
       - authenticated-api-smoke
       - project-knowledge
+      - secrets-scan
     steps:
       - name: Require every selected validation job to succeed
         env:
@@ -612,9 +630,11 @@ jobs:
           API_SMOKE_REQUIRED: ${{ needs.detect-changes.outputs.api_smoke }}
           DOCS: ${{ needs.project-knowledge.result }}
           DOCS_REQUIRED: ${{ needs.detect-changes.outputs.docs_validation }}
+          SECRETS: ${{ needs.secrets-scan.result }}
         run: |
           set -euo pipefail
           test "$DETECT" = "success" || { echo "::error::Change detection did not succeed: $DETECT"; exit 1; }
+          test "$SECRETS" = "success" || { echo "::error::secrets-scan did not succeed: $SECRETS"; exit 1; }
           check_job() {
             name="$1"; result="$2"; required="$3"
             if [ "$required" = "true" ]; then
