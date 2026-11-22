@@ -3,15 +3,20 @@
 All write endpoints use a server-verified principal, enforce membership in the
 service layer, and commit one database transaction per request.
 """
+import hashlib
+import json
+from datetime import datetime
 from decimal import Decimal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, Header, HTTPException, status
 from pydantic import BaseModel, ConfigDict, Field
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.dependencies import get_principal, get_session
+from app.models import Product, StockMovementIdempotency
 from app.security import AuthenticatedPrincipal, AuthorizationError, MembershipRole, authorize_membership
 from app.services import (
     WorkflowError,
@@ -255,15 +260,107 @@ def post_void_invoice(business_id: UUID, invoice_id: UUID, body: VoidInvoiceInpu
 
 @router.post("/businesses/{business_id}/stock-movements", status_code=201)
 def post_stock_movement(business_id: UUID, body: StockMovementInput,
+                        idempotency_key: str | None = Header(default=None, alias="Idempotency-Key"),
                         session: Session = Depends(get_session),
                         principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Record one manual stock movement exactly once.
+
+    Follows the purchase-receipt idempotency precedent: a canonical UUID
+    ``Idempotency-Key`` header is required, a retry with the same key and
+    payload replays the original response, and reuse of the key with a
+    different payload is a 409 conflict. Authorization and the scoped
+    product check run first so existing denial behaviour is unchanged.
+    """
+    request_hash: str | None = None
+
     def op():
+        nonlocal request_hash
         _require_owner(session, principal, business_id)
-        return record_stock_movement(
+        product = session.scalars(select(Product).where(
+            Product.id == body.product_id, Product.business_id == business_id,
+            Product.is_active.is_(True), Product.is_stock_tracked.is_(True),
+        )).one_or_none()
+        if product is None:
+            raise WorkflowError("Active stock-tracked product not found in this business")
+        if not idempotency_key:
+            raise HTTPException(status_code=422, detail="A canonical UUID Idempotency-Key header is required.")
+        try:
+            parsed_key = UUID(idempotency_key)
+        except (ValueError, TypeError, AttributeError) as exc:
+            raise HTTPException(status_code=422, detail="Idempotency-Key must be a canonical UUID.") from exc
+        if str(parsed_key) != idempotency_key:
+            raise HTTPException(status_code=422, detail="Idempotency-Key must be a lowercase canonical UUID.")
+
+        canonical_payload = {
+            "product_id": str(body.product_id),
+            "movement_type": body.movement_type,
+            "quantity_delta": format(body.quantity_delta.normalize(), "f"),
+            "reason": body.reason,
+        }
+        request_hash = hashlib.sha256(
+            json.dumps(canonical_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+
+        previous = session.scalars(select(StockMovementIdempotency).where(
+            StockMovementIdempotency.business_id == business_id,
+            StockMovementIdempotency.idempotency_key == idempotency_key,
+        ).with_for_update().execution_options(populate_existing=True)).one_or_none()
+        if previous is not None:
+            if previous.request_hash != request_hash:
+                raise HTTPException(status_code=409, detail="Idempotency-Key was already used with a different stock movement payload.")
+            return previous.response_snapshot
+
+        # Claim the key before the stock/audit side effects. The unique
+        # database constraint is the final arbiter for concurrent requests
+        # using one key; a validation failure rolls the claim back too, so
+        # a rejected movement never burns its key.
+        claim = StockMovementIdempotency(
+            business_id=business_id,
+            idempotency_key=idempotency_key,
+            request_hash=request_hash,
+            response_snapshot={},
+        )
+        session.add(claim)
+        session.flush()
+
+        movement = record_stock_movement(
             session, principal=principal, business_id=business_id, **body.model_dump()
         )
-    result = _run(session, op)
-    return _record(result)
+        # Store the snapshot in JSON-safe form so a later replay returns
+        # exactly the body the first response produced.
+        snapshot = {
+            key: (value.isoformat() if isinstance(value, datetime) else value)
+            for key, value in _record(movement).items()
+        }
+        claim.response_snapshot = snapshot
+        session.flush()
+        return snapshot
+
+    try:
+        return _run(session, op)
+    except HTTPException as exc:
+        # A concurrent request with the same key may win the unique insert
+        # after both transactions observed no prior claim. Re-read after
+        # rollback and replay only when the committed payload hash matches.
+        if exc.status_code != 409 or request_hash is None:
+            raise
+        session.rollback()
+        try:
+            _require_owner(session, principal, business_id)
+        except AuthorizationError as auth_exc:
+            raise HTTPException(status_code=403, detail=str(auth_exc)) from auth_exc
+        previous = session.scalars(select(StockMovementIdempotency).where(
+            StockMovementIdempotency.business_id == business_id,
+            StockMovementIdempotency.idempotency_key == idempotency_key,
+        ).execution_options(populate_existing=True)).one_or_none()
+        if previous is None:
+            raise
+        if previous.request_hash != request_hash:
+            raise HTTPException(
+                status_code=409,
+                detail="Idempotency-Key was already used with a different stock movement payload.",
+            ) from exc
+        return previous.response_snapshot
 
 
 @router.post("/businesses/{business_id}/payments", status_code=201)

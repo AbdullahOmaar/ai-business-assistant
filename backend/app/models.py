@@ -197,6 +197,50 @@ class StockMovement(Base):
     )
 
 
+class StockMovementIdempotency(Base):
+    """Durable replay identity for one intentional manual stock movement.
+
+    Mirrors PurchaseReceiptIdempotency: the unique key is scoped to a
+    business, the canonical request hash prevents reuse of a key for a
+    different payload, and the response snapshot lets the route replay the
+    original result without recording a second movement or audit event.
+    """
+
+    __tablename__ = "stock_movement_idempotency"
+    __table_args__ = (
+        UniqueConstraint(
+            "business_id", "idempotency_key",
+            name="uq_stock_movement_idempotency_scope_key",
+        ),
+        UniqueConstraint(
+            "id", "business_id",
+            name="uq_stock_movement_idempotency_id_business",
+        ),
+        Index(
+            "ix_stock_movement_idempotency_business_created",
+            "business_id", "created_at",
+        ),
+        CheckConstraint(
+            "length(idempotency_key) = 36",
+            name="ck_stock_movement_idempotency_key_length",
+        ),
+        CheckConstraint(
+            "length(request_hash) = 64",
+            name="ck_stock_movement_idempotency_hash_length",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="RESTRICT"), nullable=False
+    )
+    idempotency_key: Mapped[str] = mapped_column(String(36), nullable=False)
+    request_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    response_snapshot: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
 
 class Customer(Base):
     """Customer directory record scoped to one business."""

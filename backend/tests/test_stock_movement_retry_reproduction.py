@@ -1,18 +1,21 @@
-"""REPRODUCTION ONLY: manual stock movements have no idempotency protection.
+"""INVERTED REPRODUCTION: manual stock movements are idempotency-protected.
 
-POST /businesses/{business_id}/stock-movements accepts no idempotency key
-(``StockMovementInput`` has no such field) and ``record_stock_movement``
-writes a new row on every call. A client retry after a dropped response
-therefore records the same movement twice and double-counts stock.
+This file originally pinned the defect: POST /businesses/{business_id}/
+stock-movements accepted no idempotency key and wrote a new row on every
+call, so a client retry after a dropped response recorded the same
+movement twice and double-counted stock.
 
-This test pins the CURRENT behaviour so the gap is visible in the suite.
-It must be inverted (assert one movement plus a replayed result) when the
-idempotency design in the stock-movement retry note under
-~/workspace/your_files/ is approved and implemented. No schema or behaviour
-change is made here; the test runs locally against SQLite fixtures only.
+The endpoint now follows the purchase-receipt idempotency precedent: it
+requires a canonical UUID ``Idempotency-Key`` header, and a retry with
+the same key and payload replays the original response without writing a
+second movement. This test asserts the fixed behaviour on the same
+scenario the reproduction used. The full contract (missing/malformed
+key, payload conflict, cross-business scope, key reuse after a rejected
+movement) lives in test_stock_movement_idempotency_api.py.
 """
 
 from decimal import Decimal
+from uuid import uuid4
 
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
@@ -23,7 +26,7 @@ from app.models import Product, StockMovement
 from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
 
 
-def test_manual_stock_movement_retry_duplicates_without_idempotency_key():
+def test_manual_stock_movement_retry_replays_without_duplicating():
     engine, business_id, _, _ = _sales_return_fixture()
     previous_factory, previous_resolver = _configure_test_identity(engine)
     client = TestClient(app)
@@ -43,11 +46,13 @@ def test_manual_stock_movement_retry_duplicates_without_idempotency_key():
             "quantity_delta": "5.000",
             "reason": "repro retry",
         }
-        first = client.post(f"/api/v1/businesses/{business_id}/stock-movements", json=payload)
+        headers = {"Idempotency-Key": str(uuid4())}
+        first = client.post(f"/api/v1/businesses/{business_id}/stock-movements", json=payload, headers=headers)
         assert first.status_code == 201, first.text
-        # Identical retry (same payload; there is no idempotency key to send).
-        second = client.post(f"/api/v1/businesses/{business_id}/stock-movements", json=payload)
+        # Identical retry with the same key must replay, not re-record.
+        second = client.post(f"/api/v1/businesses/{business_id}/stock-movements", json=payload, headers=headers)
         assert second.status_code == 201, second.text
+        assert second.json() == first.json()
 
         with Session(engine) as session:
             count = session.scalar(
@@ -62,8 +67,8 @@ def test_manual_stock_movement_retry_duplicates_without_idempotency_key():
                     StockMovement.product_id == product_id,
                 )
             )
-        assert count == 2, "retry recorded a second identical movement"
-        assert Decimal(str(total)) == Decimal("10.000"), "stock was double-counted by the retry"
+        assert count == 1, "retry must not record a second movement"
+        assert Decimal(str(total)) == Decimal("5.000"), "stock must be counted once"
     finally:
         _restore_test_identity(previous_factory, previous_resolver)
         engine.dispose()
