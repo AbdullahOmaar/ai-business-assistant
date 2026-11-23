@@ -100,6 +100,41 @@ Round-2 review (3A-445) debts, status after the 1.13.0 release:
   change is the manager's step; the next deploy then applies 0011
   automatically.
 
+## Addendum 2 — 2026-11-23 ~20:55 EET (migration applied; production at main head)
+
+- **Migration 0011 APPLIED — blocker 5 resolved.** The manager set the
+  API project's Build Command to run `python scripts/apply_migrations.py`
+  (via the Vercel API) and redeployed production from main head
+  `bb4553c` (deployment `d3i34s2zg`, Ready, promoted). The build log
+  shows `Running upgrade 0010_stock_movement_idem ->
+  0011_report_indexes`, then `0011_report_indexes (head)` and
+  "database is at head" — migration 0010, also pending, applied in the
+  same run. Every later deploy now applies pending migrations
+  automatically at build time (fail-closed).
+- **Why production had stayed at `b721905`:** GitHub-triggered
+  deployments after merges #452–#455 were being cancelled seconds
+  after starting; the manager's clean CLI deploy from a main checkout
+  is what moved production. (The `/version` commit field reads
+  "unknown" on this CLI deployment — no Git metadata; the deployed
+  code is exactly main `bb4553c`, and the web's `sw.js` fingerprint
+  confirms it: `aba-shell-v1.13.0-bb4553cb2894`.)
+- **Re-verified live (~20:57 EET):** API `/version` 1.13.0 /
+  production; `/health` 200; `/readyz` `{"status":"ready"}`; `/docs`
+  404 (intended). Web `sw.js` at `bb4553c`.
+- **Blocker 4 (Sentry API) — RESOLVED ~20:56 EET.** The dashboard
+  sighting is confirmed: test event `a9b3e95e98dc4330bd2d4d20f857ef4b`
+  is visible in the aiba-api project as the latest event of issue
+  **AIBA-API-1** (https://3a-automation.sentry.io/issues/162992739/),
+  timestamped 2026-11-23T16:05:03Z (18:05:03 EET), environment
+  `production`, type RuntimeError — an exact ID match. (Grouping
+  note: Sentry filed it under the same issue as the 3A-327 test event
+  of 2026-11-22, environment `development`, which is why the issue's
+  first-seen predates it and its environment tags read 50/50.) With
+  blockers 4 and 5 resolved, **Part B is fully closed**; the audit's
+  remaining blockers are 1 (U12–U23 owner definition), 2 (criterion
+  correction), 3 (the 7 partial screens + partial rules batch) and 6
+  (3A-267 delivery proof).
+
 ## Live evidence gathered for this audit (2026-11-23 ~18:00 EET)
 
 - API `/version` 1.13.0 / commit `b721905`; `/docs`, `/openapi.json`,
