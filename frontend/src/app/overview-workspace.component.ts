@@ -9,8 +9,13 @@
 // the shell's homeModuleCards getter (the shell keeps its own copy for the
 // mobile More menu and the primary navigation). The module-directory search
 // state moved with the template; the overview-only layout rules moved into
-// this component's styles, while the shared .metric-grid base rules stay in
-// the shell (other tabs use .metric-grid too).
+// this component's styles.
+// 3A-650: the .metric-grid rules are defined in this component's styles too.
+// The 3A-351 note above assumed the shell's copy would apply, but shell CSS
+// cannot cross this component's view-encapsulation boundary, so the KPI
+// cards stacked one per row at every width (owner review 2026-11-23). The
+// shell keeps its own .metric-grid copy for the grids still rendered inside
+// the shell template itself.
 import { Component, EventEmitter, inject, input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -166,6 +171,10 @@ import { WorkspaceInvitationsComponent } from './workspace-invitations.component
 .dashboard-period__details{display:flex;flex-wrap:wrap;align-items:center;gap:6px 16px;min-width:0;color:var(--aba-color-text-secondary,#64748b);font-size:12px;line-height:1.5}
 .dashboard-period__details span{overflow-wrap:anywhere}
 .dashboard-period__details bdi{font-variant-numeric:tabular-nums;color:var(--aba-color-text-primary,#172033)}
+.metric-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:0}
+@media(max-width:1050px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.metric-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}}
+@media(max-width:380px){.metric-grid{gap:7px}}
 .metric-grid aba-metric-card small{font-size:12px;line-height:1.55}
 .home-shortcut-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;min-width:0;margin-top:15px}
 .home-shortcut-link{display:inline-flex;align-items:center;justify-content:flex-start;gap:8px;min-width:0;min-height:44px;padding:8px 12px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:var(--aba-radius-control,10px);background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font-size:var(--aba-font-size-base,14px);line-height:var(--aba-line-height-normal,1.5);font-weight:700;text-align:start;cursor:pointer;transition:border-color var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease),background var(--aba-motion-fast,150ms) var(--aba-easing-standard,ease)}

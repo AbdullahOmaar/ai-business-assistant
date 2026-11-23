@@ -1179,7 +1179,8 @@
       "v199_security": "Version 1.9.9: an internal security-verification completion — every screen's access rules (who can open it, from which account, in which business) are now proven by an automated matrix test. No change to any user-visible behaviour.",
       "v1100_security": "Version 1.10.0: an internal security completion — automated secret scanning now checks every proposed change, closing the last open item of the security-verification batch. No change to any user-visible behaviour.",
       "v1110_duplicate": "Version 1.11.0: a “Duplicate invoice” button in the invoice details creates a new draft with the same lines, customer, currency and totals (at current catalogue prices), so you can re-order without retyping the invoice.",
-      "v1120_payroll": "Version 1.12.0: employee and payroll cycle acceptance completed — the failure states (payroll for a deactivated employee, editing or re-approving approved or paid payroll) are now pinned by regression tests. Internal quality completion with no user-visible change."
+      "v1120_payroll": "Version 1.12.0: employee and payroll cycle acceptance completed — the failure states (payroll for a deactivated employee, editing or re-approving approved or paid payroll) are now pinned by regression tests. Internal quality completion with no user-visible change.",
+      "v1130_layout": "Version 1.13.0: home indicator cards now lay out two per row on mobile and four across on wide screens, and the stray loading card that appeared under every screen is gone — the assistant now appears only on its own screen."
     },
     "catalog": {
       "m_aba150_title": "Workspace and purchasing workflows",
@@ -1344,7 +1345,8 @@
       "v199_title": "Security verification: full access matrix",
       "v1100_title": "Security: secret scanning on every change",
       "v1110_title": "Invoice duplication: re-order in one tap",
-      "v1120_title": "Version 1.12.0"
+      "v1120_title": "Version 1.12.0",
+      "v1130_title": "Version 1.13.0"
     }
   },
   "catalog": {
