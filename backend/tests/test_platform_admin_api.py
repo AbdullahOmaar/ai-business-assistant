@@ -232,13 +232,12 @@ def test_status_change_requires_reason_and_adds_audit_event(platform_admin_envir
     assert platform_events[0].change_summary == "Compliance review"
 
     # Suspension must immediately block the ordinary workspace authorization path.
-    with Session(platform_admin_environment["engine"]) as session:
-        with pytest.raises(AuthorizationError, match="No active membership"):
-            authorize_membership(
-                session,
-                principal=AuthenticatedPrincipal(subject=OWNER_SUBJECT),
-                business_id=UUID(business_id),
-            )
+    with Session(platform_admin_environment["engine"]) as session, pytest.raises(AuthorizationError, match="No active membership"):
+        authorize_membership(
+            session,
+            principal=AuthenticatedPrincipal(subject=OWNER_SUBJECT),
+            business_id=UUID(business_id),
+        )
 
 
 def test_platform_audit_is_read_only_and_supports_action_filter(platform_admin_environment):

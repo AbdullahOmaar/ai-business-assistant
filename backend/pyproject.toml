@@ -1,6 +1,6 @@
 [project]
 name = "ai-business-assistant-backend"
-version = "1.9.3"
+version = "1.9.4"
 description = "FastAPI backend for AI Business Assistant"
 requires-python = ">=3.12"
 dependencies = [

@@ -1396,11 +1396,6 @@ def test_nonmember_cannot_mutate_sensitive_extended_workflows_without_writes_or_
 
         with Session(engine) as session:
             state_before = snapshot_business_state(session)
-            audit_before = session.scalar(
-                select(func.count()).select_from(AuditEvent).where(
-                    AuditEvent.business_id == business_id
-                )
-            )
 
         denied_requests = {
             "create purchase order": lambda: client.post(

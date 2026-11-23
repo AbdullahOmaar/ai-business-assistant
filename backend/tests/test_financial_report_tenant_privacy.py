@@ -245,7 +245,7 @@ def test_payroll_expense_visibility_is_scoped_to_its_business_across_reports_and
     # An A-only staff identity cannot cross the outer tenant authorization boundary.
     env["subject"]["value"] = FOREIGN_STAFF
     for endpoint in ("expenses", "reports/summary", "dashboard", "profit-loss", "assistant/insights"):
-        denied = read_without_side_effects(lambda: client.get(f"{base_b}/{endpoint}"))
+        denied = read_without_side_effects(lambda endpoint=endpoint: client.get(f"{base_b}/{endpoint}"))
         assert denied.status_code == 403, (
             f"GET {base_b}/{endpoint}: expected 403 for an A-only member, "
             f"got {denied.status_code}: {denied.text}"

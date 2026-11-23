@@ -317,7 +317,7 @@ def test_foreign_business_order_and_foreign_line_ids_are_denied_without_writes()
     engine, member_business_id, _, _ = _sales_return_fixture()
     client, previous = _configure(engine)
     try:
-        own_order_id, own_line_ids, _ = _create_approved_order(
+        own_order_id, _own_line_ids, _ = _create_approved_order(
             engine, client, member_business_id, [("3.000", True)], "PO-T39-OWN-TENANT"
         )
 
