@@ -150,7 +150,7 @@ def test_workspace_owner_cannot_access_another_workspaces_memberships(configured
 
 
 def test_role_change_rechecks_fresh_owner_membership_after_workspace_lock(configured_client, monkeypatch):
-    import app.core_features_api as core_features_api
+    from app import core_features_api
 
     business_id = create_workspace(configured_client)
     membership_id = add_member(business_id, "staff-user")
@@ -193,7 +193,7 @@ def test_role_change_rechecks_fresh_owner_membership_after_workspace_lock(config
 
 
 def test_member_removal_rechecks_fresh_owner_membership_after_workspace_lock(configured_client, monkeypatch):
-    import app.core_features_api as core_features_api
+    from app import core_features_api
 
     business_id = create_workspace(configured_client)
     membership_id = add_member(business_id, "staff-user")
@@ -237,7 +237,7 @@ def test_member_removal_rechecks_fresh_owner_membership_after_workspace_lock(con
 def test_member_removal_fails_closed_if_workspace_deactivates_after_initial_auth(
     configured_client, monkeypatch
 ):
-    import app.core_features_api as core_features_api
+    from app import core_features_api
 
     business_id = create_workspace(configured_client)
     membership_id = add_member(business_id, "staff-user")

@@ -73,7 +73,7 @@ def test_assistant_foreign_tenant_denial_has_no_provider_or_persistence_side_eff
 
     from sqlalchemy import func, select
 
-    import app.assistant_api as assistant_api
+    from app import assistant_api
     from app.models import AuditEvent
 
     business_id = create_workspace(assistant_client)
@@ -190,7 +190,7 @@ def test_assistant_rejects_invalid_or_oversized_input(assistant_client, payload)
 def test_assistant_discards_provider_source_ids_not_in_workspace(monkeypatch, assistant_client):
     import json
 
-    import app.assistant_api as assistant_api
+    from app import assistant_api
 
     business_id = create_workspace(assistant_client)
     monkeypatch.setenv("OPENAI_API_KEY", "test-only-placeholder")
@@ -241,7 +241,7 @@ def test_assistant_discards_provider_source_ids_not_in_workspace(monkeypatch, as
 def test_assistant_provider_timeout_returns_safe_error(monkeypatch, assistant_client):
     import httpx
 
-    import app.assistant_api as assistant_api
+    from app import assistant_api
 
     business_id = create_workspace(assistant_client)
     monkeypatch.setenv("OPENAI_API_KEY", "test-only-placeholder")
@@ -312,7 +312,7 @@ def test_assistant_malformed_provider_responses_return_safe_error(
     monkeypatch, assistant_client, provider_payload
 ):
     """Malformed upstream payloads must fail closed without exposing provider details."""
-    import app.assistant_api as assistant_api
+    from app import assistant_api
 
     business_id = create_workspace(assistant_client)
     monkeypatch.setenv("OPENAI_API_KEY", "test-only-placeholder")

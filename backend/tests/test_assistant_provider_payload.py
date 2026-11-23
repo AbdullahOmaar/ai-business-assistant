@@ -15,7 +15,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-import app.assistant_api as assistant_api
+from app import assistant_api
 from app.main import app
 from app.models import Base
 from app.security import AuthenticatedPrincipal
