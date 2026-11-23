@@ -1177,7 +1177,8 @@
       "v197_standards": "Version 1.9.7: an internal code-standards completion — the static-analysis baseline reaches zero findings after decimal-constructor tidy-up. No change to any user-visible behaviour.",
       "v198_bundle": "Version 1.9.8: the Suppliers, Recurring Schedules and Data Integrity screens now load only when opened, so the app starts lighter — the initial download drops from 705.5 kB to 686.0 kB. No change to any screen's behaviour.",
       "v199_security": "Version 1.9.9: an internal security-verification completion — every screen's access rules (who can open it, from which account, in which business) are now proven by an automated matrix test. No change to any user-visible behaviour.",
-      "v1100_security": "Version 1.10.0: an internal security completion — automated secret scanning now checks every proposed change, closing the last open item of the security-verification batch. No change to any user-visible behaviour."
+      "v1100_security": "Version 1.10.0: an internal security completion — automated secret scanning now checks every proposed change, closing the last open item of the security-verification batch. No change to any user-visible behaviour.",
+      "v1110_duplicate": "Version 1.11.0: a “Duplicate invoice” button in the invoice details creates a new draft with the same lines, customer, currency and totals (at current catalogue prices), so you can re-order without retyping the invoice."
     },
     "catalog": {
       "m_aba150_title": "Workspace and purchasing workflows",
@@ -1340,7 +1341,8 @@
       "v197_title": "Code standards: baseline at zero",
       "v198_title": "Faster startup: screens load on demand",
       "v199_title": "Security verification: full access matrix",
-      "v1100_title": "Security: secret scanning on every change"
+      "v1100_title": "Security: secret scanning on every change",
+      "v1110_title": "Invoice duplication: re-order in one tap"
     }
   },
   "catalog": {
@@ -1753,6 +1755,7 @@
       "viewDetails": "View details",
       "detailTitle": "Invoice details",
       "close": "Close",
+      "duplicateInvoice": "Duplicate invoice",
       "loadingDetails": "Loading invoice details…",
       "lineItem": "Item",
       "quantity": "Quantity",

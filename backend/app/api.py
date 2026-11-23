@@ -29,6 +29,7 @@ from app.services import (
     create_invoice,
     create_product,
     create_supplier,
+    duplicate_invoice,
     issue_invoice,
     record_payment,
     record_stock_movement,
@@ -197,6 +198,18 @@ def post_invoice(business_id: UUID, body: InvoiceCreate,
     payload["lines"] = [line.model_dump(exclude_none=True) for line in body.lines]
     result = _run(session, lambda: create_invoice(
         session, principal=principal, business_id=business_id, **payload))
+    return _record(result)
+
+
+@router.post("/businesses/{business_id}/invoices/{invoice_id}/duplicate",
+             status_code=201)
+def post_duplicate_invoice(business_id: UUID, invoice_id: UUID,
+                           session: Session = Depends(get_session),
+                           principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Re-create an invoice as a new draft (3A-435 / T38 «إعادة الطلب»)."""
+    result = _run(session, lambda: duplicate_invoice(
+        session, principal=principal, business_id=business_id,
+        invoice_id=invoice_id))
     return _record(result)
 
 

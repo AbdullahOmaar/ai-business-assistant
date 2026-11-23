@@ -833,6 +833,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                         <button class="secondary" type="button" (click)="printInvoiceFromDetails()">{{ t('ui.m_qskvru') }}</button>
                         @if (business?.role === 'owner') { <button class="secondary danger" type="button" (click)="voidInvoiceFromDetails($event)">{{ t('ui.m_lnwycg') }}</button> }
                       }
+                      <button class="secondary" type="button" (click)="duplicateInvoiceFromDetails()">{{ t('app.invoiceList.duplicateInvoice') }}</button>
                       <button class="secondary" type="button" (click)="closeInvoiceDetails()">{{ t('app.invoiceList.close') }}</button>
                     </footer>
                   }
@@ -1578,6 +1579,27 @@ export class AppComponent implements OnInit, OnDestroy {
   voidInvoiceFromDetails(event: MouseEvent): void {
     const invoice = this.selectedInvoiceForDetails;
     if (invoice) this.requestInvoiceVoid(invoice, event);
+  }
+
+  async duplicateInvoiceFromDetails(): Promise<void> {
+    const invoice = this.selectedInvoiceForDetails;
+    if (!this.business || !this.signedIn || !this.currentAuthUid || !invoice || this.loading) return;
+    const businessId = this.business.id;
+    const requestVersion = this.invoiceMutationGuard.begin();
+    const requestContext = this.captureTenantRequest(businessId);
+    const isCurrent = (): boolean => this.isCurrentTenantOperation(this.invoiceMutationGuard, requestVersion, requestContext);
+    this.loading = true;
+    this.error = '';
+    try {
+      const copy = await this.api.duplicateInvoice(businessId, invoice.id);
+      if (!isCurrent()) return;
+      this.closeInvoiceDetails(false);
+      await this.editInvoice(copy);
+    } catch (error) {
+      if (isCurrent()) this.error = this.message(error);
+    } finally {
+      if (isCurrent()) this.loading = false;
+    }
   }
 
   invoiceSortAria(key: InvoiceSortKey): 'ascending' | 'descending' | 'none' {
