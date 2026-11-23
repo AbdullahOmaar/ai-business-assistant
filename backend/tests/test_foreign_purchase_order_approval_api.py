@@ -5,10 +5,21 @@ from decimal import Decimal
 from fastapi.testclient import TestClient
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
+from test_api import (
+    _configure_test_identity,
+    _restore_test_identity,
+    _sales_return_fixture,
+)
 
 from app.main import app
-from app.models import AuditEvent, Business, BusinessMembership, PurchaseOrder, StockMovement, Supplier
-from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
+from app.models import (
+    AuditEvent,
+    Business,
+    BusinessMembership,
+    PurchaseOrder,
+    StockMovement,
+    Supplier,
+)
 
 
 def test_non_member_cannot_approve_foreign_business_purchase_order():

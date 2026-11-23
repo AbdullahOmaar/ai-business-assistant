@@ -9,11 +9,23 @@ from sqlalchemy.pool import StaticPool
 
 from app.extended_api import approve_sales_return
 from app.models import (
-    Base, Business, BusinessMembership, InvoiceLine, MembershipRole,
-    SalesReturn, SalesReturnLine, StockMovement,
+    Base,
+    Business,
+    BusinessMembership,
+    InvoiceLine,
+    MembershipRole,
+    SalesReturn,
+    SalesReturnLine,
+    StockMovement,
 )
 from app.security import AuthenticatedPrincipal
-from app.services import create_customer, create_invoice, create_product, issue_invoice, void_invoice
+from app.services import (
+    create_customer,
+    create_invoice,
+    create_product,
+    issue_invoice,
+    void_invoice,
+)
 
 
 @pytest.fixture()

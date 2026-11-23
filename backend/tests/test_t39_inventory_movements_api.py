@@ -1,19 +1,28 @@
 """API coverage for the tenant-scoped stock movement ledger."""
-from datetime import datetime, timedelta, timezone
 import os
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from uuid import uuid4
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
+from test_api import (
+    _configure_test_identity,
+    _restore_test_identity,
+    _sales_return_fixture,
+)
 
 from app.main import app
 from app.models import (
-    AuditEvent, Business, BusinessMembership, MembershipRole, Product, StockMovement,
+    AuditEvent,
+    Business,
+    BusinessMembership,
+    MembershipRole,
+    Product,
+    StockMovement,
 )
-from test_api import _configure_test_identity, _restore_test_identity, _sales_return_fixture
 
 
 def test_inventory_movement_ledger_is_tenant_scoped_filterable_and_paginated():
@@ -38,7 +47,7 @@ def test_inventory_movement_ledger_is_tenant_scoped_filterable_and_paginated():
             )
             session.add(foreign_product)
             session.flush()
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             session.add_all([
                 StockMovement(
                     business_id=business_id, product_id=first.id,
@@ -156,7 +165,7 @@ def test_inventory_movement_ledger_has_stable_tie_order_and_composed_filters():
             )
             session.add(product)
             session.flush()
-            timestamp = datetime(2026, 11, 17, 10, 0, tzinfo=timezone.utc)
+            timestamp = datetime(2026, 11, 17, 10, 0, tzinfo=UTC)
             movements = [
                 StockMovement(
                     business_id=business_id, product_id=product.id,
@@ -266,7 +275,7 @@ def test_inventory_movement_ledger_postgres_tenant_read_only_and_pagination():
             )
             session.add_all([own_product, foreign_product])
             session.flush()
-            timestamp = datetime(2026, 11, 17, 12, 0, tzinfo=timezone.utc)
+            timestamp = datetime(2026, 11, 17, 12, 0, tzinfo=UTC)
             own_movements = [
                 StockMovement(
                     business_id=own_business.id, product_id=own_product.id,

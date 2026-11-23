@@ -4,10 +4,10 @@ All functions require a verified principal and an active business membership.
 They flush but never commit: callers must wrap each workflow in one DB transaction.
 Do not build AuthenticatedPrincipal from request data; use a trusted token verifier.
 """
-from datetime import datetime, timezone
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from decimal import Decimal
-from typing import Iterable
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
@@ -20,7 +20,6 @@ from app.domain_rules import (
 )
 from app.models import (
     AuditEvent,
-    Business,
     BusinessMembership,
     Customer,
     Expense,
@@ -499,7 +498,7 @@ def issue_invoice(
         ))
 
     invoice.status = "issued"
-    invoice.issue_date = datetime.now(timezone.utc)
+    invoice.issue_date = datetime.now(UTC)
     session.flush()
     _audit(session, business_id=business_id, principal=principal,
            action="invoice.issued", target_type="invoice", target_id=invoice.id)
