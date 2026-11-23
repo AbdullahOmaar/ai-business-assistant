@@ -247,7 +247,7 @@ def test_dashboard_defaults_to_business_local_30_day_window(monkeypatch):
         assert created.status_code == 201, created.text
         business_id = created.json()["id"]
 
-        import app.core_features_api as core_features_api
+        from app import core_features_api
         real_datetime = core_features_api.datetime
 
         class FrozenDateTime(real_datetime):

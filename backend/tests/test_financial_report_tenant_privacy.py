@@ -19,7 +19,7 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-import app.assistant_api as assistant_api
+from app import assistant_api
 from app.main import app
 from app.models import Base, BusinessMembership, Expense, MembershipRole
 from app.operations import financial_summary

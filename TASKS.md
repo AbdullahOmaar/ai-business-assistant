@@ -1,3 +1,11 @@
+## Version 1.9.5 candidate — 3A-376 part 1b: PLR0402 module-import style unified (Linear 3A-376) — 2026-11-23 (branch stacked on 1a, NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/ruff-plr0402-3a-376` stacked on `aiba/ruff-tail-3a-376`. One PR against the stack base; manager review before merge; no release markers.
+- **Change:** all 21 PLR0402 findings were the single pattern `import app.<module> as <module>` → `from app import <module>` in backend tests (6 files). Both forms bind the identical module object, so the monkeypatching these imports exist for behaves exactly as before — verified by the affected files (68 tests) plus the full suite.
+- **Remaining Ruff debt: 104** — BLE001 blind-except (10, next) and FURB157 Decimal constructors (94, last with per-conversion semantic review).
+- **Versions:** aligned at 1.9.5 (frontend package/lockfile + stamps, backend pyproject + FastAPI, bilingual notes `v195_standards`).
+- **Local evidence:** backend suite **488 passed / 14 skipped** (baseline-identical regression proof); frontend unit **774/774**; `ruff check --select PLR0402` clean. No behaviour changed anywhere.
+
 ## Version 1.9.4 candidate — 3A-376 part 1a: Ruff small classes closed (Linear 3A-376) — 2026-11-23 (branch stacked on the consolidated 3A-364 branch, NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/ruff-tail-3a-376` stacked on `aiba/security-headers-docs-3a-364` (the consolidated stack head `53206a2`, candidate 1.9.3 content). One PR against the stack base; manager review before merge; no release markers.
