@@ -1,3 +1,9 @@
+## Version 1.10.0 candidate — 3A-407 part 2: P2.1–P2.3 verification (Linear 3A-271/272/273) — 2026-11-23 (same candidate as part 1, NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/p2-verification-3a-407` stacked on part 1 (`aiba/secrets-scan-3a-407`); the batch ships as one 1.10.0 unit, so no further version bump.
+- **Verification verdicts (checked against current main, not assumed):** all three defects from 2026-11-20 are already fixed in the code — the old reviewed local batch evidently landed piecemeal. **P2.1** — `extended_api.post_recurring_schedule` checks `Customer.is_active` regardless of invoice history (its comment states the rule verbatim), but had **no regression test** → this part adds `backend/tests/test_recurring_schedule_customer_state.py` (inactive customer with invoice history rejected 422 with no schedule row; active customer with history accepted 201). **P2.2** — the 15 s AbortController timeouts are in `api.service.ts` and the unknown-outcome/no-blind-retry behaviour is exercised behaviourally by `app.component-import-timeout.spec.ts` → verified, no change. **P2.3** — the count-vs-total disambiguation is implemented in `assistant_api.py` (explicit count phrase required; count questions answered with counts) and covered ar+en by `tests/test_assistant_fallback_count.py` → verified, no change.
+- **Local evidence:** recorded on the PR (full backend suite + frontend suite + Ruff).
+
 ## Version 1.10.0 candidate — 3A-407 part 1: secrets-scan CI gate re-derived (closes the 3A-328 remainder) — 2026-11-23 (NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/secrets-scan-3a-407` from main `f2ae207` (1.9.9). One PR against main; the review/merge line merges on green CI; no release markers.
