@@ -155,6 +155,7 @@ type PurchaseAction = 'approve' | 'cancel';
                 @if (canEdit(order)) { <button class="pw__secondary" type="button" (click)="startEdit()">{{ t('edit') }}</button> }
                 @if (canApprove(order)) { <button class="pw__primary" type="button" (click)="requestAction('approve')">{{ t('approve') }}</button> }
                 @if (canCancel(order)) { <button class="pw__danger" type="button" (click)="requestAction('cancel')">{{ t('cancelOrder') }}</button> }
+                <button class="pw__secondary" type="button" (click)="duplicateOrder()">{{ t('duplicateOrder') }}</button>
                 @if (canReceive(order)) { <button class="pw__primary" type="button" (click)="startReceipt()">{{ t('receive') }}</button> }
               </div>
               @if (pendingAction()) {
@@ -636,6 +637,25 @@ export class PurchasingWorkspaceComponent {
       this.success.set(this.t(action === 'approve' ? 'approved' : 'cancelled'));
       await this.load();
       if (this.isCurrent(this.actionGuard, version, requested)) await this.openOrder(order.id);
+    } catch (error) {
+      if (this.isCurrent(this.actionGuard, version, requested)) this.detailError.set(this.message(error));
+    } finally {
+      if (this.isCurrent(this.actionGuard, version, requested)) this.actionLoading.set(false);
+    }
+  }
+
+  async duplicateOrder(): Promise<void> {
+    const order = this.selectedOrder();
+    if (!order || !this.isOwner()) return;
+    const requested = this.context();
+    const version = this.actionGuard.begin();
+    this.actionLoading.set(true);
+    try {
+      const copy = await this.api.duplicatePurchaseOrder(requested.businessId, order.id);
+      if (!this.isCurrent(this.actionGuard, version, requested)) return;
+      this.success.set(this.t('created'));
+      await this.load();
+      if (this.isCurrent(this.actionGuard, version, requested)) await this.openOrder(copy.id);
     } catch (error) {
       if (this.isCurrent(this.actionGuard, version, requested)) this.detailError.set(this.message(error));
     } finally {

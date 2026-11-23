@@ -1935,6 +1935,7 @@
     "remaining": "Remaining",
     "approve": "Approve order",
     "cancelOrder": "Cancel draft",
+    "duplicateOrder": "Duplicate purchase order",
     "receive": "Record receipt",
     "confirmApprove": "Approve this purchase order?",
     "confirmCancel": "Cancel this draft purchase order?",

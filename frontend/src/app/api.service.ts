@@ -859,6 +859,12 @@ export class ApiService {
       'POST',
     );
   }
+  duplicatePurchaseOrder(businessId: string, orderId: string): Promise<Omit<PurchaseOrder, 'lines'>> {
+    return this.request<Omit<PurchaseOrder, 'lines'>>(
+      '/api/v1/businesses/' + encodeURIComponent(businessId) + '/purchase-orders/' + encodeURIComponent(orderId) + '/duplicate',
+      'POST',
+    );
+  }
   purchaseOrderReceipts(businessId: string, orderId: string, offset = 0, limit = 50): Promise<PurchaseOrderPage<PurchaseOrderReceipt>> {
     const params = new URLSearchParams({ limit: String(Math.min(200, Math.max(1, limit))), offset: String(Math.max(0, offset)) });
     return this.request<PurchaseOrderPage<PurchaseOrderReceipt>>(

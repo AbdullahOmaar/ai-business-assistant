@@ -73,6 +73,7 @@ MATRIX = [
     ("GET", "/api/v1/businesses/{business_id}/suppliers", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/purchase-orders", "allow"),
     ("POST", "/api/v1/businesses/{business_id}/purchase-orders", "allow"),
+    ("POST", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}/duplicate", "allow"),
     ("POST", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}/approve", "deny"),
     ("POST", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive", "deny"),
     ("GET", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}", "allow"),
@@ -355,6 +356,7 @@ def test_full_route_role_tenant_denial_matrix():
             ("POST", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive"): {
                 "lines": [{"line_id": random_id, "quantity": "1"}],
             },
+            ("POST", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}/duplicate"): {},
             ("PUT", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}"): {
                 "supplier_id": supplier_id, "order_number": "PO-PROBE-EDIT", "currency_code": "EGP",
                 "lines": [{"product_id": product_id, "quantity": "1", "unit_cost": "1.00"}],

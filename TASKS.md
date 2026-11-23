@@ -7,6 +7,14 @@
 - **Local evidence:** backend `test_invoice_duplicate.py` 2/2 (issued → matching draft + `-COPY-2` on repeat; void → draft; cross-tenant 403; unauthenticated 401) + matrix 2/2; frontend 774/774; Ruff clean; production build Initial total 686.83 kB (was 685.97). Full backend suite: 492 passed / 14 skipped / 1 failed — the failure is `test_demo_rate_limit_window_expiry_resets_counter`, a timing-sensitive window-expiry test that passes in isolation with AND without this change (verified by stashing); pre-existing flakiness under full-suite load, unrelated to this change.
 - **NOT RUN:** physical Android, installed PWA, screen reader, real-account authenticated smoke — never claimed as passed.
 
+## Version 1.11.0 candidate — 3A-435 part 2 (T39): purchase-order duplication «إعادة الطلب» (Linear 3A-248) — 2026-11-23 (same candidate as part 1, NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/t39-po-duplicate-3a-435` stacked on part 1 (`aiba/t38-invoice-duplicate-3a-435`); same 1.11.0 unit, no further version bump.
+- **Verification first:** the purchasing cycle was checked against current main — workflow + receiving + approval (incl. foreign-tenant) + stock-movement idempotency suites = 25 passed / 1 skipped. PO lifecycle draft → approved → partially_received → received / cancelled exists; over-receipt prevention is tested (duplicate-line cumulative overreceive); supplier financial semantics are explicitly NOT auto-derived per the issue's own boundary — no change there.
+- **The gap found:** «إعادة الطلب» for purchase orders existed nowhere — no endpoint, no UI action, no test. This part adds it: `POST /api/v1/businesses/{id}/purchase-orders/{order_id}/duplicate` (201) in `extended_api.py`, mirroring the create path: same supplier, currency and lines (unit-cost snapshots kept, so the total matches exactly), new draft, number `<source>-COPY` (suffixed on collision, 64-char cap). Receipts stay on the source — the copy starts with zero received quantities and needs its own owner approval. UI: «تكرار أمر الشراء» button in the purchasing detail actions opening the new draft's detail; i18n `purchasingWorkspace.duplicateOrder` ar+en. Route registered in the matrix as membership surface — 94 → 95 live routes.
+- **Local evidence:** backend `test_purchase_order_duplicate.py` 2/2 (approved → matching draft, total preserved, received 0 / remaining full; cancelled → draft; cross-tenant 403; unauthenticated 401) + matrix 2/2 (with the part-1 invoice duplicate); frontend 774/774; Ruff clean.
+- **NOT RUN:** physical Android, installed PWA, screen reader, real-account authenticated smoke — never claimed as passed.
+
 ## Version 1.10.0 candidate — 3A-407 part 2: P2.1–P2.3 verification (Linear 3A-271/272/273) — 2026-11-23 (same candidate as part 1, NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/p2-verification-3a-407` stacked on part 1 (`aiba/secrets-scan-3a-407`); the batch ships as one 1.10.0 unit, so no further version bump.
