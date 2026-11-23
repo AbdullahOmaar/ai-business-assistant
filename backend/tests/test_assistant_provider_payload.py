@@ -7,6 +7,7 @@ IS forwarded verbatim (bounded by input validation), the provider base URL is
 NOT configurable (hardcoded), and the local fallback makes NO provider call.
 """
 import json
+from typing import ClassVar
 
 import pytest
 from fastapi.testclient import TestClient
@@ -62,7 +63,7 @@ def _create_workspace(client):
 class _RecordingAsyncClient:
     """Stands in for httpx.AsyncClient; records the provider call, answers stubbed."""
 
-    calls: list = []
+    calls: ClassVar[list] = []
 
     def __init__(self, *args, **kwargs):
         pass

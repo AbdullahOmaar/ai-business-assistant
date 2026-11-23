@@ -243,7 +243,7 @@ def platform_admin_system_status(
     principal: AuthenticatedPrincipal = Depends(get_principal),
 ) -> dict:
     """Expose only safe runtime/readiness metadata to an authorized platform admin."""
-    roles, permissions, _ = _platform_authorization_for_request(principal, request)
+    _roles, permissions, _ = _platform_authorization_for_request(principal, request)
     if "view_system_status" not in permissions:
         _deny_platform_access(principal, request)
 

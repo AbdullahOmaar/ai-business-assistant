@@ -326,6 +326,12 @@ export const FEATURE_CATALOG = [
 
 export const RELEASE_HISTORY = [
   {
+    version: '1.9.4',
+    apiVersion: '1.9.4',
+    titleKey: "release.catalog.v194_title",
+    changes: ["release.changes.v194_standards"],
+  },
+  {
     version: '1.9.3',
     apiVersion: '1.9.3',
     titleKey: "release.catalog.v193_title",

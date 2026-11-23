@@ -76,11 +76,10 @@ def test_customer_creation_requires_membership_and_writes_audit(workspace):
 
 def test_cross_business_access_is_denied(workspace):
     engine, _, principal = workspace
-    with Session(engine) as session:
-        with pytest.raises(AuthorizationError):
-            create_customer(
-                session, principal=principal, business_id=uuid4(), name="Not mine",
-            )
+    with Session(engine) as session, pytest.raises(AuthorizationError):
+        create_customer(
+            session, principal=principal, business_id=uuid4(), name="Not mine",
+        )
 
 
 def test_invoice_uses_catalog_price_and_issue_requires_draft(workspace):
@@ -160,13 +159,12 @@ def test_product_creation_records_opening_stock_atomically(workspace):
         assert movements[0].quantity_delta == Decimal("7.500")
         assert movements[0].reference_type == "product_opening"
 
-    with Session(engine) as session:
-        with pytest.raises(WorkflowError, match="requires stock tracking"):
-            create_product(
-                session, principal=principal, business_id=business_id,
-                name="Invalid stock item", unit_price=Decimal("12.00"),
-                is_stock_tracked=False, opening_quantity=Decimal("1.000"),
-            )
+    with Session(engine) as session, pytest.raises(WorkflowError, match="requires stock tracking"):
+        create_product(
+            session, principal=principal, business_id=business_id,
+            name="Invalid stock item", unit_price=Decimal("12.00"),
+            is_stock_tracked=False, opening_quantity=Decimal("1.000"),
+        )
 
 
 
