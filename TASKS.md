@@ -15,6 +15,14 @@
 - **Local evidence:** backend `test_purchase_order_duplicate.py` 2/2 (approved → matching draft, total preserved, received 0 / remaining full; cancelled → draft; cross-tenant 403; unauthenticated 401) + matrix 2/2 (with the part-1 invoice duplicate); frontend 774/774; Ruff clean.
 - **NOT RUN:** physical Android, installed PWA, screen reader, real-account authenticated smoke — never claimed as passed.
 
+## Version 1.12.0 candidate — Phase 1 completion batch (3) part 3 (T43): access-after-removal pinned (Linear 3A-252) — 2026-11-23 (same candidate as parts 1–2, NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/t43-memberships` stacked on part 2 (`aiba/t42-customers-products`); same 1.12.0 unit, no further version bump.
+- **Verification first:** the invitation lifecycle is fully covered (create/accept, verified matching email, revoked/expired cannot be accepted, single-use, token never exposed, inviter-loses-owner blocks acceptance, cross-workspace denial, duplicate pending, no role escalation, limits, concurrent single-use on Postgres) and membership management too (role change + audit, at-least-one-owner, extra-field rejection, fresh-membership rechecks, removal fails closed). Suites: invitations + tenant boundaries + foreign workflows 33 passed / 1 skipped; membership management 8 passed.
+- **The gap found:** no test asserted the two end-to-end T43 points — that a removed member actually loses access, and that removal from one of two businesses leaves the other intact. New `backend/tests/test_membership_access_after_removal.py` pins both: after removal the member's reads return 403 and the business disappears from their `GET /businesses` list; with two memberships, removal from one keeps the other fully readable and listed. **2/2 passed** on current code, no behaviour change needed.
+- **Local evidence:** backend full suite 503 passed / 14 skipped (501 + 2 new); frontend 775/775; Ruff clean.
+- **NOT RUN:** physical Android, installed PWA, screen reader, real-account authenticated smoke — never claimed as passed.
+
 ## Version 1.12.0 candidate — Phase 1 completion batch (3) part 2 (T42): invoice reference states pinned (Linear 3A-251) — 2026-11-23 (same candidate as part 1, NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/t42-customers-products` stacked on part 1 (`aiba/t41-payroll-failure-states`); same 1.12.0 unit, no further version bump.
