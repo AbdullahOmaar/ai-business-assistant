@@ -1,3 +1,11 @@
+## Version 1.9.6 candidate — 3A-376 part 1c: BLE001 blind-except judged site by site (Linear 3A-376) — 2026-11-23 (branch stacked on 1b, NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/ruff-ble001-3a-376` stacked on `aiba/ruff-plr0402-3a-376`. One PR against the stack base; manager review before merge; no release markers.
+- **Judgments (10 sites):** (1) the two CSV-import validators in `app/extended_api.py` are **narrowed** to `(InvalidOperation, TypeError, ValueError)` — provably exhaustive for those blocks (Decimal-from-string, Decimal-of-None for short CSV rows, the deliberate constraint raises) and behaviour-identical on malformed input; (2) the platform-admin DB health probe keeps its blind catch with a justified `# noqa: BLE001` — any failure at all must read "unavailable", the exception set is open by design; (3) the seven catches in `tests/test_postgres_financial_concurrency.py` keep theirs with a justified noqa each — the test classifies whatever the database raises under concurrency, the exception type is the data (several already have a specific first catch).
+- **Remaining Ruff debt: 94** — FURB157 Decimal constructors only, next and last, per-conversion semantic review.
+- **Versions:** aligned at 1.9.6 (frontend package/lockfile + stamps, backend pyproject + FastAPI, bilingual notes `v196_standards`).
+- **Local evidence:** backend suite **488 passed / 14 skipped** (baseline-identical); frontend unit **774/774**; `ruff check --select BLE001` clean. The concurrency test file runs in CI (Postgres) — its change is comment-only. No behaviour changed.
+
 ## Version 1.9.5 candidate — 3A-376 part 1b: PLR0402 module-import style unified (Linear 3A-376) — 2026-11-23 (branch stacked on 1a, NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/ruff-plr0402-3a-376` stacked on `aiba/ruff-tail-3a-376`. One PR against the stack base; manager review before merge; no release markers.

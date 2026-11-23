@@ -1172,7 +1172,8 @@
       "v192_a11y": "Version 1.9.2: a full local accessibility audit (automated checks, keyboard and 200% zoom) — every audited screen came back clean, with one fix: product SKU codes in the catalog now use a clearer, easier-to-read color.",
       "v193_standards": "Version 1.9.3: an internal code-quality update under the company engineering standards — a formal static-analysis setup plus import and date-time clean-up in the backend. No change to any user-visible behaviour.",
       "v194_standards": "Version 1.9.4: an internal code-standards follow-up — the remaining small lint classes are closed (unused variables and resource-block tidying). No change to any user-visible behaviour.",
-      "v195_standards": "Version 1.9.5: an internal code-standards follow-up — backend module imports in the tests now use one consistent style. No change to any user-visible behaviour."
+      "v195_standards": "Version 1.9.5: an internal code-standards follow-up — backend module imports in the tests now use one consistent style. No change to any user-visible behaviour.",
+      "v196_standards": "Version 1.9.6: an internal code-standards follow-up — broad exception handlers in the backend are narrowed wherever they can be named precisely. No change to any user-visible behaviour."
     },
     "catalog": {
       "m_aba150_title": "Workspace and purchasing workflows",
@@ -1330,7 +1331,8 @@
       "v192_title": "Accessibility: clearer product codes",
       "v193_title": "Code standards: internal clean-up",
       "v194_title": "Code standards: small-class clean-up",
-      "v195_title": "Code standards: module import style"
+      "v195_title": "Code standards: module import style",
+      "v196_title": "Code standards: precise exception handling"
     }
   },
   "catalog": {
