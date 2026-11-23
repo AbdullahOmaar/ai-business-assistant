@@ -1,3 +1,12 @@
+## Version 1.13.0 candidate — 3A-650 section 1, part A: assistant guard + overview KPI grid (Linear 3A-650 / 3A-445) — 2026-11-23 (NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/fix-a-assistant-kpi-3a-650` from main `bcdc895`; the 3A-650 section-1 batch ships as one 1.13.0 unit, so parts B–E carry no further bump.
+- **Root causes (from the 3A-445 round-2 review, owner-confirmed on his phone):** (1) the assistant `@defer (when tab === 'assistant')` block in `app.component.ts` was the only tab block without an `@if` guard — with a `when` trigger Angular renders the `@placeholder` until the condition first turns true, so a 3-row skeleton card sat under every screen, and after the first assistant visit the fully rendered assistant panel stayed inline on every screen. The overview block had the same latent shape (masked in practice because the app always starts on overview). (2) The overview KPI `.metric-grid` rules lived only in the shell's `app.component.css`, which cannot cross the extracted overview component's view encapsulation — the four KPI cards stacked one per row at every width, stretching the home page.
+- **Fix:** both blocks wrapped in `@if (tab === ...)` guards matching every sibling; `.metric-grid` rules defined in `overview-workspace.component.ts` styles mirroring the shell values (4 per row; 2 per row at ≤1050px and ≤760px with gap 9px; gap 7px at ≤380px) — two per row on mobile is the owner's explicit direction. The shell keeps its own copy for the grids still rendered inside the shell template. Reports workspace audited: it has no KPI grid of its own (tables/forms only), so nothing to repair there.
+- **Regression coverage:** new `frontend/src/app/overview-layout-3a650.spec.ts` (4 tests): both guards present, every simple tab defer sits directly inside its guard, and the component-local grid rules exist.
+- **Local evidence:** frontend 782/782 (778 + 4 new); backend 503 passed / 14 skipped (unchanged — no backend behaviour change); Ruff clean; production build Initial total 687.58 kB.
+- **NOT RUN:** physical Android, installed PWA, screen reader, real-account authenticated smoke — never claimed as passed.
+
 ## Version 1.11.0 candidate — 3A-435 part 1 (T38): invoice duplication «إعادة الطلب» (Linear 3A-247) — 2026-11-23 (NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/t38-invoice-duplicate-3a-435` from main `5b1211b`; the 3A-435 batch (T38+T39+T40) ships as one 1.11.0 unit, so parts 2–3 carry no further bump.

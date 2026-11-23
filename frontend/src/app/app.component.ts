@@ -296,14 +296,16 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               (languageToggleRequested)="toggleLanguage()"
               (signOutRequested)="logout()" />
 
-            @defer (when tab === 'overview') {
-              <aba-overview-workspace [businessId]="business?.id || null" [dashboard]="dashboard" [loading]="loading" [error]="error" [role]="business?.role" [platformAdminAvailable]="platformAdminAvailable" [language]="language" (navigate)="setTab($event)" (newInvoiceDraft)="startNewInvoiceDraft()" (newCustomer)="customerCreateOpen = true" (newProduct)="productCreateOpen = true" (invitationsAccepted)="loadBusinesses()" />
-            } @placeholder {
-              <aba-defer-placeholder [description]="t('ui.m_1xguwi5')" />
-            } @error {
-              <section abaCard class="panel narrow">
-                <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
-              </section>
+            @if (tab === 'overview') {
+              @defer (when tab === 'overview') {
+                <aba-overview-workspace [businessId]="business?.id || null" [dashboard]="dashboard" [loading]="loading" [error]="error" [role]="business?.role" [platformAdminAvailable]="platformAdminAvailable" [language]="language" (navigate)="setTab($event)" (newInvoiceDraft)="startNewInvoiceDraft()" (newCustomer)="customerCreateOpen = true" (newProduct)="productCreateOpen = true" (invitationsAccepted)="loadBusinesses()" />
+              } @placeholder {
+                <aba-defer-placeholder [description]="t('ui.m_1xguwi5')" />
+              } @error {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                </section>
+              }
             }
 
             @if (tab === 'notifications') {
@@ -976,14 +978,16 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
 
 
-            @defer (when tab === 'assistant') {
-              <aba-assistant-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [language]="language" [pendingQuestion]="pendingAssistantQuestion" (questionConsumed)="pendingAssistantQuestion = ''" />
-            } @placeholder {
-              <aba-defer-placeholder [description]="t('ui.m_1xguwi5')" />
-            } @error {
-              <section abaCard class="panel narrow">
-                <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
-              </section>
+            @if (tab === 'assistant') {
+              @defer (when tab === 'assistant') {
+                <aba-assistant-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [language]="language" [pendingQuestion]="pendingAssistantQuestion" (questionConsumed)="pendingAssistantQuestion = ''" />
+              } @placeholder {
+                <aba-defer-placeholder [description]="t('ui.m_1xguwi5')" />
+              } @error {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                </section>
+              }
             }
           }
           <footer>{{ t('ui.m_1ajyrpz') }} <span>{{ t('ui.m_1f5dk3e') }}</span></footer>
