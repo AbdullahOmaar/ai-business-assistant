@@ -15,7 +15,7 @@ from test_platform_admin_api import (
 from app.models import AuditEvent
 
 
-def test_platform_audit_export_is_bounded_redacted_and_logged(platform_admin_environment, caplog):
+def test_platform_audit_export_is_bounded_redacted_and_logged(platform_admin_environment, caplog):  # noqa: F811 — pytest fixture parameter shadows the imported fixture by design
     client = platform_admin_environment["client"]
     business_id = UUID(platform_admin_environment["alpha_id"])
     action = chr(61) + "1+1"
@@ -48,13 +48,13 @@ def test_platform_audit_export_is_bounded_redacted_and_logged(platform_admin_env
     assert any(r["event"] == "platform_admin.audit_exported" and r["actor_subject"] == ADMIN_SUBJECT for r in records)
 
 
-def test_platform_audit_export_denies_non_admin(platform_admin_environment, monkeypatch):
+def test_platform_audit_export_denies_non_admin(platform_admin_environment, monkeypatch):  # noqa: F811 — pytest fixture parameter shadows the imported fixture by design
     monkeypatch.setenv("PLATFORM_SUPER_ADMIN_UIDS", OWNER_SUBJECT)
     response = platform_admin_environment["client"].get("/api/v1/platform-admin/audit-events/export.csv")
     assert response.status_code == 403
 
 
-def test_platform_audit_export_rejects_invalid_ranges_and_unbounded_limits(platform_admin_environment):
+def test_platform_audit_export_rejects_invalid_ranges_and_unbounded_limits(platform_admin_environment):  # noqa: F811 — pytest fixture parameter shadows the imported fixture by design
     client = platform_admin_environment["client"]
     invalid_range = client.get(
         "/api/v1/platform-admin/audit-events/export.csv",

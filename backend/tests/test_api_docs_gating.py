@@ -47,7 +47,7 @@ def _probe_app(vercel_env: str) -> dict:
     env = dict(os.environ, VERCEL_ENV=vercel_env)
     result = subprocess.run(
         [sys.executable, "-c", code],
-        capture_output=True, text=True, env=env, timeout=120,
+        capture_output=True, text=True, env=env, timeout=120, check=False,
     )
     assert result.returncode == 0, result.stderr
     return json.loads(result.stdout.strip().splitlines()[-1])

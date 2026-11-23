@@ -1162,7 +1162,7 @@ def export_csv(business_id: UUID, entity_type: str,
         if entity_type not in supported:
             raise HTTPException(status_code=404, detail="Unsupported export entity")
         from app.models import Customer
-        model_name, columns = supported[entity_type]
+        _model_name, columns = supported[entity_type]
         model = {"customers": Customer, "products": Product, "expenses": Expense}[entity_type]
         rows = session.scalars(select(model).where(model.business_id == business_id)).all()
         buffer = io.StringIO(newline="")
@@ -1275,7 +1275,7 @@ def _validate_import_rows(session: Session, business_id: UUID, entity_type: str,
             if len(currency) != 3 or not currency.isalpha():
                 errors.append({"row": index, "field": "currency_code", "code": "invalid_currency"})
             try:
-                datetime.fromisoformat(row.get("incurred_at", "").replace("Z", "+00:00"))
+                datetime.fromisoformat(row.get("incurred_at", ""))
             except ValueError:
                 errors.append({"row": index, "field": "incurred_at", "code": "invalid_datetime"})
     return errors

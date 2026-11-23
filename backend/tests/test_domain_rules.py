@@ -104,7 +104,6 @@ def test_return_quantity_cannot_exceed_original_sale() -> None:
 
 def test_partial_returns_cannot_exceed_rounded_invoice_line_amount() -> None:
     invoiced_line_total = D("0.02")
-    approved_return_amount = D("0.01")
 
     # A further 0.500 × 0.01 return rounds to 0.01, which would over-refund
     # the original 1.500 × 0.01 line if cumulative amounts were not capped.

@@ -248,7 +248,6 @@ def test_member_removal_fails_closed_if_workspace_deactivates_after_initial_auth
         business = session.get(Business, requested_business_id)
         business.is_active = False
         session.flush()
-        return None
 
     monkeypatch.setattr(core_features_api, "_authorize", deactivate_after_initial_authorization)
     response = configured_client.delete(
