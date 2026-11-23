@@ -1,3 +1,12 @@
+## Version 1.13.0 candidate — 3A-650 section 1, part C: API rate limiting (Linear 3A-650 / 3A-445) — 2026-11-23 (same candidate as part A, NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/fix-c-rate-limit-3a-650` stacked on part A (`aiba/fix-a-assistant-kpi-3a-650`); same 1.13.0 unit, no further version bump.
+- **The gap (round-2 review finding):** the main API had no rate limiting at all — only the demo-session endpoint was limited (PostgreSQL-backed, in `demo_auth_api.py`).
+- **What was added:** `backend/app/rate_limit.py` — a thread-safe in-process fixed-window limiter exposed as a FastAPI dependency factory, limits read from the environment per request (`RATE_LIMIT_<scope>_PER_MINUTE`; ≤0 disables), 429 with `Retry-After`. Wired onto the four abuse-sensitive surfaces: business creation (30/min per address), invitation acceptance (30/min per address), assistant chat (60/min per address+business), CSV import commits (20/min per address+business). Keys use the first X-Forwarded-For hop (how Vercel reaches the app) with the socket peer as fallback.
+- **Stated honestly:** the store is in-process, so on a multi-instance serverless deployment the effective ceiling is limit × instances — a real control against single-source floods and token-guessing loops, not a distributed quota. Generalising the demo endpoint's PostgreSQL-backed approach is the documented follow-up.
+- **Suite safety:** a new `backend/tests/conftest.py` raises the ceilings for the suite's synthetic bulk traffic (documented in the file); the limiter's own tests override with tight limits via monkeypatch and a unique forwarded address for key isolation.
+- **Local evidence:** `tests/test_rate_limiting.py` 3/3 (window unit behaviour with injected time; 429 + Retry-After after the configured limit; disabled-by-configuration). Full backend suite 506 passed / 14 skipped (503 + 3 new), zero failures; frontend 782/782 (unchanged); Ruff clean. The route matrix is unaffected (dependencies add no routes; the registry still matches at 95).
+
 ## Version 1.13.0 candidate — 3A-650 section 1, part A: assistant guard + overview KPI grid (Linear 3A-650 / 3A-445) — 2026-11-23 (NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/fix-a-assistant-kpi-3a-650` from main `bcdc895`; the 3A-650 section-1 batch ships as one 1.13.0 unit, so parts B–E carry no further bump.

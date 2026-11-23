@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 from app.dependencies import get_principal, get_session
 from app.domain_rules import money
 from app.models import Business, Customer, Expense, Invoice, Product, Supplier
+from app.rate_limit import rate_limit
 from app.security import (
     AuthenticatedPrincipal,
     AuthorizationError,
@@ -293,7 +294,7 @@ def _fallback_source_ids(intent: str, invoice_rows: list[dict], expense_rows: li
     ))
 
 
-@router.post("/chat")
+@router.post("/chat", dependencies=[Depends(rate_limit("ASSISTANT_CHAT", default_limit=60, per_business=True))])
 async def chat(
     business_id: UUID,
     body: ChatInput,
