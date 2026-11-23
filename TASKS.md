@@ -15,6 +15,14 @@
 - **Local evidence:** backend `test_purchase_order_duplicate.py` 2/2 (approved → matching draft, total preserved, received 0 / remaining full; cancelled → draft; cross-tenant 403; unauthenticated 401) + matrix 2/2 (with the part-1 invoice duplicate); frontend 774/774; Ruff clean.
 - **NOT RUN:** physical Android, installed PWA, screen reader, real-account authenticated smoke — never claimed as passed.
 
+## Version 1.12.0 candidate — Phase 1 completion batch (3) part 4 (#402): the 19-destination acceptance matrix as a living registry (Linear 3A-276) — 2026-11-23 (same candidate as parts 1–3, NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/t402-acceptance-matrix` stacked on part 3 (`aiba/t43-memberships`); same 1.12.0 unit, no further version bump. This part closes the batch.
+- **What was built:** `docs/ACCEPTANCE_MATRIX_402.md` — the #402 matrix itself. The shell's `Tab` union has 20 values; `health` is an operational surface, leaving the **19 user destinations** the matrix covers. Each row records its access rule (from `module-access.ts`: 7 owner-only, platform-admin gated, 12 any-member) and its destination-specific evidence; shared evidence sections cover roles, two businesses, ar/en languages, states, and browsers; device evidence is kept in a separate NOT RUN section (physical Android, installed PWA, screen reader, real-account smoke) exactly as 3A-276 requires.
+- **Living registry:** new `frontend/src/app/acceptance-matrix.spec.ts` (3 tests) fails CI if the shell's destination list changes or the matrix's access column drifts from `module-access.ts` — a destination cannot ship without an acceptance row, the same pattern as the backend route matrix.
+- **Local evidence:** frontend 778/778 (775 + 3 new); backend 503 passed / 14 skipped (unchanged — no backend change in this part); Ruff clean.
+- **NOT RUN:** physical Android, installed PWA, screen reader, real-account authenticated smoke — recorded as open acceptance debt in the matrix itself, never claimed as passed.
+
 ## Version 1.12.0 candidate — Phase 1 completion batch (3) part 3 (T43): access-after-removal pinned (Linear 3A-252) — 2026-11-23 (same candidate as parts 1–2, NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/t43-memberships` stacked on part 2 (`aiba/t42-customers-products`); same 1.12.0 unit, no further version bump.
