@@ -381,7 +381,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
             @if (tab === 'reports') {
               @defer (when tab === 'reports') {
-                <aba-reports-workspace [businessId]="business.id" [language]="language" />
+                <aba-reports-workspace [businessId]="business.id" [language]="language" (askAssistant)="askAssistantFromReports($event)" />
               } @placeholder {
                 <aba-defer-placeholder [description]="t('ui.m_1oo6dkn')" />
               } @error {
@@ -977,7 +977,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
 
             @defer (when tab === 'assistant') {
-              <aba-assistant-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [language]="language" />
+              <aba-assistant-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [language]="language" [pendingQuestion]="pendingAssistantQuestion" (questionConsumed)="pendingAssistantQuestion = ''" />
             } @placeholder {
               <aba-defer-placeholder [description]="t('ui.m_1xguwi5')" />
             } @error {
@@ -1112,6 +1112,7 @@ export class AppComponent implements OnInit, OnDestroy {
   private applyingBrowserRoute = false;
   private initialRouteApplied = false;
   tab: Tab = 'overview';
+  pendingAssistantQuestion = '';
   auditEvents: AuditEvent[] = [];
   auditTotal = 0;
   auditOffset = 0;
@@ -3017,6 +3018,15 @@ export class AppComponent implements OnInit, OnDestroy {
 
   isMobileMoreTab(tab: Tab): boolean {
     return isMobileMoreTabValue(tab);
+  }
+
+  askAssistantFromReports(question: string): void {
+    // 3A-435 / T40: a report hands its context to the assistant as a
+    // question. The question is set first so the assistant component mounts
+    // (or updates) with it already present.
+    if (!question.trim()) return;
+    this.pendingAssistantQuestion = question;
+    this.setTab('assistant');
   }
 
   setTab(tab: Tab): void {

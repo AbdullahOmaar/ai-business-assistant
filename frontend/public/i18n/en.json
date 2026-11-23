@@ -2063,5 +2063,10 @@
     "statusDraft": "Draft",
     "errorGeneric": "The operation failed. Refresh or check your permissions.",
     "loadMore": "Load more"
+  },
+  "reports": {
+    "askAssistantAboutProfitLoss": "Ask the assistant about this report",
+    "askAssistantQuestion": "Explain the operating result for the period {start} to {end}: {parts}. What should I pay attention to most?",
+    "askAssistantQuestionRow": "revenue {revenue} {currency} ({revenueCount} invoices), expenses {expenses} {currency}, operating result {result} {currency}"
   }
 }

@@ -15,6 +15,14 @@
 - **Local evidence:** backend `test_purchase_order_duplicate.py` 2/2 (approved → matching draft, total preserved, received 0 / remaining full; cancelled → draft; cross-tenant 403; unauthenticated 401) + matrix 2/2 (with the part-1 invoice duplicate); frontend 774/774; Ruff clean.
 - **NOT RUN:** physical Android, installed PWA, screen reader, real-account authenticated smoke — never claimed as passed.
 
+## Version 1.11.0 candidate — 3A-435 part 3 (T40): reports hand their context to the assistant (Linear 3A-249) — 2026-11-23 (same candidate as parts 1–2, NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/t40-reports-assistant-3a-435` stacked on part 2 (`aiba/t39-po-duplicate-3a-435`); same 1.11.0 unit, no further version bump.
+- **Verification first:** reports/timezone, CSV-export formula-injection, employee payroll API, receivables ageing, tenant payroll snapshots and platform-admin export suites = 25 passed. Filters, timing (timezone-aware periods), network-error behaviour (import-timeout spec, verified in 3A-407) and report-route permissions (matrix) all check out. Payroll privacy: `test_payroll_expense_visibility_is_scoped_to_its_business_across_reports_and_ai[sqlite]` still fails locally with the known 3.12.3-environment failure and passes in CI (standing record) — the payroll-before-aggregation guard is covered by that test, not by local runs.
+- **The gap found:** «إرسال السياق للمساعد» existed nowhere — no path from a report to the assistant. This part adds it, client-side only: a «Ask the assistant about this report / اسأل المساعد عن هذا التقرير» button in the P&L section builds a question from the loaded report's figures (per-currency revenue/expenses/operating result + period, via i18n templates `reports.askAssistantQuestion*`) and emits it; the shell switches to the assistant tab and hands the question through a `pendingQuestion` input, which the assistant sends on mount (and clears via `questionConsumed`, so a repeated identical question still fires). No new API, route, or data flow — the assistant re-loads its own tenant-scoped context server-side when it answers.
+- **Local evidence:** frontend 775/775 (774 + 1 new spec pinning the handoff wiring end to end); the inline-Arabic localization spec caught the first draft's hardcoded question strings and forced them into i18n templates. Production build Initial total 687.41 kB.
+- **NOT RUN:** physical Android, installed PWA, screen reader, real-account authenticated smoke — never claimed as passed. This closes 3A-435 with parts 1–3.
+
 ## Version 1.10.0 candidate — 3A-407 part 2: P2.1–P2.3 verification (Linear 3A-271/272/273) — 2026-11-23 (same candidate as part 1, NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/p2-verification-3a-407` stacked on part 1 (`aiba/secrets-scan-3a-407`); the batch ships as one 1.10.0 unit, so no further version bump.
