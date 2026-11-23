@@ -300,6 +300,10 @@ class Invoice(Base):
         ),
         UniqueConstraint("business_id", "invoice_number", name="uq_invoice_business_number"),
         UniqueConstraint("id", "business_id", name="uq_invoices_id_business"),
+        # 3A-650 part D: supports the profit-loss / tax-summary aggregations
+        # (business + issued status + issue-date range) without scanning
+        # every invoice the business ever created.
+        Index("ix_invoices_business_status_issue_date", "business_id", "status", "issue_date"),
         CheckConstraint("subtotal >= 0 AND tax_total >= 0 AND discount_total >= 0 AND total >= 0",
                         name="ck_invoice_nonnegative_totals"),
         CheckConstraint("status IN ('draft', 'issued', 'void')", name="ck_invoice_status"),
@@ -427,6 +431,10 @@ class Expense(Base):
     __table_args__ = (
         CheckConstraint("amount > 0", name="ck_expense_amount_positive"),
         UniqueConstraint("id", "business_id", name="uq_expenses_id_business"),
+        # 3A-650 part D: expenses had no business index at all, so every
+        # report aggregation scanned all tenants' expenses. This supports
+        # the profit-loss expense aggregation (business + incurred range).
+        Index("ix_expenses_business_incurred_at", "business_id", "incurred_at"),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -705,6 +713,9 @@ class SalesReturn(Base):
             name="fk_sales_returns_invoice_business", ondelete="RESTRICT",
         ),
         UniqueConstraint("id", "business_id", name="uq_sales_returns_id_business"),
+        # 3A-650 part D: supports the profit-loss approved-returns
+        # aggregation (business + status).
+        Index("ix_sales_returns_business_status", "business_id", "status"),
         CheckConstraint("status IN ('draft', 'approved', 'rejected')", name="ck_sales_return_status"),
         CheckConstraint("total >= 0", name="ck_sales_return_total_nonnegative"),
     )
