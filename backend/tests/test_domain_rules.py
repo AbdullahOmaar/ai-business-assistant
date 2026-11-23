@@ -150,7 +150,7 @@ def test_discounted_returnable_line_values_reconcile_many_line_discount_cents():
         for line in lines
     ]
 
-    assert sum(returnable, Decimal("0")) == Decimal("497.55")
+    assert sum(returnable, Decimal(0)) == Decimal("497.55")
     assert sum(1 for amount in returnable if amount == Decimal("0.99")) == 245
     assert all(money(amount) == amount for amount in returnable)
 

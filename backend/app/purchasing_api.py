@@ -32,7 +32,7 @@ from app.security import (
 from app.services import WorkflowError
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["purchasing"])
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
 class PurchaseLineInput(BaseModel):

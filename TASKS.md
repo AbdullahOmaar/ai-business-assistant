@@ -1,3 +1,11 @@
+## Version 1.9.7 candidate — 3A-376 part 1d: FURB157 Decimal constructors — RUFF BASELINE AT ZERO (Linear 3A-376) — 2026-11-23 (branch stacked on 1c, NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/ruff-furb157-3a-376` stacked on `aiba/ruff-ble001-3a-376`. One PR against the stack base; manager review before merge; no release markers.
+- **Semantic review (the manager's condition for this class):** every one of the 94 fixes is the single pattern `Decimal("<integer>")` → `Decimal(<integer>)`. Fractional literals (`"3.000"`, `"75.00"`, `"497.55"`, `"0.99"`) are NOT touched — ruff leaves them, and they stay. Tuple-identity `Decimal("N").as_tuple() == Decimal(N).as_tuple()` was proven programmatically for every integer literal involved before applying anything, and a post-fix diff scan confirmed no changed line deviates from the pattern. Value, exponent and representation are identical at every site — including Pydantic `Field` defaults and `sum(...)` seeds in financial code.
+- **Result: `ruff check app tests` reports "All checks passed!" — the full 407-rule report-only baseline from 3A-298 is at ZERO findings.** Part 1 of 3A-376 is complete with this PR.
+- **Versions:** aligned at 1.9.7 (frontend package/lockfile + stamps, backend pyproject + FastAPI, bilingual notes `v197_standards`).
+- **Local evidence:** backend suite **488 passed / 14 skipped** (baseline-identical regression proof); frontend unit **774/774**. No calculation, tax, discount, allocation, payroll or permission behaviour changed.
+
 ## Version 1.9.6 candidate — 3A-376 part 1c: BLE001 blind-except judged site by site (Linear 3A-376) — 2026-11-23 (branch stacked on 1b, NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/ruff-ble001-3a-376` stacked on `aiba/ruff-plr0402-3a-376`. One PR against the stack base; manager review before merge; no release markers.

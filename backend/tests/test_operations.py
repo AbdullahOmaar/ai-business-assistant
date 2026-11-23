@@ -63,33 +63,33 @@ def test_purchase_receiving_records_stock_and_completes_order(operation_workspac
         supplier = Supplier(business_id=business_id, name="Local Supplier")
         product = create_product(
             session, principal=principal, business_id=business_id,
-            name="Rice", unit_price=Decimal("25"), is_stock_tracked=True,
+            name="Rice", unit_price=Decimal(25), is_stock_tracked=True,
         )
         session.add(supplier)
         session.flush()
         order = PurchaseOrder(
             business_id=business_id, supplier_id=supplier.id,
             order_number="PO-1", status="approved", currency_code="EGP",
-            total=Decimal("250"),
+            total=Decimal(250),
         )
         session.add(order)
         session.flush()
         line = PurchaseOrderLine(
             business_id=business_id, purchase_order_id=order.id,
-            product_id=product.id, quantity=Decimal("10"),
-            unit_cost=Decimal("20"), received_quantity=Decimal("0"),
+            product_id=product.id, quantity=Decimal(10),
+            unit_cost=Decimal(20), received_quantity=Decimal(0),
         )
         session.add(line)
         session.flush()
 
         partial = receive_purchase_order(
             session, principal=principal, business_id=business_id,
-            purchase_order_id=order.id, received_quantities={line.id: Decimal("4")},
+            purchase_order_id=order.id, received_quantities={line.id: Decimal(4)},
         )
         assert partial.status == "partially_received"
         completed = receive_purchase_order(
             session, principal=principal, business_id=business_id,
-            purchase_order_id=order.id, received_quantities={line.id: Decimal("6")},
+            purchase_order_id=order.id, received_quantities={line.id: Decimal(6)},
         )
         session.commit()
         assert completed.status == "received"
@@ -104,21 +104,21 @@ def test_purchase_receiving_requires_owner_role(operation_workspace):
         supplier = Supplier(business_id=business_id, name="Restricted Supplier")
         product = create_product(
             session, principal=principal, business_id=business_id,
-            name="Restricted Stock", unit_price=Decimal("10"), is_stock_tracked=True,
+            name="Restricted Stock", unit_price=Decimal(10), is_stock_tracked=True,
         )
         session.add(supplier)
         session.flush()
         order = PurchaseOrder(
             business_id=business_id, supplier_id=supplier.id,
             order_number="PO-OWNER-ONLY", status="approved", currency_code="EGP",
-            total=Decimal("10"),
+            total=Decimal(10),
         )
         session.add(order)
         session.flush()
         line = PurchaseOrderLine(
             business_id=business_id, purchase_order_id=order.id,
-            product_id=product.id, quantity=Decimal("1"),
-            unit_cost=Decimal("10"), received_quantity=Decimal("0"),
+            product_id=product.id, quantity=Decimal(1),
+            unit_cost=Decimal(10), received_quantity=Decimal(0),
         )
         session.add(line)
         membership = session.scalar(select(BusinessMembership).where(
@@ -131,7 +131,7 @@ def test_purchase_receiving_requires_owner_role(operation_workspace):
             receive_purchase_order(
                 session, principal=principal, business_id=business_id,
                 purchase_order_id=order.id,
-                received_quantities={line.id: Decimal("1")},
+                received_quantities={line.id: Decimal(1)},
             )
 
 
@@ -143,7 +143,7 @@ def test_sales_return_approval_rejects_quantity_over_original_sale(operation_wor
         )
         product = create_product(
             session, principal=principal, business_id=business_id,
-            name="Tea", unit_price=Decimal("8"), is_stock_tracked=True,
+            name="Tea", unit_price=Decimal(8), is_stock_tracked=True,
         )
         record_stock_movement(
             session, principal=principal, business_id=business_id,
@@ -170,8 +170,8 @@ def test_sales_return_approval_rejects_quantity_over_original_sale(operation_wor
         session.flush()
         session.add(SalesReturnLine(
             business_id=business_id, sales_return_id=sales_return.id,
-            invoice_line_id=line.id, quantity=Decimal("3"),
-            amount=Decimal("24"),
+            invoice_line_id=line.id, quantity=Decimal(3),
+            amount=Decimal(24),
         ))
         session.flush()
         with pytest.raises(ValueError, match="exceeds remaining"):
@@ -189,7 +189,7 @@ def test_sales_return_approval_rejects_amount_above_original_line_value(operatio
         )
         product = create_product(
             session, principal=principal, business_id=business_id,
-            name="Service", unit_price=Decimal("8"), is_stock_tracked=False,
+            name="Service", unit_price=Decimal(8), is_stock_tracked=False,
         )
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
@@ -209,7 +209,7 @@ def test_sales_return_approval_rejects_amount_above_original_line_value(operatio
         session.flush()
         session.add(SalesReturnLine(
             business_id=business_id, sales_return_id=sales_return.id,
-            invoice_line_id=line.id, quantity=Decimal("1"),
+            invoice_line_id=line.id, quantity=Decimal(1),
             amount=Decimal("17.00"),
         ))
         session.flush()
@@ -228,14 +228,14 @@ def test_sales_return_approval_rejects_cumulative_amount_above_original_line(ope
         )
         product = create_product(
             session, principal=principal, business_id=business_id,
-            name="Service", unit_price=Decimal("8"), is_stock_tracked=False,
+            name="Service", unit_price=Decimal(8), is_stock_tracked=False,
         )
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
             invoice_number="INV-RETURN-CUMULATIVE", currency_code="EGP",
             customer_id=customer.id,
             lines=[{"product_id": str(product.id), "quantity": "2"}],
-            discount_rate=Decimal("25"),
+            discount_rate=Decimal(25),
         )
         issue_invoice(
             session, principal=principal, business_id=business_id,
@@ -249,7 +249,7 @@ def test_sales_return_approval_rejects_cumulative_amount_above_original_line(ope
         session.flush()
         session.add(SalesReturnLine(
             business_id=business_id, sales_return_id=first_return.id,
-            invoice_line_id=line.id, quantity=Decimal("1"),
+            invoice_line_id=line.id, quantity=Decimal(1),
             amount=Decimal("6.00"),
         ))
         session.flush()
@@ -266,7 +266,7 @@ def test_sales_return_approval_rejects_cumulative_amount_above_original_line(ope
         session.flush()
         session.add(SalesReturnLine(
             business_id=business_id, sales_return_id=second_return.id,
-            invoice_line_id=line.id, quantity=Decimal("1"),
+            invoice_line_id=line.id, quantity=Decimal(1),
             amount=Decimal("7.00"),
         ))
         session.flush()
@@ -285,7 +285,7 @@ def test_sales_return_approval_aggregates_duplicate_lines_before_validation(oper
         )
         product = create_product(
             session, principal=principal, business_id=business_id,
-            name="Service", unit_price=Decimal("8"), is_stock_tracked=False,
+            name="Service", unit_price=Decimal(8), is_stock_tracked=False,
         )
         invoice = create_invoice(
             session, principal=principal, business_id=business_id,
@@ -306,12 +306,12 @@ def test_sales_return_approval_aggregates_duplicate_lines_before_validation(oper
         session.add_all([
             SalesReturnLine(
                 business_id=business_id, sales_return_id=sales_return.id,
-                invoice_line_id=line.id, quantity=Decimal("1"),
+                invoice_line_id=line.id, quantity=Decimal(1),
                 amount=Decimal("8.00"),
             ),
             SalesReturnLine(
                 business_id=business_id, sales_return_id=sales_return.id,
-                invoice_line_id=line.id, quantity=Decimal("1"),
+                invoice_line_id=line.id, quantity=Decimal(1),
                 amount=Decimal("8.00"),
             ),
         ])
@@ -347,7 +347,7 @@ def test_sales_return_approval_requires_owner_role(operation_workspace):
         session.flush()
         session.add(SalesReturnLine(
             business_id=business_id, sales_return_id=sales_return.id,
-            invoice_line_id=line.id, quantity=Decimal("1"),
+            invoice_line_id=line.id, quantity=Decimal(1),
             amount=Decimal("8.00"),
         ))
         membership = session.scalar(select(BusinessMembership).where(

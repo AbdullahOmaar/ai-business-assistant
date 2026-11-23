@@ -105,9 +105,9 @@ def _invoice_snapshot():
     drafts = [inv for inv in invoices if inv.status == "draft"]
     return (
         len(issued),
-        sum((inv.total for inv in issued), Decimal("0")),
+        sum((inv.total for inv in issued), Decimal(0)),
         len(drafts),
-        sum((inv.total for inv in drafts), Decimal("0")),
+        sum((inv.total for inv in drafts), Decimal(0)),
         sorted((inv.invoice_number, inv.status) for inv in invoices),
     )
 
