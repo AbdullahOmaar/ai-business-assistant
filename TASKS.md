@@ -4,6 +4,12 @@
 - **Verification verdicts (checked against current main, not assumed):** all three defects from 2026-11-20 are already fixed in the code — the old reviewed local batch evidently landed piecemeal. **P2.1** — `extended_api.post_recurring_schedule` checks `Customer.is_active` regardless of invoice history (its comment states the rule verbatim), but had **no regression test** → this part adds `backend/tests/test_recurring_schedule_customer_state.py` (inactive customer with invoice history rejected 422 with no schedule row; active customer with history accepted 201). **P2.2** — the 15 s AbortController timeouts are in `api.service.ts` and the unknown-outcome/no-blind-retry behaviour is exercised behaviourally by `app.component-import-timeout.spec.ts` → verified, no change. **P2.3** — the count-vs-total disambiguation is implemented in `assistant_api.py` (explicit count phrase required; count questions answered with counts) and covered ar+en by `tests/test_assistant_fallback_count.py` → verified, no change.
 - **Local evidence:** recorded on the PR (full backend suite + frontend suite + Ruff).
 
+## Version 1.10.0 candidate — 3A-407 part 3: T07 release-evidence register (Linear 3A-241) — 2026-11-23 (same candidate, NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/t07-register-3a-407` stacked on part 2; the batch ships as one 1.10.0 unit, so no version bump.
+- **What lands:** `docs/RELEASE_EVIDENCE_REGISTER.md` — the per-release operational evidence register T07 asked for: exact head, live evidence with its time, and the rollback plan (Vercel redeploy of the previous deployment; migrations are additive-only, so no schema rollback). Rows recorded only for what was actually observed: 1.6.5 and 1.7.1 live-verified, the 1.9.3-era line as the manager reported it, 1.10.0 as candidate-only. The register enforces three rules: nothing is called live without a live check of the exact head; every deploy gets a row in the same change; backup restore ≠ PITR, and neither is claimed from the other's evidence.
+- **Local evidence:** backend suite and frontend suite recorded on the PR (docs-only change: no application code touched). This closes the T07 remainder and, with parts 1–2, completes 3A-407.
+
 ## Version 1.10.0 candidate — 3A-407 part 1: secrets-scan CI gate re-derived (closes the 3A-328 remainder) — 2026-11-23 (NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/secrets-scan-3a-407` from main `f2ae207` (1.9.9). One PR against main; the review/merge line merges on green CI; no release markers.
