@@ -254,6 +254,71 @@ def create_invoice(
     return invoice
 
 
+def duplicate_invoice(
+    session: Session, *, principal: AuthenticatedPrincipal, business_id: UUID,
+    invoice_id: UUID,
+) -> Invoice:
+    """Re-create an existing invoice as a new draft (3A-435 / T38 «إعادة الطلب»).
+
+    The copy carries the source's lines (with product linkage, priced at the
+    current catalogue price — a re-order at today's prices), customer,
+    currency and notes; rates are re-derived from the source's stored
+    totals so the draft's totals match when prices are unchanged. Payments,
+    returns and credit notes stay on the source; the new draft is issued
+    through the normal flow (stock is deducted only on issue). The number
+    is ``<source>-COPY`` (suffixed on collision), unique per business.
+    """
+    _membership(session, principal, business_id)
+    source = session.scalars(select(Invoice).where(
+        Invoice.id == invoice_id, Invoice.business_id == business_id,
+    )).one_or_none()
+    if source is None:
+        raise WorkflowError("Invoice not found in this business")
+    source_lines = session.scalars(select(InvoiceLine).where(
+        InvoiceLine.invoice_id == source.id,
+        InvoiceLine.business_id == business_id,
+    )).all()
+    if not source_lines:
+        raise WorkflowError("Source invoice has no lines")
+    # Rates are percentages (0–100) in calculate_invoice_totals; re-derive
+    # them from the stored snapshots so the draft's totals match.
+    subtotal = source.subtotal
+    discount_rate = (
+        source.discount_total / subtotal * Decimal(100)
+        if subtotal > 0 else ZERO
+    )
+    after_discount = subtotal - source.discount_total
+    tax_rate = (
+        source.tax_total / after_discount * Decimal(100)
+        if after_discount > 0 else ZERO
+    )
+    base_number = source.invoice_number.strip()
+    candidate = f"{base_number}-COPY"[:64]
+    suffix = 2
+    while session.scalars(select(Invoice.id).where(
+        Invoice.business_id == business_id,
+        Invoice.invoice_number == candidate,
+    )).first() is not None:
+        tail = f"-COPY-{suffix}"
+        candidate = f"{base_number[:64 - len(tail)]}{tail}"
+        suffix += 1
+    return create_invoice(
+        session, principal=principal, business_id=business_id,
+        invoice_number=candidate, currency_code=source.currency_code,
+        lines=[
+            {
+                "quantity": str(line.quantity),
+                "description": line.description,
+                **({"product_id": str(line.product_id)} if line.product_id else {}),
+                **({"unit_price": str(line.unit_price)} if not line.product_id else {}),
+            }
+            for line in source_lines
+        ],
+        customer_id=source.customer_id,
+        discount_rate=discount_rate, tax_rate=tax_rate, notes=source.notes,
+    )
+
+
 def replace_draft_invoice(
     session: Session, *, principal: AuthenticatedPrincipal, business_id: UUID,
     invoice_id: UUID, invoice_number: str, currency_code: str,

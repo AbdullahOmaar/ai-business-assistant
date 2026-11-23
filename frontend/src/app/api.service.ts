@@ -787,6 +787,12 @@ export class ApiService {
       'POST', { reason }
     );
   }
+  duplicateInvoice(businessId: string, invoiceId: string): Promise<Invoice> {
+    return this.request<Invoice>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}/duplicate`,
+      'POST', {}
+    );
+  }
   auditEvents(businessId: string, filters: { limit?: number; offset?: number; action?: string; target_type?: string }): Promise<AuditEventPage> {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(filters)) {

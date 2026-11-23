@@ -1,5 +1,5 @@
 // Keep each worker release isolated so a failed install cannot delete the active worker's cache.
-const CACHE_NAME = 'aba-shell-v1.10.0-f2ae20797d14';
+const CACHE_NAME = 'aba-shell-v1.11.0-5b1211bdb500';
 const CACHE_PREFIX = 'aba-shell-';
 const SHELL_URLS = [
   // Public client bootstrap config; this contains no server credentials or business records.

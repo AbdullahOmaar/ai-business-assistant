@@ -61,6 +61,7 @@ MATRIX = [
     ("POST", "/api/v1/businesses/{business_id}/suppliers", "allow"),
     ("POST", "/api/v1/businesses/{business_id}/products", "allow"),
     ("POST", "/api/v1/businesses/{business_id}/invoices", "allow"),
+    ("POST", "/api/v1/businesses/{business_id}/invoices/{invoice_id}/duplicate", "allow"),
     ("POST", "/api/v1/businesses/{business_id}/invoices/issue", "deny"),
     ("POST", "/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue", "deny"),
     ("PATCH", "/api/v1/businesses/{business_id}/invoices/{invoice_id}", "allow"),
@@ -330,6 +331,7 @@ def test_full_route_role_tenant_denial_matrix():
                 "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "1.00"}],
             },
             ("POST", "/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue"): {},
+            ("POST", "/api/v1/businesses/{business_id}/invoices/{invoice_id}/duplicate"): {},
             ("PATCH", "/api/v1/businesses/{business_id}/invoices/{invoice_id}"): {
                 "invoice_number": "INV-PROBE-EDIT", "currency_code": "EGP", "customer_id": customer_id,
                 "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "1.00"}],
