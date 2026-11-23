@@ -1,8 +1,17 @@
 # Authenticated API Route Inventory
 
-**Reviewed:** 2026-10-31  
-**Scope:** FastAPI routes registered by `backend/app/main.py`, `api.py`, `core_features_api.py`, `extended_api.py`, `assistant_api.py`, `platform_admin_api.py`, and `employee_payroll_api.py`.  
+**Reviewed:** 2026-10-31; route × role × tenant matrix completed 2026-11-23 (see the completion section below)  
+**Scope:** FastAPI routes registered by `backend/app/main.py`, `api.py`, `core_features_api.py`, `extended_api.py`, `assistant_api.py`, `platform_admin_api.py`, `employee_payroll_api.py`, `purchasing_api.py`, and `demo_auth_api.py`.  
 **Purpose:** Source-level inventory for security review. This document is not a claim that every endpoint has exhaustive integration coverage.
+
+## Route × role × tenant matrix — COMPLETED 2026-11-23 (Linear 3A-376 part 3; GitHub issue #276)
+
+- **The live route table is 93 routes** (enumerated from the nine routers above, including `purchasing_api.py` and `demo_auth_api.py`, which earlier editions of this inventory missed). `backend/tests/test_route_role_tenant_matrix.py` carries the matrix as an executable registry: **87 routes** are exercised per actor, and a companion test asserts the registry equals the live route table exactly, so a route added or removed without a matrix entry fails CI.
+- **Actors and verdicts:** every matrix route was fired as (1) unauthenticated → **401** on all 87; (2) authenticated non-member → **403** on all 87; (3) the owner of a second business against the first business's routes (cross-tenant) → **403** on all 87; (4) a STAFF member of the target business → **403 on every owner-only / platform-grant route and success (200/201) on exactly the documented membership-level surface**. Every denied request was asserted to leave **all business-scoped rows of both businesses byte-identical** (full-row snapshots, the discipline of `test_extended_route_snapshot_matrix.py` generalized to the whole API), against a fixture seeded with real customers, a stock-tracked product, draft + issued invoices, a purchase order, an employee and a payroll record.
+- **One designed exception:** `GET /api/v1/businesses` lists the *caller's own* memberships — there is no tenant to deny. The matrix pins the scoping property instead: outsider → `[]`, cross-tenant owner → only their own business, staff → only the business they belong to.
+- **Excluded from the matrix, with their own coverage:** `GET /health`, `GET /readyz`, `GET /version` (public operational), `POST /api/v1/businesses` (no tenant exists yet; principal-only), `POST /api/v1/invitations/accept` (token-based; `test_membership_invitations_api.py`), `POST /api/v1/demo/session` (public by design — the demo account's shared credentials are intentional; `test_demo_auth_api.py`).
+- **Rows this completion added to the tables below:** `GET /sales-returns`, `POST /sales-returns/{return_id}/credit-note`, `GET /credit-notes` (extended workflows). The invitation routes and the purchasing detail routes were already recorded in the 2026-11-16 delta section.
+- **What remains open (unchanged, honestly):** authenticated production smoke with a real account; per-route OWNER-positive cases beyond the targeted suites already cited below; the `PUT /settings/{setting_key}` business audit-event gap noted in its table row. No authorization policy, permission or route behaviour was changed by this completion — verification and documentation only.
 
 
 ## Denied-mutation regression evidence — merged successors and remaining scope
@@ -104,6 +113,9 @@ All paths below inherit the business ID and require a trusted principal plus act
 | POST | `/purchase-orders/{order_id}/receive` | OWNER only; order, lines, and products must belong to the requested business |
 | POST | `/sales-returns` | Membership; invoice and invoice lines must be same-business |
 | POST | `/sales-returns/{return_id}/approve` | OWNER only; same-business return and invoice/line references; lifecycle and cumulative quantity/amount checks |
+| GET | `/sales-returns` | Membership required; returns scoped to the requested business |
+| POST | `/sales-returns/{return_id}/credit-note` | OWNER only; same-business approved return; issues the credit note for the return |
+| GET | `/credit-notes` | Membership required; credit notes scoped to the requested business |
 | GET | `/recurring-invoices` | Membership required; schedules scoped to the requested business |
 | POST | `/recurring-invoices` | OWNER only; any customer reference must belong to the requested business |
 | POST | `/pricing-rules` | OWNER only |
