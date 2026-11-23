@@ -1,5 +1,4 @@
 from decimal import Decimal
-from uuid import uuid4
 
 import pytest
 from sqlalchemy import create_engine, func, select
@@ -7,15 +6,33 @@ from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
 from app.models import (
-    Base, Business, BusinessMembership, InvoiceLine, MembershipRole,
-    Product, PurchaseOrder, PurchaseOrderLine, SalesReturn, SalesReturnLine,
-    StockMovement, Supplier,
+    Base,
+    Business,
+    BusinessMembership,
+    InvoiceLine,
+    MembershipRole,
+    PurchaseOrder,
+    PurchaseOrderLine,
+    SalesReturn,
+    SalesReturnLine,
+    StockMovement,
+    Supplier,
+)
+from app.operations import (
+    WorkflowError,
+    approve_sales_return,
+    financial_summary,
+    queue_notification,
+    receive_purchase_order,
 )
 from app.security import AuthenticatedPrincipal, AuthorizationError
-from app.services import create_customer, create_invoice, create_product, issue_invoice, record_stock_movement, void_invoice
-from app.operations import (
-    WorkflowError, approve_sales_return, financial_summary, queue_notification,
-    receive_purchase_order,
+from app.services import (
+    create_customer,
+    create_invoice,
+    create_product,
+    issue_invoice,
+    record_stock_movement,
+    void_invoice,
 )
 
 

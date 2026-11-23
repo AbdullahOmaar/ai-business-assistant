@@ -10,14 +10,14 @@ from sqlalchemy.orm import sessionmaker
 from app.api import router as business_router
 from app.assistant_api import router as assistant_router
 from app.core_features_api import router as core_features_router
-from app.extended_api import router as extended_business_router
-from app.purchasing_api import router as purchasing_router
 from app.database import create_database_engine
-from app.firebase_auth import configure_firebase_auth
-from app.platform_admin_api import router as platform_admin_router
-from app.employee_payroll_api import router as employee_payroll_router
 from app.demo_auth_api import router as demo_auth_router
+from app.employee_payroll_api import router as employee_payroll_router
+from app.extended_api import router as extended_business_router
+from app.firebase_auth import configure_firebase_auth
 from app.monitoring import configure_sentry
+from app.platform_admin_api import router as platform_admin_router
+from app.purchasing_api import router as purchasing_router
 
 # Error monitoring stays off unless SENTRY_DSN is set by the operator; it
 # must be configured before the app serves requests (see app/monitoring.py).
@@ -25,13 +25,28 @@ configure_sentry()
 
 CORS_ALLOWED_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
 
+
+def _interactive_docs_enabled() -> bool:
+    """Interactive API docs (3A-364, owner decision 2026-11-22): available
+    in local development only. Every deployed environment — Vercel
+    ``preview`` and ``production`` — leaves the docs routes unregistered,
+    so /docs, /redoc and /openapi.json answer 404 there. ``VERCEL_ENV`` is
+    the same deployment signal the /version endpoint already reports."""
+    return os.getenv("VERCEL_ENV", "").strip().lower() in ("", "development")
+
+
+_DOCS_ENABLED = _interactive_docs_enabled()
+
 app = FastAPI(
     title="AI Business Assistant API",
-    version="1.9.0",
+    version="1.9.3",
     description=(
         "Business workflows with PostgreSQL, Firebase ID-token verification, "
         "tenant-scoped authorization, and grounded assistant chat."
     ),
+    docs_url="/docs" if _DOCS_ENABLED else None,
+    redoc_url="/redoc" if _DOCS_ENABLED else None,
+    openapi_url="/openapi.json" if _DOCS_ENABLED else None,
 )
 
 @app.middleware("http")

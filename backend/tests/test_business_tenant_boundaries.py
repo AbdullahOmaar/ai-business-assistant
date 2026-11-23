@@ -1,14 +1,28 @@
 """API-level regression tests for cross-business isolation."""
 
-from fastapi.testclient import TestClient
+from datetime import UTC
+from uuid import UUID
+
 from fastapi.routing import APIRoute
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
-from uuid import UUID
 
 from app.main import app
-from app.models import AuditEvent, Base, BusinessMembership, Customer, Invoice, InvoiceLine, MembershipRole, Payment, PaymentAllocation, Product, StockMovement
+from app.models import (
+    AuditEvent,
+    Base,
+    BusinessMembership,
+    Customer,
+    Invoice,
+    InvoiceLine,
+    MembershipRole,
+    Payment,
+    PaymentAllocation,
+    Product,
+    StockMovement,
+)
 from app.security import AuthenticatedPrincipal
 
 
@@ -631,10 +645,19 @@ def test_audit_events_are_owner_only_paginated_and_workspace_scoped():
 
 
 def test_customer_statement_is_scoped_currency_safe_and_paginated():
-    from datetime import datetime, timezone
+    from datetime import datetime
     from decimal import Decimal
     from uuid import uuid4
-    from app.models import Business, BusinessMembership, Customer, Invoice, Payment, PaymentAllocation, MembershipRole
+
+    from app.models import (
+        Business,
+        BusinessMembership,
+        Customer,
+        Invoice,
+        MembershipRole,
+        Payment,
+        PaymentAllocation,
+    )
 
     engine = create_engine(
         "sqlite+pysqlite://",
@@ -649,7 +672,7 @@ def test_customer_statement_is_scoped_currency_safe_and_paginated():
     try:
         business_id, customer_id = uuid4(), uuid4()
         invoice_id, payment_id, allocation_id = uuid4(), uuid4(), uuid4()
-        occurred = datetime(2026, 10, 1, tzinfo=timezone.utc)
+        occurred = datetime(2026, 10, 1, tzinfo=UTC)
         with app.state.session_factory() as session:
             session.add(Business(id=business_id, name="Statement workspace", currency_code="EGP"))
             session.flush()
@@ -707,12 +730,19 @@ def test_customer_statement_is_scoped_currency_safe_and_paginated():
         engine.dispose()
 
 def test_data_integrity_report_is_owner_only_read_only_detects_currency_and_customer_mismatches():
-    from datetime import datetime, timezone
-    from sqlalchemy import select
+    from datetime import datetime
     from decimal import Decimal
+
+    from sqlalchemy import select
+
     from app.models import (
-        Business, BusinessMembership, Customer, Invoice, MembershipRole,
-        Payment, PaymentAllocation,
+        Business,
+        BusinessMembership,
+        Customer,
+        Invoice,
+        MembershipRole,
+        Payment,
+        PaymentAllocation,
     )
 
     engine = create_engine(
@@ -745,22 +775,22 @@ def test_data_integrity_report_is_owner_only_read_only_detects_currency_and_cust
                 Invoice(
                     business_id=business.id, customer_id=None, invoice_number="LEGACY-1",
                     status="issued", currency_code="EGP",
-                    issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                    issue_date=datetime(2026, 9, 1, tzinfo=UTC),
                     due_date=None, subtotal=Decimal("100.00"), tax_total=Decimal("0.00"),
                     discount_total=Decimal("0.00"), total=Decimal("100.00"),
                 ),
                 Invoice(
                     business_id=business.id, customer_id=invoice_customer.id,
                     invoice_number="INV-MISMATCH", status="issued", currency_code="EGP",
-                    issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
-                    due_date=datetime(2026, 10, 1, tzinfo=timezone.utc),
+                    issue_date=datetime(2026, 9, 1, tzinfo=UTC),
+                    due_date=datetime(2026, 10, 1, tzinfo=UTC),
                     subtotal=Decimal("60.00"), tax_total=Decimal("0.00"),
                     discount_total=Decimal("0.00"), total=Decimal("60.00"),
                 ),
                 Invoice(
                     business_id=foreign_business.id, customer_id=None,
                     invoice_number="FOREIGN-LEGACY", status="issued", currency_code="USD",
-                    issue_date=datetime(2026, 9, 1, tzinfo=timezone.utc),
+                    issue_date=datetime(2026, 9, 1, tzinfo=UTC),
                     due_date=None, subtotal=Decimal("900.00"), tax_total=Decimal("0.00"),
                     discount_total=Decimal("0.00"), total=Decimal("900.00"),
                 ),
@@ -831,9 +861,10 @@ def test_data_integrity_report_is_owner_only_read_only_detects_currency_and_cust
 
 
 def test_tax_summary_keeps_currencies_separate_and_is_workspace_scoped():
-    from datetime import datetime, timezone
+    from datetime import datetime
     from decimal import Decimal
     from uuid import uuid4
+
     from app.models import Business, BusinessMembership, Invoice, MembershipRole
 
     engine = create_engine(
@@ -856,16 +887,16 @@ def test_tax_summary_keeps_currencies_separate_and_is_workspace_scoped():
             session.flush()
             session.add(BusinessMembership(business_id=business_id, user_subject="tax-owner", role=MembershipRole.OWNER))
             session.add_all([
-                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-1", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 5, tzinfo=timezone.utc), subtotal=Decimal("100.00"), tax_total=Decimal("14.00"), discount_total=Decimal("0.00"), total=Decimal("114.00")),
-                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-2", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 15, tzinfo=timezone.utc), subtotal=Decimal("50.00"), tax_total=Decimal("7.00"), discount_total=Decimal("0.00"), total=Decimal("57.00")),
-                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-USD-1", status="issued", currency_code="USD", issue_date=datetime(2026, 10, 10, tzinfo=timezone.utc), subtotal=Decimal("20.00"), tax_total=Decimal("3.00"), discount_total=Decimal("0.00"), total=Decimal("23.00")),
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-1", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 5, tzinfo=UTC), subtotal=Decimal("100.00"), tax_total=Decimal("14.00"), discount_total=Decimal("0.00"), total=Decimal("114.00")),
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-2", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 15, tzinfo=UTC), subtotal=Decimal("50.00"), tax_total=Decimal("7.00"), discount_total=Decimal("0.00"), total=Decimal("57.00")),
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-USD-1", status="issued", currency_code="USD", issue_date=datetime(2026, 10, 10, tzinfo=UTC), subtotal=Decimal("20.00"), tax_total=Decimal("3.00"), discount_total=Decimal("0.00"), total=Decimal("23.00")),
                 # America/Los_Angeles local October boundaries (UTC-07:00):
                 # Sep 30 23:59 local must be excluded; Oct 1 00:00 must be included.
-                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-START-BEFORE", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, 6, 59, tzinfo=timezone.utc), subtotal=Decimal("100.00"), tax_total=Decimal("100.00"), discount_total=Decimal("0.00"), total=Decimal("200.00")),
-                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-START-BOUNDARY", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, 7, 0, tzinfo=timezone.utc), subtotal=Decimal("2.00"), tax_total=Decimal("2.00"), discount_total=Decimal("0.00"), total=Decimal("4.00")),
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-START-BEFORE", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, 6, 59, tzinfo=UTC), subtotal=Decimal("100.00"), tax_total=Decimal("100.00"), discount_total=Decimal("0.00"), total=Decimal("200.00")),
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-START-BOUNDARY", status="issued", currency_code="EGP", issue_date=datetime(2026, 10, 1, 7, 0, tzinfo=UTC), subtotal=Decimal("2.00"), tax_total=Decimal("2.00"), discount_total=Decimal("0.00"), total=Decimal("4.00")),
                 # Oct 31 23:59 local must be included; Nov 1 00:00 must be excluded.
-                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-END-BEFORE", status="issued", currency_code="EGP", issue_date=datetime(2026, 11, 1, 6, 59, tzinfo=timezone.utc), subtotal=Decimal("4.00"), tax_total=Decimal("4.00"), discount_total=Decimal("0.00"), total=Decimal("8.00")),
-                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-END-BOUNDARY", status="issued", currency_code="EGP", issue_date=datetime(2026, 11, 1, 7, 0, tzinfo=timezone.utc), subtotal=Decimal("8.00"), tax_total=Decimal("8.00"), discount_total=Decimal("0.00"), total=Decimal("16.00")),
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-END-BEFORE", status="issued", currency_code="EGP", issue_date=datetime(2026, 11, 1, 6, 59, tzinfo=UTC), subtotal=Decimal("4.00"), tax_total=Decimal("4.00"), discount_total=Decimal("0.00"), total=Decimal("8.00")),
+                Invoice(business_id=business_id, customer_id=None, invoice_number="TAX-EGP-END-BOUNDARY", status="issued", currency_code="EGP", issue_date=datetime(2026, 11, 1, 7, 0, tzinfo=UTC), subtotal=Decimal("8.00"), tax_total=Decimal("8.00"), discount_total=Decimal("0.00"), total=Decimal("16.00")),
             ])
             session.commit()
         client = TestClient(app)
@@ -896,9 +927,10 @@ def test_tax_summary_keeps_currencies_separate_and_is_workspace_scoped():
 
 
 def test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scoped():
-    from datetime import datetime, timezone
+    from datetime import datetime
     from decimal import Decimal
     from uuid import uuid4
+
     from app.models import Business, BusinessMembership, MembershipRole, Product
 
     engine = create_engine(
@@ -963,7 +995,7 @@ def test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scop
 
         schedule = client.post(f"/api/v1/businesses/{business_id}/recurring-invoices", json={
             "customer_id": None, "interval_days": 30, "timezone": "UTC",
-            "next_run_at": datetime(2026, 10, 26, tzinfo=timezone.utc).isoformat(),
+            "next_run_at": datetime(2026, 10, 26, tzinfo=UTC).isoformat(),
         })
         assert schedule.status_code == 201, schedule.text
         listed_schedules = client.get(f"/api/v1/businesses/{business_id}/recurring-invoices")
@@ -1019,6 +1051,7 @@ def test_supplier_purchase_order_and_recurring_schedule_lists_are_workspace_scop
 def test_staff_cannot_seed_opening_stock_during_product_creation():
     """Opening inventory is OWNER-only even when created through the product endpoint."""
     from sqlalchemy.orm import sessionmaker
+
     from app.models import BusinessMembership, Product, StockMovement
     from app.security import MembershipRole
 
@@ -1121,6 +1154,7 @@ def test_staff_cannot_seed_opening_stock_during_product_creation():
 
 def test_operational_health_is_owner_only_read_only_and_reports_missing_workers():
     from uuid import uuid4
+
     from app.models import Business, BusinessMembership, MembershipRole
 
     engine = create_engine(
@@ -1167,10 +1201,18 @@ def test_operational_health_is_owner_only_read_only_and_reports_missing_workers(
         engine.dispose()
 
 def test_receivables_aging_uses_allocations_and_separates_missing_due_dates():
-    from datetime import datetime, timezone
+    from datetime import datetime
     from decimal import Decimal
     from uuid import uuid4
-    from app.models import Business, BusinessMembership, Invoice, Payment, PaymentAllocation, MembershipRole
+
+    from app.models import (
+        Business,
+        BusinessMembership,
+        Invoice,
+        MembershipRole,
+        Payment,
+        PaymentAllocation,
+    )
 
     engine = create_engine(
         "sqlite+pysqlite://",
@@ -1185,7 +1227,7 @@ def test_receivables_aging_uses_allocations_and_separates_missing_due_dates():
     try:
         business_id = uuid4()
         paid_invoice_id, open_invoice_id, payment_id, allocation_id = (uuid4() for _ in range(4))
-        as_of = datetime(2026, 10, 1, tzinfo=timezone.utc)
+        as_of = datetime(2026, 10, 1, tzinfo=UTC)
         with app.state.session_factory() as session:
             session.add(Business(id=business_id, name="Aging workspace", currency_code="EGP"))
             session.flush()
@@ -1196,7 +1238,7 @@ def test_receivables_aging_uses_allocations_and_separates_missing_due_dates():
                 Invoice(
                     id=paid_invoice_id, business_id=business_id, customer_id=None,
                     invoice_number="AGE-31", status="issued", currency_code="EGP",
-                    issue_date=as_of, due_date=datetime(2026, 8, 30, tzinfo=timezone.utc),
+                    issue_date=as_of, due_date=datetime(2026, 8, 30, tzinfo=UTC),
                     subtotal=Decimal("100.00"), tax_total=Decimal("0.00"),
                     discount_total=Decimal("0.00"), total=Decimal("100.00"),
                 ),
@@ -1253,8 +1295,9 @@ def test_receivables_aging_uses_allocations_and_separates_missing_due_dates():
 
 def test_purchase_order_approval_is_owner_only_and_idempotent():
     """Only the workspace owner may approve a draft PO, with one audit event."""
-    from uuid import uuid4
     from decimal import Decimal
+    from uuid import uuid4
+
     from app.models import Business, Supplier
 
     engine = create_engine(
@@ -1375,6 +1418,7 @@ def test_purchase_order_approval_is_owner_only_and_idempotent():
 def test_nonmember_cannot_access_remaining_sensitive_route_inventory_without_side_effects():
     """Close the non-member denial matrix for sensitive extended API routes."""
     from uuid import uuid4
+
     from app.models import Business
 
     engine = create_engine(
@@ -1454,6 +1498,7 @@ def test_nonmember_cannot_access_remaining_sensitive_route_inventory_without_sid
 def test_staff_owner_only_route_matrix_and_allowed_read_reports():
     """STAFF cannot use owner-only endpoints but may read member-scoped reports."""
     from uuid import uuid4
+
     from app.models import Business, Customer
 
     engine = create_engine(
@@ -1553,12 +1598,14 @@ def test_staff_owner_only_route_matrix_and_allowed_read_reports():
 
 def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_orders():
     """An OWNER sees only resources belonging to the business in the route path."""
-    from datetime import datetime, timezone
+    from datetime import datetime
     from decimal import Decimal
     from uuid import uuid4
+
     from app.models import (
-        AuditEvent, Invoice, PurchaseOrder, PurchaseOrderLine,
-        RecurringInvoiceSchedule, Supplier,
+        Invoice,
+        PurchaseOrder,
+        PurchaseOrderLine,
     )
 
     engine = create_engine(
@@ -1667,7 +1714,7 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
                 invoice_number="INV-B-UNLINKED",
                 status="issued",
                 currency_code="USD",
-                issue_date=datetime(2026, 10, 30, tzinfo=timezone.utc),
+                issue_date=datetime(2026, 10, 30, tzinfo=UTC),
                 due_date=None,
                 subtotal=Decimal("15.00"),
                 tax_total=Decimal("0.00"),
@@ -1815,6 +1862,7 @@ def test_owner_cannot_cross_read_foreign_customer_statement_reports_or_purchase_
 def test_supplier_create_denies_non_members_without_side_effects_and_allows_members():
     """The canonical supplier-create route must preserve tenant and membership boundaries."""
     from uuid import uuid4
+
     from app.models import Business, Supplier
 
     engine = create_engine(

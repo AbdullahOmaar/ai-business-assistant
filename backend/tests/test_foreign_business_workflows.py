@@ -6,6 +6,11 @@ from uuid import UUID
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
+from test_api import (
+    _configure_test_identity,
+    _restore_test_identity,
+    _sales_return_fixture,
+)
 
 from app.main import app
 from app.models import (
@@ -26,11 +31,6 @@ from app.models import (
     SalesReturnLine,
     StockMovement,
     Supplier,
-)
-from test_api import (
-    _configure_test_identity,
-    _restore_test_identity,
-    _sales_return_fixture,
 )
 
 

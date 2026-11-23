@@ -9,7 +9,13 @@ from sqlalchemy.pool import StaticPool
 
 from app.models import Base, Business, BusinessMembership, MembershipRole
 from app.security import AuthenticatedPrincipal
-from app.services import WorkflowError, create_customer, create_invoice, issue_invoice, replace_draft_invoice
+from app.services import (
+    WorkflowError,
+    create_customer,
+    create_invoice,
+    issue_invoice,
+    replace_draft_invoice,
+)
 
 
 def test_issued_invoice_cannot_be_edited_as_a_draft():

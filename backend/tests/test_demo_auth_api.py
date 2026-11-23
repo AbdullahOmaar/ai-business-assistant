@@ -4,15 +4,14 @@ import threading
 import time
 from types import SimpleNamespace
 
-from fastapi.testclient import TestClient
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.models import PlatformRoleGrant
-
 
 _COUNTER_DDL = """
 CREATE TABLE demo_rate_limit_counters (
@@ -42,6 +41,7 @@ def demo_db(monkeypatch):
 @pytest.fixture
 def demo_firebase(monkeypatch):
     from firebase_admin import auth
+
     from app import demo_auth_api
 
     calls = {"get_user": 0, "mint": 0}
@@ -88,6 +88,7 @@ def test_public_demo_session_mints_custom_token_without_password(demo_db, demo_f
 
 def test_public_demo_session_rejects_platform_super_admin(demo_db, monkeypatch):
     from firebase_admin import auth
+
     from app import demo_auth_api
 
     monkeypatch.setenv("DEMO_LOGIN_ENABLED", "true")

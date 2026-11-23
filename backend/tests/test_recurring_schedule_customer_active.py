@@ -14,8 +14,14 @@ from sqlalchemy.pool import StaticPool
 
 from app.main import app
 from app.models import (
-    AuditEvent, Base, Business, BusinessMembership, Customer, Invoice, InvoiceLine,
-    MembershipRole, RecurringInvoiceSchedule,
+    Base,
+    Business,
+    BusinessMembership,
+    Customer,
+    Invoice,
+    InvoiceLine,
+    MembershipRole,
+    RecurringInvoiceSchedule,
 )
 from app.security import AuthenticatedPrincipal
 

@@ -3,7 +3,12 @@ import io
 
 import pytest
 
-from app.data_exchange import CsvValidationError, export_csv, parse_import_csv, spreadsheet_safe
+from app.data_exchange import (
+    CsvValidationError,
+    export_csv,
+    parse_import_csv,
+    spreadsheet_safe,
+)
 
 
 def test_customer_import_accepts_only_allowlisted_fields():

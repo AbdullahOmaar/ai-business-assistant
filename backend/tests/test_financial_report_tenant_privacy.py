@@ -8,7 +8,7 @@ import io
 import json
 import os
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from uuid import UUID, uuid4
 
@@ -19,12 +19,11 @@ from sqlalchemy.engine import make_url
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.main import app
 import app.assistant_api as assistant_api
-from app.security import AuthenticatedPrincipal
+from app.main import app
 from app.models import Base, BusinessMembership, Expense, MembershipRole
 from app.operations import financial_summary
-
+from app.security import AuthenticatedPrincipal
 
 OWNER = "t40-report-privacy-owner"
 APPROVER = "t40-report-privacy-approver"
@@ -161,7 +160,7 @@ def _create_expense(client, business_id, *, description, amount):
             "description": description,
             "amount": amount,
             "currency_code": "EGP",
-            "incurred_at": datetime.now(timezone.utc).isoformat(),
+            "incurred_at": datetime.now(UTC).isoformat(),
         },
     )
     assert response.status_code == 201, response.text

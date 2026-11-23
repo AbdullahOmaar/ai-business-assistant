@@ -1,5 +1,6 @@
 """Per-request full-row snapshots for non-member and STAFF route matrices."""
 
+from datetime import UTC
 from uuid import UUID, uuid4
 
 from fastapi.routing import APIRoute
@@ -8,9 +9,9 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from app.main import app
 from app.api import router as business_router
 from app.extended_api import router as extended_business_router
+from app.main import app
 from app.models import Base, BusinessMembership, MembershipRole
 from app.security import AuthenticatedPrincipal
 
@@ -193,9 +194,9 @@ def test_notification_reads_are_member_scoped_and_tenant_isolated_without_side_e
     from uuid import UUID
 
     from fastapi.testclient import TestClient
+    from sqlalchemy import create_engine
     from sqlalchemy.orm import Session, sessionmaker
     from sqlalchemy.pool import StaticPool
-    from sqlalchemy import create_engine
 
     from app.main import app
     from app.models import Base, BusinessMembership, MembershipRole
@@ -324,7 +325,7 @@ def test_notification_reads_are_member_scoped_and_tenant_isolated_without_side_e
 
 def test_staff_can_create_ordinary_expense_only_in_its_own_business():
     """STAFF may record an ordinary expense in their tenant, never a foreign tenant."""
-    from datetime import datetime, timezone
+    from datetime import datetime
     from uuid import UUID
 
     from fastapi.testclient import TestClient
@@ -394,7 +395,7 @@ def test_staff_can_create_ordinary_expense_only_in_its_own_business():
             session.commit()
 
         subject["value"] = "expense-a-staff"
-        incurred_at = datetime(2026, 11, 6, 9, 30, tzinfo=timezone.utc).isoformat()
+        incurred_at = datetime(2026, 11, 6, 9, 30, tzinfo=UTC).isoformat()
         own_response = client.post(
             f"/api/v1/businesses/{business_a}/expenses",
             json={

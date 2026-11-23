@@ -8,13 +8,13 @@ from decimal import Decimal
 from enum import Enum
 from uuid import UUID, uuid4
 
+import sqlalchemy as sa
 from sqlalchemy import (
+    JSON,
     BigInteger,
     Boolean,
-    JSON,
     CheckConstraint,
     DateTime,
-    Enum as SqlEnum,
     ForeignKey,
     ForeignKeyConstraint,
     Index,
@@ -25,8 +25,10 @@ from sqlalchemy import (
     Uuid,
     func,
 )
+from sqlalchemy import (
+    Enum as SqlEnum,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-import sqlalchemy as sa
 
 
 class Base(DeclarativeBase):
