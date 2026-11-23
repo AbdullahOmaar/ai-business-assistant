@@ -12,3 +12,6 @@ playwright-report/
 .env.*
 !.env.example
 !.env.sample
+
+# Visual-regression capture runs (baselines are kept by the reviewer, not committed)
+frontend/tools/visual-regression/runs/
