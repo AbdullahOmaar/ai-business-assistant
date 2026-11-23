@@ -15,6 +15,14 @@
 - **Local evidence:** backend `test_purchase_order_duplicate.py` 2/2 (approved → matching draft, total preserved, received 0 / remaining full; cancelled → draft; cross-tenant 403; unauthenticated 401) + matrix 2/2 (with the part-1 invoice duplicate); frontend 774/774; Ruff clean.
 - **NOT RUN:** physical Android, installed PWA, screen reader, real-account authenticated smoke — never claimed as passed.
 
+## Version 1.12.0 candidate — Phase 1 completion batch (3) part 2 (T42): invoice reference states pinned (Linear 3A-251) — 2026-11-23 (same candidate as part 1, NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/t42-customers-products` stacked on part 1 (`aiba/t41-payroll-failure-states`); same 1.12.0 unit, no further version bump.
+- **Verification first:** customer/product/import suites = 61 passed (incl. customer CSV import, statement queries, recurring-schedule customer state). Cross-tenant invoice references (foreign customer/product → 422, no writes, no audit events) are covered by `test_foreign_invoice_references.py`; customer search/update/soft-deactivation and product update/soft-deactivation are covered in `test_core_features_api.py`.
+- **The gap found:** the SAME-business state rules on the invoice path had no invoice-level tests — a deactivated own customer or own product, and catalogue pricing. New `backend/tests/test_invoice_reference_states.py` pins all three: deactivated customer → 422 «Active customer not found in this business» with zero invoice rows; deactivated product → 422 «Invoice product not found in this business» with zero rows; a product line is priced from the catalogue (`product.unit_price`) and described by the product name even when the client sends a different unit price. **3/3 passed** on current code, no behaviour change needed.
+- **Local evidence:** backend full suite 501 passed / 14 skipped (498 + 3 new); frontend 775/775; Ruff clean.
+- **NOT RUN:** physical Android, installed PWA, screen reader, real-account authenticated smoke — never claimed as passed.
+
 ## Version 1.12.0 candidate — Phase 1 completion batch (3) part 1 (T41): payroll failure states pinned (Linear 3A-250) — 2026-11-23 (NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/t41-payroll-failure-states` from main `94f6685`; the batch (T41+T42+T43 + #402 acceptance matrix, manager-approved 2026-11-23, تقدير 16h) ships as one 1.12.0 unit; this part carries the version bump.
