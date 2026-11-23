@@ -20,6 +20,9 @@ rollback never needs a schema rollback.
 | 1.7.1 | `adbb4cd` (PR #422) + `6e9f5c8` (PR #423, 1.8.0 candidate) | Deployed | API `/version` reported **1.7.1** (commit `adbb4cd`) and web returned 200 on 2026-11-22 22:32 EET — the API deploy lagged one candidate behind the merged stack; recorded as observed, not assumed | Redeploy previous |
 | 1.8.1–1.9.9 stack | merges through `f2ae207` (PRs #425–#436) | Merged to `main` 2026-11-22/23 | The manager reported the phase-era live line as 1.9.3 and one grouped deploy for the 1.9.9 stack; per-candidate live verification was not performed by the builder | Redeploy previous |
 | 1.10.0 | 3A-407 parts 1–3 (PRs #437+) | Candidate — NOT deployed at register time | Local evidence only: full backend suite, frontend suite, Ruff, gitleaks full-history scan + planted-secret trial (part 1) | n/a until deployed |
+| 1.11.0 | 3A-435 parts 1–3 (PRs #440–#442) | Candidate merged 2026-11-23 | Local evidence only: backend 495/14, frontend 775/775, Ruff clean; invoice + PO duplication verified by new tests | n/a until deployed |
+| 1.12.0 | 3A-435 follow-on batch (3) (PRs #443–#446) | Candidate merged 2026-11-23 | Local evidence only: backend 503/14, frontend 778/778, Ruff clean; T41–T43 failure states + #402 matrix pinned by new tests | n/a until deployed |
+| 1.13.0 | 3A-650 §1 parts A/C/D/E (PRs #447–#450, merges `d6d642c`, `578defc`, `08b81e5`, `de7f6e8`) | Candidate merged 2026-11-23 — NOT deployed at register time; the API release (part B) is the manager's action | Local evidence only: backend 508/14, frontend 784/784, Ruff clean, build Initial total 687.92 kB; visual-regression harness proven live (same build 0.000%, swapped shot 15.06%). Live API still 1.7.1 at register time — part B's verification (version match, docs gating, Sentry events, migration 0011 applied) happens at release time | Redeploy previous |
 
 ## Standing rules this register enforces
 
