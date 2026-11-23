@@ -15,6 +15,14 @@
 - **Local evidence:** backend `test_purchase_order_duplicate.py` 2/2 (approved → matching draft, total preserved, received 0 / remaining full; cancelled → draft; cross-tenant 403; unauthenticated 401) + matrix 2/2 (with the part-1 invoice duplicate); frontend 774/774; Ruff clean.
 - **NOT RUN:** physical Android, installed PWA, screen reader, real-account authenticated smoke — never claimed as passed.
 
+## Version 1.12.0 candidate — Phase 1 completion batch (3) part 1 (T41): payroll failure states pinned (Linear 3A-250) — 2026-11-23 (NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/t41-payroll-failure-states` from main `94f6685`; the batch (T41+T42+T43 + #402 acceptance matrix, manager-approved 2026-11-23, تقدير 16h) ships as one 1.12.0 unit; this part carries the version bump.
+- **Verification first:** the employee/payroll cycle was already broadly covered — employee CRUD + audited deactivation, duplicate code/email 409, STAFF and non-member denials with no rows written, cross-business isolation, payroll math, self-approval rejected (a different owner must approve), pay-before-approval 409, duplicate period 409 (unique constraint + IntegrityError translation), pay-twice 409 with exactly one linked expense, deductions-cannot-exceed-earnings 422. Suites: employee payroll + tenant payroll snapshots 10 passed.
+- **The gap found:** three failure states existed in code but had NO regression tests — payroll for a deactivated employee (404 via the is_active filter), editing an approved payroll (409, values unchanged), re-approving an approved payroll (409), and editing a paid payroll (409). New `backend/tests/test_payroll_failure_states.py` pins all of them: **3/3 passed** on current code, no behaviour change needed.
+- **Local evidence:** backend full suite 498 passed / 14 skipped (495 + 3 new); frontend 775/775; Ruff clean.
+- **NOT RUN:** physical Android, installed PWA, screen reader, real-account authenticated smoke — never claimed as passed.
+
 ## Version 1.11.0 candidate — 3A-435 part 3 (T40): reports hand their context to the assistant (Linear 3A-249) — 2026-11-23 (same candidate as parts 1–2, NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/t40-reports-assistant-3a-435` stacked on part 2 (`aiba/t39-po-duplicate-3a-435`); same 1.11.0 unit, no further version bump.
