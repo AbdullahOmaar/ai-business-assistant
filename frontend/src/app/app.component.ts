@@ -71,10 +71,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
         <a class="skip-link" href="#main-content">{{ t('ui.m_1561v1f') }}</a>
       }
       @if (loading && initialized) { <div class="global-loading" role="status" aria-live="polite"><aba-loading-logo [compact]="true" [announce]="false" /><span class="loading-label">{{ t('ui.m_1rza5t5') }}</span></div> }
-      @if (appUpdateAvailable) {
+      @if (appUpdateAvailable && !appUpdateDismissed) {
         <aside class="app-update-notice" role="status" aria-live="polite">
           <span>{{ t('ui.m_4cplhg') }}</span>
           <button class="secondary" type="button" (click)="reloadAppAfterUpdate()">{{ t('ui.m_16hli7m') }}</button>
+          <button class="secondary" type="button" (click)="dismissAppUpdate()">{{ t('ui.m_1gc2kb4') }}</button>
         </aside>
       }
       @if (!initialized) {
@@ -1275,6 +1276,10 @@ export class AppComponent implements OnInit, OnDestroy {
   isInstalled = false;
   installHelp = false;
   appUpdateAvailable = false;
+  // 3A-650 part E: the update notice is dismissible for the session — the
+  // new worker already controls the page (skipWaiting + clients.claim), so
+  // dismissing only defers the reload, it cannot strand the user.
+  appUpdateDismissed = false;
   private installPrompt: (Event & { prompt: () => Promise<void>; userChoice: Promise<{ outcome: string }> }) | null = null;
 
   readonly loadInventoryMovementPage: InventoryMovementLoader;
@@ -1746,7 +1751,15 @@ export class AppComponent implements OnInit, OnDestroy {
         () => { this.appUpdateAvailable = true; },
       );
       navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
-      const registerWorker = () => navigator.serviceWorker.register('/sw.js').catch(() => {
+      const registerWorker = () => navigator.serviceWorker.register('/sw.js').then((registration) => {
+        // 3A-650 part E: long-lived tabs learn about a newer worker when
+        // they become visible again, instead of only at the next full load.
+        document.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            void registration.update().catch(() => undefined);
+          }
+        });
+      }).catch(() => {
         // The app remains usable if service-worker registration is unavailable.
       });
       if (document.readyState === 'complete') void registerWorker();
@@ -2521,6 +2534,10 @@ export class AppComponent implements OnInit, OnDestroy {
   reloadAppAfterUpdate(): void {
     this.appUpdateAvailable = false;
     window.location.reload();
+  }
+
+  dismissAppUpdate(): void {
+    this.appUpdateDismissed = true;
   }
 
   async initializeApp(): Promise<void> {
