@@ -72,6 +72,34 @@ Round-2 review (3A-445) debts, status after the 1.13.0 release:
 5. Manager step: apply migration 0011 (needs production `DATABASE_URL`).
 6. 3A-267: delivery proof (real failure or authorized test post).
 
+## Addendum — 2026-11-23 ~18:05 EET (after the manager's SENTRY_DSN step)
+
+- **API redeploy verified live:** after the manager set `SENTRY_DSN`
+  and redeployed (deployment `c35zpd9f8`), `/version` still reports
+  **1.13.0** / commit `b721905` / environment `production`;
+  `/health` 200; `/readyz` 200 with `{"status":"ready"}`; `/docs`,
+  `/openapi.json`, `/redoc` all 404 — **intended**, per the owner
+  decision of 2026-11-22 (3A-364): `_interactive_docs_enabled()` in
+  `backend/app/main.py` enables the docs routes only when `VERCEL_ENV`
+  is empty or `development`. The 404 is the security fix working, not a
+  problem.
+- **Sentry API activation — test event sent:** a production-labelled
+  test event ("3A-650 part B — production activation check (API)",
+  id `a9b3e95e98dc4330bd2d4d20f857ef4b`) was sent through the aiba-api
+  DSN and accepted. Final confirmation is a dashboard check the
+  manager does: the event should appear under the aiba-api project's
+  Issues in Sentry (it proves ingestion; the live deployment's own
+  init runs the same code path when `SENTRY_DSN` is set).
+- **Migration 0011 — release-time step built:** `DATABASE_URL` is a
+  Vercel Sensitive (write-only) variable, so it cannot be applied from
+  outside Vercel. PR #454 adds the repo side: a fail-closed
+  build-time wrapper (`backend/scripts/apply_migrations.py`) plus
+  `docs/RELEASE_MIGRATION.md` with the exact one-time dashboard
+  change (prepend the script to the API project's Build Command),
+  the exact 0011 SQL review, and the rollback plan. The dashboard
+  change is the manager's step; the next deploy then applies 0011
+  automatically.
+
 ## Live evidence gathered for this audit (2026-11-23 ~18:00 EET)
 
 - API `/version` 1.13.0 / commit `b721905`; `/docs`, `/openapi.json`,
