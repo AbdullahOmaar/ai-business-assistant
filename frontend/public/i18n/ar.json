@@ -1935,6 +1935,7 @@
     "remaining": "المتبقي",
     "approve": "اعتماد الأمر",
     "cancelOrder": "إلغاء المسودة",
+    "duplicateOrder": "تكرار أمر الشراء",
     "receive": "تسجيل استلام",
     "confirmApprove": "هل تريد اعتماد أمر الشراء؟",
     "confirmCancel": "هل تريد إلغاء مسودة أمر الشراء؟",

@@ -446,6 +446,77 @@ def post_purchase_order(business_id: UUID, body: PurchaseOrderInput,
                       "currency_code", "total", "created_at"))
 
 
+@router.post("/purchase-orders/{order_id}/duplicate", status_code=201)
+def duplicate_purchase_order(business_id: UUID, order_id: UUID,
+                             session: Session = Depends(get_session),
+                             principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Re-create a purchase order as a new draft (3A-435 / T39 «إعادة الطلب»).
+
+    Same supplier, currency and lines (unit-cost snapshots kept, so the
+    total matches); receipts stay on the source — the copy starts with
+    zero received quantities and needs its own owner approval.
+    """
+    def op():
+        _authorized(session, principal, business_id)
+        source = session.scalars(select(PurchaseOrder).where(
+            PurchaseOrder.id == order_id,
+            PurchaseOrder.business_id == business_id,
+        )).one_or_none()
+        if source is None:
+            raise WorkflowError("Purchase order not found in this business")
+        source_lines = session.scalars(select(PurchaseOrderLine).where(
+            PurchaseOrderLine.purchase_order_id == source.id,
+            PurchaseOrderLine.business_id == business_id,
+        )).all()
+        if not source_lines:
+            raise WorkflowError("A purchase order must contain at least one line")
+        supplier = session.scalars(select(Supplier).where(
+            Supplier.id == source.supplier_id, Supplier.business_id == business_id,
+            Supplier.is_active.is_(True),
+        )).one_or_none()
+        if supplier is None:
+            raise WorkflowError("Active supplier not found in this business")
+        for line in source_lines:
+            product = session.scalars(select(Product).where(
+                Product.id == line.product_id, Product.business_id == business_id,
+                Product.is_active.is_(True), Product.is_stock_tracked.is_(True),
+            )).one_or_none()
+            if product is None:
+                raise WorkflowError("Every purchase line must reference an active stock-tracked product in this business")
+        base_number = source.order_number.strip()
+        candidate = f"{base_number}-COPY"[:64]
+        suffix = 2
+        while session.scalars(select(PurchaseOrder.id).where(
+            PurchaseOrder.business_id == business_id,
+            PurchaseOrder.order_number == candidate,
+        )).first() is not None:
+            tail = f"-COPY-{suffix}"
+            candidate = f"{base_number[:64 - len(tail)]}{tail}"
+            suffix += 1
+        po = PurchaseOrder(business_id=business_id, supplier_id=supplier.id,
+                           order_number=candidate, status="draft",
+                           currency_code=source.currency_code, total=ZERO)
+        total = ZERO
+        session.add(po)
+        session.flush()
+        for line in source_lines:
+            total += money(line.quantity * line.unit_cost)
+            session.add(PurchaseOrderLine(
+                business_id=business_id, purchase_order_id=po.id,
+                product_id=line.product_id, quantity=line.quantity,
+                unit_cost=line.unit_cost, received_quantity=ZERO,
+            ))
+        po.total = total
+        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
+            action="purchase_order.created", target_type="purchase_order",
+            target_id=str(po.id), change_summary=f"Draft order {po.order_number}"))
+        session.flush()
+        return po
+    po = _commit(session, op)
+    return _dict(po, ("id", "business_id", "supplier_id", "order_number", "status",
+                      "currency_code", "total", "created_at"))
+
+
 @router.post("/purchase-orders/{order_id}/approve")
 def approve_purchase_order(business_id: UUID, order_id: UUID,
                            session: Session = Depends(get_session),
