@@ -59,6 +59,7 @@ from app.models import (
     StockMovement,
     Supplier,
 )
+from app.rate_limit import rate_limit
 from app.security import (
     AuthenticatedPrincipal,
     AuthorizationError,
@@ -1373,7 +1374,7 @@ def preview_import_csv(business_id: UUID, entity_type: str,
     return _commit(session, op)
 
 
-@router.post("/imports/{entity_type}.csv", status_code=202)
+@router.post("/imports/{entity_type}.csv", status_code=202, dependencies=[Depends(rate_limit("CSV_IMPORT", default_limit=20, per_business=True))])
 def import_csv(business_id: UUID, entity_type: str,
                csv_text: str = Body(media_type="text/csv", max_length=2_000_000),
                session: Session = Depends(get_session),

@@ -30,6 +30,7 @@ from app.models import (
     PaymentAllocation,
     SalesReturn,
 )
+from app.rate_limit import rate_limit
 from app.security import (
     AuthenticatedPrincipal,
     AuthorizationError,
@@ -517,7 +518,7 @@ def revoke_business_invitation(
         raise
 
 
-@router.post("/invitations/accept", status_code=201)
+@router.post("/invitations/accept", status_code=201, dependencies=[Depends(rate_limit("INVITATION_ACCEPT", default_limit=30))])
 def accept_business_invitation(
     body: BusinessInvitationAccept,
     session: Session = Depends(get_session),
@@ -627,7 +628,7 @@ def accept_business_invitation(
         raise
 
 
-@router.post("/businesses", status_code=201)
+@router.post("/businesses", status_code=201, dependencies=[Depends(rate_limit("BUSINESS_CREATE", default_limit=30))])
 def create_business(body: BusinessCreate,
                     session: Session = Depends(get_session),
                     principal: AuthenticatedPrincipal = Depends(get_principal)):
