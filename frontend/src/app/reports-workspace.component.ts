@@ -1,4 +1,4 @@
-import { Component, inject, input, OnChanges, OnInit, SimpleChanges } from '@angular/core';
+import { Component, inject, input, OnChanges, OnInit, output, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, type ProfitLossReport, type ReceivablesAgingReport } from './api.service';
@@ -53,6 +53,7 @@ import { AbaDateRangeComponent } from './shared/ui/aba-date-range.component';
     <p class="muted"><strong>{{ t('ui.m_8hpy6m') }}</strong> {{ revenueBasisLabel(profitLoss.revenue_basis) }}</p>
     <aba-record-table [ariaLabel]="t('ui.m_1irq6mk')" [columns]="profitLossTableColumns" [rows]="profitLossTableRows" [emptyTitle]="t('ui.m_zlnr36')" [emptyDescription]="t('ui.m_q1rdjf')" />
     <div class="notice"><strong>{{ t('ui.m_1tz1k9k') }}</strong><span>{{ t('ui.m_ujpaej') }}</span></div>
+    <p><button class="secondary" type="button" (click)="askAssistantAboutProfitLoss()">{{ t('reports.askAssistantAboutProfitLoss') }}</button></p>
   }
   <div class="divider"></div>
   <aba-section-header [level]="3" [title]="t('ui.m_2oaefr')" [description]="t('ui.m_1dmo8qz')" />
@@ -87,6 +88,7 @@ import { AbaDateRangeComponent } from './shared/ui/aba-date-range.component';
 export class ReportsWorkspaceComponent implements OnInit, OnChanges {
   readonly businessId = input.required<string>();
   readonly language = input<'ar' | 'en'>('ar');
+  readonly askAssistant = output<string>();
 
   private readonly api = inject(ApiService);
   private readonly localization = inject(LocalizationService);
@@ -159,6 +161,24 @@ export class ReportsWorkspaceComponent implements OnInit, OnChanges {
     expenses:`${row.expenses} · ${row.expense_count} ${this.t('ui.m_1ghkia')}`,
     result:row.operating_result_before_cost_of_goods,
   }})); }
+  askAssistantAboutProfitLoss(): void {
+    // 3A-435 / T40: send the loaded P&L report's context to the assistant as
+    // a question. The numbers are the ones already on screen (tenant-scoped
+    // server data); the assistant re-loads its own scoped context server-side
+    // when it answers, so nothing new crosses the wire.
+    const report = this.profitLoss;
+    if (!report || !report.currencies.length) return;
+    const parts = report.currencies.map(row => this.t('reports.askAssistantQuestionRow', {
+      revenue: row.revenue, revenueCount: row.revenue_invoice_count,
+      expenses: row.expenses, result: row.operating_result_before_cost_of_goods,
+      currency: row.currency_code,
+    })).join(this.language() === 'ar' ? '؛ ' : '; ');
+    const question = this.t('reports.askAssistantQuestion', {
+      start: report.period.start_date ?? '', end: report.period.end_date ?? '', parts,
+    });
+    this.askAssistant.emit(question);
+  }
+
   exportReceivablesAgingCsv(): void {
     if (!this.agingReport || !this.agingReport.invoices.length) return;
     const warnings = new Map<string, string[]>();

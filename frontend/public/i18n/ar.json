@@ -2063,5 +2063,10 @@
     "statusDraft": "مسودة",
     "errorGeneric": "تعذر تنفيذ العملية. حاول التحديث أو راجع صلاحياتك.",
     "loadMore": "تحميل المزيد"
+  },
+  "reports": {
+    "askAssistantAboutProfitLoss": "اسأل المساعد عن هذا التقرير",
+    "askAssistantQuestion": "اشرح لي نتيجة التشغيل للفترة من {start} إلى {end}: {parts}. ما أهم ما يجب أن أنتبه له؟",
+    "askAssistantQuestionRow": "الإيرادات {revenue} {currency} ({revenueCount} فواتير)، المصروفات {expenses} {currency}، نتيجة التشغيل {result} {currency}"
   }
 }

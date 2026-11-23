@@ -92,3 +92,28 @@ test('ageing warnings keep the excess-allocation amount with its currency (U09 b
   assert.match(appCss, /\.warning-notice \.amount-pair\{white-space:nowrap;overflow-wrap:normal\}/,
     'the span is nowrap AND overflow-wrap:normal — nowrap alone is not enough, the abaCard host sets overflow-wrap:anywhere which the span would otherwise inherit');
 });
+
+// --- 3A-435 / T40: reports hand their context to the assistant ---
+
+test('the P&L section offers to ask the assistant about the loaded report', () => {
+  assert.ok(appSourceRaw.includes(`(click)="askAssistantAboutProfitLoss()"`),
+    'a button in the P&L section triggers the handoff');
+  assert.equal(english.reports.askAssistantAboutProfitLoss, 'Ask the assistant about this report');
+  assert.equal(arabic.reports.askAssistantAboutProfitLoss, 'اسأل المساعد عن هذا التقرير');
+  assert.match(appSourceRaw, /readonly askAssistant = output<string>\(\);/,
+    'the workspace emits the question to the shell');
+  assert.match(appSourceRaw, /this\.askAssistant\.emit\(question\);/,
+    'the question carries the loaded report figures, not a static string');
+  assert.match(appSourceRaw, /if \(!report \|\| !report\.currencies\.length\) return;/,
+    'no handoff fires without a loaded report');
+  const shellSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+  assert.ok(shellSource.includes(`(askAssistant)="askAssistantFromReports($event)"`),
+    'the shell wires the reports output to its handler');
+  assert.ok(shellSource.includes(`[pendingQuestion]="pendingAssistantQuestion"`),
+    'the shell hands the question to the assistant workspace');
+  const assistantSource = readFileSync(new URL('./assistant-workspace.component.ts', import.meta.url), 'utf8');
+  assert.match(assistantSource, /readonly pendingQuestion = input<string>\(''\);/,
+    'the assistant accepts a pending question');
+  assert.match(assistantSource, /this\.useAssistantSuggestion\(pending\);/,
+    'the pending question is sent as soon as the assistant mounts with it');
+});

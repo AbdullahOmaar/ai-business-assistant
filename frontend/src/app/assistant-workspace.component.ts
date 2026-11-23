@@ -9,7 +9,7 @@
 // view stale. The assistant's layout rules moved with the template into this
 // component's styles; the shell keeps the rules that target its own chrome
 // (.sidebar/.main under .shell.keyboard-open).
-import { Component, ElementRef, inject, input, OnChanges, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, input, OnChanges, output, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService, type ChatReply } from './api.service';
@@ -108,6 +108,8 @@ export class AssistantWorkspaceComponent implements OnChanges {
   readonly role = input.required<string | null | undefined>();
   readonly signedIn = input.required<boolean>();
   readonly language = input.required<string>();
+  readonly pendingQuestion = input<string>('');
+  readonly questionConsumed = output<void>();
 
   private readonly api = inject(ApiService);
   private readonly localization = inject(LocalizationService);
@@ -123,6 +125,15 @@ export class AssistantWorkspaceComponent implements OnChanges {
   private readonly chatRequestGuard = new WorkspaceLoadGuard();
 
   ngOnChanges(changes: SimpleChanges): void {
+    // 3A-435 / T40: a question handed over from another workspace (e.g. the
+    // reports P&L) is sent as soon as this component mounts with it. The
+    // shell clears the input after consumption, so a repeated identical
+    // question still fires (the value changes '' -> text each time).
+    const pending = changes['pendingQuestion']?.currentValue as string | undefined;
+    if (pending && !this.chatSending) {
+      this.useAssistantSuggestion(pending);
+      this.questionConsumed.emit();
+    }
     // 3A-351: a business change clears the conversation, exactly as the shell
     // used to reset the chat fields on a business switch.
     if (!changes['businessId'] || changes['businessId'].firstChange) return;
