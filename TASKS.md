@@ -1,3 +1,11 @@
+## Version 1.10.0 candidate — 3A-407 part 1: secrets-scan CI gate re-derived (closes the 3A-328 remainder) — 2026-11-23 (NOT merged, NOT deployed)
+
+- **Candidate:** branch `aiba/secrets-scan-3a-407` from main `f2ae207` (1.9.9). One PR against main; the review/merge line merges on green CI; no release markers.
+- **What lands:** the `secrets-scan` CI job from the closed PR #424, re-derived onto current main (gitleaks-action pinned `ff98106e… # v2`, checkout `3d3c42e5… # v7.0.1`, fetch-depth 0, exact-SHA verification, wired fail-closed into `all-checks-passed`), the `.gitleaks.toml` allowlist (the 13 verified false positives from the 2026-11-22 full-history baseline), and `docs/SECURITY_NEGATIVE_PROOF_2026-11-22.md` (the 3A-328 evidence record, which never landed).
+- **Correction found by re-verification (important):** the #424 `.gitleaks.toml` was missing `[extend] useDefault = true` — without it a custom config replaces the default rule set, so the scan runs with zero rules and "no leaks found" is vacuous. The re-derivation's planted-secret trial caught it: a planted GitHub token passed the #424 config undetected; with the extend block it is caught, and the full-history scan on the current tree (1,971 commits) is genuinely clean. The config file records the correction in its header.
+- **Versions:** aligned at 1.10.0 (the owner's phase versioning rule: Phase 1 continues 1.10 after 1.9.9).
+- **Local evidence:** gitleaks 8.30.0 full-history scan "no leaks found" (with active default rules + allowlists); planted-secret trial detected (1 leak); frontend unit and backend suite recorded on the PR. GitHub secret scanning + push protection remain enabled (set 2026-11-22). No behaviour changed anywhere.
+
 ## Version 1.9.9 candidate — 3A-376 part 3: route × role × tenant matrix completed (Linear 3A-376; GitHub issue #276) — 2026-11-23 (branch stacked on part 2, NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/security-matrix-3a-376` stacked on `aiba/bundle-3a-376` (candidate 1.9.8). One PR against the stack base; manager review before merge; no release markers.

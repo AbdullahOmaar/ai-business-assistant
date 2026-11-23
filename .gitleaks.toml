@@ -1,0 +1,37 @@
+# AIBA gitleaks configuration — added by the 3A-328 security-verification batch.
+#
+# Baseline: a full-history scan (gitleaks 8.30.1, 1,952 commits) on 2026-11-22
+# found 13 findings. Every one was classified as a false positive and is
+# allowlisted below with its reason. Anything NOT allowlisted here fails the
+# `secrets-scan` CI job. See docs/SECURITY_NEGATIVE_PROOF_2026-11-22.md §4.
+# Never allowlist a real credential; rotate it and rewrite history instead.
+#
+# CORRECTION (3A-407 part 1, 2026-11-23): the [extend] block below is load-
+# bearing. Without it, a custom config REPLACES the default rule set, the
+# scan runs with zero rules, and "no leaks found" is vacuous — the original
+# #424 config had exactly that flaw, caught by the re-derivation's planted-
+# secret trial (a planted GitHub token passed the #424 config undetected
+# and is caught with the extend block in place). Never remove it.
+
+title = "AIBA gitleaks configuration"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "The Firebase web-app API key in the public runtime config is a public client identifier shipped to every browser (documented as public in docs/PRODUCTION_DEPLOYMENT.md); it is not a credential."
+condition = "AND"
+rules = ["gcp-api-key"]
+paths = ['frontend/public/runtime-config\.json']
+
+[[allowlists]]
+description = "Synthetic fixture strings in frontend unit specs (fake filter/search field values used as test data); no real credentials."
+condition = "AND"
+rules = ["generic-api-key"]
+paths = ['frontend/src/app/aba-filter-bar\.spec\.ts', 'frontend/src/app/aba-search-field\.spec\.ts']
+
+[[allowlists]]
+description = "Deliberately fake GitHub tokens in the Slack-failure notifier test; they exist to prove that secret redaction works."
+condition = "AND"
+rules = ["github-pat"]
+paths = ['tests/test_github_actions_slack_failure\.py']
