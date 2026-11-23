@@ -3,6 +3,8 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-376: the data-integrity panel lives in its own workspace now.
+const integritySource = readFileSync(new URL('./integrity-workspace.component.ts', import.meta.url), 'utf8');
 const appCss = readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
 const designSystem = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const sectionHeader = readFileSync(new URL('./shared/ui/aba-section-header.component.ts', import.meta.url), 'utf8');
@@ -31,9 +33,9 @@ test('shell section headings use aba-section-header with unchanged text and leve
   assert.ok(appSource.includes(`<aba-section-header [level]="3" [title]="t('ui.m_1wgx28b')" [description]="t('ui.m_1kaqi1p')" />`),
     'product CSV import heading must keep its title and description at level 3');
   // Data-integrity subsections: level-3 headers, same keys.
-  assert.ok(appSource.includes(`<aba-section-header [level]="3" [title]="t('ui.m_h5fuqc')" />`),
+  assert.ok(integritySource.includes(`<aba-section-header [level]="3" [title]="t('ui.m_h5fuqc')" />`),
     'integrity invoice subsection must keep its title at level 3');
-  assert.ok(appSource.includes(`<aba-section-header [level]="3" [title]="t('ui.m_ord1a3')" />`),
+  assert.ok(integritySource.includes(`<aba-section-header [level]="3" [title]="t('ui.m_ord1a3')" />`),
     'integrity allocation subsection must keep its title at level 3');
 });
 

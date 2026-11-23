@@ -3,7 +3,9 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { expandTranslationCalls } from './localization-test-helpers.ts';
 
-const appSourceRaw = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-376: the recurring tab lives in its own workspace now; every
+// assertion below runs against that source (the shell only hosts it).
+const appSourceRaw = readFileSync(new URL('./recurring-workspace.component.ts', import.meta.url), 'utf8');
 const appSource = expandTranslationCalls(appSourceRaw);
 const english = JSON.parse(readFileSync(new URL('../../public/i18n/en.json', import.meta.url), 'utf8')) as Record<string, Record<string, string>>;
 const arabic = JSON.parse(readFileSync(new URL('../../public/i18n/ar.json', import.meta.url), 'utf8')) as Record<string, Record<string, string>>;
@@ -35,14 +37,12 @@ test('recurring form opens on demand, not always visible', () => {
     'a header toggle opens and closes the form');
   assert.ok(appSourceRaw.includes("{{ showRecurringForm ? t('ui.m_pw64as') : t('ui.m_slegw7') }}"),
     'closed the toggle reads as the section title (U05 pattern), open it reads Cancel');
-  const recurringStart = appSourceRaw.indexOf("@if (tab === 'recurring')");
-  const recurringEnd = appSourceRaw.indexOf("@if (tab === 'health'", recurringStart);
-  const recurringView = appSourceRaw.slice(recurringStart, recurringEnd);
+  const recurringView = appSourceRaw;
   // The toggle is owner-gated (staff never see a dead add button) and the
   // form sits inside the owner gate AND the on-demand gate, in that order.
-  assert.match(recurringView, /@if \(business\?\.role === 'owner'\) \{ <button class="secondary" type="button" \(click\)="showRecurringForm = !showRecurringForm"/);
-  assert.match(recurringView, /@if \(business\?\.role === 'owner'\) \{\s*@if \(showRecurringForm\) \{\s*<form #recurringForm="ngForm"/);
-  assert.doesNotMatch(recurringView, /@if \(business\?\.role === 'owner'\) \{\s*<form #recurringForm="ngForm"/,
+  assert.match(recurringView, /@if \(role\(\) === 'owner'\) \{ <button class="secondary" type="button" \(click\)="showRecurringForm = !showRecurringForm"/);
+  assert.match(recurringView, /@if \(role\(\) === 'owner'\) \{\s*@if \(showRecurringForm\) \{\s*<form #recurringForm="ngForm"/);
+  assert.doesNotMatch(recurringView, /@if \(role\(\) === 'owner'\) \{\s*<form #recurringForm="ngForm"/,
     'the form is never rendered always-visible any more');
 });
 
@@ -80,9 +80,8 @@ test('recurring list renders customer, interval, next run, timezone and status p
 test('the scheduler worker warning stays visible on the recurring section', () => {
   // The warning is the section-header description — rendered always, outside
   // the on-demand form gate, so hiding the form can never hide the warning.
-  const recurringStart = appSourceRaw.indexOf("@if (tab === 'recurring')");
-  const headerStart = appSourceRaw.indexOf('<aba-section-header', recurringStart);
-  const formIf = appSourceRaw.indexOf('@if (showRecurringForm)', recurringStart);
+  const headerStart = appSourceRaw.indexOf('<aba-section-header');
+  const formIf = appSourceRaw.indexOf('@if (showRecurringForm)');
   assert.ok(headerStart >= 0 && formIf > headerStart,
     'the header (with the warning) comes before the on-demand form gate');
   const header = appSourceRaw.slice(headerStart, appSourceRaw.indexOf('</aba-section-header>', headerStart));
@@ -98,9 +97,9 @@ test('the scheduler worker warning stays visible on the recurring section', () =
 
 test('creating a recurring schedule keeps its current contract', () => {
   const methodStart = appSourceRaw.indexOf('async createRecurringSchedule(): Promise<void>');
-  const methodEnd = appSourceRaw.indexOf('get maxIntegrityTotal()', methodStart);
+  const methodEnd = appSourceRaw.indexOf('  private beginAction()', methodStart);
   const method = appSourceRaw.slice(methodStart, methodEnd);
-  assert.ok(method.includes("if (!this.business || this.business.role !== 'owner') return;"),
+  assert.ok(method.includes("if (this.role() !== 'owner') return;"),
     'only owners can create schedules');
   assert.ok(method.includes('await this.api.createRecurringSchedule(businessId, {'),
     'creation still goes through the same API call');

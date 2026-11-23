@@ -9,7 +9,7 @@ import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, 
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { auditActionLabel as formatAuditActionLabel, auditTargetLabel as formatAuditTargetLabel } from './audit-labels';
-import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, filterSuppliers, firstRecordPage, mergeRecordPage } from './record-filters';
+import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, firstRecordPage, mergeRecordPage } from './record-filters';
 import { countInvoiceStatuses, paginateInvoiceRecords, sortInvoiceRecords, type InvoiceSortDirection, type InvoiceSortKey, type InvoiceStatusCounts } from './invoice-list';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
@@ -24,6 +24,9 @@ import { ReportsWorkspaceComponent } from './reports-workspace.component';
 import { AssistantWorkspaceComponent } from './assistant-workspace.component';
 import { OverviewWorkspaceComponent } from './overview-workspace.component';
 import { ExpensesWorkspaceComponent } from './expenses-workspace.component';
+import { SuppliersWorkspaceComponent } from './suppliers-workspace.component';
+import { RecurringWorkspaceComponent } from './recurring-workspace.component';
+import { IntegrityWorkspaceComponent } from './integrity-workspace.component';
 import { NotificationsWorkspaceComponent } from './notifications-workspace.component';
 import { reportLimitationKey } from './report-labels';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
@@ -54,14 +57,14 @@ import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot, PaymentRet
 import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
 
 type Tab = 'overview' | 'customers' | 'products' | 'invoices' | 'payments' | 'expenses' | 'employees' | 'assistant' | 'reports' | 'taxes' | 'audit' | 'integrity' | 'release-guide' | 'platform-admin' | 'suppliers' | 'purchases' | 'recurring' | 'notifications' | 'health' | 'team';
-type OperationsMessageTab = 'notifications' | 'suppliers' | 'purchases' | 'recurring';
+type OperationsMessageTab = 'notifications' | 'purchases' | 'recurring';
 
 const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, SuppliersWorkspaceComponent, RecurringWorkspaceComponent, IntegrityWorkspaceComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -317,36 +320,16 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
 
 @if (tab === 'suppliers') {
-              <section abaCard class="panel">
-                <aba-section-header [title]=" t('ui.m_3w60yt') " [description]=" t('ui.m_6u1nke') "><span class="count">{{ filteredSuppliers.length }} / {{ suppliers.length }}</span></aba-section-header>
-<details class="aba-record-create">
-                  <summary><span>{{ t('ui.m_p2zqz3') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
-                  <div class="aba-record-create__body">
-                <form #supplierForm="ngForm" class="inline-form" (ngSubmit)="supplierForm.valid && createSupplier()">
-                  <input #supplierNameControl="ngModel" name="supplierName" required maxlength="160" [attr.aria-label]="t('ui.m_jj4jgj')" [attr.aria-invalid]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted) ? 'supplier-name-error' : null" [placeholder]="t('ui.m_jj4jgj')" [(ngModel)]="supplierName">
-                  <input #supplierEmailControl="ngModel" name="supplierEmail" type="email" maxlength="254" [attr.aria-label]="t('ui.m_112c7vo')" [attr.aria-invalid]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'true' : null" [attr.aria-describedby]="supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted) ? 'supplier-email-error' : null" [placeholder]="t('ui.m_u2wvbv')" [(ngModel)]="supplierEmail">
-                  <input name="supplierPhone" maxlength="32" [attr.aria-label]="t('ui.m_19jxea1')" [placeholder]="t('ui.m_1fpllb8')" [(ngModel)]="supplierPhone">
-                  <input name="supplierAddress" maxlength="500" [attr.aria-label]="t('ui.m_1d6x93e')" [placeholder]="t('ui.m_1dvmwnl')" [(ngModel)]="supplierAddress">
-                  <button class="primary" type="submit" [disabled]="suppliersLoading">{{ t('ui.m_p2zqz3') }}</button>
-                </form>
-                @if ((supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted)) || (supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted))) {
-                  <div class="form-validation" aria-live="polite">
-                    @if (supplierNameControl.invalid && (supplierNameControl.touched || supplierForm.submitted)) { <small id="supplier-name-error" class="field-error">{{ t('ui.m_1840rkw') }}</small> }
-                    @if (supplierEmailControl.invalid && (supplierEmailControl.touched || supplierForm.submitted)) { <small id="supplier-email-error" class="field-error">{{ t('ui.m_stzy3f') }}</small> }
-                  </div>
-                }
-
-                  </div>
-                </details>
-                @if (operationsError && operationsErrorTab === 'suppliers') { <aba-state-message kind="error" [description]="operationsError" /> }
-                @if (operationsWarning && operationsMessageTab === 'suppliers') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
-                @if (operationsMessageTab === 'suppliers' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="supplierSearch" [hasActiveFilter]="supplierSearch.trim() !== ''" (clear)="supplierSearch = ''"><aba-search-field name="supplierSearch" [ariaLabel]="t('ui.m_1mc30sn')" [placeholder]="t('ui.m_jtec0a')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="supplierSearch" /></aba-filter-bar></div>
-                <aba-record-table [ariaLabel]="t('ui.m_13lj997')" [columns]="supplierTableColumns" [rows]="supplierTableRows" [loading]="suppliersLoading && !suppliers.length" [loadingDescription]="t('ui.m_16wb349')" [emptyTitle]="t('ui.m_1u3jkgy')" [emptyDescription]="supplierSearch.trim() ? t('ui.m_ka2uzv') : t('ui.m_9e3ceh')" />
-
-              </section>
+              @defer (when tab === 'suppliers') {
+                <aba-suppliers-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" />
+              } @placeholder {
+                <aba-defer-placeholder [description]="t('ui.m_1oo6dkn')" />
+              } @error {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                </section>
+              }
             }
-
 
 @if (tab === 'purchases') {
               @defer (when tab === 'purchases') {
@@ -365,31 +348,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 }
             }
             @if (tab === 'recurring') {
-              <section abaCard class="panel">
-                <aba-section-header [title]=" t('ui.m_slegw7') " [description]=" t('ui.m_1e0c20g') "><div class="section-actions"><span class="count">{{ filteredRecurringSchedules.length }} / {{ recurringSchedules.length }}</span>@if (business?.role === 'owner') { <button class="secondary" type="button" (click)="showRecurringForm = !showRecurringForm">{{ showRecurringForm ? t('ui.m_pw64as') : t('ui.m_slegw7') }}</button> }</div></aba-section-header>
-                @if (business?.role === 'owner') {
-                @if (showRecurringForm) {
-                <form #recurringForm="ngForm" class="stack recurring-form" (ngSubmit)="recurringForm.valid && createRecurringSchedule()">
-                  <label>{{ t('ui.m_eoh95l') }}<select name="recurringCustomerId" [(ngModel)]="recurringCustomerId"><option value="">{{ t('ui.m_8pt45d') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select></label>
-                  <div class="inline-form"><label>{{ t('ui.m_py5g30') }}<input #recurringIntervalControl="ngModel" name="recurringIntervalDays" type="number" min="1" max="3650" required [attr.aria-invalid]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted) ? 'recurring-interval-error' : null" [(ngModel)]="recurringIntervalDays"></label><label>{{ t('ui.m_1e7ftdu') }}<input #recurringNextRunControl="ngModel" name="recurringNextRunAt" type="datetime-local" required [attr.aria-invalid]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted) ? 'recurring-next-run-error' : null" [(ngModel)]="recurringNextRunAt"></label></div>
-                  <label>{{ t('ui.m_z76sxh') }}<input #recurringTimezoneControl="ngModel" name="recurringTimezone" required maxlength="64" [attr.aria-invalid]="recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted) ? 'true' : null" [attr.aria-describedby]="recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted) ? 'recurring-timezone-error' : null" [(ngModel)]="recurringTimezone"></label>
-                  <button class="primary" type="submit" [disabled]="recurringLoading">{{ t('ui.m_r0fiju') }}</button>
-                </form>
-                @if ((recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted)) || (recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted)) || (recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted))) {
-                  <div class="form-validation" aria-live="polite">
-                    @if (recurringIntervalControl.invalid && (recurringIntervalControl.touched || recurringForm.submitted)) { <small id="recurring-interval-error" class="field-error">{{ t('ui.m_9goc5p') }}</small> }
-                    @if (recurringNextRunControl.invalid && (recurringNextRunControl.touched || recurringForm.submitted)) { <small id="recurring-next-run-error" class="field-error">{{ t('ui.m_1husn1x') }}</small> }
-                    @if (recurringTimezoneControl.invalid && (recurringTimezoneControl.touched || recurringForm.submitted)) { <small id="recurring-timezone-error" class="field-error">{{ t('ui.m_1t55sm0') }}</small> }
-                  </div>
-                }
-                }
-                } @else { <aba-state-message kind="info" [description]="t('ui.m_t5zhtj')" /> }
-                @if (operationsError && operationsErrorTab === 'recurring') { <aba-state-message kind="error" [description]="operationsError" /> }
-                @if (operationsWarning && operationsMessageTab === 'recurring') { <aba-state-message kind="warning" [description]="operationsWarning" /> }
-                @if (operationsMessageTab === 'recurring' && operationsMessage) { <aba-state-message kind="success" [description]="operationsMessage" /> }
-                <div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="recurringSearch" [hasActiveFilter]="recurringSearch.trim() !== ''" (clear)="recurringSearch = ''"><aba-search-field name="recurringSearch" [ariaLabel]="t('ui.m_aljqyp')" [placeholder]="t('ui.m_z7f6xc')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="recurringSearch" /></aba-filter-bar></div>
-                <aba-record-table [ariaLabel]="t('ui.m_uxwqg9')" [columns]="recurringTableColumns" [rows]="recurringTableRows" [loading]="recurringLoading && !recurringSchedules.length" [loadingDescription]="t('ui.m_10b19k6')" [emptyTitle]="t('ui.m_4r8x8c')" [emptyDescription]="recurringSearch.trim() ? t('ui.m_11cvrt7') : t('ui.m_kxnfs6')" />
-              </section>
+              @defer (when tab === 'recurring') {
+                <aba-recurring-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [customers]="customers" />
+              } @placeholder {
+                <aba-defer-placeholder [description]="t('ui.m_1oo6dkn')" />
+              } @error {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                </section>
+              }
             }
 
 
@@ -996,25 +963,17 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
 
             @if (tab === 'integrity' && business.role === 'owner') {
-              <section abaCard class="panel">
-                <aba-section-header [title]=" t('ui.m_3j4vfw') " [description]=" t('ui.m_rq55ji') "><span class="count">{{ formatRecordDate(dataIntegrityReport?.generated_at, 'short') || t('ui.m_xo2kma') }}</span></aba-section-header>
-                <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t('ui.m_1v22gnm') : t('ui.m_t1s0tt') }}</button>
-                @if (integrityError) { <aba-state-message kind="error" [description]="integrityError" /> }
-                @if (dataIntegrityReport) {
-                  <div class="notice warning-notice"><strong>{{ t('ui.m_8kfz56') }}</strong><span>{{ integrityWarningLabel(dataIntegrityReport.warning) }}</span></div>
-                  <div class="metric-grid">
-                    <article class="metric"><span>{{ t('ui.m_r33nse') }}</span><strong>{{ dataIntegrityReport.unlinked_issued_invoices.total }}</strong></article>
-                    <article class="metric"><span>{{ t('ui.m_56uiuq') }}</span><strong>{{ dataIntegrityReport.currency_mismatched_allocations.total }}</strong></article>
-                    <article class="metric"><span>{{ t('ui.m_15jyanv') }}</span><strong>{{ dataIntegrityReport.customer_mismatched_allocations.total }}</strong></article>
-                  </div>
-                  <aba-section-header [level]="3" [title]="t('ui.m_h5fuqc')" />
-                  <aba-record-table [ariaLabel]="t('ui.m_1muvs8z')" [columns]="integrityInvoiceColumns" [rows]="integrityInvoiceRows" [emptyTitle]="t('ui.m_ej8yte')" [emptyDescription]="t('ui.m_ydex7x')" />
-                  <aba-section-header [level]="3" [title]="t('ui.m_ord1a3')" />
-                  <aba-record-table [ariaLabel]="t('ui.m_xbtfmu')" [columns]="integrityAllocationColumns" [rows]="integrityAllocationRows" [emptyTitle]="t('ui.m_hrqqij')" [emptyDescription]="t('ui.m_uxsaek')" />
-                  <div class="inline-form"><span class="muted">{{ t('ui.m_3dypht') }} {{ dataIntegrityReport.offset }} · {{ t('ui.m_1o0uw0o') }} {{ dataIntegrityReport.limit }}</span><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset > 0 ? dataIntegrityReport.offset - dataIntegrityReport.limit : 0)" [disabled]="integrityLoading || dataIntegrityReport.offset === 0">{{ t('ui.m_14wy3hz') }}</button><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset + dataIntegrityReport.limit)" [disabled]="integrityLoading || dataIntegrityReport.offset + dataIntegrityReport.limit >= maxIntegrityTotal">{{ t('ui.m_thb9eg') }}</button></div>
-                }
-              </section>
+              @defer (when tab === 'integrity') {
+                <aba-integrity-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" />
+              } @placeholder {
+                <aba-defer-placeholder [description]="t('ui.m_1oo6dkn')" />
+              } @error {
+                <section abaCard class="panel narrow">
+                  <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                </section>
+              }
             }
+
 
             @defer (when tab === 'assistant') {
               <aba-assistant-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" [language]="language" />
@@ -1155,10 +1114,6 @@ export class AppComponent implements OnInit, OnDestroy {
   auditEvents: AuditEvent[] = [];
   auditTotal = 0;
   auditOffset = 0;
-  dataIntegrityReport: DataIntegrityReport | null = null;
-  integrityLoading = false;
-  integrityError = '';
-  integrityOffset = 0;
   auditLoading = false;
   auditError = '';
   auditAction = '';
@@ -1203,9 +1158,7 @@ export class AppComponent implements OnInit, OnDestroy {
   productSearch = '';
   invoiceSearch = '';
   paymentSearch = '';
-  supplierSearch = '';
   purchaseSearch = '';
-  recurringSearch = '';
   invoiceStatusFilter: 'all' | 'draft' | 'issued' | 'void' = 'all';
   invoiceDensity: 'comfortable' | 'compact' = 'comfortable';
   invoiceSortKey: InvoiceSortKey = 'issue_date';
@@ -1221,33 +1174,21 @@ export class AppComponent implements OnInit, OnDestroy {
   payments: Payment[] = [];
   suppliers: Supplier[] = [];
   purchaseOrders: PurchaseOrder[] = [];
-  recurringSchedules: RecurringInvoiceSchedule[] = [];
   operationalHealth: OperationalHealth | null = null;
   healthLoading = false;
   healthError = '';
-  suppliersLoading = false;
   purchasesLoading = false;
-  recurringLoading = false;
-  showRecurringForm = false;
   operationsError = '';
   operationsErrorTab: OperationsMessageTab | null = null;
   operationsMessage = '';
   operationsMessageTab: OperationsMessageTab | null = null;
   operationsWarning = '';
   expensesRefreshTick = 0;
-  supplierName = '';
-  supplierEmail = '';
-  supplierPhone = '';
-  supplierAddress = '';
   purchaseOrderNumber = '';
   purchaseSupplierId = '';
   purchaseProductId = '';
   purchaseQuantity = '1';
   purchaseUnitCost = '0';
-  recurringCustomerId = '';
-  recurringIntervalDays = '30';
-  recurringNextRunAt = new Date(Date.now() + 86400000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-  recurringTimezone = 'UTC';
   businessName = '';
   currencyCode = 'EGP';
   customerCreateOpen = false;
@@ -1434,21 +1375,6 @@ export class AppComponent implements OnInit, OnDestroy {
     return filterCustomers(this.customers, this.customerSearch, this.localization.locale);
   }
 
-  get supplierTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'name',label:this.t('ui.m_x27ir1'),primary:true},
-    {key:'email',label:this.t('ui.m_112c7vo')},
-    {key:'phone',label:this.t('ui.m_19jxea1')},
-    {key:'address',label:this.t('ui.m_1d6x93e')},
-    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
-  ]; }
-  get supplierTableRows(): readonly AbaRecordTableRow[] { return this.filteredSuppliers.map(supplier=>({
-    id:supplier.id,cells:{
-      name:supplier.name,email:supplier.email||this.t('ui.m_2wkjj4'),
-      phone:supplier.phone||this.t('ui.m_2wkjj4'),
-      address:supplier.address||this.t('ui.m_2wkjj4'),
-      status:supplier.is_active?this.t('ui.m_sjpv56'):this.t('ui.m_1200s7g'),
-    },
-  })); }
   get purchaseTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'order',label:this.t('ui.m_1ehdmao'),primary:true},
     {key:'supplier',label:this.t('ui.m_x27ir1')},
@@ -1676,9 +1602,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoicePageIndex = Math.max(0, Math.min(this.invoicePageCount - 1, this.invoicePageIndex + delta));
   }
 
-  get filteredSuppliers(): Supplier[] {
-    return filterSuppliers(this.suppliers, this.supplierSearch, this.localization.locale);
-  }
 
   get filteredPurchaseOrders(): PurchaseOrder[] {
     return filterPurchaseOrders(
@@ -1691,15 +1614,6 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
-  get filteredRecurringSchedules(): RecurringInvoiceSchedule[] {
-    return filterRecurringSchedules(
-      this.recurringSchedules,
-      this.recurringSearch,
-      id => this.customerNameForInvoice(id),
-      active => this.t(active ? 'app.recurringSchedule.active' : 'app.recurringSchedule.inactive'),
-      this.localization.locale,
-    );
-  }
 
 
 
@@ -1728,18 +1642,6 @@ export class AppComponent implements OnInit, OnDestroy {
     received:this.formatRecordDate(item.received_at),method:item.method?this.paymentMethodLabel(item.method):this.t('ui.m_1q43mlw'),
     reference:item.reference||'—',allocation:item.allocations.length?`${item.allocations.length} ${this.t('ui.m_3fih4j')}`:this.t('ui.m_lcn3j8'),
   }})); }
-  get recurringTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'customer',label:this.t('ui.m_ubgrc2'),primary:true},
-    {key:'interval',label:this.t('ui.m_soswtl')},
-    {key:'nextRun',label:this.t('ui.m_1e7ftdu')},
-    {key:'timezone',label:this.t('ui.m_z76sxh')},
-    {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
-  ]; }
-  get recurringTableRows(): readonly AbaRecordTableRow[] { return this.filteredRecurringSchedules.map(item=>({id:item.id,cells:{
-    customer:item.customer_id?this.customerNameForInvoice(item.customer_id):this.t('ui.m_j3ewjv'),
-    interval:`${item.interval_days} ${this.t('ui.m_5mk40x')}`,nextRun:this.formatRecordDate(item.next_run_at),timezone:item.timezone,
-    status:item.is_active?this.t('ui.m_1vhpjk3'):this.t('ui.m_vspcsf'),
-  }})); }
   get auditTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'date',label:this.t('ui.m_1fcm91o')},
     {key:'action',label:this.t('ui.m_bnvfl5'),primary:true},
@@ -1761,39 +1663,6 @@ export class AppComponent implements OnInit, OnDestroy {
   get taxTableRows(): readonly AbaRecordTableRow[] { return (this.taxSummaryReport?.currencies||[]).map(row=>({id:row.currency_code,cells:{
     currency:row.currency_code,tax:`${row.tax_total} ${row.currency_code}`,count:String(row.invoice_count),
   }})); }
-  get integrityInvoiceColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'invoice',label:this.t('ui.m_1cuzqu5'),primary:true},
-    {key:'total',label:this.t('ui.m_l97slj'),kind:'numeric'},
-    {key:'date',label:this.t('ui.m_1pb5uxl')},
-    {key:'record',label:this.t('ui.m_356wdy')},
-  ]; }
-  get integrityInvoiceRows(): readonly AbaRecordTableRow[] { return (this.dataIntegrityReport?.unlinked_issued_invoices.items||[]).map(row=>({id:row.invoice_id,cells:{
-    invoice:row.invoice_number,total:`${row.total} ${row.currency_code}`,date:this.formatRecordDate(row.created_at,'short'),record:row.invoice_id,
-  }})); }
-  get integrityAllocationColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'invoice',label:this.t('ui.m_1cuzqu5'),primary:true},
-    {key:'issue',label:this.t('ui.m_1jiia8p'),kind:'status'},
-    {key:'amount',label:this.t('ui.m_i3lh6b'),kind:'numeric'},
-    {key:'paymentCurrency',label:this.t('ui.m_1ghw6ju')},
-    {key:'invoiceCurrency',label:this.t('ui.m_uoq0dn')},
-    {key:'customers',label:this.t('ui.m_xwq7hv')},
-    {key:'reference',label:this.t('ui.m_15jj1na')},
-  ]; }
-  get integrityAllocationRows(): readonly AbaRecordTableRow[] {
-    const currency=(this.dataIntegrityReport?.currency_mismatched_allocations.items||[]).map(row=>({id:`currency-${row.allocation_id}`,cells:{
-      invoice:row.invoice_number,issue:this.t('ui.m_4oned'),
-      amount:`${row.allocated_amount} ${row.payment_currency}`,paymentCurrency:row.payment_currency,
-      invoiceCurrency:row.invoice_currency,customers:'—',reference:row.payment_reference||row.payment_id,
-    }}));
-    const customer=(this.dataIntegrityReport?.customer_mismatched_allocations.items||[]).map(row=>({id:`customer-${row.allocation_id}`,cells:{
-      invoice:row.invoice_number,issue:this.t('ui.m_1pczd49'),
-      amount:`${row.allocated_amount} ${row.invoice_currency}`,paymentCurrency:row.payment_currency,
-      invoiceCurrency:row.invoice_currency,
-      customers:`${this.t('ui.m_1i2qel0')} ${row.payment_customer_id||'—'} · ${this.t('ui.m_1k6zcv')} ${row.invoice_customer_id||'—'}`,
-      reference:row.payment_reference||row.payment_id,
-    }}));
-    return [...currency,...customer];
-  }
   exportCurrentList(): void {
     if (!this.business || this.business.role !== 'owner') return;
     let filename = '';
@@ -2116,7 +1985,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.purchaseApprovalError = '';
     this.confirmationReturnFocus = null;
     this.payrollRefreshGuard.invalidate();
-    this.dataIntegrityLoadGuard.invalidate();
     this.operationalHealthLoadGuard.invalidate();
     this.taxSummaryLoadGuard.invalidate();
     // Invalidate the top-level workspace load too; otherwise an old load's finally
@@ -2141,10 +2009,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.dashboard = null;
     this.homeDashboardError = '';
     this.taxSummaryReport = null;
-    this.dataIntegrityReport = null;
-    this.integrityError = '';
-    this.integrityLoading = false;
-    this.integrityOffset = 0;
     this.taxError = '';
     this.taxLoading = false;
     // Never carry an OWNER-only opening-stock value into another workspace or role.
@@ -2184,11 +2048,8 @@ export class AppComponent implements OnInit, OnDestroy {
     this.paymentOffset = 0;
     this.suppliers = [];
     this.purchaseOrders = [];
-    this.recurringSchedules = [];
-    this.supplierSearch = '';
     this.paymentSearch = '';
     this.purchaseSearch = '';
-    this.recurringSearch = '';
     this.operationalHealth = null;
     this.operationsError = '';
     this.operationsErrorTab = null;
@@ -2196,22 +2057,12 @@ export class AppComponent implements OnInit, OnDestroy {
     this.operationsMessageTab = null;
     this.operationsWarning = '';
     this.healthError = '';
-    this.supplierName = '';
     this.purchaseOrderNumber = '';
     this.purchaseSupplierId = '';
     this.purchaseProductId = '';
-    this.recurringCustomerId = '';
-    this.supplierEmail = '';
-    this.supplierPhone = '';
-    this.supplierAddress = '';
     this.purchaseQuantity = '1';
     this.purchaseUnitCost = '0';
-    this.recurringIntervalDays = '30';
-    this.recurringNextRunAt = new Date(Date.now() + 86400000 - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    this.recurringTimezone = 'UTC';
-    this.suppliersLoading = false;
     this.purchasesLoading = false;
-    this.recurringLoading = false;
     this.healthLoading = false;
     this.invoiceCustomerId = '';
     this.invoiceProductId = '';
@@ -2293,7 +2144,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly invoiceListLoadGuard = new WorkspaceLoadGuard();
   private readonly paymentListLoadGuard = new WorkspaceLoadGuard();
   private readonly payrollRefreshGuard = new WorkspaceLoadGuard();
-  private readonly dataIntegrityLoadGuard = new WorkspaceLoadGuard();
   private readonly operationalHealthLoadGuard = new WorkspaceLoadGuard();
   private readonly taxSummaryLoadGuard = new WorkspaceLoadGuard();
   private readonly invoiceSaveGuard = new WorkspaceLoadGuard();
@@ -2728,12 +2578,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
 
-  integrityWarningLabel(value: string): string {
-    const normalized = value.trim().toLowerCase();
-    if (normalized.startsWith('this report identifies records for manual review only.')) return this.t('ui.m_jm2qpm');
-    if (normalized === 'manual review only' || normalized === 'report is for manual review only') return this.t('ui.m_5watgl');
-    return value;
-  }
 
   reportLimitationLabel(value: string): string {
     // Shared with the reports workspace: the key map lives in report-labels.ts.
@@ -2825,30 +2669,6 @@ export class AppComponent implements OnInit, OnDestroy {
     );
   }
 
-  async loadDataIntegrity(offset = 0): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
-    const requestContext = this.currentChatRequestContext();
-    if (!requestContext.signedIn || !requestContext.userId ||
-        requestContext.role !== 'owner' || !requestContext.workspaceId) return;
-    this.integrityLoading = true;
-    this.integrityError = '';
-    this.integrityOffset = offset;
-    await runTenantScopedRequest(
-      this.dataIntegrityLoadGuard,
-      requestContext,
-      () => this.currentChatRequestContext(),
-      () => this.api.dataIntegrity(requestContext.workspaceId, offset),
-      {
-        onSuccess: result => { this.dataIntegrityReport = result; },
-        onError: error => {
-          this.dataIntegrityReport = null;
-          this.integrityError = this.message(error);
-        },
-        onFinally: () => { this.integrityLoading = false; },
-        onStale: () => { this.integrityLoading = false; },
-      },
-    );
-  }
 
   async loadOperationalHealth(): Promise<void> {
     if (!this.business || this.business.role !== 'owner') return;
@@ -2901,10 +2721,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private async loadSuppliers(): Promise<void> {
     if (!this.business) return;
     const businessId = this.business.id;
-    this.suppliersLoading = true; this.operationsError = ''; this.operationsErrorTab = null;
     try { const items = await this.api.suppliers(businessId); if (this.business?.id === businessId) this.suppliers = items; }
-    catch (error) { if (this.business?.id === businessId) { this.operationsError = this.message(error); this.operationsErrorTab = 'suppliers'; } }
-    finally { if (this.business?.id === businessId) this.suppliersLoading = false; }
+    catch { /* name resolution degrades to id prefixes, as supplierNameFor already falls back */ }
   }
   private async loadPurchaseOrders(): Promise<void> {
     if (!this.business) return;
@@ -2913,40 +2731,6 @@ export class AppComponent implements OnInit, OnDestroy {
     try { const items = await this.api.purchaseOrders(businessId); if (this.business?.id === businessId) this.purchaseOrders = items; }
     catch (error) { if (this.business?.id === businessId) { this.operationsError = this.message(error); this.operationsErrorTab = 'purchases'; } }
     finally { if (this.business?.id === businessId) this.purchasesLoading = false; }
-  }
-  private async loadRecurringSchedules(): Promise<void> {
-    if (!this.business) return;
-    const businessId = this.business.id;
-    this.recurringLoading = true; this.operationsError = ''; this.operationsErrorTab = null;
-    try { const items = await this.api.recurringSchedules(businessId); if (this.business?.id === businessId) this.recurringSchedules = items; }
-    catch (error) { if (this.business?.id === businessId) { this.operationsError = this.message(error); this.operationsErrorTab = 'recurring'; } }
-    finally { if (this.business?.id === businessId) this.recurringLoading = false; }
-  }
-  async createSupplier(): Promise<void> {
-    if (!this.business || !this.supplierName.trim()) return;
-    const businessId = this.business.id;
-    this.beginOperationsAction();
-    this.suppliersLoading = true;
-    try {
-      await this.api.createSupplier(businessId, {
-        name: this.supplierName.trim(),
-        email: this.supplierEmail.trim() || undefined,
-        phone: this.supplierPhone.trim() || undefined,
-        address: this.supplierAddress.trim() || undefined,
-      });
-      if (this.business?.id !== businessId) return;
-      this.setOperationsSuccess('suppliers', this.t('ui.m_oddjud'));
-      this.supplierName = '';
-      this.supplierEmail = '';
-      this.supplierPhone = '';
-      this.supplierAddress = '';
-      const items = await this.api.suppliers(businessId);
-      if (this.business?.id === businessId) this.suppliers = items;
-    } catch (error) {
-      if (this.business?.id === businessId) this.setOperationsFailure('suppliers', error);
-    } finally {
-      if (this.business?.id === businessId) this.suppliersLoading = false;
-    }
   }
   async createPurchaseOrder(): Promise<void> {
     if (!this.business || !this.purchaseSupplierId || !this.purchaseProductId) return;
@@ -3113,39 +2897,7 @@ export class AppComponent implements OnInit, OnDestroy {
       if (this.business?.id === businessId) this.purchasesLoading = false;
     }
   }
-  async createRecurringSchedule(): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
-    this.beginOperationsAction();
-    const interval = Number(this.recurringIntervalDays);
-    if (!Number.isInteger(interval) || interval < 1 || interval > 3650) {
-      this.operationsError = this.t('ui.m_1jvv49p');
-      this.operationsErrorTab = 'recurring';
-      return;
-    }
-    const businessId = this.business.id;
-    this.recurringLoading = true;
-    try {
-      await this.api.createRecurringSchedule(businessId, {
-        customer_id: this.recurringCustomerId || null,
-        interval_days: interval,
-        timezone: this.recurringTimezone.trim() || 'UTC',
-        next_run_at: new Date(this.recurringNextRunAt).toISOString(),
-      });
-      if (this.business?.id !== businessId) return;
-      this.setOperationsSuccess('recurring', this.t('ui.m_6a3p89'));
-      const items = await this.api.recurringSchedules(businessId);
-      if (this.business?.id === businessId) this.recurringSchedules = items;
-    } catch (error) {
-      if (this.business?.id === businessId) this.setOperationsFailure('recurring', error);
-    } finally {
-      if (this.business?.id === businessId) this.recurringLoading = false;
-    }
-  }
 
-  get maxIntegrityTotal(): number {
-    const report = this.dataIntegrityReport;
-    return report ? Math.max(report.unlinked_issued_invoices.total, report.currency_mismatched_allocations.total, report.customer_mismatched_allocations.total) : 0;
-  }
 
   async loadAuditEvents(offset = 0): Promise<void> {
     if (!this.business || this.business.role !== 'owner' || !this.signedIn || !this.currentAuthUid) return;
@@ -3264,10 +3016,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.mobileMoreOpen = false;
     if (tab === 'taxes' && this.business?.role === 'owner') void this.loadTaxSummary();
     if (tab === 'audit') void this.loadAuditEvents(0);
-    if (tab === 'integrity' && this.business?.role === 'owner') void this.loadDataIntegrity(0);
-    if (tab === 'suppliers') void this.loadSuppliers();
     if (tab === 'purchases') { void this.loadSuppliers(); void this.loadPurchaseOrders(); }
-    if (tab === 'recurring') void this.loadRecurringSchedules();
     if (tab === 'health' && this.business?.role === 'owner') void this.loadOperationalHealth();
   }
 

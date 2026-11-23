@@ -18,6 +18,8 @@ const expensesWorkspace = expandTranslationCalls(readFileSync(new URL('./expense
 // 3A-351: the notifications list (and its loading description) moved into
 // the deferred notifications workspace too.
 const notificationsWorkspace = expandTranslationCalls(readFileSync(new URL('./notifications-workspace.component.ts', import.meta.url), 'utf8'));
+const recurringWorkspace = expandTranslationCalls(readFileSync(new URL('./recurring-workspace.component.ts', import.meta.url), 'utf8'));
+const integrityWorkspace = expandTranslationCalls(readFileSync(new URL('./integrity-workspace.component.ts', import.meta.url), 'utf8'));
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const guide = expandDictionaryBackedProperties(readFileSync(new URL('./release-guide.ts', import.meta.url), 'utf8'));
 const access = readFileSync(new URL('./module-access.ts', import.meta.url), 'utf8');
@@ -249,16 +251,22 @@ test('mobile payroll keeps its period filter with history and restores focus aft
 test('employee table action heading and remaining record loading descriptions respect Arabic locale', () => {
   assert.match(component, /\[actionsHeading\]="t\('الإجراءات',\s*'Actions'\)"/);
   for (const fragment of [
-    "[loadingDescription]=\"t('جارٍ تحميل الجداول الدورية…', 'Loading recurring schedules…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل المدفوعات…', 'Loading payments…')\"",
     "[loadingDescription]=\"t('جارٍ تحميل سجل النشاط…', 'Loading activity log…')\"",
-    "t('عميل الدفعة:', 'Payment customer:')",
-    "t('عميل الفاتورة:', 'Invoice customer:')",
   ]) assert.ok(app.includes(fragment), 'missing localized record UX: '+fragment);
   // 3A-351: the expenses loading description lives in the expenses workspace now.
   assert.ok(expensesWorkspace.includes("[loadingDescription]=\"t('جارٍ تحميل المصروفات…', 'Loading expenses…')\""),
     'missing localized record UX: expenses loading description');
   // 3A-351: the notifications loading description lives in the notifications workspace now.
+  // 3A-376: the integrity allocation rows carry the payment/invoice
+  // customer labels inside the integrity workspace now.
+  assert.ok(integrityWorkspace.includes("t('عميل الدفعة:', 'Payment customer:')"),
+    'missing localized record UX: payment customer label');
+  assert.ok(integrityWorkspace.includes("t('عميل الفاتورة:', 'Invoice customer:')"),
+    'missing localized record UX: invoice customer label');
+  // 3A-376: the recurring loading description lives in the recurring workspace now.
+  assert.ok(recurringWorkspace.includes("[loadingDescription]=\"t('جارٍ تحميل الجداول الدورية…', 'Loading recurring schedules…')\""),
+    'missing localized record UX: recurring loading description');
   assert.ok(notificationsWorkspace.includes("[loadingDescription]=\"t('جارٍ تحميل الإشعارات…', 'Loading notifications…')\""),
     'missing localized record UX: notifications loading description');
 });

@@ -7,6 +7,8 @@ const appSourceRaw = readFileSync(new URL('./app.component.ts', import.meta.url)
 // 3A-351: the expense and notification searches moved into their deferred workspaces.
 const expensesWorkspaceSource = readFileSync(new URL('./expenses-workspace.component.ts', import.meta.url), 'utf8');
 const notificationsWorkspaceSource = readFileSync(new URL('./notifications-workspace.component.ts', import.meta.url), 'utf8');
+const suppliersWorkspaceSource = readFileSync(new URL('./suppliers-workspace.component.ts', import.meta.url), 'utf8');
+const recurringWorkspaceSource = readFileSync(new URL('./recurring-workspace.component.ts', import.meta.url), 'utf8');
 const appCss = readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
 const designSystem = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const ledgerSource = readFileSync(new URL('./inventory-movement-ledger.component.ts', import.meta.url), 'utf8');
@@ -110,8 +112,6 @@ test('filter and clear labels come from existing translated keys', () => {
 // --- Shell migration: the 5 .list-tools instances use the bar ---
 
 const shellFilters: Array<{ search: string; ariaKey: string; placeholderKey: string }> = [
-  { search: 'supplierSearch', ariaKey: 'ui.m_1mc30sn', placeholderKey: 'ui.m_jtec0a' },
-  { search: 'recurringSearch', ariaKey: 'ui.m_aljqyp', placeholderKey: 'ui.m_z7f6xc' },
   { search: 'paymentSearch', ariaKey: 'ui.m_nmj0be', placeholderKey: 'ui.m_hoei9y' },
 ];
 // 3A-351: the expense and notification searches live in their deferred
@@ -119,15 +119,21 @@ const shellFilters: Array<{ search: string; ariaKey: string; placeholderKey: str
 const movedFilters: Array<{ search: string; ariaKey: string; placeholderKey: string; source: string }> = [
   { search: 'expenseSearch', ariaKey: 'ui.m_qat44q', placeholderKey: 'ui.m_34prmq', source: expensesWorkspaceSource },
   { search: 'notificationSearch', ariaKey: 'ui.m_1qze32v', placeholderKey: 'ui.m_1aqo4qr', source: notificationsWorkspaceSource },
+  // 3A-376: the supplier search moved with the suppliers workspace.
+  { search: 'supplierSearch', ariaKey: 'ui.m_1mc30sn', placeholderKey: 'ui.m_jtec0a', source: suppliersWorkspaceSource },
+  // 3A-376: the recurring search moved with the recurring workspace.
+  { search: 'recurringSearch', ariaKey: 'ui.m_aljqyp', placeholderKey: 'ui.m_z7f6xc', source: recurringWorkspaceSource },
 ];
 
 test('the shell .list-tools instances use aba-filter-bar with their original search bindings preserved', () => {
   // 3A-351: 3 .list-tools instances stay in the shell plus the invoices chips
   // variant; the expense and notification bars moved into their workspaces.
-  assert.equal((appSourceRaw.match(/<aba-filter-bar/g) ?? []).length, 4,
-    'exactly 4 filter bars in the shell: the 3 .list-tools instances plus the invoices chips variant');
-  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 4,
-    'still exactly the 4 shell searches; the bar wraps them, it does not add or remove one');
+  // 3A-376: the supplier bar moved too — 2 .list-tools instances remain.
+  // 3A-376: the recurring bar moved as well — only payments remains.
+  assert.equal((appSourceRaw.match(/<aba-filter-bar/g) ?? []).length, 2,
+    'exactly 2 filter bars in the shell: the 1 remaining .list-tools instance plus the invoices chips variant');
+  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 2,
+    'still exactly the 2 shell searches; the bar wraps them, it does not add or remove one');
   for (const filter of shellFilters) {
     assert.ok(appSourceRaw.includes(`<div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="${filter.search}" [hasActiveFilter]="${filter.search}.trim() !== ''" (clear)="${filter.search} = ''">`),
       `${filter.search} must sit inside the bar in its .list-tools wrapper`);
