@@ -6,6 +6,9 @@ const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf
 // 3A-351: the expense and notification lists moved into their workspaces.
 const expensesSource = readFileSync(new URL('./expenses-workspace.component.ts', import.meta.url), 'utf8');
 const notificationsSource = readFileSync(new URL('./notifications-workspace.component.ts', import.meta.url), 'utf8');
+const suppliersSource = readFileSync(new URL('./suppliers-workspace.component.ts', import.meta.url), 'utf8');
+const recurringSource = readFileSync(new URL('./recurring-workspace.component.ts', import.meta.url), 'utf8');
+const integritySource = readFileSync(new URL('./integrity-workspace.component.ts', import.meta.url), 'utf8');
 
 test('workspace bootstrap fetches payment records only for roles authorized to open Payments', () => {
   const start = source.indexOf('async loadWorkspaceData(): Promise<void>');
@@ -36,7 +39,9 @@ test('denied direct tab navigation returns before changing the selected tab or l
   // 3A-351: loadProfitLoss() left setTab with the reports workspace — the
   // workspace loads the P&L in its own ngOnInit, and it is only instantiated
   // behind @defer after setTab passes the guard, so the same ordering holds.
-  const routeLoads = ['loadTaxSummary()', 'loadAuditEvents(0)', 'loadDataIntegrity(0)', 'loadOperationalHealth()'];
+  // 3A-376: the integrity tab self-loads inside its workspace now; the
+  // shell route loads that remain are pinned here.
+  const routeLoads = ['loadTaxSummary()', 'loadAuditEvents(0)', 'loadOperationalHealth()'];
   for (const load of routeLoads) {
     assert.ok(method.indexOf(load) > selectedTabMutation, `${load} must run only after the access guard`);
   }
@@ -64,7 +69,7 @@ test('payroll post-payment refresh discards responses after owner role, identity
 
 test('owner-only tax summary discards stale responses and invalidates pending ranges', () => {
   const start = source.indexOf('async loadTaxSummary(): Promise<void>');
-  const end = source.indexOf('\n  async loadDataIntegrity(offset = 0)', start);
+  const end = source.indexOf('\n  async loadOperationalHealth()', start);
   assert.ok(start >= 0 && end > start);
   const method = source.slice(start, end);
   assert.match(method, /requestContext\.role !== 'owner'/);
@@ -78,10 +83,12 @@ test('owner-only tax summary discards stale responses and invalidates pending ra
 });
 
 test('owner-only integrity and health loads discard late responses after role or identity changes', () => {
-  const integrityStart = source.indexOf('async loadDataIntegrity(offset = 0): Promise<void>');
-  const integrityEnd = source.indexOf('\n  async loadOperationalHealth()', integrityStart);
+  // 3A-376: loadDataIntegrity lives in the integrity workspace now, with
+  // the same owner gate and tenant-scoped guard.
+  const integrityStart = integritySource.indexOf('async loadDataIntegrity(offset = 0): Promise<void>');
+  const integrityEnd = integritySource.indexOf('\n  integrityWarningLabel(', integrityStart);
   assert.ok(integrityStart >= 0 && integrityEnd > integrityStart);
-  const integrity = source.slice(integrityStart, integrityEnd);
+  const integrity = integritySource.slice(integrityStart, integrityEnd);
   assert.match(integrity, /requestContext\.role !== 'owner'/);
   assert.match(integrity, /runTenantScopedRequest\(\s*this\.dataIntegrityLoadGuard/);
 
@@ -95,7 +102,9 @@ test('owner-only integrity and health loads discard late responses after role or
   const clearStart = source.indexOf('private clearWorkspaceData(): void');
   const clearEnd = source.indexOf('\n  }', clearStart);
   const reset = source.slice(clearStart, clearEnd);
-  assert.ok(reset.includes('this.dataIntegrityLoadGuard.invalidate()'));
+  // 3A-376: the integrity guard invalidates in its workspace's
+  // business-change handler now.
+  assert.ok(integritySource.includes('this.dataIntegrityLoadGuard.invalidate()'));
   assert.ok(reset.includes('this.operationalHealthLoadGuard.invalidate()'));
 });
 
@@ -103,13 +112,21 @@ test('workspace changes clear local operation-list searches with the previous wo
   const start = source.indexOf('private clearWorkspaceData(): void');
   const end = source.indexOf('\n  }', start);
   const method = source.slice(start, end);
-  for (const field of ['supplierSearch', 'purchaseSearch', 'recurringSearch']) {
+  for (const field of ['purchaseSearch']) {
     assert.ok(method.includes(`this.${field} = '';`), `${field} is reset on workspace change`);
   }
   // 3A-351: the notification search resets in the notifications workspace's
   // business-change handler now.
   assert.ok(notificationsSource.includes("this.notificationSearch = '';"),
     'notificationSearch is reset on workspace change in its workspace');
+  // 3A-376: the supplier search resets in the suppliers workspace's
+  // business-change handler now.
+  assert.ok(suppliersSource.includes("this.supplierSearch = '';"),
+    'supplierSearch is reset on workspace change in its workspace');
+  // 3A-376: the recurring search resets in the recurring workspace's
+  // business-change handler now.
+  assert.ok(recurringSource.includes("this.recurringSearch = '';"),
+    'recurringSearch is reset on workspace change in its workspace');
 });
 
 

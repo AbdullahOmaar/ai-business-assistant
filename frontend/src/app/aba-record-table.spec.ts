@@ -16,6 +16,9 @@ const reportsWorkspace=expandTranslationCalls(readFileSync(new URL('./reports-wo
 // 3A-351: the expense and notification date call sites moved with their workspaces.
 const expensesWorkspace=expandTranslationCalls(readFileSync(new URL('./expenses-workspace.component.ts',import.meta.url),'utf8'));
 const notificationsWorkspace=expandTranslationCalls(readFileSync(new URL('./notifications-workspace.component.ts',import.meta.url),'utf8'));
+// 3A-376: the suppliers table call site moved with the suppliers workspace.
+const suppliersWorkspace=expandTranslationCalls(readFileSync(new URL('./suppliers-workspace.component.ts',import.meta.url),'utf8'));
+const recurringWorkspace=expandTranslationCalls(readFileSync(new URL('./recurring-workspace.component.ts',import.meta.url),'utf8'));
 test('shared record table exposes semantic columns and stable row actions',()=>{
   assert.match(component,/<table>/);assert.match(component,/<caption class="aba-record-table__visually-hidden">/);
   assert.match(component,/<th scope="col" \[attr\.aria-sort\]="sortAria\(column\.key\)"/);assert.match(component,/<th scope="row"/);
@@ -37,12 +40,14 @@ test('phone layout renders labeled record cards with touch-sized row actions',()
   assert.match(css,/\.aba-record-table table\{display:block;min-width:0/);
   assert.match(css,/\.aba-record-table__action\{[^}]*min-height:44px/);
 });
-test('Customers, Products and Purchasing use dedicated workspaces while Suppliers retain the shared record contract',()=>{
+test('Customers, Products, Purchasing and Suppliers use dedicated workspaces and Suppliers retain the shared record contract',()=>{
   assert.match(app,/<aba-customer-workspace/);assert.match(customerWorkspace,/<aba-customer-directory[\s\S]*?\[customers\]="customers\(\)"/);
   assert.doesNotMatch(app,/customerTableRows|customerTableColumns/);
   assert.match(app,/<aba-product-workspace/);assert.match(productWorkspace,/<aba-product-catalog[\s\S]*?\[products\]="products\(\)"/);
   assert.doesNotMatch(app,/productTableRows|productTableColumns/);
-  assert.ok(app.includes('[rows]="supplierTableRows"'));
+  // 3A-376: suppliers joined the dedicated workspaces; the shared record contract is asserted on its new home.
+  assert.match(app,/<aba-suppliers-workspace/);
+  assert.ok(suppliersWorkspace.includes('[rows]="supplierTableRows"'));
   assert.match(app,/<aba-purchasing-workspace/);
   assert.ok(purchasingWorkspace.includes('this.api.purchaseOrders'));
   assert.ok(purchasingWorkspace.includes('this.api.purchaseOrderDetail'));
@@ -53,7 +58,7 @@ test('Customers, Products and Purchasing use dedicated workspaces while Supplier
 });
 
 test('record table labels and loading states follow the selected app locale',()=>{
-  assert.ok(app.includes('Loading customers') || app.includes('Loading suppliers'));
+  assert.ok(app.includes('Loading customers') || suppliersWorkspace.includes('Loading suppliers'));
   assert.ok(purchasingWorkspace.includes("t('loading')"));
   assert.ok(purchasingWorkspace.includes("this.localization.translate('purchasingWorkspace.' + key)"));
   assert.match(component, /resolvedActionsHeading/);
@@ -68,7 +73,6 @@ test('record table labels and loading states follow the selected app locale',()=
 test('record dates remain localized after moving legacy lists into tables', () => {
   for (const fragment of [
     'formatRecordDate(item.received_at)',
-    'formatRecordDate(item.next_run_at)',
     "formatRecordDate(item.created_at,'short')",
     'map((event,index)=>({',
     'event.source_id',
@@ -84,6 +88,9 @@ test('record dates remain localized after moving legacy lists into tables', () =
     'missing localized date or stable key: formatRecordDate(item.incurred_at)');
   assert.ok(notificationsWorkspace.includes('formatRecordDate(item.scheduled_at)'),
     'missing localized date or stable key: formatRecordDate(item.scheduled_at)');
+  // 3A-376: the recurring next-run date formats inside the recurring workspace now.
+  assert.ok(recurringWorkspace.includes('formatRecordDate(item.next_run_at)'),
+    'missing localized date or stable key: formatRecordDate(item.next_run_at)');
 });
 
 

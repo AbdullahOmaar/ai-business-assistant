@@ -35,6 +35,10 @@ const assistantWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./
 // 3A-351: the expenses and notifications tabs moved into their own deferred workspaces.
 const expensesWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./expenses-workspace.component.ts', import.meta.url), 'utf8'));
 const notificationsWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./notifications-workspace.component.ts', import.meta.url), 'utf8'));
+// 3A-376: the suppliers tab moved into its own workspace.
+const suppliersWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./suppliers-workspace.component.ts', import.meta.url), 'utf8'));
+const recurringWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./recurring-workspace.component.ts', import.meta.url), 'utf8'));
+const integrityWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./integrity-workspace.component.ts', import.meta.url), 'utf8'));
 const reportLabelsSource = expandTranslationCalls(readFileSync(new URL('./report-labels.ts', import.meta.url), 'utf8'));
 const mobileHeaderSource = expandTranslationCalls(readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.ts', import.meta.url), 'utf8'));
 const workspaceInvitationsSource = readFileSync(new URL('./workspace-invitations.component.ts', import.meta.url), 'utf8');
@@ -184,7 +188,8 @@ test('financial and integrity report basis labels are localized', () => {
   // 3A-351: the P&L basis line lives in the deferred reports workspace now.
   assert.match(reportsWorkspaceSource, /revenueBasisLabel\(profitLoss\.revenue_basis\)/);
   assert.match(reportsWorkspaceSource, /Gross issued invoice total/);
-  assert.match(source, /integrityWarningLabel\(dataIntegrityReport\.warning\)/);
+  // 3A-376: the integrity warning label renders in the integrity workspace now.
+  assert.match(integrityWorkspaceSource, /integrityWarningLabel\(dataIntegrityReport\.warning\)/);
   assert.match(source, /reportLimitationLabel\(limitation\)/);
 });
 
@@ -209,7 +214,7 @@ test('report labels translate the actual backend revenue-basis and integrity-war
   // taxes section and the workspace).
   assert.match(reportsWorkspaceSource, /normalized\.includes\('gross issued invoice totals before sales returns'\)/);
   assert.match(reportsWorkspaceSource, /Gross issued invoice totals before sales returns/i);
-  assert.match(source, /This report identifies records for manual review only/i);
+  assert.match(integrityWorkspaceSource, /This report identifies records for manual review only/i);
   assert.match(reportLabelsSource, /\"uses saved tax totals on issued invoices; it does not recalculate historical taxes\.\": \"app\.reportLimitation\.4\"/);
   assert.match(reportLabelsSource, /\"legacy invoices without customer links are flagged for review, not auto-corrected\.\": \"app\.reportLimitation\.16\"/);
 });
@@ -323,14 +328,16 @@ test('workspace empty states use the shared accessible state component', () => {
   assert.match(recordTableSource, /<aba-skeleton variant="list-row" \/>/);
   // 3A-351: the expense and notification success states moved into their
   // workspaces; the count spans the shell and both workspaces.
-  assert.ok(((source + expensesWorkspaceSource + notificationsWorkspaceSource).match(/<aba-state-message kind="success"/g) || []).length >= 4);
+  // 3A-376: the supplier success state moved too; the count spans all four sources.
+  assert.ok(((source + expensesWorkspaceSource + notificationsWorkspaceSource + suppliersWorkspaceSource + recurringWorkspaceSource + integrityWorkspaceSource).match(/<aba-state-message kind="success"/g) || []).length >= 4);
   assert.ok(source.includes('<aba-state-message [kind]'));
   assert.doesNotMatch(source, /<p class="muted" role="status">/);
   assert.doesNotMatch(source, /<p role="status">/);
 });
 
 test('workspace panels reuse one section header component instead of duplicating heading markup', () => {
-  assert.ok((source.match(/<aba-section-header\b/g) || []).length + (releaseGuideSource.match(/<aba-section-header\b/g) || []).length >= 13);
+  // 3A-376: the integrity panel's three headers live in its workspace now; the count spans all three sources.
+  assert.ok((source.match(/<aba-section-header\b/g) || []).length + (releaseGuideSource.match(/<aba-section-header\b/g) || []).length + (integrityWorkspaceSource.match(/<aba-section-header\b/g) || []).length >= 13);
   assert.equal((source.match(/<div class="section-head"><div><h2>/g) || []).length, 0, 'all simple h2 section headers must use the shared component');
 });
 
@@ -689,12 +696,15 @@ test('operations forms distinguish successful mutations from failed list refresh
   // 3A-351: createNotification lives in the notifications workspace now;
   // the next method after it there is the shared date formatter.
   const notification = notificationsWorkspaceSource.slice(notificationsWorkspaceSource.indexOf('async createNotification()'), notificationsWorkspaceSource.indexOf('  formatRecordDate('));
-  const supplier = source.slice(source.indexOf('async createSupplier()'), source.indexOf('async createPurchaseOrder()'));
-  const recurring = source.slice(source.indexOf('async createRecurringSchedule()'), source.indexOf('get maxIntegrityTotal()'));
-  for (const method of [supplier, recurring]) {
-    assert.match(method, /if \(this\.business\?\.id !== businessId\) return;/,
-      'stale operation completions must not update the newly selected workspace');
-  }
+  // 3A-376: createSupplier lives in the suppliers workspace now.
+  const supplier = suppliersWorkspaceSource.slice(suppliersWorkspaceSource.indexOf('async createSupplier()'), suppliersWorkspaceSource.indexOf('  private beginAction()'));
+  // 3A-376: createRecurringSchedule lives in the recurring workspace now.
+  const recurring = recurringWorkspaceSource.slice(recurringWorkspaceSource.indexOf('async createRecurringSchedule()'), recurringWorkspaceSource.indexOf('  private beginAction()'));
+  assert.match(recurring, /if \(this\.businessId\(\) !== businessId\) return;/,
+    'stale operation completions must not update the newly selected workspace');
+  // 3A-376: the suppliers workspace guards on its businessId input, like notifications.
+  assert.match(supplier, /if \(this\.businessId\(\) !== businessId\) return;/,
+    'stale operation completions must not update the newly selected workspace');
   // 3A-351: the notifications workspace guards on its businessId input.
   assert.match(notification, /if \(this\.businessId\(\) !== businessId\) return;/,
     'stale operation completions must not update the newly selected workspace');
@@ -1028,20 +1038,20 @@ test('owner-only notification and recurring creation controls stay hidden from s
   assert.match(notificationView, /Only workspace owners can queue notifications/);
   assert.match(notificationView, /<aba-record-table[^>]*\[rows\]="notificationTableRows"/);
 
-  const recurringStart = source.indexOf("@if (tab === 'recurring')");
-  const recurringEnd = source.indexOf("@if (tab === 'health'", recurringStart);
-  const recurringView = source.slice(recurringStart, recurringEnd);
-  assert.ok(recurringStart >= 0 && recurringEnd > recurringStart);
-  assert.match(recurringView, /@if \(business\?\.role === 'owner'\) \{\s*@if \(showRecurringForm\) \{\s*<form #recurringForm="ngForm"/);
+  // 3A-376: the recurring view lives in its workspace now; the form stays
+  // owner-gated through the role input, like notifications.
+  const recurringView = recurringWorkspaceSource;
+  assert.match(recurringView, /@if \(role\(\) === 'owner'\) \{\s*@if \(showRecurringForm\) \{\s*<form #recurringForm="ngForm"/);
   assert.match(recurringView, /Only workspace owners can create recurring invoice schedules/);
   assert.match(recurringView, /<aba-record-table[^>]*\[rows\]="recurringTableRows"/);
 
   const notificationMethodStart = notificationsWorkspaceSource.indexOf('async createNotification(): Promise<void>');
   const notificationMethodEnd = notificationsWorkspaceSource.indexOf('  formatRecordDate(', notificationMethodStart);
   assert.match(notificationsWorkspaceSource.slice(notificationMethodStart, notificationMethodEnd), /this\.role\(\) !== 'owner'/);
-  const recurringMethodStart = source.indexOf('async createRecurringSchedule(): Promise<void>');
-  const recurringMethodEnd = source.indexOf('get maxIntegrityTotal()', recurringMethodStart);
-  assert.match(source.slice(recurringMethodStart, recurringMethodEnd), /this\.business\.role !== 'owner'/);
+  // 3A-376: createRecurringSchedule guards on its role input in the workspace.
+  const recurringMethodStart = recurringWorkspaceSource.indexOf('async createRecurringSchedule(): Promise<void>');
+  const recurringMethodEnd = recurringWorkspaceSource.indexOf('  private beginAction()', recurringMethodStart);
+  assert.match(recurringWorkspaceSource.slice(recurringMethodStart, recurringMethodEnd), /this\.role\(\) !== 'owner'/);
 });
 
 test('CSV import preview and write controls are owner-only without restricting member record creation', () => {
@@ -1231,9 +1241,10 @@ test('notification and supplier forms expose localized field validation without 
   assert.match(notification, /name="notificationBody" required maxlength="1000"/);
   assert.match(notificationsWorkspaceSource, /class="form-validation" aria-live="polite"/);
 
-  const supplierStart = source.indexOf('<form #supplierForm="ngForm"');
-  const supplierEnd = source.indexOf('</form>', supplierStart);
-  const supplier = source.slice(supplierStart, supplierEnd);
+  // 3A-376: the supplier form lives in the suppliers workspace now.
+  const supplierStart = suppliersWorkspaceSource.indexOf('<form #supplierForm="ngForm"');
+  const supplierEnd = suppliersWorkspaceSource.indexOf('</form>', supplierStart);
+  const supplier = suppliersWorkspaceSource.slice(supplierStart, supplierEnd);
   assert.ok(supplier.includes('supplierForm.valid && createSupplier()'));
   assert.ok(supplier.includes('#supplierNameControl="ngModel"'));
   assert.ok(supplier.includes('#supplierEmailControl="ngModel"'));
@@ -1243,9 +1254,10 @@ test('notification and supplier forms expose localized field validation without 
   assert.match(supplier, /name="supplierName" required maxlength="160"/);
   assert.match(supplier, /name="supplierEmail" type="email" maxlength="254"/);
   assert.doesNotMatch(supplier, /name="supplierEmail"[^>]*required/);
-  assert.ok(source.includes('id="supplier-name-error"'));
-  assert.ok(source.includes('id="supplier-email-error"'));
-  assert.ok(source.includes('leave this field blank'));
+  // 3A-376: the supplier field errors render in the suppliers workspace.
+  assert.ok(suppliersWorkspaceSource.includes('id="supplier-name-error"'));
+  assert.ok(suppliersWorkspaceSource.includes('id="supplier-email-error"'));
+  assert.ok(suppliersWorkspaceSource.includes('leave this field blank'));
 });
 
 test('purchase order and recurring schedule forms expose accessible localized validation', () => {
@@ -1259,9 +1271,9 @@ test('purchase order and recurring schedule forms expose accessible localized va
   assert.ok(purchase.includes('role="alert"'));
   assert.ok(purchase.includes("this.formError.set(this.t('invalidLines'))"));
 
-  const recurringStart = source.indexOf('<form #recurringForm="ngForm"');
-  const recurringEnd = source.indexOf('</form>', recurringStart);
-  const recurring = source.slice(recurringStart, recurringEnd);
+  const recurringStart = recurringWorkspaceSource.indexOf('<form #recurringForm="ngForm"');
+  const recurringEnd = recurringWorkspaceSource.indexOf('</form>', recurringStart);
+  const recurring = recurringWorkspaceSource.slice(recurringStart, recurringEnd);
   assert.ok(recurring.includes('recurringForm.valid && createRecurringSchedule()'));
   assert.ok(recurring.includes('name="recurringCustomerId" [(ngModel)]="recurringCustomerId"'));
   assert.doesNotMatch(recurring, /name="recurringCustomerId"[^>]*required/);
@@ -1272,7 +1284,7 @@ test('purchase order and recurring schedule forms expose accessible localized va
   ]) {
     assert.ok(recurring.includes('#' + control + '="ngModel"'), control);
     assert.ok(recurring.includes(`[attr.aria-describedby]="${control}.invalid && (${control}.touched || recurringForm.submitted) ? '${id}' : null"`), id);
-    assert.ok(source.includes('id="' + id + '"'), id);
+    assert.ok(recurringWorkspaceSource.includes('id="' + id + '"'), id);
   }
   assert.match(recurring, /name="recurringIntervalDays" type="number" min="1" max="3650" required/);
   assert.match(recurring, /name="recurringTimezone" required maxlength="64"/);
@@ -1334,10 +1346,12 @@ test('operations errors stay scoped to the module that produced them', () => {
   assert.match(source, /operationsErrorTab: OperationsMessageTab \| null = null/);
   // 3A-351: the notifications error scope lives in the notifications
   // workspace now (its own operations state copy); the other tabs stay.
-  for (const tab of ['suppliers', 'recurring']) {
-    assert.ok(source.includes(`@if (operationsError && operationsErrorTab === '${tab}')`), tab);
-    assert.ok(source.includes(`this.operationsErrorTab = '${tab}'`), tab + ' load/validation error scope');
-  }
+  // 3A-376: the recurring error scope is its workspace's local notice state.
+  assert.ok(recurringWorkspaceSource.includes('<aba-state-message kind="error" [description]="noticeError"'), 'recurring');
+  assert.ok(recurringWorkspaceSource.includes('this.noticeError = this.message(error)'), 'recurring load/validation error scope');
+  // 3A-376: the suppliers error scope is the workspace's local notice state.
+  assert.ok(suppliersWorkspaceSource.includes('<aba-state-message kind="error" [description]="noticeError"'), 'suppliers');
+  assert.ok(suppliersWorkspaceSource.includes('this.noticeError = this.message(error)'), 'suppliers load/validation error scope');
   assert.ok(notificationsWorkspaceSource.includes(`@if (operationsError && operationsErrorTab === 'notifications')`), 'notifications');
   assert.ok(notificationsWorkspaceSource.includes(`this.operationsErrorTab = 'notifications'`), 'notifications load/validation error scope');
   assert.match(source, /this\.operationsErrorTab = tab;/);
@@ -1506,19 +1520,20 @@ test('Home dashboard uses the shared page-level error and retry banner without d
 
 
 test('operations lists filter locally by their visible business fields', () => {
-  assert.match(source, /get filteredSuppliers\(\): Supplier\[\]/);
-  assert.match(source, /get filteredRecurringSchedules\(\): RecurringInvoiceSchedule\[\]/);
+  // 3A-376: the suppliers filter lives in the suppliers workspace now.
+  assert.match(suppliersWorkspaceSource, /get filteredSuppliers\(\): Supplier\[\]/);
+  assert.match(recurringWorkspaceSource, /get filteredRecurringSchedules\(\): RecurringInvoiceSchedule\[\]/);
   // 3A-351: the notifications filter lives in the notifications workspace now.
   assert.match(notificationsWorkspaceSource, /get filteredNotifications\(\): NotificationRecord\[\]/);
-  assert.match(source, /filterSuppliers\(this\.suppliers, this\.supplierSearch, this\.localization\.locale\)/);
-  assert.match(source, /filterRecurringSchedules\(\s*this\.recurringSchedules/);
+  assert.match(suppliersWorkspaceSource, /filterSuppliers\(this\.suppliers, this\.supplierSearch, this\.localization\.locale\)/);
+  assert.match(recurringWorkspaceSource, /filterRecurringSchedules\(\s*this\.recurringSchedules/);
   assert.match(notificationsWorkspaceSource, /filterNotifications\(this\.notifications/);
   assert.ok(purchasingWorkspaceSource.includes('readonly filteredOrders = computed'));
   assert.ok(purchasingWorkspaceSource.includes('this.search().trim().toLocaleLowerCase()'));
   assert.ok(purchasingWorkspaceSource.includes('this.supplierName(order.supplier_id)'));
   assert.ok(purchasingWorkspaceSource.includes('this.statusLabel(order.status)'));
-  assert.match(source, /supplierSearch\.trim\(\) \? t\(/);
-  assert.match(source, /recurringSearch\.trim\(\) \? t\(/);
+  assert.match(suppliersWorkspaceSource, /supplierSearch\.trim\(\) \? t\(/);
+  assert.match(recurringWorkspaceSource, /recurringSearch\.trim\(\) \? t\(/);
   assert.match(notificationsWorkspaceSource, /notificationSearch\.trim\(\) \? t\(/);
 });
 

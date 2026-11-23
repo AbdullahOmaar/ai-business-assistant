@@ -118,9 +118,10 @@ const overviewSource = readFileSync(new URL('./overview-workspace.component.ts',
 // 3A-351: the expense and notification searches moved into their workspaces.
 const expensesSource = readFileSync(new URL('./expenses-workspace.component.ts', import.meta.url), 'utf8');
 const notificationsSource = readFileSync(new URL('./notifications-workspace.component.ts', import.meta.url), 'utf8');
+// 3A-376: the supplier search moved into the suppliers workspace.
+const suppliersSource = readFileSync(new URL('./suppliers-workspace.component.ts', import.meta.url), 'utf8');
+const recurringSource = readFileSync(new URL('./recurring-workspace.component.ts', import.meta.url), 'utf8');
 const shellSearches: Array<{ name: string; ariaKey: string; placeholderKey: string; binding: string }> = [
-  { name: 'supplierSearch', ariaKey: 'ui.m_1mc30sn', placeholderKey: 'ui.m_jtec0a', binding: 'supplierSearch' },
-  { name: 'recurringSearch', ariaKey: 'ui.m_aljqyp', placeholderKey: 'ui.m_z7f6xc', binding: 'recurringSearch' },
   { name: 'invoiceSearch', ariaKey: 'ui.m_qwjq9v', placeholderKey: 'ui.m_2onysz', binding: 'invoiceSearch' },
   { name: 'paymentSearch', ariaKey: 'ui.m_nmj0be', placeholderKey: 'ui.m_hoei9y', binding: 'paymentSearch' },
 ];
@@ -128,14 +129,18 @@ const shellSearches: Array<{ name: string; ariaKey: string; placeholderKey: stri
 const movedSearches: Array<{ name: string; ariaKey: string; placeholderKey: string; binding: string; source: string }> = [
   { name: 'expenseSearch', ariaKey: 'ui.m_qat44q', placeholderKey: 'ui.m_34prmq', binding: 'expenseSearch', source: expensesSource },
   { name: 'notificationSearch', ariaKey: 'ui.m_1qze32v', placeholderKey: 'ui.m_1aqo4qr', binding: 'notificationSearch', source: notificationsSource },
+  { name: 'supplierSearch', ariaKey: 'ui.m_1mc30sn', placeholderKey: 'ui.m_jtec0a', binding: 'supplierSearch', source: suppliersSource },
+  { name: 'recurringSearch', ariaKey: 'ui.m_aljqyp', placeholderKey: 'ui.m_z7f6xc', binding: 'recurringSearch', source: recurringSource },
 ];
 
 test('all 7 search inputs use aba-search-field with their original name, aria-label, placeholder and [(ngModel)] binding', () => {
   // 3A-351: 4 searches stay in the shell; the module-directory search lives
   // in the overview workspace and the expense/notification searches live in
   // their own workspaces, pinned separately below.
-  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 4,
-    'exactly the 4 shell searches migrate; no more, no fewer');
+  // 3A-376: the supplier search moved too — 3 searches stay in the shell.
+  // 3A-376: the recurring search moved as well — 2 stay in the shell.
+  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 2,
+    'exactly the 2 shell searches migrate; no more, no fewer');
   assert.ok(overviewSource.includes('<aba-search-field class="module-directory-search" name="homeModuleSearch" autocomplete="off"'),
     'the overview search keeps its module-directory-search hook and autocomplete="off"');
   assert.ok(overviewSource.includes("[ariaLabel]=\"t('ui.m_1yd5km1')\""),

@@ -19,6 +19,7 @@ const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), '
 // 3A-351: the receivables-ageing h3 section header moved with the reports
 // workspace, so the h3 count spans both homes.
 const reportsWorkspaceSource = readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8');
+const integrityWorkspaceSource = readFileSync(new URL('./integrity-workspace.component.ts', import.meta.url), 'utf8');
 const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const mobileHeaderSource = readFileSync(new URL('./shared/ui/aba-mobile-app-header.component.css', import.meta.url), 'utf8');
 const designSystemStyles = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
@@ -174,9 +175,11 @@ test('shared section headers preserve h2/h3 hierarchy for nested workspace secti
   // CSV import panels and the two data-integrity subsections), so the count
   // is 6: receivables ageing, customer statement, CSV imports ×2, integrity ×2.
   // 3A-351: the ageing one lives in the deferred reports workspace now.
+  // 3A-376: the two integrity subsections live in the integrity workspace now.
   assert.equal(
     [...appSource.matchAll(/<aba-section-header \[level\]="3"/g)].length
-    + [...reportsWorkspaceSource.matchAll(/<aba-section-header \[level\]="3"/g)].length, 6,
+    + [...reportsWorkspaceSource.matchAll(/<aba-section-header \[level\]="3"/g)].length
+    + [...integrityWorkspaceSource.matchAll(/<aba-section-header \[level\]="3"/g)].length, 6,
     'nested sections must use h3: receivables ageing, customer statement, CSV imports, integrity subsections');
 });
 
