@@ -256,7 +256,7 @@ def platform_admin_system_status(
             with factory() as status_session:
                 status_session.execute(text("SELECT 1"))
             database_status = "healthy"
-        except Exception:
+        except Exception:  # noqa: BLE001 — health probe: any failure at all means "unavailable"; the exception set is open by design
             database_status = "unavailable"
 
     project_configured = bool(os.getenv("FIREBASE_PROJECT_ID", "").strip())

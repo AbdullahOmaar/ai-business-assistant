@@ -172,7 +172,7 @@ def test_concurrent_retry_with_same_payment_idempotency_key_returns_one_payment(
                 )
                 session.commit()
                 return ("ok", payment.id)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — the test classifies whatever the database raises under concurrency; the type is the data
                 session.rollback()
                 return ("error", type(exc).__name__, str(exc))
 
@@ -208,7 +208,7 @@ def test_concurrent_payments_cannot_overallocate_an_invoice(postgres_engine, pg_
             except ValueError as exc:
                 session.rollback()
                 return ("rejected", str(exc))
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — the test classifies whatever the database raises under concurrency; the type is the data
                 session.rollback()
                 return ("error", type(exc).__name__, str(exc))
 
@@ -251,7 +251,7 @@ def test_concurrent_multi_invoice_payments_with_opposite_allocation_order_do_not
                 )
                 session.commit()
                 return ("ok", payment.id)
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — the test classifies whatever the database raises under concurrency; the type is the data
                 session.rollback()
                 return ("error", type(exc).__name__, str(exc))
 
@@ -308,7 +308,7 @@ def test_concurrent_stock_sales_cannot_overdraw_inventory(postgres_engine, pg_wo
             except WorkflowError as exc:
                 session.rollback()
                 return ("rejected", str(exc))
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — the test classifies whatever the database raises under concurrency; the type is the data
                 session.rollback()
                 return ("error", type(exc).__name__, str(exc))
 
@@ -364,7 +364,7 @@ def test_concurrent_approvals_cannot_overreturn_invoice_line(postgres_engine, pg
             except ValueError as exc:
                 session.rollback()
                 return ("rejected", str(exc))
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — the test classifies whatever the database raises under concurrency; the type is the data
                 session.rollback()
                 return ("error", type(exc).__name__, str(exc))
 
@@ -460,7 +460,7 @@ def test_concurrent_invoice_void_and_approved_return_never_double_restore(
             except ValueError as exc:
                 session.rollback()
                 return ("rejected", str(exc))
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — the test classifies whatever the database raises under concurrency; the type is the data
                 session.rollback()
                 return ("error", type(exc).__name__, str(exc))
 
@@ -479,7 +479,7 @@ def test_concurrent_invoice_void_and_approved_return_never_double_restore(
             except ValueError as exc:
                 session.rollback()
                 return ("rejected", str(exc))
-            except Exception as exc:
+            except Exception as exc:  # noqa: BLE001 — the test classifies whatever the database raises under concurrency; the type is the data
                 session.rollback()
                 return ("error", type(exc).__name__, str(exc))
 

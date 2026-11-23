@@ -10,7 +10,7 @@ import json
 import os
 import re
 from datetime import UTC, date, datetime
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from uuid import UUID
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -1244,7 +1244,7 @@ def _validate_import_rows(session: Session, business_id: UUID, entity_type: str,
                 price = Decimal(row.get("unit_price", ""))
                 if not price.is_finite() or price < ZERO or price.as_tuple().exponent < -2 or price.adjusted() > 11 or len(price.as_tuple().digits) > 14:
                     raise ValueError()
-            except Exception:
+            except (InvalidOperation, TypeError, ValueError):
                 errors.append({"row": index, "field": "unit_price", "code": "invalid_decimal"})
             tracked = row.get("is_stock_tracked", "").lower()
             if tracked not in {"true", "false", "1", "0", "yes", "no", ""}:
@@ -1269,7 +1269,7 @@ def _validate_import_rows(session: Session, business_id: UUID, entity_type: str,
                 amount = Decimal(row.get("amount", ""))
                 if not amount.is_finite() or amount <= ZERO or amount.as_tuple().exponent < -2 or amount.adjusted() > 11 or len(amount.as_tuple().digits) > 14:
                     raise ValueError()
-            except Exception:
+            except (InvalidOperation, TypeError, ValueError):
                 errors.append({"row": index, "field": "amount", "code": "invalid_decimal"})
             currency = row.get("currency_code", "").upper()
             if len(currency) != 3 or not currency.isalpha():
