@@ -315,10 +315,10 @@ class Invoice(Base):
     currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
     issue_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     due_date: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    subtotal: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
-    tax_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
-    discount_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
-    total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0))
+    tax_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0))
+    discount_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0))
+    total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0))
     notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
@@ -469,7 +469,7 @@ class PurchaseOrder(Base):
     order_number: Mapped[str] = mapped_column(String(64), nullable=False)
     status: Mapped[str] = mapped_column(String(24), nullable=False, default="draft")
     currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
-    total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
+    total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -691,7 +691,7 @@ class PurchaseOrderLine(Base):
     quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
     unit_cost: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     received_quantity: Mapped[Decimal] = mapped_column(
-        Numeric(14, 3), nullable=False, default=Decimal("0")
+        Numeric(14, 3), nullable=False, default=Decimal(0)
     )
 
 
@@ -716,7 +716,7 @@ class SalesReturn(Base):
     invoice_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
     reason: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"))
+    total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0))
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -912,9 +912,9 @@ class PayrollRecord(Base):
     employee_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
     period: Mapped[str] = mapped_column(String(7), nullable=False)
     base_salary: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
-    allowances: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"), server_default="0")
-    bonuses: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"), server_default="0")
-    deductions: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal("0"), server_default="0")
+    allowances: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0), server_default="0")
+    bonuses: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0), server_default="0")
+    deductions: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0), server_default="0")
     net_pay: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
     expense_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)

@@ -49,7 +49,7 @@ def return_workspace():
     engine.dispose()
 
 
-def _issued_invoice(session, business_id, principal, quantity=Decimal("5")):
+def _issued_invoice(session, business_id, principal, quantity=Decimal(5)):
     product = create_product(
         session, principal=principal, business_id=business_id,
         name="Returnable item", unit_price=Decimal("10.00"),
@@ -145,4 +145,4 @@ def test_approval_revalidates_total_across_previously_approved_returns(return_wo
             StockMovement.business_id == business_id,
             StockMovement.reference_type == "sales_return",
         )).all()
-        assert sum((m.quantity_delta for m in return_movements), Decimal("0")) == Decimal("3.000")
+        assert sum((m.quantity_delta for m in return_movements), Decimal(0)) == Decimal("3.000")

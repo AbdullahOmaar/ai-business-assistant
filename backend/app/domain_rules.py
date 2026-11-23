@@ -5,7 +5,7 @@ from typing import NamedTuple
 
 CENT = Decimal("0.01")
 QTY = Decimal("0.001")
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
 class InvoiceTotals(NamedTuple):
@@ -27,9 +27,9 @@ def calculate_invoice_totals(
     tax_rate: Decimal = ZERO,
 ) -> InvoiceTotals:
     """Calculate totals from (quantity, unit_price) pairs; rates are percentages."""
-    if not ZERO <= discount_rate <= Decimal("100"):
+    if not ZERO <= discount_rate <= Decimal(100):
         raise ValueError("discount_rate must be between 0 and 100")
-    if not ZERO <= tax_rate <= Decimal("100"):
+    if not ZERO <= tax_rate <= Decimal(100):
         raise ValueError("tax_rate must be between 0 and 100")
 
     subtotal_raw = ZERO
@@ -46,9 +46,9 @@ def calculate_invoice_totals(
         raise ValueError("at least one invoice line is required")
 
     subtotal = money(subtotal_raw)
-    discount = money(subtotal * discount_rate / Decimal("100"))
+    discount = money(subtotal * discount_rate / Decimal(100))
     taxable = subtotal - discount
-    tax = money(taxable * tax_rate / Decimal("100"))
+    tax = money(taxable * tax_rate / Decimal(100))
     return InvoiceTotals(subtotal, discount, tax, money(taxable + tax))
 
 

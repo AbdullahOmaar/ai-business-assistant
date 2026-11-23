@@ -265,7 +265,7 @@ def test_owner_can_partially_then_fully_receive_and_audit_each_operation():
         totals_by_product = {
             product_id: sum(
                 (row.quantity_delta for row in movements if row.product_id == product_id),
-                Decimal("0"),
+                Decimal(0),
             )
             for product_id in product_ids
         }

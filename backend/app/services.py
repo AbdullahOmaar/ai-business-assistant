@@ -35,7 +35,7 @@ from app.models import (
 )
 from app.security import AuthenticatedPrincipal, authorize_membership
 
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
 class WorkflowError(ValueError):

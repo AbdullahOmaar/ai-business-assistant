@@ -95,7 +95,7 @@ def test_invoice_uses_catalog_price_and_issue_requires_draft(workspace):
             customer_id=customer.id,
             invoice_number="INV-001", currency_code="egp",
             lines=[{"product_id": str(product.id), "quantity": "2"}],
-            tax_rate=Decimal("14"), discount_rate=Decimal("10"),
+            tax_rate=Decimal(14), discount_rate=Decimal(10),
         )
         session.flush()
         line = session.scalar(select(InvoiceLine).where(
@@ -125,7 +125,7 @@ def test_invoice_persisted_lines_reconcile_half_cent_rounding(workspace):
                 {"description": "Half-cent A", "quantity": "1.500", "unit_price": "0.01"},
                 {"description": "Half-cent B", "quantity": "1.500", "unit_price": "0.01"},
             ],
-            discount_rate=Decimal("25"), tax_rate=Decimal("50"),
+            discount_rate=Decimal(25), tax_rate=Decimal(50),
         )
         lines = session.scalars(
             select(InvoiceLine).where(InvoiceLine.invoice_id == invoice.id)
@@ -185,7 +185,7 @@ def test_draft_invoice_edit_keeps_line_totals_and_invoice_totals_reconciled(work
                 {"description": "Half-cent A", "quantity": "1.500", "unit_price": "0.01"},
                 {"description": "Half-cent B", "quantity": "1.500", "unit_price": "0.01"},
             ],
-            discount_rate=Decimal("25"), tax_rate=Decimal("50"),
+            discount_rate=Decimal(25), tax_rate=Decimal(50),
         )
         lines = session.scalars(
             select(InvoiceLine).where(InvoiceLine.invoice_id == edited.id)
@@ -205,7 +205,7 @@ def test_stock_movements_prevent_negative_inventory(workspace):
     with Session(engine) as session:
         product = create_product(
             session, principal=principal, business_id=business_id,
-            name="Beans", unit_price=Decimal("30"), is_stock_tracked=True,
+            name="Beans", unit_price=Decimal(30), is_stock_tracked=True,
         )
         record_stock_movement(
             session, principal=principal, business_id=business_id,
@@ -237,14 +237,14 @@ def test_payment_allocation_is_transactional_and_idempotent(workspace):
         payment = record_payment(
             session, principal=principal, business_id=business_id,
                 customer_id=customer.id,
-            amount=Decimal("40"), currency_code="EGP", idempotency_key="pay-1",
-            allocations=[(invoice.id, Decimal("40"))],
+            amount=Decimal(40), currency_code="EGP", idempotency_key="pay-1",
+            allocations=[(invoice.id, Decimal(40))],
         )
         replay = record_payment(
             session, principal=principal, business_id=business_id,
                 customer_id=customer.id,
-            amount=Decimal("40"), currency_code="EGP", idempotency_key="pay-1",
-            allocations=[(invoice.id, Decimal("40"))],
+            amount=Decimal(40), currency_code="EGP", idempotency_key="pay-1",
+            allocations=[(invoice.id, Decimal(40))],
         )
         session.commit()
         assert replay.id == payment.id
@@ -254,7 +254,7 @@ def test_payment_allocation_is_transactional_and_idempotent(workspace):
             record_payment(
                 session, principal=principal, business_id=business_id,
                 customer_id=customer.id,
-                amount=Decimal("40"), currency_code="EGP", idempotency_key="pay-1",
+                amount=Decimal(40), currency_code="EGP", idempotency_key="pay-1",
                 allocations=[],
             )
 
@@ -533,8 +533,8 @@ def test_payment_rejects_currency_mismatch(workspace):
             record_payment(
                 session, principal=principal, business_id=business_id,
                 customer_id=customer.id,
-                amount=Decimal("20"), currency_code="USD", idempotency_key="currency-mismatch",
-                allocations=[(invoice.id, Decimal("20"))],
+                amount=Decimal(20), currency_code="USD", idempotency_key="currency-mismatch",
+                allocations=[(invoice.id, Decimal(20))],
             )
 
 
@@ -553,8 +553,8 @@ def test_payment_rejects_allocation_above_invoice_outstanding(workspace):
             record_payment(
                 session, principal=principal, business_id=business_id,
                 customer_id=customer.id,
-                amount=Decimal("120"), currency_code="EGP", idempotency_key="overpay",
-                allocations=[(invoice.id, Decimal("120"))],
+                amount=Decimal(120), currency_code="EGP", idempotency_key="overpay",
+                allocations=[(invoice.id, Decimal(120))],
             )
 
 
@@ -587,8 +587,8 @@ def test_payment_rejects_invoice_from_another_business(workspace):
             record_payment(
                 session, principal=principal, business_id=business_id,
                 customer_id=customer.id,
-                amount=Decimal("20"), currency_code="EGP", idempotency_key="foreign-invoice",
-                allocations=[(invoice.id, Decimal("20"))],
+                amount=Decimal(20), currency_code="EGP", idempotency_key="foreign-invoice",
+                allocations=[(invoice.id, Decimal(20))],
             )
 
 
@@ -606,15 +606,15 @@ def test_payment_idempotency_key_rejects_changed_amount(workspace):
         record_payment(
             session, principal=principal, business_id=business_id,
             customer_id=customer.id,
-            amount=Decimal("20"), currency_code="EGP", idempotency_key="same-key",
-            allocations=[(invoice.id, Decimal("20"))],
+            amount=Decimal(20), currency_code="EGP", idempotency_key="same-key",
+            allocations=[(invoice.id, Decimal(20))],
         )
         with pytest.raises(WorkflowError, match="different payment details"):
             record_payment(
                 session, principal=principal, business_id=business_id,
                 customer_id=customer.id,
-                amount=Decimal("25"), currency_code="EGP", idempotency_key="same-key",
-                allocations=[(invoice.id, Decimal("25"))],
+                amount=Decimal(25), currency_code="EGP", idempotency_key="same-key",
+                allocations=[(invoice.id, Decimal(25))],
             )
 
 
@@ -741,7 +741,7 @@ def test_staff_can_prepare_drafts_but_cannot_post_financials(workspace):
         ).all()
         assert len(persisted_lines) == 1
         assert persisted_lines[0].description == "Updated consulting"
-        assert persisted_lines[0].quantity == Decimal("2")
+        assert persisted_lines[0].quantity == Decimal(2)
         assert session.scalar(select(Invoice.id).where(Invoice.business_id == business_id, Invoice.id == draft_id)) == draft_id
         assert session.query(AuditEvent).filter(
             AuditEvent.target_id == str(draft_id),

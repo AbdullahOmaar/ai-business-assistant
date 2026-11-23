@@ -37,7 +37,7 @@ from app.security import (
 )
 from app.services import WorkflowError, _audit, record_stock_movement
 
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
 def _authorize(

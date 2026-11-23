@@ -69,7 +69,7 @@ from app.security import (
 from app.services import WorkflowError, create_expense
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["extended workflows"])
-ZERO = Decimal("0")
+ZERO = Decimal(0)
 
 
 def _validated_schedule_timezone(value: str) -> str:

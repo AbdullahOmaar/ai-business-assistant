@@ -321,7 +321,7 @@ def test_concurrent_stock_sales_cannot_overdraw_inventory(postgres_engine, pg_wo
             StockMovement.product_id == product_id,
             StockMovement.business_id == business_id,
         )).all()
-        assert sum((movement.quantity_delta for movement in movements), Decimal("0")) == Decimal("1.000")
+        assert sum((movement.quantity_delta for movement in movements), Decimal(0)) == Decimal("1.000")
         assert sum(movement.movement_type == "sale" for movement in movements) == 1
 
 
@@ -379,7 +379,7 @@ def test_concurrent_approvals_cannot_overreturn_invoice_line(postgres_engine, pg
             SalesReturn.status == "approved",
         )).all()
         assert len(approved) == 1
-        assert sum((item.total for item in approved), Decimal("0")) == Decimal("75.00")
+        assert sum((item.total for item in approved), Decimal(0)) == Decimal("75.00")
         line = session.get(InvoiceLine, invoice_line_id)
         assert line is not None and line.quantity == Decimal("1.000")
 
@@ -495,7 +495,7 @@ def test_concurrent_invoice_void_and_approved_return_never_double_restore(
             StockMovement.business_id == business_id,
             StockMovement.product_id == product_id,
         )).all()
-        balance = sum((item.quantity_delta for item in movements), Decimal("0"))
+        balance = sum((item.quantity_delta for item in movements), Decimal(0))
         void_movements = [
             item for item in movements
             if item.reference_type == "invoice_void" and item.reference_id == invoice_id
@@ -508,13 +508,13 @@ def test_concurrent_invoice_void_and_approved_return_never_double_restore(
             assert sales_return.status == "approved"
             assert balance == Decimal("3.000")
             assert not void_movements
-            assert sum((item.quantity_delta for item in return_movements), Decimal("0")) == Decimal("3.000")
+            assert sum((item.quantity_delta for item in return_movements), Decimal(0)) == Decimal("3.000")
             expected_audit_action = "sales_return.approved"
         else:
             assert invoice.status == "void"
             assert sales_return.status == "draft"
             assert balance == Decimal("10.000")
-            assert sum((item.quantity_delta for item in void_movements), Decimal("0")) == Decimal("10.000")
+            assert sum((item.quantity_delta for item in void_movements), Decimal(0)) == Decimal("10.000")
             assert not return_movements
             expected_audit_action = "invoice.voided"
 

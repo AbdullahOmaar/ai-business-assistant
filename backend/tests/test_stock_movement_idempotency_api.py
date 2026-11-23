@@ -189,7 +189,7 @@ def test_rejected_stock_movement_does_not_burn_its_key():
             "reason": "too much",
         }, headers=headers)
         assert rejected.status_code == 422, rejected.text
-        assert _snapshot(engine, business_id) == (0, 0, 0, Decimal("0"))
+        assert _snapshot(engine, business_id) == (0, 0, 0, Decimal(0))
 
         # The same key stays usable for the corrected, valid movement.
         accepted = client.post(url, json=_payload(product_id), headers=headers)

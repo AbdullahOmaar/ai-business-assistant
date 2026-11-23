@@ -517,10 +517,10 @@ async def chat(
         expenses_by_currency: dict[str, Decimal] = {}
         for row in invoice_rows:
             currency = row["currency"]
-            sales_by_currency[currency] = sales_by_currency.get(currency, Decimal("0")) + Decimal(row["total"])
+            sales_by_currency[currency] = sales_by_currency.get(currency, Decimal(0)) + Decimal(row["total"])
         for row in expense_rows:
             currency = row["currency"]
-            expenses_by_currency[currency] = expenses_by_currency.get(currency, Decimal("0")) + Decimal(row["amount"])
+            expenses_by_currency[currency] = expenses_by_currency.get(currency, Decimal(0)) + Decimal(row["amount"])
 
         def money_summary(values: dict[str, Decimal]) -> str:
             return "، ".join(
@@ -544,8 +544,8 @@ async def chat(
             if currencies:
                 details = []
                 for currency in currencies:
-                    sales_total = sales_by_currency.get(currency, Decimal("0"))
-                    expense_total = expenses_by_currency.get(currency, Decimal("0"))
+                    sales_total = sales_by_currency.get(currency, Decimal(0))
+                    expense_total = expenses_by_currency.get(currency, Decimal(0))
                     details.append(
                         f"{money(sales_total - expense_total)} {currency} "
                         f"(فواتير صادرة {money(sales_total)}، "

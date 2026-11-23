@@ -112,9 +112,9 @@ class PayrollCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     period: str = Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
-    allowances: Decimal = Field(default=Decimal("0"), ge=0, max_digits=14, decimal_places=2)
-    bonuses: Decimal = Field(default=Decimal("0"), ge=0, max_digits=14, decimal_places=2)
-    deductions: Decimal = Field(default=Decimal("0"), ge=0, max_digits=14, decimal_places=2)
+    allowances: Decimal = Field(default=Decimal(0), ge=0, max_digits=14, decimal_places=2)
+    bonuses: Decimal = Field(default=Decimal(0), ge=0, max_digits=14, decimal_places=2)
+    deductions: Decimal = Field(default=Decimal(0), ge=0, max_digits=14, decimal_places=2)
 
 
 class PayrollUpdate(BaseModel):

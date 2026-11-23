@@ -775,7 +775,7 @@ def dashboard(business_id: UUID, start_date: date | None = None, end_date: date 
         "collected_payments": amounts(collected),
         "expenses": amounts(expenses),
         "outstanding_balances": [
-            {"currency_code": currency, "total": str(max(Decimal("0"), Decimal(str(total))))}
+            {"currency_code": currency, "total": str(max(Decimal(0), Decimal(str(total))))}
             for currency, total in outstanding_rows
         ],
         "limitations": [
@@ -873,9 +873,9 @@ def profit_loss(
     currencies = sorted(set(revenue) | set(expenses) | set(approved_returns))
     rows = []
     for currency in currencies:
-        revenue_count, revenue_total = revenue.get(currency, (0, Decimal("0")))
-        expense_count, expense_total = expenses.get(currency, (0, Decimal("0")))
-        return_count, return_total = approved_returns.get(currency, (0, Decimal("0")))
+        revenue_count, revenue_total = revenue.get(currency, (0, Decimal(0)))
+        expense_count, expense_total = expenses.get(currency, (0, Decimal(0)))
+        return_count, return_total = approved_returns.get(currency, (0, Decimal(0)))
         rows.append({
             "currency_code": currency,
             "revenue": str(revenue_total),
