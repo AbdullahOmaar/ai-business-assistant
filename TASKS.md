@@ -6,7 +6,7 @@
 - **Gap closed in C2:** payables visibility — new `GET /reports/payables-aging` (per supplier + currency: ordered/received/outstanding; outstanding equals received totals until supplier payments exist, stated in the response). Matrix now 93 routes.
 - **Gaps NOT closed (documented with owners, not hidden):** supplier bills + payments (financial semantics — owner-gated like T37); purchase returns (C5/C4 by the stock-movement contract); recurring execution (D2 — needs a scheduler); pricing-rule application (changes invoice totals — owner decision under the batch constants); valuation/COGS (needs a valuation policy first); cashbox (C3, next in the queue).
 - **NOT deployed:** no release markers — the report reaches production with the next grouped API release.
-- **Next in the queue (prepared):** C3 (cashbox — 10h) — issue to be created as Backlog before C2 closes.
+- **Next in the queue (prepared):** C3 (cashbox — 10h) — issue **3A-727** created as Backlog (Phase 2 label) before C2 closes; starts after C2 closes.
 
 ## Phase 2 — B7: conversational setup with financial-numbers guard (Linear 3A-725) — 2026-11-24 ~23:40 EET (PR #478 MERGED `6b803be`, 3A-725 CLOSED Done «فعلي: 1 ساعة»)
 
