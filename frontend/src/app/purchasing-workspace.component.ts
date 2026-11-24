@@ -376,6 +376,19 @@ export class PurchasingWorkspaceComponent {
   receiptDraft: Record<string, string> = {};
   private editingOrderId: string | null = null;
 
+  /* 3A-696 (G7): back-navigation preserves the list — the customer
+   * workspace pattern (T18 Slice U02): the window scroll position is
+   * saved when leaving the list (detail or create editor) and restored
+   * when coming back, so the user lands where they were. */
+  private listScrollY = 0;
+
+  private saveListScroll(): void { this.listScrollY = window.scrollY; }
+
+  private restoreListScroll(): void {
+    const y = this.listScrollY;
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  }
+
   constructor() {
     this.narrowQuery?.addEventListener('change', (event) => this.isNarrow.set(event.matches));
     effect(() => {
@@ -534,6 +547,7 @@ export class PurchasingWorkspaceComponent {
   async openOrder(orderId: string): Promise<void> {
     const requested = this.context();
     const version = this.detailGuard.begin();
+    if (this.mode() === 'list') this.saveListScroll();
     this.mode.set('detail');
     this.selectedOrder.set(null);
     this.receipts.set([]);
@@ -587,6 +601,7 @@ export class PurchasingWorkspaceComponent {
 
   backToList(): void {
     this.mode.set('list');
+    this.restoreListScroll();
     this.selectedOrder.set(null);
     this.pendingAction.set(null);
     this.receiptMode.set(false);
@@ -594,6 +609,7 @@ export class PurchasingWorkspaceComponent {
   }
 
   startCreate(): void {
+    this.saveListScroll();
     this.editingOrderId = null;
     this.draft = { supplier_id: '', order_number: '', currency_code: this.currencyCode() };
     this.formLines = [this.emptyLine()];
@@ -618,8 +634,12 @@ export class PurchasingWorkspaceComponent {
 
   cancelEditor(): void {
     this.formError.set('');
+    const returningToList = !this.editingOrderId;
     this.mode.set(this.editingOrderId ? 'detail' : 'list');
-    if (!this.editingOrderId) this.selectedOrder.set(null);
+    if (returningToList) {
+      this.selectedOrder.set(null);
+      this.restoreListScroll();
+    }
     this.editingOrderId = null;
   }
 
