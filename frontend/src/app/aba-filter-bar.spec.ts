@@ -52,8 +52,11 @@ test('filter bar is a standalone OnPush component composing aba-icon, with varia
 });
 
 test('filter control is icon only: the filter icon with an accessible name, no text, 44px touch area', () => {
+  // 3A-696: aria-expanded/aria-controls now bind through toggleExpanded()/
+  // toggleControlsId() so fold mode can point them at the extras panel;
+  // in the default mode they resolve to the details row exactly as before.
   assert.match(componentSource,
-    /<button type="button" class="aba-filter-bar__filter"[^>]*\[attr\.aria-label\]="filterLabel\(\)"[^>]*\[attr\.aria-expanded\]="detailsVisible\(\)"[^>]*\[attr\.aria-controls\]="detailsId"[^>]*\(click\)="toggle\(\)">/);
+    /<button type="button" class="aba-filter-bar__filter"[^>]*\[attr\.aria-label\]="filterLabel\(\)"[^>]*\[attr\.aria-expanded\]="toggleExpanded\(\)"[^>]*\[attr\.aria-controls\]="toggleControlsId\(\)"[^>]*\(click\)="toggle\(\)">/);
   assert.match(componentSource,
     /class="aba-filter-bar__filter"[\s\S]*?>\s*<aba-icon name="filter" \/>\s*<\/button>/,
     'the filter button must contain only the shared filter icon — no text, no huge visual button');
@@ -92,7 +95,10 @@ test('variants are slots: the search field is projected, chips and selects go th
     'the search field is projected content — the bar composes aba-search-field, it does not replace it');
   assert.ok(componentSource.includes('<ng-content select="[filterExtras]" />'),
     'extra controls (chips, selects) are projected through the [filterExtras] slot');
-  assert.match(componentSource, /@if \(variant\(\) !== 'search'\) \{/,
+  // 3A-696: the extras wrapper is additionally gated on extrasVisible() so
+  // fold mode can hide the controls; with foldExtras off (the default) the
+  // gate is always true and the rendering is unchanged.
+  assert.match(componentSource, /@if \(variant\(\) !== 'search' && extrasVisible\(\)\) \{/,
     'the search-only variant renders no extras slot');
   assert.match(componentSource, /@if \(variant\(\) !== 'selects'\) \{/,
     'the selects variant has no search field to project');
@@ -107,6 +113,25 @@ test('filter and clear labels come from existing translated keys', () => {
   assert.equal(arabic.ui.m_11q6v6c, 'تصفية');
   assert.equal(english.ui.m_1np7zc4, 'Clear filters');
   assert.equal(arabic.ui.m_1np7zc4, 'مسح الفلاتر');
+});
+
+// --- 3A-696: fold mode (G1 closure) ---
+
+test('fold mode: foldExtras input gates the extras panel behind the filter button, details row untouched', () => {
+  assert.match(componentSource, /readonly foldExtras = input\(false\)/,
+    'fold mode is opt-in and off by default, so existing callers keep their behaviour');
+  assert.match(componentSource, /protected readonly panelOpen = signal\(false\)/,
+    'the extras panel starts folded');
+  assert.match(componentSource, /protected readonly extrasVisible = computed\(\(\) => !this\.foldExtras\(\) \|\| this\.panelOpen\(\)\)/,
+    'extras render unless fold mode is on and the panel is closed');
+  assert.match(componentSource, /protected readonly toggleExpanded = computed\(\(\) => \(this\.foldExtras\(\) \? this\.panelOpen\(\) : this\.detailsVisible\(\)\)\)/,
+    'aria-expanded reports the panel in fold mode and the details row otherwise');
+  assert.match(componentSource, /protected readonly toggleControlsId = computed\(\(\) => \(this\.foldExtras\(\) \? this\.extrasId : this\.detailsId\)\)/,
+    'aria-controls points at the element the button actually toggles');
+  assert.match(componentSource, /protected toggle\(\): void \{\s*if \(this\.foldExtras\(\)\) \{\s*this\.panelOpen\.update\(\(value\) => !value\);\s*return;\s*\}\s*this\.expanded\.update\(\(value\) => !value\);\s*\}/,
+    'the button toggles the panel in fold mode and the details row otherwise');
+  assert.match(componentSource, /<div class="aba-filter-bar__extras" \[id\]="extrasId">/,
+    'the extras wrapper carries the panel id the button controls');
 });
 
 // --- Shell migration: the 5 .list-tools instances use the bar ---

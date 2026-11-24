@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';
 import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
 import {
   ApiService,
@@ -24,7 +25,7 @@ type PurchaseAction = 'approve' | 'cancel';
 @Component({
   selector: 'aba-purchasing-workspace',
   standalone: true,
-  imports: [FormsModule, AbaSkeletonComponent],
+  imports: [FormsModule, AbaFilterBarComponent, AbaSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="purchasing-workspace" [attr.dir]="language() === 'ar' ? 'rtl' : 'ltr'" [attr.aria-label]="t('title')">
@@ -42,10 +43,26 @@ type PurchaseAction = 'approve' | 'cancel';
 
       @if (mode() === 'list') {
         <div class="pw__toolbar">
+          <aba-filter-bar variant="chips" [foldExtras]="true" [filterLabel]="filterBarLabel()" [clearLabel]="clearBarLabel()" [filterSummary]="activeFilterSummary()" [hasActiveFilter]="hasActiveFilters()" (clear)="clearFilters()">
           <label class="pw__search">
             <span class="pw__sr-only">{{ t('search') }}</span>
             <input type="search" [value]="search()" (input)="search.set(readValue($event))" [placeholder]="isNarrow() ? t('searchShort') : t('search')" />
           </label>
+          <div class="pw__filters" role="group" [attr.aria-label]="filterBarLabel()" filterExtras>
+            <label>{{ t('status') }}
+              <select [value]="statusFilter()" (change)="statusFilter.set(readValue($event))">
+                <option value="all">{{ t('allStatuses') }}</option>
+                @for (status of filterStatuses; track status) { <option [value]="status">{{ statusLabel(status) }}</option> }
+              </select>
+            </label>
+            <label>{{ t('supplier') }}
+              <select [value]="supplierFilter()" (change)="supplierFilter.set(readValue($event))">
+                <option value="all">{{ t('allSuppliers') }}</option>
+                @for (supplier of suppliers(); track supplier.id) { <option [value]="supplier.id">{{ supplier.name }}</option> }
+              </select>
+            </label>
+          </div>
+          </aba-filter-bar>
           @if (loading()) { <span class="pw__muted" role="status">{{ t('loading') }}</span> }
         </div>
         @if (error()) { <p class="pw__notice pw__notice--error" role="alert">{{ error() }} <button type="button" (click)="load()">{{ t('retry') }}</button></p> }
@@ -70,8 +87,8 @@ type PurchaseAction = 'approve' | 'cancel';
           </div>
         } @else if (!error()) {
           <div class="pw__state">
-            <strong>{{ search().trim() ? t('noMatches') : t('emptyTitle') }}</strong>
-            @if (!search().trim()) { <p>{{ t('emptyDescription') }}</p> }
+            <strong>{{ hasAnyFilter() ? t('noMatches') : t('emptyTitle') }}</strong>
+            @if (!hasAnyFilter()) { <p>{{ t('emptyDescription') }}</p> }
           </div>
         }
       } @else if (mode() === 'create' || mode() === 'edit') {
@@ -227,6 +244,11 @@ type PurchaseAction = 'approve' | 'cancel';
     .pw__muted{color:var(--aba-color-text-secondary,#64748b);font-size:12px;line-height:1.55}
     .pw__heading p{margin:3px 0}
     .pw__toolbar{display:flex;align-items:center;gap:10px;min-width:0}
+    .pw__toolbar aba-filter-bar{flex:1;min-width:0}
+    .pw__filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;padding:12px;border:1px solid var(--aba-color-border,#dbe3ec);border-radius:12px;background:var(--aba-color-surface-subtle,#f8fafc)}
+    .pw__filters label{display:grid;gap:5px;min-width:0;font-size:11px;font-weight:700}
+    .pw__filters select{width:100%;min-width:0;min-height:44px;box-sizing:border-box;padding:9px 10px;border:1px solid var(--aba-color-border-strong,#cbd5e1);border-radius:11px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font:inherit;font-size:13px}
+    @media(max-width:760px){.pw__filters{grid-template-columns:1fr}}
     .pw__search{display:block;flex:1;min-width:0}
     .pw__search input{width:100%;min-height:44px;box-sizing:border-box}
     .pw__cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:10px}
@@ -320,17 +342,26 @@ export class PurchasingWorkspaceComponent {
   readonly receiptError = signal('');
   readonly success = signal('');
   readonly search = signal('');
+  // 3A-696 (G1): structured list filters (status + supplier) folded behind
+  // the shared filter bar's icon toggle; the search field stays visible.
+  readonly statusFilter = signal('all');
+  readonly supplierFilter = signal('all');
+  readonly filterStatuses = ['draft', 'approved', 'partially_received', 'received', 'cancelled'];
   readonly pendingAction = signal<PurchaseAction | null>(null);
   readonly receiptMode = signal(false);
 
   readonly filteredOrders = computed(() => {
     const query = this.search().trim().toLocaleLowerCase();
-    if (!query) return this.orders();
-    return this.orders().filter(order =>
-      order.order_number.toLocaleLowerCase().includes(query)
-      || this.supplierName(order.supplier_id).toLocaleLowerCase().includes(query)
-      || this.statusLabel(order.status).toLocaleLowerCase().includes(query)
-    );
+    const status = this.statusFilter();
+    const supplier = this.supplierFilter();
+    return this.orders().filter(order => {
+      if (status !== 'all' && order.status !== status) return false;
+      if (supplier !== 'all' && order.supplier_id !== supplier) return false;
+      if (!query) return true;
+      return order.order_number.toLocaleLowerCase().includes(query)
+        || this.supplierName(order.supplier_id).toLocaleLowerCase().includes(query)
+        || this.statusLabel(order.status).toLocaleLowerCase().includes(query);
+    });
   });
   readonly activeSuppliers = computed(() => this.suppliers().filter(supplier => supplier.is_active));
   readonly stockProducts = computed(() => this.products().filter(product => product.is_stock_tracked));
@@ -369,6 +400,8 @@ export class PurchasingWorkspaceComponent {
         this.formError.set('');
         this.receiptError.set('');
         this.success.set('');
+        this.statusFilter.set('all');
+        this.supplierFilter.set('all');
         this.pendingAction.set(null);
         this.receiptMode.set(false);
         this.editingOrderId = null;
@@ -416,6 +449,27 @@ export class PurchasingWorkspaceComponent {
       received: 'statusReceived', cancelled: 'statusCancelled',
     };
     return this.t(keys[status] || 'status');
+  }
+
+  // 3A-696 (G1): the shared filter bar's labels reuse the shared ui keys,
+  // exactly like the inventory ledger (there are no purchasingWorkspace
+  // filter/clear keys). The summary joins the active status and supplier;
+  // clearing resets both structured filters (the search text is separate).
+  filterBarLabel(): string { return this.localization.translate('ui.m_11q6v6c'); }
+  clearBarLabel(): string { return this.localization.translate('ui.m_1np7zc4'); }
+  hasActiveFilters(): boolean { return this.statusFilter() !== 'all' || this.supplierFilter() !== 'all'; }
+  hasAnyFilter(): boolean { return this.search().trim() !== '' || this.hasActiveFilters(); }
+
+  activeFilterSummary(): string {
+    const parts: string[] = [];
+    if (this.statusFilter() !== 'all') parts.push(this.statusLabel(this.statusFilter()));
+    if (this.supplierFilter() !== 'all') parts.push(this.supplierName(this.supplierFilter()));
+    return parts.join(' · ');
+  }
+
+  clearFilters(): void {
+    this.statusFilter.set('all');
+    this.supplierFilter.set('all');
   }
 
   formatDate(value: string | null): string {

@@ -40,7 +40,7 @@ const MOVEMENT_TYPES: InventoryMovementType[] = ['opening', 'receipt', 'sale', '
         <button type="button" class="inventory-ledger__refresh" (click)="refresh()" [disabled]="loading()">{{ copy().refresh }}</button>
       </header>
 
-      <aba-filter-bar variant="selects" [filterLabel]="copy().filters" [clearLabel]="copy().clearFilters" [filterSummary]="activeFilterSummary()" [hasActiveFilter]="hasActiveFilters()" (clear)="clearFilters()">
+      <aba-filter-bar variant="selects" [foldExtras]="true" [filterLabel]="copy().filters" [clearLabel]="copy().clearFilters" [filterSummary]="activeFilterSummary()" [hasActiveFilter]="hasActiveFilters()" (clear)="clearFilters()">
       <div class="inventory-ledger__filters" role="group" [attr.aria-label]="copy().filters" filterExtras>
         <label>
           <span>{{ copy().product }}</span>

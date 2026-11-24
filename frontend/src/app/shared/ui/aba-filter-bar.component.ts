@@ -39,6 +39,16 @@ import { AbaIconComponent } from './aba-icon.component';
  * with an accessible name from the caller (already translated) and a
  * 44px comfortable touch area (`--aiba-control-md`).
  *
+ * Fold mode (3A-696, G1 closure): with `foldExtras` on, the projected
+ * `[filterExtras]` controls themselves fold behind the filter button —
+ * the button toggles the extras panel (`panelOpen`) instead of the
+ * details row, and `aria-expanded`/`aria-controls` point at the panel.
+ * The details row keeps its own behaviour (auto-reveal on an active
+ * filter), so the current filter state stays visible while the controls
+ * are folded — the register's G1 pattern (filters fold behind an icon
+ * button; the current state stays visible). Off by default: every
+ * existing caller keeps the exact pre-3A-696 behaviour.
+ *
  * New pieces use the `--aiba-*` tokens (plan section 1 decision); the
  * `--aba-*` / `--aiba-*` token sets are not renamed or merged here.
  */
@@ -55,14 +65,14 @@ let filterBarInstanceCount = 0;
     <div class="aba-filter-bar" [class.aba-filter-bar--chips]="variant() === 'chips'" [class.aba-filter-bar--selects]="variant() === 'selects'">
       <div class="aba-filter-bar__row">
         <button type="button" class="aba-filter-bar__filter" [class.aba-filter-bar__filter--active]="hasActiveFilter()"
-          [attr.aria-label]="filterLabel()" [attr.aria-expanded]="detailsVisible()" [attr.aria-controls]="detailsId" (click)="toggle()">
+          [attr.aria-label]="filterLabel()" [attr.aria-expanded]="toggleExpanded()" [attr.aria-controls]="toggleControlsId()" (click)="toggle()">
           <aba-icon name="filter" />
         </button>
         @if (variant() !== 'selects') {
           <div class="aba-filter-bar__main"><ng-content /></div>
         }
-        @if (variant() !== 'search') {
-          <div class="aba-filter-bar__extras"><ng-content select="[filterExtras]" /></div>
+        @if (variant() !== 'search' && extrasVisible()) {
+          <div class="aba-filter-bar__extras" [id]="extrasId"><ng-content select="[filterExtras]" /></div>
         }
       </div>
       @if (detailsVisible()) {
@@ -119,16 +129,35 @@ export class AbaFilterBarComponent {
   /** Whether any filter is currently active: drives the button's active state, the auto-reveal and the clear button. */
   readonly hasActiveFilter = input(false);
 
+  /**
+   * 3A-696: fold mode — the `[filterExtras]` controls render only while
+   * the panel is open, and the filter button toggles the panel instead
+   * of the details row. The details row (current-filter summary + clear)
+   * is unaffected, so the active state stays visible while folded.
+   */
+  readonly foldExtras = input(false);
+
   /** Emitted when the clear action is used; the caller resets its own filter state. */
   readonly clear = output<void>();
 
   protected readonly expanded = signal(false);
+  protected readonly panelOpen = signal(false);
   protected readonly detailsId = `aba-filter-bar-details-${++filterBarInstanceCount}`;
+  protected readonly extrasId = `aba-filter-bar-extras-${++filterBarInstanceCount}`;
 
   /** The details row is visible only when expanded and there is something to show. */
   protected readonly detailsVisible = computed(
     () => this.expanded() && (this.hasActiveFilter() || this.filterSummary() !== '' || this.emptyFilterLabel() !== ''),
   );
+
+  /** The extras panel renders unless fold mode is on and the panel is closed. */
+  protected readonly extrasVisible = computed(() => !this.foldExtras() || this.panelOpen());
+
+  /** What the filter button reports as expanded: the panel in fold mode, the details row otherwise. */
+  protected readonly toggleExpanded = computed(() => (this.foldExtras() ? this.panelOpen() : this.detailsVisible()));
+
+  /** The element the filter button controls: the extras panel in fold mode, the details row otherwise. */
+  protected readonly toggleControlsId = computed(() => (this.foldExtras() ? this.extrasId : this.detailsId));
 
   constructor() {
     // Auto-reveal the current filter (and its clear action) when a filter
@@ -143,8 +172,12 @@ export class AbaFilterBarComponent {
     });
   }
 
-  /** Filter button: show or hide the current-filter details row. */
+  /** Filter button: fold mode toggles the extras panel; otherwise show or hide the current-filter details row. */
   protected toggle(): void {
+    if (this.foldExtras()) {
+      this.panelOpen.update((value) => !value);
+      return;
+    }
     this.expanded.update((value) => !value);
   }
 
