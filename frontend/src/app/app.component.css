@@ -109,9 +109,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .setup-steps code{font-size:10px;overflow-wrap:anywhere}
 .text-button{border:0;background:transparent;color:var(--aba-color-primary,#0f766e);font-size:11px;font-weight:700;padding:15px 0 0}
 .auth-card .primary{margin-top:3px}
-.demo-login-button{width:100%;min-height:54px;margin-top:16px;padding:0 16px;display:flex;align-items:center;justify-content:center;gap:10px;border:1px solid #0f766e;border-radius:14px;background:linear-gradient(115deg,#0f766e,#155e75 58%,#1d4ed8);color:#fff;font:inherit;font-size:14px;font-weight:800;box-shadow:0 10px 24px #0f766e24;transition:transform .18s ease,box-shadow .18s ease,opacity .18s ease}
-.demo-login-button:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 14px 28px #0f766e35}
-.demo-login-button:focus-visible{outline:3px solid #5eead4;outline-offset:3px}
+.auth-identity{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.auth-character{width:52px;height:52px;object-fit:contain;flex:none}
+.auth-app-name{font-size:19px;font-weight:800;letter-spacing:-.3px}
+.demo-login-button{width:100%;min-height:54px;margin-top:16px;padding:0 16px;display:flex;align-items:center;justify-content:center;gap:10px;border:1.5px solid #0f766e;border-radius:14px;background:var(--aba-color-surface,#fff);color:#0f766e;font:inherit;font-size:14px;font-weight:800;transition:background .18s ease,opacity .18s ease}
+.demo-login-button:hover:not(:disabled){background:#f0fdfa}
+.demo-login-button:focus-visible{outline:3px solid #0f766e;outline-offset:3px}
 .demo-login-button:disabled{opacity:.65;cursor:wait}
 .demo-login-icon{font-size:19px}
 .demo-login-arrow{margin-inline-start:auto;font-size:18px}
