@@ -95,6 +95,18 @@ export class ProductWorkspaceComponent {
   private readonly pageSize = 50;
   private selectedProductId: string | null = null;
 
+  /* 3A-696 (G7): back-navigation preserves the catalog — the customer
+   * workspace pattern (T18 Slice U02): the window scroll position is
+   * saved when leaving the list for a profile and restored on return. */
+  private listScrollY = 0;
+
+  private saveListScroll(): void { this.listScrollY = window.scrollY; }
+
+  private restoreListScroll(): void {
+    const y = this.listScrollY;
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  }
+
   constructor() {
     effect(() => {
       const context = this.context();
@@ -183,6 +195,7 @@ export class ProductWorkspaceComponent {
     this.selectedProduct.set(null);
     this.detailError.set('');
     this.detailLoading.set(true);
+    if (this.mode() === 'list') this.saveListScroll();
     this.mode.set('profile');
     try {
       const record = await this.api.product(requested.businessId, productId);
@@ -235,6 +248,7 @@ export class ProductWorkspaceComponent {
     this.detailLoading.set(false);
     this.detailError.set('');
     this.mode.set('list');
+    this.restoreListScroll();
   }
 
   retryProfile(): void {

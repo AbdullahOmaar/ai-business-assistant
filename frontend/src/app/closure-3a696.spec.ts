@@ -11,6 +11,7 @@ const designSystem = readFileSync(new URL('../design-system.css', import.meta.ur
 const reportsSource = readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8');
 const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const purchasingSource = readFileSync(new URL('./purchasing-workspace.component.ts', import.meta.url), 'utf8');
+const productWorkspaceSource = readFileSync(new URL('./product-workspace.component.ts', import.meta.url), 'utf8');
 
 test('U03: products tools follow the customers pattern — add first with the shared add icon, then the owner export tool, import summary carries the import icon', () => {
   const createIdx = appSource.indexOf('<details class="aba-record-create"');
@@ -58,4 +59,24 @@ test('G2: every purchasing primary action carries an icon', () => {
     'purchasing primaries lay out icon and label as one inline-flex unit');
   assert.match(purchasingSource, /\.pw__primary aba-icon\{width:16px;height:16px\}/,
     'purchasing primary icons take the shared 16px tool size');
+});
+
+// 3A-696 part 3 (G7): scroll save/restore, copied from the customer
+// workspace pattern (T18 Slice U02) into purchasing and products.
+test('G7: purchasing and products preserve the list scroll position across detail navigation', () => {
+  for (const [name, source] of [['purchasing', purchasingSource], ['products', productWorkspaceSource]] as const) {
+    assert.ok(source.includes('private listScrollY = 0;'), `${name}: scroll field exists`);
+    assert.match(source, /private saveListScroll\(\): void \{ this\.listScrollY = window\.scrollY; \}/,
+      `${name}: save copies the customer pattern`);
+    assert.match(source, /private restoreListScroll\(\): void \{\s*const y = this\.listScrollY;\s*requestAnimationFrame\(\(\) => window\.scrollTo\(0, y\)\);\s*\}/,
+      `${name}: restore copies the customer pattern`);
+  }
+  assert.ok(purchasingSource.includes("if (this.mode() === 'list') this.saveListScroll();"),
+    'purchasing saves only when actually leaving the list (not on save-draft reopen or retry)');
+  assert.match(purchasingSource, /backToList\(\): void \{\s*this\.mode\.set\('list'\);\s*this\.restoreListScroll\(\);/,
+    'purchasing restores on back-to-list');
+  assert.ok(productWorkspaceSource.includes("if (this.mode() === 'list') this.saveListScroll();"),
+    'products saves only when leaving the catalog (not on profile retry)');
+  assert.match(productWorkspaceSource, /backToCatalog\(\): void \{[\s\S]*?this\.mode\.set\('list'\);\s*this\.restoreListScroll\(\);/,
+    'products restores on back-to-catalog');
 });
