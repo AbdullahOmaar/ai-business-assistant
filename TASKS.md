@@ -8,7 +8,7 @@
 - **Proof:** new `test_business_deletion_export.py` (5 tests) + purge tests (3) + matrix rows for both business routes (91 routes; `/me` excluded as non-business-scoped with dedicated coverage). Backend 518 passed locally, frontend green, Ruff zero. Audit labels + filters added for the three new actions.
 - **Deferred, explicitly:** the settings-screen UI for export/delete (buttons + confirm dialog in the app shell) — the API is complete; the UI hook belongs with the experience-stage work and is flagged to the manager rather than rushed into the shell.
 - **NOT deployed:** no release markers — reaches production with the next grouped API release, which must apply migration 0012 (manager's build command) as part of that release.
-- **Next in the queue (prepared):** B4 (privacy promise + review + zero-data-retention/sovereignty — 12h) — issue to be created as Backlog before B3 closes.
+- **Next in the queue (prepared):** B4 (privacy promise + review + zero-data-retention/sovereignty — 12h) — issue **3A-722** created as Backlog (Phase 2 label) before B3 closes; starts after B3 closes.
 
 ## Phase 2 — B2: pen-test program (Linear 3A-704) — 2026-11-24 ~20:16 EET (PR #473 MERGED `fe874af`, 3A-704 CLOSED Done «فعلي: 1 ساعة»)
 
