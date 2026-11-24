@@ -1,4 +1,15 @@
-## Phase 2 — A1: release-loop closure (Linear 3A-701) — 2026-11-24 ~17:45 EET (PR pending QA review)
+## Phase 2 — A2: backup/restore/rollback (Linear 3A-702) — 2026-11-24 ~18:56 EET (PR pending QA review)
+
+- **Second Phase 2 execution task, started by manager decision 2026-11-24 ~18:51 EET** («فيز 2 — A2: النسخ والاسترداد والتراجع», تقدير: 12 ساعة, In Progress). Scope: a backup/restore drill program with RTO/RPO targets + a full rollback runbook + a zero-downtime (expand-only) migration policy.
+- **Drill script hardened `scripts/backup-restore-drill.sh`:** prints `DRILL TABLES` (source vs restored user-table count — a mismatch fails the drill) and `DRILL TIMING` (dump/restore/total seconds — the RTO evidence). Test file extended with a stubbed happy path (all 6 drill tests pass: 4 guards + happy path + mismatch case).
+- **New docs:** `docs/ROLLBACK_RUNBOOK.md` (triggers, decision + comms, Vercel instant rollback vs revert-merge PR, migration-rollback rule — a code rollback never needs a schema rollback) + `docs/MIGRATION_POLICY.md` (expand → deploy → contract in a later release; no destructive ops; data backfills are separate idempotent migrations; every migration ships with a downgrade script + a rollback note).
+- **Drill program `docs/BACKUP_RESTORE_DRILL.md`:** initial targets **RTO 4h / RPO 24h** (stated to be proven by measuring the first drills, not claimed achieved); cadence monthly (disposable) / quarterly (production source, manager-side) / annually (full restore + smoke); pass criteria incl. table-count parity + smoke against the restored DB.
+- **Register:** standing rules 6–7 added (rollback recorded the same day; every migration's applied revision recorded with the deploy).
+- **Hard boundary, stated honestly:** a production-source drill cannot run from this chat — the production `DATABASE_URL` is a Vercel Sensitive variable, write-only and never readable; the quarterly production drill is a manager-side step with its prerequisites listed in the drill doc. No CI job may receive production secrets.
+- **NOT deployed:** no release markers on this PR — tooling + docs only; no production deploy is part of A2.
+- **Next in the queue (prepared):** B1 (independent security verification + 3A-417 — 12h) — issue **3A-703** created as Backlog (Phase 2 label) before A2 closes; starts after A2 closes.
+
+## Phase 2 — A1: release-loop closure (Linear 3A-701) — 2026-11-24 ~17:45 EET (PR #470 MERGED `59f57e5`, 3A-701 CLOSED Done «فعلي: 1 ساعة»)
 
 - **First Phase 2 execution task, started by manager decision 2026-11-24 ~16:53 EET** («فيز 2 — A1: إغلاق حلقة الإصدار», تقدير: 12 ساعة, In Progress). Scope: a runnable production smoke procedure + version-chain verification + environment-parity automation.
 - **New script `scripts/production_smoke.py`** (stdlib only, no secrets): 10 live flows (web shell + security headers; live web version from served `sw.js`; API `/health`, `/version`, `/readyz`; API docs gated 404; demo session; demo token exchange + demo business read; authenticated customers + invoices reads; synthetic write cycle inside the demo business only — create → read back → delete). Exit 0 only when every flow passes AND repo chain, live web and live API agree; divergence is printed, never hidden.
@@ -8,7 +19,7 @@
 - **Docs:** `docs/RELEASE_EVIDENCE_REGISTER.md` gains the smoke procedure + standing rules 4–5 + a row recording the observed 1.15.0–1.17.0 web deploy and the API divergence; `docs/ENVIRONMENT_PARITY.md` gains the automated-parity section (what the script can and cannot see).
 - **Local evidence:** smoke unit tests **12/12** (`tests/test_production_smoke.py`); Ruff clean on the new files; `--repo-only` PASS (chain 1.17.0, 8/8 fields); workflow YAML parses and the new job is in `all-checks-passed`'s needs.
 - **NOT deployed:** no release markers on this PR — tooling + docs only; no production deploy is part of A1.
-- **Next in the queue (prepared):** A2 (backup/restore/rollback — 12h) — issue **3A-702** created as Backlog (Phase 2 label) before A1 closes; starts after A1 closes.
+- **Next in the queue:** A2 (backup/restore/rollback — 12h) — **3A-702** started by manager decision 2026-11-24 ~18:51 EET; its checkpoint is the section above.
 
 ## Phase 1 closure complete — U12–U23 execution merged (2026-11-24 ~10:25 EET; paperwork PR pending QA review)
 
