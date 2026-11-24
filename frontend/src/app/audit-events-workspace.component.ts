@@ -69,6 +69,7 @@ import { auditActionLabel, auditTargetLabel } from './audit-labels';
             <option value="notification.queued">{{ t('audit.actions.m_13n1z3d') }}</option>
             <option value="setting.created">{{ t('audit.actions.m_fcyscwa') }}</option>
             <option value="setting.updated">{{ t('audit.actions.m_3ayfbuy') }}</option>
+            <option value="setting.deleted">{{ t('audit.actions.m_7kq2x9v') }}</option>
             <option value="business.deleted">{{ t('audit.actions.m_j0lw40') }}</option>
             <option value="business.exported">{{ t('audit.actions.m_jlt81r') }}</option>
             <option value="account.deleted">{{ t('audit.actions.m_8lnrmq') }}</option>

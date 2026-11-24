@@ -1196,6 +1196,33 @@ def put_setting(business_id: UUID, setting_key: str, body: SettingInput,
     return _dict(item, ("id", "setting_key", "setting_value", "updated_at"))
 
 
+@router.delete("/settings/{setting_key}", status_code=204)
+def delete_setting(business_id: UUID, setting_key: str,
+                   session: Session = Depends(get_session),
+                   principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Delete one setting (B7 one-tap rollback: remove a key a conversational-setup
+    proposal created). Owner-only; the audit event names the key only, never a value."""
+    def op():
+        _authorized(session, principal, business_id, owner_only=True)
+        safe_key = _validated_setting_key(setting_key)
+        item = session.scalars(select(BusinessSetting).where(
+            BusinessSetting.business_id == business_id,
+            BusinessSetting.setting_key == safe_key,
+        ).with_for_update()).one_or_none()
+        if item is None:
+            raise HTTPException(status_code=404, detail="Setting not found")
+        session.delete(item)
+        session.flush()
+        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
+                               action="setting.deleted",
+                               target_type="business_setting", target_id=str(item.id),
+                               change_summary=f"Setting {safe_key} deleted"))
+        session.flush()
+
+    _commit(session, op)
+    return Response(status_code=204)
+
+
 @router.get("/reports/summary")
 def report_summary(business_id: UUID,
                    session: Session = Depends(get_session),

@@ -34,6 +34,7 @@ const AUDIT_ACTION_KEYS: TranslationKeyMap = {
   "payroll.paid": "audit.actions.m_a3700r",
   "setting.created": "audit.actions.m_fcyscwa",
   "setting.updated": "audit.actions.m_3ayfbuy",
+  "setting.deleted": "audit.actions.m_7kq2x9v",
   "business.deleted": "audit.actions.m_j0lw40",
   "business.exported": "audit.actions.m_jlt81r",
   "account.deleted": "audit.actions.m_8lnrmq",

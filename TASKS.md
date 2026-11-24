@@ -1,4 +1,15 @@
-## Phase 2 — B6: assistant write-governance + second approval + role-bounded execution + computer-use policy (Linear 3A-724) — 2026-11-24 ~23:10 EET (PR pending QA review)
+## Phase 2 — B7: conversational setup with financial-numbers guard (Linear 3A-725) — 2026-11-24 ~23:40 EET (PR pending QA review)
+
+- **Ninth Phase 2 execution task, started immediately after B6 closed per the sequencing rule** («فيز 2 — B7: إعداد حسو بالمحادثة مع حارس الأرقام المالية», تقدير: 10 ساعات, In Progress).
+- **Honest starting point (verified from the code):** settings are a free-form key/value store (`BusinessSetting`); no code consumes setting values today, and there is no settings screen in the app yet (the B3 deferral to Stage E stands). B7 builds the proposal + guard + rollback contract on the backend.
+- **Proposals `backend/app/assistant_settings.py`:** the chat endpoint may return up to 3 validated setting suggestions (`setting_key`, `current_value`, `proposed_value`, `is_financial`, `requires_confirmation`, `reason`). Keys validated with the PUT endpoint's rule (secret-like keys dropped); duplicates and extras dropped; the answer is never failed by a bad suggestion. The assistant never applies anything — application stays the user's explicit act through the owner-only PUT.
+- **Financial-numbers guard:** keys naming a financial number (tax/VAT/rate/price/discount/currency/amount/fee/commission/salary/payroll/charge/cost) are flagged `requires_confirmation: true` — they never change without explicit confirmation, enforced on the backend, not by the model's goodwill.
+- **One-tap rollback:** every proposal carries its previous value; restoring is a PUT, and removing a key a proposal created is the new owner-only `DELETE /settings/{setting_key}` (audited `setting.deleted`, key only) — matrix now 92 routes.
+- **Docs:** `docs/CONVERSATIONAL_SETUP.md` (the flow, the guard, what the assistant cannot do, the settings surface honestly).
+- **NOT deployed:** no release markers — the settings screen itself is still deferred to Stage E; the DELETE endpoint reaches production with the next grouped API release.
+- **Next in the queue (prepared):** Stage C opens after Stage B closes — C1 (double-entry T44) is **gated on the owner's T37 decision** (plan decision point 1); C2 (financial-depth build-out — 14h) is the ready next task — issue **3A-726** created as Backlog (Phase 2 label) before B7 closes; starts after B7 closes.
+
+## Phase 2 — B6: assistant write-governance + second approval + role-bounded execution + computer-use policy (Linear 3A-724) — 2026-11-24 ~23:10 EET (PR #477 MERGED `c1a05b1`, 3A-724 CLOSED Done «فعلي: 1 ساعة»)
 
 - **Eighth Phase 2 execution task, started immediately after B5 closed per the sequencing rule** («فيز 2 — B6: حوكمة تنفيذ المساعد + موافقة ثانية + تنفيذ محكوم بالدور + سياسة computer-use», تقدير: 14 ساعة, In Progress).
 - **Honest starting point (verified from the code):** the assistant executes NOTHING today — one endpoint (`POST …/assistant/chat`, Q&A only), no tool calls, no write path. The API as a whole has 50 write endpoints (34 POST + 8 PATCH + 2 PUT + 6 DELETE), all classified in the governance doc.
@@ -6,7 +17,7 @@
 - **Tripwire test:** the assistant router exposes only `POST /chat` — adding an execution endpoint fails the suite until it is routed through the policy.
 - **Docs `docs/ASSISTANT_WRITE_GOVERNANCE.md`:** the full matrix (all 50 write endpoints classified), the second-approval design (propose → owner confirms an approval token bound to the exact payload → execute with an audit event naming asker + approver; payroll SoD is the precedent), and the computer-use policy — NOT permitted (no browser/OS control, no screenshots, no credential access; zero footprint in the code today; any future proposal is an owner decision).
 - **NOT deployed:** no release markers — policy + tests + docs only; no execution path exists or is built in this task.
-- **Next in the queue (prepared):** B7 (conversational setup with financial-numbers guard — 10h) — issue **3A-725** created as Backlog (Phase 2 label) before B6 closes; starts after B6 closes.
+- **Next in the queue:** B7 (conversational setup with financial-numbers guard — 10h) — **3A-725** started immediately after B6 closed per the sequencing rule; its checkpoint is the section above.
 
 ## Phase 2 — B5: page integrity + audit-log anomaly (Linear 3A-723) — 2026-11-24 ~22:05 EET (PR #476 MERGED `5a870ed`, 3A-723 CLOSED Done «فعلي: 1 ساعة»)
 
