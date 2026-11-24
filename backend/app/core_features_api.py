@@ -63,6 +63,13 @@ class BusinessPatch(BaseModel):
     address: str | None = Field(default=None, max_length=500)
 
 
+class BusinessDeleteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    # Typed confirmation: the caller must repeat the business name
+    # exactly (B3) — a delete is never one stray click away.
+    confirm_name: str = Field(min_length=1, max_length=160)
+
+
 class MembershipRolePatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
     role: MembershipRole
@@ -711,6 +718,153 @@ def patch_business(business_id: UUID, body: BusinessPatch,
         session.rollback()
         raise
     return _serialize_business(item)
+
+
+def _delete_identity_user(subject: str) -> None:
+    """Delete the caller's identity-provider user (B3 account deletion).
+
+    A user the provider does not know is already deleted — not an
+    error. Any other provider failure propagates, so the endpoint can
+    refuse BEFORE anything in the database changes.
+    """
+    from firebase_admin import auth
+
+    from app.firebase_auth import get_firebase_admin_app
+
+    app_instance = get_firebase_admin_app()
+    try:
+        auth.delete_user(subject, app=app_instance)
+    except auth.UserNotFoundError:
+        return
+
+
+@router.delete("/businesses/{business_id}", status_code=204)
+def delete_business(business_id: UUID, body: BusinessDeleteRequest,
+                    session: Session = Depends(get_session),
+                    principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Soft-delete a business (B3): access ends immediately for every
+    member (authorize_membership requires an active business), the
+    data is retained for the purge window in
+    docs/RETENTION_AND_DELETION.md, and the deletion itself is audited.
+    Owner only, with the business name typed as confirmation."""
+    try:
+        _authorize(session, principal, business_id, owner_only=True)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    item = session.scalars(select(Business).where(
+        Business.id == business_id, Business.is_active.is_(True),
+    ).with_for_update()).one_or_none()
+    if item is None:
+        raise HTTPException(status_code=404, detail="Business not found")
+    if body.confirm_name.strip() != item.name:
+        raise HTTPException(
+            status_code=422,
+            detail="Confirmation does not match the business name",
+        )
+    item.is_active = False
+    item.deleted_at = datetime.now(UTC)
+    session.add(AuditEvent(
+        business_id=business_id, actor_subject=principal.subject,
+        action="business.deleted", target_type="business",
+        target_id=str(business_id),
+        change_summary=f"Business {item.name} deleted (soft delete; purge after the retention window)",
+    ))
+    try:
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    return Response(status_code=204)
+
+
+@router.get("/businesses/{business_id}/export")
+def export_business(business_id: UUID,
+                    session: Session = Depends(get_session),
+                    principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """The verifiable full export (B3, «بياناتك ليك»): every row the
+    business owns + a manifest of counts and a SHA-256 the owner can
+    recompute. Owner only; the export itself is audited."""
+    try:
+        _authorize(session, principal, business_id, owner_only=True)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    item = session.scalars(select(Business).where(
+        Business.id == business_id, Business.is_active.is_(True),
+    )).one_or_none()
+    if item is None:
+        raise HTTPException(status_code=404, detail="Business not found")
+    from app.business_export import build_business_export
+
+    document = build_business_export(session, item, exported_by=principal.subject)
+    session.add(AuditEvent(
+        business_id=business_id, actor_subject=principal.subject,
+        action="business.exported", target_type="business",
+        target_id=str(business_id),
+        change_summary=f"Full data export for business {item.name}",
+    ))
+    try:
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    return document
+
+
+@router.delete("/me", status_code=204)
+def delete_my_account(session: Session = Depends(get_session),
+                      principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """Delete the caller's own account (B3): memberships removed and
+    the identity-provider user deleted. Refused (409) while the caller
+    is the ONLY owner of an active business — delete or transfer those
+    businesses first, so no business is left ownerless."""
+    if not principal.subject.strip():
+        raise HTTPException(status_code=401, detail="Authentication required")
+    memberships = session.scalars(select(BusinessMembership).where(
+        BusinessMembership.user_subject == principal.subject,
+    )).all()
+    blocking: list[str] = []
+    for membership in memberships:
+        if membership.role != MembershipRole.OWNER:
+            continue
+        business = session.get(Business, membership.business_id)
+        if business is None or not business.is_active:
+            continue
+        other_owners = session.scalars(select(BusinessMembership).where(
+            BusinessMembership.business_id == membership.business_id,
+            BusinessMembership.role == MembershipRole.OWNER,
+            BusinessMembership.user_subject != principal.subject,
+        )).all()
+        if not other_owners:
+            blocking.append(business.name)
+    if blocking:
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "You are the only owner of an active business: "
+                + ", ".join(sorted(blocking))
+                + ". Delete or transfer those businesses first."
+            ),
+        )
+    try:
+        _delete_identity_user(principal.subject)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=502, detail="Identity provider could not delete the user"
+        ) from exc
+    for membership in memberships:
+        session.add(AuditEvent(
+            business_id=membership.business_id, actor_subject=principal.subject,
+            action="account.deleted", target_type="membership",
+            target_id=str(membership.id),
+            change_summary="Account deleted by its owner; membership removed",
+        ))
+        session.delete(membership)
+    try:
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    return Response(status_code=204)
 
 
 @router.get("/businesses/{business_id}/dashboard")

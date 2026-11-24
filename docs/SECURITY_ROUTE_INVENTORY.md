@@ -70,6 +70,9 @@
 | POST | `/api/v1/businesses` | Trusted principal; create workspace and owner membership transactionally |
 | GET | `/api/v1/businesses/{business_id}` | Active membership required |
 | PATCH | `/api/v1/businesses/{business_id}` | OWNER only; business must be active |
+| GET | `/api/v1/businesses/{business_id}/export` | OWNER only; business must be active; verifiable full export (manifest counts + SHA-256); audited `business.exported` (B3, 3A-721) |
+| DELETE | `/api/v1/businesses/{business_id}` | OWNER only; typed name confirmation; soft delete (is_active=False + deleted_at) with immediate access cutoff; audited `business.deleted` (B3, 3A-721) |
+| DELETE | `/api/v1/me` | Any signed-in user (own account only); 409 while sole owner of an active business; identity deleted before memberships; audited `account.deleted` per business (B3, 3A-721) |
 | GET | `/api/v1/businesses/{business_id}/dashboard` | Active membership required; aggregates scoped to business |
 | GET | `/api/v1/businesses/{business_id}/memberships` | OWNER only; list roles within the requested business |
 | PATCH | `/api/v1/businesses/{business_id}/memberships/{membership_id}` | OWNER only; target membership must belong to business; never demote/remove the last owner |
