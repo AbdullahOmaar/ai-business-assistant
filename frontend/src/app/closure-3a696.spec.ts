@@ -80,3 +80,10 @@ test('G7: purchasing and products preserve the list scroll position across detai
   assert.match(productWorkspaceSource, /backToCatalog\(\): void \{[\s\S]*?this\.mode\.set\('list'\);\s*this\.restoreListScroll\(\);/,
     'products restores on back-to-catalog');
 });
+
+// 3A-267 controlled failure — INTENTIONAL: this test fails on purpose so
+// the CI failure notifier proves it posts to #ci-alerts. This PR is a
+// check PR only and must NEVER be merged; the branch is deleted after.
+test('3A-267 controlled failure (intentional, do not merge)', () => {
+  assert.equal(1, 2, 'intentional failure for the 3A-267 Slack alert proof');
+});
