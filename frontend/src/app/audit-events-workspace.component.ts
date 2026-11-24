@@ -9,6 +9,8 @@ import { AbaCardComponent } from './shared/ui/aba-card.component';
 import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 import { AbaIconComponent } from './shared/ui/aba-icon.component';
+import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';
+import { auditActionLabel, auditTargetLabel } from './audit-labels';
 
 @Component({
   selector: 'aba-audit-events-workspace',
@@ -21,13 +23,16 @@ import { AbaIconComponent } from './shared/ui/aba-icon.component';
     AbaRecordTableComponent,
     AbaStateMessageComponent,
     AbaIconComponent,
+    AbaFilterBarComponent,
   ],
   template: `
     <section abaCard class="audit-panel">
       <aba-section-header [title]="t('ui.m_hd46sj')" [description]="t('ui.m_fie4u1')">
         <span class="count">{{ total }} {{ t('ui.m_187o97') }}</span>
       </aba-section-header>
-      <form class="audit-filters" (ngSubmit)="loadPage.emit(0)">
+      <form class="audit-filter-form" (ngSubmit)="loadPage.emit(0)">
+        <aba-filter-bar variant="selects" [foldExtras]="true" [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [hasActiveFilter]="!!(action || targetType)" [filterSummary]="filterSummaryText" (clear)="resetFilters()">
+          <div filterExtras class="audit-filters">
         <label>{{ t('ui.m_16u0xte') }}
           <select name="auditAction" [ngModel]="action" (ngModelChange)="actionChange.emit($event)">
             <option value="">{{ t('ui.m_s5wvrw') }}</option>
@@ -53,6 +58,19 @@ import { AbaIconComponent } from './shared/ui/aba-icon.component';
             <option value="recurring_invoice_schedule.created">{{ t('ui.m_xaohcb') }}</option>
             <option value="data_import.completed">{{ t('ui.m_rs4k6j') }}</option>
             <option value="pricing_rule.created">{{ t('ui.m_yytv5x') }}</option>
+            <option value="employee.created">{{ t('audit.actions.m_5gb65j') }}</option>
+            <option value="employee.updated">{{ t('audit.actions.m_s6fn06') }}</option>
+            <option value="payroll.created">{{ t('audit.actions.m_9py368') }}</option>
+            <option value="payroll.updated">{{ t('audit.actions.m_fwgers') }}</option>
+            <option value="payroll.approved">{{ t('audit.actions.m_471o6f') }}</option>
+            <option value="payroll.paid">{{ t('audit.actions.m_a3700r') }}</option>
+            <option value="membership.role_changed">{{ t('audit.actions.m_l1k3nf') }}</option>
+            <option value="membership.removed">{{ t('audit.actions.m_1tlmi9r') }}</option>
+            <option value="notification.queued">{{ t('audit.actions.m_13n1z3d') }}</option>
+            <option value="platform.business.activated">{{ t('audit.actions.m_1yeuyii') }}</option>
+            <option value="platform.business.deactivated">{{ t('audit.actions.m_19x7oma') }}</option>
+            <option value="platform.user_role.granted">{{ t('audit.actions.m_1g5x0l2') }}</option>
+            <option value="platform.user_role.revoked">{{ t('audit.actions.m_1a0g454') }}</option>
           </select>
         </label>
         <label>{{ t('ui.m_1bu5iqp') }}
@@ -71,10 +89,16 @@ import { AbaIconComponent } from './shared/ui/aba-icon.component';
             <option value="recurring_invoice_schedule">{{ t('ui.m_3pds34') }}</option>
             <option value="import_job">{{ t('ui.m_g2eok7') }}</option>
             <option value="pricing_rule">{{ t('ui.m_9ckn2u') }}</option>
+            <option value="employee">{{ t('audit.targets.m_13tf6tx') }}</option>
+            <option value="payroll">{{ t('audit.targets.m_xby7uc') }}</option>
+            <option value="business_membership">{{ t('audit.targets.m_1ygj3zy') }}</option>
+            <option value="membership">{{ t('audit.targets.m_5zgvw5') }}</option>
+            <option value="notification">{{ t('audit.targets.m_1cj9t7u') }}</option>
           </select>
         </label>
-        <button class="primary audit-filter-submit" type="submit" [disabled]="loading" [attr.aria-label]="t('ui.m_11q6v6c')"><aba-icon name="filter" /></button>
-        <button class="secondary" type="button" (click)="resetFilters()" [disabled]="loading">{{ t('ui.m_1np7zc4') }}</button>
+        <button class="primary audit-filter-submit" type="submit" [disabled]="loading" [attr.aria-label]="t('ui.m_agqz0i')"><aba-icon name="check" /></button>
+          </div>
+        </aba-filter-bar>
       </form>
       @if (error) { <aba-state-message kind="error" [description]="error" /> }
       <aba-record-table
@@ -99,7 +123,7 @@ import { AbaIconComponent } from './shared/ui/aba-icon.component';
   styles: [`
     :host{display:block;min-width:0}
     .audit-panel{display:grid;gap:16px}
-    .audit-filters{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) auto;gap:9px;padding:14px;background:var(--aba-color-surface-subtle,#f8fafc);border:1px solid var(--aba-color-border,#edf0f5);border-radius:11px}
+    .audit-filters{display:grid;grid-template-columns:repeat(2,minmax(0,1fr)) auto;gap:9px;align-items:end;padding:14px;background:var(--aba-color-surface-subtle,#f8fafc);border:1px solid var(--aba-color-border,#edf0f5);border-radius:11px}
     .audit-filters label{display:grid;gap:7px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-secondary,#374151)}
     .audit-filters select{width:100%;min-width:0;padding:11px 12px;border:1px solid var(--aba-color-border,#d1d5db);border-radius:11px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#111827);font:inherit}
     .audit-filter-submit{display:inline-grid;place-items:center;min-width:44px;min-height:44px;padding:0}
@@ -129,6 +153,15 @@ export class AuditEventsWorkspaceComponent {
 
   t(key: string): string {
     return this.localization.translate(key);
+  }
+
+  // 3A-699 (U16/G1): the bar's details row names the active filter with the
+  // same localized labels the rows use, so the folded state stays readable.
+  get filterSummaryText(): string {
+    const parts: string[] = [];
+    if (this.action) parts.push(this.t(auditActionLabel(this.action)));
+    if (this.targetType) parts.push(this.t(auditTargetLabel(this.targetType)));
+    return parts.join(' · ');
   }
 
   resetFilters(): void {

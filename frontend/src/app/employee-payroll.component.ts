@@ -3,12 +3,14 @@ import { Component, ElementRef, EventEmitter, Input, OnChanges, Output, SimpleCh
 import { FormsModule } from '@angular/forms';
 import { LocalizationService } from './localization.service';
 import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecordTableColumn, type AbaRecordTableRow } from './shared/ui/aba-record-table.component';
+import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';
+import { AbaSearchFieldComponent } from './shared/ui/aba-search-field.component';
 import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service';
 
 @Component({
   selector: 'aba-employee-payroll',
   standalone: true,
-  imports: [CommonModule, FormsModule, AbaRecordTableComponent],
+  imports: [CommonModule, FormsModule, AbaRecordTableComponent, AbaFilterBarComponent, AbaSearchFieldComponent],
   template: `
     <section class="panel employee-panel" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" [attr.data-mobile-section]="mobileSection">
       <div class="section-head">
@@ -68,9 +70,7 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
         </div>
 
       <div class="employee-tools">
-        <label>{{ t('ui.m_k10p5m') }}
-          <input name="employeeSearch" [placeholder]="t('ui.m_1s1lu82')" [(ngModel)]="employeeSearch">
-        </label>
+        <aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="employeeSearch" [hasActiveFilter]="employeeSearch.trim() !== ''" (clear)="employeeSearch = ''"><aba-search-field name="employeeSearch" [ariaLabel]="t('ui.m_k10p5m')" [placeholder]="t('ui.m_1s1lu82')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="employeeSearch" /></aba-filter-bar>
         <span class="count">{{ filteredEmployees.length }} {{ t('ui.m_1jg5410') }}</span>
       </div>
 
@@ -127,12 +127,31 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           </div>
           <span class="count">{{ payrollRecords.length }} {{ t('ui.m_189ya4o') }}</span>
         </div>
-        <div class="payroll-history-filter">
-          <label>{{ t('ui.m_r58gmw') }}
-            <input name="payrollFilterPeriod" type="month" [(ngModel)]="payrollFilterPeriod" (change)="loadEmployeesAndPayroll()">
-          </label>
-        </div>
+        <aba-filter-bar variant="selects" [foldExtras]="true" [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="payrollFilterPeriod ? t('ui.m_r58gmw') + ': ' + payrollFilterPeriod : ''" [hasActiveFilter]="payrollFilterPeriod !== ''" (clear)="clearPayrollPeriodFilter()">
+          <div filterExtras class="payroll-history-filter">
+            <label>{{ t('ui.m_r58gmw') }}
+              <input name="payrollFilterPeriod" type="month" [(ngModel)]="payrollFilterPeriod" (change)="loadEmployeesAndPayroll()">
+            </label>
+          </div>
+        </aba-filter-bar>
         <aba-record-table [ariaLabel]="t('ui.m_1p3jv9d')" [columns]="payrollTableColumns" [rows]="payrollTableRows" [loading]="busy && !payrollRecords.length" [loadingDescription]="t('ui.m_1vhhn22')" [emptyTitle]="t('ui.m_kvx8t8')" [emptyDescription]="t('ui.m_1yak0g9')" [actionsHeading]="t('ui.m_1dbhmlo')" (rowAction)="onPayrollRecordAction($event)" />
+        @if (selectedPayroll) {
+          <section class="payslip-detail" [attr.aria-label]="t('app.payslip.title')">
+            <div class="payslip-head">
+              <h4>{{ t('app.payslip.title') }} · <bdi>{{ selectedPayroll.employee_name }}</bdi></h4>
+              <button class="secondary" type="button" (click)="selectedPayroll = null">{{ t('ui.m_1whnkun') }}</button>
+            </div>
+            <dl class="payslip-lines">
+              <div><dt>{{ t('ui.m_ziwhp0') }}</dt><dd>{{ selectedPayroll.period }}</dd></div>
+              <div><dt>{{ t('ui.m_7go201') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.base_salary }} {{ currencyCode }}</bdi></dd></div>
+              <div><dt>{{ t('ui.m_s8dmdz') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.allowances }} + {{ selectedPayroll.bonuses }} {{ currencyCode }}</bdi></dd></div>
+              <div><dt>{{ t('ui.m_oxttnb') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.deductions }} {{ currencyCode }}</bdi></dd></div>
+              <div><dt>{{ t('ui.m_rym52c') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.net_pay }} {{ currencyCode }}</bdi></dd></div>
+              <div><dt>{{ t('ui.m_jnmvwl') }}</dt><dd>{{ payrollStatusLabel(selectedPayroll.status) }}</dd></div>
+              <div><dt>{{ t('ui.m_y96e6r') }}</dt><dd>{{ formatPayrollPayoutDate(selectedPayroll.paid_at) }}</dd></div>
+            </dl>
+          </section>
+        }
       </section>
     </section>
   `,
@@ -170,6 +189,13 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     .employee-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;margin:16px 0;min-width:0}
     .employee-tools .count{justify-self:end}
     .payroll-history-filter{display:grid;grid-template-columns:minmax(0,220px);gap:12px;align-items:end;margin:12px 0}
+    .payslip-detail{margin-top:16px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:12px;padding:16px;background:var(--aba-color-surface-subtle,#f8fafc)}
+    .payslip-head{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
+    .payslip-head h4{margin:0;font-size:14px}
+    .payslip-lines{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;margin:0}
+    .payslip-lines>div{display:flex;justify-content:space-between;gap:10px;border-bottom:1px solid var(--aba-color-border-subtle,#edf0f5);padding-bottom:8px}
+    .payslip-lines dt{font-size:11px;font-weight:700;color:var(--aba-color-text-muted,#374151)}
+    .payslip-lines dd{margin:0;font-size:12px;font-weight:700}
     .employee-tools label,.payroll-history-filter label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155)}
     .payroll-section{margin-top:24px;padding-top:18px;border-top:1px solid var(--aba-color-border-subtle,#e5e7eb);min-width:0}
     .employee-row,.payroll-row{grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:12px;min-width:0}
@@ -225,6 +251,7 @@ export class EmployeePayrollComponent implements OnChanges {
 
   employees: EmployeeRecord[] = [];
   payrollRecords: EmployeePayrollRecord[] = [];
+  selectedPayroll: EmployeePayrollRecord | null = null;
   busy = false;
   error = '';
   message = '';
@@ -354,12 +381,15 @@ export class EmployeePayrollComponent implements OnChanges {
     additions:`${payroll.allowances} + ${payroll.bonuses}\u00A0${this.currencyCode}`,
     deductions:`${payroll.deductions}\u00A0${this.currencyCode}`,net:`${payroll.net_pay}\u00A0${this.currencyCode}`,
     status:this.payrollStatusLabel(payroll.status),payout:this.formatPayrollPayoutDate(payroll.paid_at),
-  },actions:payroll.status==='draft'?[
-    {id:'edit',label:this.t('ui.m_s0gv7p'),disabled:this.busy||!!this.operationId},
-    {id:'approve',label:this.t('ui.m_1fxt7vn'),disabled:this.busy||!!this.operationId},
-  ]:payroll.status==='approved'?[
-    {id:'pay',label:this.t('ui.m_6uxmtn'),disabled:this.busy||!!this.operationId},
-  ]:[]})); }
+  },actions:[
+    {id:'view',label:this.t('app.payslip.title')},
+    ...(payroll.status==='draft'?[
+      {id:'edit',label:this.t('ui.m_s0gv7p'),disabled:this.busy||!!this.operationId},
+      {id:'approve',label:this.t('ui.m_1fxt7vn'),disabled:this.busy||!!this.operationId},
+    ]:payroll.status==='approved'?[
+      {id:'pay',label:this.t('ui.m_6uxmtn'),disabled:this.busy||!!this.operationId},
+    ]:[]),
+  ]})); }
   onEmployeeRecordAction(action:AbaRecordTableActionEvent):void {
     const employee=this.filteredEmployees.find(item=>item.id===action.rowId); if(!employee)return;
     if(action.actionId==='edit')this.editEmployee(employee);
@@ -367,10 +397,20 @@ export class EmployeePayrollComponent implements OnChanges {
     else if(action.actionId==='toggle')void this.toggleEmployeeActive(employee);
   }
   onPayrollRecordAction(action:AbaRecordTableActionEvent):void {
-    const payroll=this.payrollRecords.find(item=>item.id===action.rowId); if(!payroll||this.busy||this.operationId)return;
+    const payroll=this.payrollRecords.find(item=>item.id===action.rowId); if(!payroll)return;
+    // 3A-699 (U12): the payslip is a read-only view of the record — it stays
+    // available while an operation runs and never mutates payroll state.
+    if(action.actionId==='view'){ this.selectedPayroll = payroll; return; }
+    if(this.busy||this.operationId)return;
     if(action.actionId==='edit'&&payroll.status==='draft')this.editPayroll(payroll);
     else if(action.actionId==='approve'&&payroll.status==='draft')void this.approvePayroll(payroll);
     else if(action.actionId==='pay'&&payroll.status==='approved')void this.payPayroll(payroll);
+  }
+
+  clearPayrollPeriodFilter(): void {
+    if (!this.payrollFilterPeriod) return;
+    this.payrollFilterPeriod = '';
+    void this.loadEmployeesAndPayroll();
   }
 
   payrollStatusLabel(status: EmployeePayrollRecord['status']): string {
