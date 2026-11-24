@@ -67,6 +67,8 @@ import { auditActionLabel, auditTargetLabel } from './audit-labels';
             <option value="membership.role_changed">{{ t('audit.actions.m_l1k3nf') }}</option>
             <option value="membership.removed">{{ t('audit.actions.m_1tlmi9r') }}</option>
             <option value="notification.queued">{{ t('audit.actions.m_13n1z3d') }}</option>
+            <option value="setting.created">{{ t('audit.actions.m_fcyscwa') }}</option>
+            <option value="setting.updated">{{ t('audit.actions.m_3ayfbuy') }}</option>
             <option value="platform.business.activated">{{ t('audit.actions.m_1yeuyii') }}</option>
             <option value="platform.business.deactivated">{{ t('audit.actions.m_19x7oma') }}</option>
             <option value="platform.user_role.granted">{{ t('audit.actions.m_1g5x0l2') }}</option>
@@ -94,6 +96,7 @@ import { auditActionLabel, auditTargetLabel } from './audit-labels';
             <option value="business_membership">{{ t('audit.targets.m_1ygj3zy') }}</option>
             <option value="membership">{{ t('audit.targets.m_5zgvw5') }}</option>
             <option value="notification">{{ t('audit.targets.m_1cj9t7u') }}</option>
+            <option value="business_setting">{{ t('audit.targets.m_aqfwqav') }}</option>
           </select>
         </label>
         <button class="primary audit-filter-submit" type="submit" [disabled]="loading" [attr.aria-label]="t('ui.m_agqz0i')"><aba-icon name="check" /></button>

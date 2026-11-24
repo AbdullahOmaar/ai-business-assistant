@@ -486,3 +486,332 @@ def test_full_route_role_tenant_denial_matrix():
             del app.state.principal_resolver
         else:
             app.state.principal_resolver = previous_resolver
+
+
+def test_owner_positive_matrix():
+    """3A-417 / B1 (3A-703): the positive mirror of the denial matrix.
+
+    Every route in the registry is fired as the actor who SHOULD pass —
+    the OWNER of the target business for business routes, a configured
+    platform super admin for platform routes — and must succeed (2xx).
+    The denial matrix proves everyone else is refused; this set proves
+    the same routes actually work for their owner, so authorization is
+    symmetric. Stateful clusters fire in dependency order (a draft is
+    patched before it is issued, a purchase order is approved before
+    it is received) and DELETE rows fire last.
+    """
+    import os
+    from types import SimpleNamespace
+
+    import firebase_admin.auth
+
+    from app import platform_admin_api
+    from app.models import PurchaseOrderLine
+
+    engine = create_engine(
+        "sqlite+pysqlite://",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
+    Base.metadata.create_all(engine)
+    previous_factory = getattr(app.state, "session_factory", None)
+    previous_resolver = getattr(app.state, "principal_resolver", None)
+    previous_super_admins = os.environ.get("PLATFORM_SUPER_ADMIN_UIDS")
+    previous_firebase_project = os.environ.get("FIREBASE_PROJECT_ID")
+    previous_firebase_app = platform_admin_api.get_firebase_admin_app
+    previous_list_users = firebase_admin.auth.list_users
+    previous_get_user = firebase_admin.auth.get_user
+    app.state.session_factory = sessionmaker(bind=engine, expire_on_commit=False)
+    subject = {"value": "matrix-owner-a"}
+    app.state.principal_resolver = lambda request: AuthenticatedPrincipal(subject["value"])
+    os.environ["PLATFORM_SUPER_ADMIN_UIDS"] = "matrix-super-admin"
+    os.environ["FIREBASE_PROJECT_ID"] = "test-project"
+    platform_admin_api.get_firebase_admin_app = lambda: object()
+    firebase_admin.auth.list_users = lambda **kwargs: SimpleNamespace(users=[], next_page_token=None)
+    firebase_admin.auth.get_user = lambda uid, app=None: SimpleNamespace(
+        uid=uid, display_name="Some User", email="some@example.test",
+        email_verified=True, disabled=False,
+        user_metadata=SimpleNamespace(creation_timestamp=None, last_sign_in_timestamp=None),
+    )
+    try:
+        client = TestClient(app, raise_server_exceptions=False)
+
+        def as_user(value: str) -> None:
+            subject["value"] = value
+
+        # --- Seed business A (owner-a) with real records -------------------
+        as_user("matrix-owner-a")
+        business_a = client.post(
+            "/api/v1/businesses", json={"name": "Matrix A", "currency_code": "EGP"}
+        )
+        assert business_a.status_code == 201, business_a.text
+        a_id = business_a.json()["id"]
+        base = f"/api/v1/businesses/{a_id}"
+        customer_id = client.post(f"{base}/customers", json={"name": "Customer A"}).json()["id"]
+        supplier_id = client.post(f"{base}/suppliers", json={"name": "Supplier A"}).json()["id"]
+        product_id = client.post(
+            f"{base}/products",
+            json={"name": "Product A", "unit_price": "10.00",
+                  "is_stock_tracked": True, "opening_quantity": "10"},
+        ).json()["id"]
+
+        def make_invoice(number: str) -> str:
+            response = client.post(
+                f"{base}/invoices",
+                json={"invoice_number": number, "currency_code": "EGP",
+                      "customer_id": customer_id,
+                      "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "10.00"}]},
+            )
+            assert response.status_code == 201, response.text
+            return response.json()["id"]
+
+        draft_a_id = make_invoice("INV-DRAFT-A")
+        draft_b_id = make_invoice("INV-DRAFT-B")
+        issued_id = make_invoice("INV-ISSUED")
+        issue = client.post(f"{base}/invoices/{issued_id}/issue", json={})
+        assert issue.status_code == 200, issue.text
+        # A second issued invoice stays issued for the sales-return rows:
+        # the first one is voided by its own matrix row before they fire.
+        return_invoice_id = make_invoice("INV-ISSUED-RETURN")
+        issue = client.post(f"{base}/invoices/{return_invoice_id}/issue", json={})
+        assert issue.status_code == 200, issue.text
+        return_line_id = client.get(f"{base}/invoices/{return_invoice_id}").json()["lines"][0]["id"]
+
+        def make_purchase_order(number: str) -> str:
+            response = client.post(
+                f"{base}/purchase-orders",
+                json={"supplier_id": supplier_id, "order_number": number,
+                      "currency_code": "EGP",
+                      "lines": [{"product_id": product_id, "quantity": "1", "unit_cost": "5.00"}]},
+            )
+            assert response.status_code == 201, response.text
+            return response.json()["id"]
+
+        po_a_id = make_purchase_order("PO-A")
+        po_b_id = make_purchase_order("PO-B")
+        with app.state.session_factory() as session:
+            from sqlalchemy import select as _select
+
+            po_a_line_id = str(
+                session.scalars(
+                    _select(PurchaseOrderLine).where(
+                        PurchaseOrderLine.purchase_order_id == UUID(po_a_id)
+                    )
+                ).first().id
+            )
+            session.add(
+                BusinessMembership(
+                    business_id=UUID(a_id),
+                    user_subject="matrix-staff-a",
+                    role=MembershipRole.STAFF,
+                )
+            )
+            # A second owner: payroll approval enforces separation of
+            # duties — the creator of a payroll cannot approve it.
+            session.add(
+                BusinessMembership(
+                    business_id=UUID(a_id),
+                    user_subject="matrix-owner-a2",
+                    role=MembershipRole.OWNER,
+                )
+            )
+            session.commit()
+            staff_membership_id = str(
+                session.query(BusinessMembership)
+                .filter_by(user_subject="matrix-staff-a")
+                .first()
+                .id
+            )
+        employee_id = client.post(
+            f"{base}/employees", json={"name": "Employee A", "monthly_salary": "1000"}
+        ).json()["id"]
+        payroll_id = client.post(
+            f"{base}/employees/{employee_id}/payroll", json={"period": "2026-01"}
+        ).json()["id"]
+
+        ids = {
+            "business_id": a_id,
+            "customer_id": customer_id,
+            "supplier_id": supplier_id,
+            "product_id": product_id,
+            "invoice_id": draft_a_id,
+            "order_id": po_a_id,
+            "return_id": str(uuid4()),
+            "employee_id": employee_id,
+            "payroll_id": payroll_id,
+            "membership_id": staff_membership_id,
+            "invitation_id": str(uuid4()),
+            "entity_type": "customers",
+            "setting_key": "matrix_key",
+            "user_uid": "some-uid",
+        }
+        bodies = {
+            ("POST", "/api/v1/businesses/{business_id}/invitations"): {"email": "inv@example.com"},
+            ("PATCH", "/api/v1/businesses/{business_id}"): {"name": "Renamed"},
+            ("PATCH", "/api/v1/businesses/{business_id}/memberships/{membership_id}"): {"role": "staff"},
+            ("POST", "/api/v1/businesses/{business_id}/customers"): {"name": "Probe"},
+            ("POST", "/api/v1/businesses/{business_id}/suppliers"): {"name": "Probe"},
+            ("POST", "/api/v1/businesses/{business_id}/products"): {"name": "Probe", "unit_price": "1.00"},
+            ("POST", "/api/v1/businesses/{business_id}/invoices"): {
+                "invoice_number": "INV-PROBE", "currency_code": "EGP", "customer_id": customer_id,
+                "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "1.00"}],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/invoices/issue"): {
+                "invoice_number": "INV-PROBE-ISSUE", "currency_code": "EGP", "customer_id": customer_id,
+                "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "1.00"}],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/invoices/{invoice_id}/issue"): {},
+            ("POST", "/api/v1/businesses/{business_id}/invoices/{invoice_id}/duplicate"): {},
+            ("PATCH", "/api/v1/businesses/{business_id}/invoices/{invoice_id}"): {
+                "invoice_number": "INV-PROBE-EDIT", "currency_code": "EGP", "customer_id": customer_id,
+                "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "1.00"}],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/invoices/{invoice_id}/void"): {},
+            ("POST", "/api/v1/businesses/{business_id}/stock-movements"): {
+                "product_id": product_id, "movement_type": "adjustment", "quantity_delta": "1",
+            },
+            ("POST", "/api/v1/businesses/{business_id}/payments"): {
+                "amount": "1.00", "currency_code": "EGP", "idempotency_key": "matrix-probe",
+                "customer_id": customer_id, "allocations": [],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/expenses"): {
+                "category": "ops", "description": "probe", "amount": "1.00",
+                "currency_code": "EGP", "incurred_at": "2026-01-01T00:00:00Z",
+            },
+            ("POST", "/api/v1/businesses/{business_id}/purchase-orders"): {
+                "supplier_id": supplier_id, "order_number": "PO-PROBE", "currency_code": "EGP",
+                "lines": [{"product_id": product_id, "quantity": "1", "unit_cost": "1.00"}],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}/receive"): {
+                "lines": [{"line_id": po_a_line_id, "quantity": "1"}],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}/duplicate"): {},
+            ("PUT", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}"): {
+                "supplier_id": supplier_id, "order_number": "PO-PROBE-EDIT", "currency_code": "EGP",
+                "lines": [{"product_id": product_id, "quantity": "1", "unit_cost": "1.00"}],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/sales-returns"): {
+                "invoice_id": return_invoice_id, "reason": "matrix probe",
+                "lines": [{"invoice_line_id": return_line_id, "quantity": "1"}],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/recurring-invoices"): {
+                "interval_days": 30, "timezone": "UTC", "next_run_at": "2026-02-01T00:00:00Z",
+            },
+            ("POST", "/api/v1/businesses/{business_id}/pricing-rules"): {
+                "name": "probe", "rule_type": "tax", "rate": "5",
+            },
+            ("POST", "/api/v1/businesses/{business_id}/notifications"): {
+                "kind": "business", "title": "t", "body": "b", "deduplication_key": "matrix-probe",
+            },
+            ("PUT", "/api/v1/businesses/{business_id}/settings/{setting_key}"): {"setting_value": "x"},
+            ("PATCH", "/api/v1/businesses/{business_id}/customers/{customer_id}"): {"name": "Probe 2"},
+            ("PATCH", "/api/v1/businesses/{business_id}/products/{product_id}"): {"unit_price": "2.00"},
+            ("POST", "/api/v1/businesses/{business_id}/assistant/chat"): {"message": "hi"},
+            ("POST", "/api/v1/businesses/{business_id}/employees"): {"name": "Probe", "monthly_salary": "1000"},
+            ("PATCH", "/api/v1/businesses/{business_id}/employees/{employee_id}"): {"name": "Probe 2"},
+            ("POST", "/api/v1/businesses/{business_id}/employees/{employee_id}/payroll"): {"period": "2026-02"},
+            ("PATCH", "/api/v1/businesses/{business_id}/payroll/{payroll_id}"): {"allowances": "1.00"},
+            ("PATCH", "/api/v1/platform-admin/businesses/{business_id}/status"): {
+                "is_active": False, "reason": "matrix probe",
+            },
+            ("POST", "/api/v1/platform-admin/users/{user_uid}/roles"): {
+                "role": "platform_viewer", "active": True, "reason": "matrix probe",
+            },
+        }
+
+        def fire(method: str, template: str):
+            url = template
+            for key, value in ids.items():
+                url = url.replace("{" + key + "}", str(value))
+            kwargs = {}
+            if template.endswith(
+                ("/imports/{entity_type}.csv", "/imports/{entity_type}.csv/preview")
+            ):
+                kwargs = {
+                    "content": "name\nProbe\n",
+                    "headers": {"content-type": "text/csv"},
+                }
+            elif method in ("POST", "PATCH", "PUT"):
+                kwargs = {"json": bodies.get((method, template), {})}
+            if template.endswith(("/stock-movements", "/receive")):
+                # These endpoints require a canonical UUID Idempotency-Key
+                # header (3A-342); denied actors never reach the check.
+                kwargs["headers"] = {"Idempotency-Key": str(uuid4())}
+            return getattr(client, method.lower())(url, **kwargs)
+
+        def assert_positive(actor_label: str, method: str, template: str):
+            response = fire(method, template)
+            assert 200 <= response.status_code < 300, (
+                f"{actor_label} {method} {template}: expected success, "
+                f"got {response.status_code}: {response.text}"
+            )
+            return response
+
+        business_rows = [
+            (m, t) for m, t, _s in MATRIX if not t.startswith("/api/v1/platform-admin")
+        ]
+        platform_rows = [
+            (m, t) for m, t, _s in MATRIX if t.startswith("/api/v1/platform-admin")
+        ]
+        delete_rows = [(m, t) for m, t in business_rows if m == "DELETE"]
+        ordered_business = [(m, t) for m, t in business_rows if m != "DELETE"] + delete_rows
+
+        as_user("matrix-owner-a")
+        for method, template in ordered_business:
+            if (method, template) == ("GET", "/api/v1/businesses"):
+                response = assert_positive("owner", method, template)
+                assert [row["id"] for row in response.json()] == [a_id], response.text
+                continue
+            if (method, template) == ("PATCH", "/api/v1/businesses/{business_id}/invoices/{invoice_id}"):
+                ids["invoice_id"] = draft_b_id
+            if (method, template) == ("POST", "/api/v1/businesses/{business_id}/invoices/{invoice_id}/void"):
+                ids["invoice_id"] = issued_id
+            if (method, template) == ("PUT", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}"):
+                ids["order_id"] = po_b_id
+            if (method, template) == ("POST", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}/cancel"):
+                ids["order_id"] = po_b_id
+            if (method, template) in (
+                ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/approve"),
+                ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/pay"),
+            ):
+                # Separation of duties: payroll is approved (and paid) by
+                # a different owner than its creator.
+                as_user("matrix-owner-a2")
+            response = assert_positive("owner", method, template)
+            if (method, template) == ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/pay"):
+                as_user("matrix-owner-a")
+            if (method, template) == ("POST", "/api/v1/businesses/{business_id}/invitations"):
+                invitation_id = response.json().get("id")
+                if invitation_id:
+                    ids["invitation_id"] = invitation_id
+            if (method, template) == ("GET", "/api/v1/businesses/{business_id}/invitations"):
+                rows = response.json()
+                items = rows.get("items", rows) if isinstance(rows, dict) else rows
+                if items:
+                    ids["invitation_id"] = items[0]["id"]
+            if (method, template) == ("POST", "/api/v1/businesses/{business_id}/sales-returns"):
+                ids["return_id"] = response.json()["id"]
+
+        as_user("matrix-super-admin")
+        for method, template in platform_rows:
+            assert_positive("platform-super-admin", method, template)
+    finally:
+        if previous_factory is None:
+            del app.state.session_factory
+        else:
+            app.state.session_factory = previous_factory
+        if previous_resolver is None:
+            del app.state.principal_resolver
+        else:
+            app.state.principal_resolver = previous_resolver
+        if previous_super_admins is None:
+            os.environ.pop("PLATFORM_SUPER_ADMIN_UIDS", None)
+        else:
+            os.environ["PLATFORM_SUPER_ADMIN_UIDS"] = previous_super_admins
+        if previous_firebase_project is None:
+            os.environ.pop("FIREBASE_PROJECT_ID", None)
+        else:
+            os.environ["FIREBASE_PROJECT_ID"] = previous_firebase_project
+        platform_admin_api.get_firebase_admin_app = previous_firebase_app
+        firebase_admin.auth.list_users = previous_list_users
+        firebase_admin.auth.get_user = previous_get_user

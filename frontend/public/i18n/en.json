@@ -1442,7 +1442,9 @@
       "m_1yeuyii": "Workspace activated",
       "m_19x7oma": "Workspace deactivated",
       "m_1g5x0l2": "Platform role granted",
-      "m_1a0g454": "Platform role revoked"
+      "m_1a0g454": "Platform role revoked",
+      "m_fcyscwa": "Setting created",
+      "m_3ayfbuy": "Setting updated"
     },
     "targets": {
       "m_1nfhuv2": "Invoice",
@@ -1462,7 +1464,8 @@
       "m_1ygj3zy": "Workspace membership",
       "m_5zgvw5": "Membership",
       "m_13tf6tx": "Employee",
-      "m_xby7uc": "Payroll"
+      "m_xby7uc": "Payroll",
+      "m_aqfwqav": "Business setting"
     }
   },
   "invoiceDraft": {
