@@ -163,14 +163,22 @@ test('platform-admin audit pair keeps its datetime-local inputs, filter form and
   // 3A-354 (2026-11-22): the audit filter submit became icon-only (agreement
   // G1), so AbaIconComponent joined the imports; the date-range listing and
   // behaviour are unchanged.
-  assert.ok(platformAdminSource.includes('imports: [CommonModule, FormsModule, AbaDateRangeComponent, AbaIconComponent]'),
+  // 3A-700 (2026-11-24): the audit form adopted the shared filter bar (fold +
+  // summary + clear) and the admin tables gained skeletons, so
+  // AbaFilterBarComponent and AbaSkeletonComponent joined the imports; the
+  // form element now wraps the bar and the "filters audit-filters" class
+  // moved to the projected extras container.
+  assert.ok(platformAdminSource.includes('imports: [CommonModule, FormsModule, AbaDateRangeComponent, AbaIconComponent, AbaFilterBarComponent, AbaSkeletonComponent]'),
     'platform-admin must list the date-range component in its imports');
   assert.ok(platformAdminSource.includes('class="filters audit-filters"'), 'audit form class is kept');
+  assert.ok(platformAdminSource.includes('<form class="admin-filter-form" (ngSubmit)="loadAudit(0)">'), 'audit submit behaviour is unchanged');
   const auditStart = platformAdminSource.indexOf('class="filters audit-filters"');
   const audit = platformAdminSource.slice(auditStart, platformAdminSource.indexOf('</form>', auditStart));
-  assert.ok(audit.includes('(ngSubmit)="loadAudit(0)"'), 'audit submit behaviour is unchanged');
   assert.ok(audit.includes('class="primary-button icon-only"'), 'the audit filter submit is icon-only');
-  assert.ok(audit.includes('[attr.aria-label]="t(\'ui.m_11q6v6c\')"'), 'the icon-only audit submit keeps its accessible name');
+  // 3A-700 (2026-11-24): the submit's accessible name changed from Filter to
+  // Apply — the shared filter bar's toggle now owns the Filter name, exactly
+  // the differentiation 3A-699 applied to the tenant audit workspace (U16).
+  assert.ok(audit.includes('[attr.aria-label]="t(\'ui.m_agqz0i\')"'), 'the icon-only audit submit is named Apply, distinct from the bar toggle');
   assert.ok(audit.includes('<aba-date-range [showClear]="true" [hasValue]="auditFrom !== \'\' || auditTo !== \'\'" [clearLabel]="t(\'ui.m_1np7zc4\')" (clear)="auditFrom = \'\'; auditTo = \'\'">'),
     'audit dates sit inside the shared component with its clear wired to reset both fields');
   assert.match(audit, /type="datetime-local" name="auditFrom"/);

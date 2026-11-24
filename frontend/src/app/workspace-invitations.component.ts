@@ -3,12 +3,13 @@ import { Component, EventEmitter, Input, OnChanges, Output } from '@angular/core
 import { FormsModule } from '@angular/forms';
 import { ApiService } from './api.service';
 import { LocalizationService } from './localization.service';
-import type { BusinessInvitation, BusinessInvitationCreated } from './api.service';
+import type { BusinessInvitation, BusinessInvitationCreated, WorkspaceMembership } from './api.service';
+import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
 
 @Component({
   selector: 'aba-workspace-invitations',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, AbaSkeletonComponent],
   template: `
         @if (mode === 'manage' || acceptVisible || error || success) {
     <section class="team-card" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
@@ -30,12 +31,27 @@ import type { BusinessInvitation, BusinessInvitationCreated } from './api.servic
             <div class="copy-row"><input [attr.aria-label]="t('invitation_link')" readonly [value]="createdInviteLink"><button type="button" class="secondary" (click)="copyInviteLink()">{{ copied ? t('copied') : t('copy_link') }}</button></div>
           </div>
         }
-        <div class="team-list-heading"><h3>{{ t('invitations') }}</h3><button type="button" class="secondary" (click)="loadInvitations()" [disabled]="loading">{{ t('refresh') }}</button></div>
-        @if (invitations.length) {
+        @if (members.length) {
+          <div class="team-list-heading"><h3>{{ t('members') }}</h3></div>
+          <div class="invitation-list">
+            @for (member of members; track member.id) {
+              <article class="invitation-row">
+                <div class="invitation-main"><strong><bdi>{{ member.user_subject }}</bdi></strong><small>{{ member.role === 'owner' ? t('owner') : t('staff') }} · {{ formatDate(member.created_at || '') }}</small></div>
+                <span class="status">{{ member.role === 'owner' ? t('owner') : t('staff') }}</span>
+              </article>
+            }
+          </div>
+        }
+        @if (membersError) { <p class="feedback error" role="alert">{{ membersError }}</p> }
+        <div class="team-list-heading"><h3>{{ t('invitations') }}</h3><button type="button" class="secondary" (click)="refreshTeam()" [disabled]="loading">{{ t('refresh') }}</button></div>
+        @if (loading && !invitations.length) {
+          <aba-skeleton variant="list-row" />
+          <aba-skeleton variant="list-row" />
+        } @else if (invitations.length) {
           <div class="invitation-list">
             @for (invitation of invitations; track invitation.id) {
               <article class="invitation-row">
-                <div class="invitation-main"><strong>{{ invitation.email }}</strong><small>{{ t('staff') }} · {{ formatDate(invitation.expires_at) }}</small></div>
+                <div class="invitation-main"><strong><bdi>{{ invitation.email }}</bdi></strong><small>{{ t('staff') }} · {{ formatDate(invitation.expires_at) }}</small></div>
                 <span class="status" [class.pending]="invitation.status === 'pending'">{{ statusLabel(invitation.status) }}</span>
                 @if (invitation.status === 'pending') { <button type="button" class="danger-link" (click)="revokeInvitation(invitation)" [disabled]="loading">{{ t('revoke') }}</button> }
               </article>
@@ -73,6 +89,8 @@ export class WorkspaceInvitationsComponent implements OnChanges {
   inviteEmail = '';
   inviteToken = '';
   invitations: BusinessInvitation[] = [];
+  members: WorkspaceMembership[] = [];
+  membersError = '';
   createdInviteLink = '';
   loading = false;
   copied = false;
@@ -83,7 +101,7 @@ export class WorkspaceInvitationsComponent implements OnChanges {
   constructor(private readonly api: ApiService, private readonly localization: LocalizationService) {}
 
   ngOnChanges(): void {
-    if (this.mode === 'manage' && this.businessId) void this.loadInvitations();
+    if (this.mode === 'manage' && this.businessId) { void this.loadInvitations(); void this.loadMembers(); }
     if (this.mode === 'accept') {
       const fragment = typeof window !== 'undefined' ? window.location.hash.slice(1) : '';
       const token = new URLSearchParams(fragment).get('invite');
@@ -100,6 +118,20 @@ export class WorkspaceInvitationsComponent implements OnChanges {
     try { this.invitations = await this.api.businessInvitations(this.businessId); }
     catch (error) { this.error = error instanceof Error ? error.message : this.t('load_error'); }
     finally { this.loading = false; }
+  }
+
+  // 3A-700 (U13): the members list is read-only — identities and roles from
+  // the owner-only memberships endpoint; role changes stay out of this view.
+  async loadMembers(): Promise<void> {
+    if (!this.businessId) return;
+    this.membersError = '';
+    try { this.members = await this.api.businessMemberships(this.businessId); }
+    catch { this.membersError = this.t('members_load_error'); }
+  }
+
+  refreshTeam(): void {
+    void this.loadInvitations();
+    void this.loadMembers();
   }
 
   async createInvitation(): Promise<void> {

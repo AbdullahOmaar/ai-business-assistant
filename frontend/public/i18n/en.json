@@ -1180,6 +1180,7 @@
       "v1100_security": "Version 1.10.0: an internal security completion — automated secret scanning now checks every proposed change, closing the last open item of the security-verification batch. No change to any user-visible behaviour.",
       "v1110_duplicate": "Version 1.11.0: a “Duplicate invoice” button in the invoice details creates a new draft with the same lines, customer, currency and totals (at current catalogue prices), so you can re-order without retyping the invoice.",
       "v1120_payroll": "Version 1.12.0: employee and payroll cycle acceptance completed — the failure states (payroll for a deactivated employee, editing or re-approving approved or paid payroll) are now pinned by regression tests. Internal quality completion with no user-visible change.",
+      "v1170_screens": "Version 1.17.0: the last register screens complete the shared system — the workspace member list now shows beside the invitations with roles, loading skeletons land in data integrity, operational health and platform admin, platform-admin filters adopt the fold-and-summary pattern, raw change summaries no longer render in the platform activity log (localized labels only), and workspace creation gains a duplicate-submit guard.",
       "v1160_screens": "Version 1.16.0: payroll, the operations log and the assistant complete the shared system — unified search and filters that fold behind the filter button with an active-filter summary, a payslip that opens as a read-only detail from the payroll history, a loading skeleton inside the assistant conversation while a reply is on its way, and an operations-log filter that now covers every action and record type.",
       "v1150_auth": "Version 1.15.0: the sign-in gate now carries the app identity — the character and the app name on the sign-in card, the demo entry is a clear secondary action below the primary sign-in button, and error messages appear right by the form and clear when you switch between sign-in and sign-up.",
       "v1140_filters": "Version 1.14.0: list filters now fold behind the filter button — invoices, purchasing and the stock-movement log keep the current filter visible as a short summary while the controls stay tucked away until you open them, and purchasing gains status and supplier filters.",
@@ -1349,6 +1350,7 @@
       "v1100_title": "Security: secret scanning on every change",
       "v1110_title": "Invoice duplication: re-order in one tap",
       "v1120_title": "Version 1.12.0",
+      "v1170_title": "Version 1.17.0",
       "v1160_title": "Version 1.16.0",
       "v1150_title": "Version 1.15.0",
       "v1140_title": "Version 1.14.0",
@@ -1824,7 +1826,10 @@
     "status_pending": "Pending",
     "status_accepted": "Accepted",
     "status_revoked": "Revoked",
-    "status_expired": "Expired"
+    "status_expired": "Expired",
+    "members": "Members",
+    "owner": "Owner",
+    "members_load_error": "Could not load members."
   },
   "customerEditor": {
     "eyebrow": "CUSTOMERS",

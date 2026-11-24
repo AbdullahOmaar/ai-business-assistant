@@ -11,13 +11,15 @@ import { hasMeaningfulPlatformAdminReason } from './platform-admin-helpers';
 import { auditActionLabel as formatAuditActionLabel, auditTargetLabel as formatAuditTargetLabel } from './audit-labels';
 import { AbaDateRangeComponent } from './shared/ui/aba-date-range.component';
 import { AbaIconComponent } from './shared/ui/aba-icon.component';
+import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';
+import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
 
 type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissions';
 
 @Component({
   selector: 'aba-platform-admin',
   standalone: true,
-  imports: [CommonModule, FormsModule, AbaDateRangeComponent, AbaIconComponent],
+  imports: [CommonModule, FormsModule, AbaDateRangeComponent, AbaIconComponent, AbaFilterBarComponent, AbaSkeletonComponent],
   template: `
     <section class="admin-shell" [class.english]="language === 'en'" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
       <header class="admin-header">
@@ -127,14 +129,18 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
       @if (section === 'businesses') {
         <section class="section-content" aria-labelledby="businesses-title">
           <div class="section-heading"><div><p class="eyebrow">{{ t('ui.m_x1ssgf') }}</p><h2 id="businesses-title">{{ t('ui.m_1p3i223') }}</h2><p>{{ t('ui.m_sfjizi') }}</p></div><button class="outline-button" type="button" [disabled]="businessesLoading" (click)="loadBusinesses(businessOffset)">{{ t('ui.m_1xv1qef') }}</button></div>
-          <form class="filters" (ngSubmit)="loadBusinesses(0)">
+          <form class="admin-filter-form" (ngSubmit)="loadBusinesses(0)">
+            <aba-filter-bar variant="selects" [foldExtras]="true" [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [hasActiveFilter]="!!(businessQuery.trim() || businessStatus !== 'all')" [filterSummary]="businessFilterSummary" (clear)="clearBusinessFilters()">
+              <div filterExtras class="filters">
             <label class="search-field"><span>{{ t('ui.m_11ucx5t') }}</span><input name="businessSearch" [(ngModel)]="businessQuery" maxlength="160" [placeholder]="t('ui.m_1m8fzmr')" /></label>
             <label><span>{{ t('ui.m_1f79eee') }}</span><select name="businessStatus" [(ngModel)]="businessStatus"><option value="all">{{ t('ui.m_1cyu9lp') }}</option><option value="active">{{ t('ui.m_1vhpjk3') }}</option><option value="inactive">{{ t('ui.m_1qniai1') }}</option></select></label>
             <label><span>{{ t('ui.m_tpfmbp') }}</span><select name="businessSortBy" [(ngModel)]="businessSortBy"><option value="created_at">{{ t('ui.m_cpho72') }}</option><option value="name">{{ t('ui.m_1htn242') }}</option><option value="members">{{ t('ui.m_1aktafq') }}</option></select></label>
             <label><span>{{ t('ui.m_1b0eoyh') }}</span><select name="businessSortOrder" [(ngModel)]="businessSortOrder"><option value="desc">{{ t('ui.m_1gc9ofo') }}</option><option value="asc">{{ t('ui.m_1gvraov') }}</option></select></label>
             <button class="primary-button" type="submit" [disabled]="businessesLoading">{{ t('ui.m_agqz0i') }}</button>
+              </div>
+            </aba-filter-bar>
           </form>
-          @if (businessesLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('ui.m_6s36po') }}</div> }
+          @if (businessesLoading) { @if (businesses.length) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('ui.m_6s36po') }}</div> } @else { <aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /> } }
           @if (businessesError) { <div class="notice error" role="alert">{{ businessesError }} <button class="text-action" type="button" (click)="loadBusinesses(businessOffset)">{{ t('ui.m_worzj7') }}</button></div> }
           @if (!businessesLoading && !businessesError && !businesses.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">▦</span><h3>{{ businessQuery.trim() || businessStatus !== 'all' ? t('ui.m_11xxs14') : businessOffset > 0 ? t('ui.m_9jlflr') : t('ui.m_anqh3m') }}</h3><p>{{ businessQuery.trim() || businessStatus !== 'all' ? t('ui.m_3to1hb') : businessOffset > 0 ? t('ui.m_1s5fo') : t('ui.m_z3jx15') }}</p></div> }
           @if (businesses.length) {
@@ -179,13 +185,13 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
           <div class="section-heading"><div><p class="eyebrow">{{ t('ui.m_81mof2') }}</p><h2 id="activity-title">{{ t('ui.m_1fkz3i8') }}</h2><p>{{ t('ui.m_1ngougt') }}</p></div><div class="heading-actions"><button type="button" class="outline-button" [disabled]="auditLoading" (click)="loadAudit(auditOffset)">{{ t('ui.m_5kbtnp') }}</button><button type="button" class="primary-button" [disabled]="auditExporting" (click)="exportAudit()"><aba-icon name="export" />{{ auditExporting ? t('ui.m_14clr52') : t('ui.m_nbsw3y') }}</button></div></div>
           @if (auditExportError) { <div class="notice error" role="alert">{{ auditExportError }}</div> }
           @if (auditExportMessage) { <div class="notice success" role="status" aria-live="polite">{{ auditExportMessage }}</div> }
-          <form class="filters audit-filters" (ngSubmit)="loadAudit(0)"><label class="search-field"><span>{{ t('ui.m_16u0xte') }}</span><input name="auditAction" maxlength="80" [(ngModel)]="auditAction" [placeholder]="t('ui.m_twpwlc')"></label><label><span>{{ t('ui.m_11omtlm') }}</span><input name="auditActor" maxlength="128" [(ngModel)]="auditActor" [placeholder]="t('ui.m_1fly0iz')"></label><label><span>{{ t('ui.m_14i0qtu') }}</span><input name="auditBusinessId" maxlength="36" [(ngModel)]="auditBusinessId" placeholder="UUID"></label><aba-date-range [showClear]="true" [hasValue]="auditFrom !== '' || auditTo !== ''" [clearLabel]="t('ui.m_1np7zc4')" (clear)="auditFrom = ''; auditTo = ''"><label><span>{{ t('ui.m_1yem9by') }}</span><input type="datetime-local" name="auditFrom" [(ngModel)]="auditFrom"></label><label><span>{{ t('ui.m_1ue0nva') }}</span><input type="datetime-local" name="auditTo" [(ngModel)]="auditTo"></label></aba-date-range><button type="submit" class="primary-button icon-only" [disabled]="auditLoading" [attr.aria-label]="t('ui.m_11q6v6c')"><aba-icon name="filter" /></button></form>
-          @if (auditLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('ui.m_vtd5n1') }}</div> }
+          <form class="admin-filter-form" (ngSubmit)="loadAudit(0)"><aba-filter-bar variant="selects" [foldExtras]="true" [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [hasActiveFilter]="!!(auditAction || auditActor || auditBusinessId || auditFrom || auditTo)" [filterSummary]="auditFilterSummary" (clear)="clearAuditFilters()"><div filterExtras class="filters audit-filters"><label class="search-field"><span>{{ t('ui.m_16u0xte') }}</span><input name="auditAction" maxlength="80" [(ngModel)]="auditAction" [placeholder]="t('ui.m_twpwlc')"></label><label><span>{{ t('ui.m_11omtlm') }}</span><input name="auditActor" maxlength="128" [(ngModel)]="auditActor" [placeholder]="t('ui.m_1fly0iz')"></label><label><span>{{ t('ui.m_14i0qtu') }}</span><input name="auditBusinessId" maxlength="36" [(ngModel)]="auditBusinessId" placeholder="UUID"></label><aba-date-range [showClear]="true" [hasValue]="auditFrom !== '' || auditTo !== ''" [clearLabel]="t('ui.m_1np7zc4')" (clear)="auditFrom = ''; auditTo = ''"><label><span>{{ t('ui.m_1yem9by') }}</span><input type="datetime-local" name="auditFrom" [(ngModel)]="auditFrom"></label><label><span>{{ t('ui.m_1ue0nva') }}</span><input type="datetime-local" name="auditTo" [(ngModel)]="auditTo"></label></aba-date-range><button type="submit" class="primary-button icon-only" [disabled]="auditLoading" [attr.aria-label]="t('ui.m_agqz0i')"><aba-icon name="check" /></button></div></aba-filter-bar></form>
+          @if (auditLoading) { @if (auditEvents.length) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('ui.m_vtd5n1') }}</div> } @else { <aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /> } }
           @if (auditError) { <div class="notice error" role="alert">{{ auditError }} <button type="button" class="text-action" (click)="loadAudit(auditOffset)">{{ t('ui.m_worzj7') }}</button></div> }
           @if (!auditLoading && !auditError && !auditEvents.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">◷</span><h3>{{ t('ui.m_7kra7p') }}</h3><p>{{ t('ui.m_vn6jmq') }}</p></div> }
           @if (auditEvents.length) {
-            <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('ui.m_x4vism')"><table><thead><tr><th>{{ t('ui.m_vucw08') }}</th><th>{{ t('ui.m_bnvfl5') }}</th><th>{{ t('ui.m_17isxeg') }}</th><th>{{ t('ui.m_s2x2wd') }}</th><th>{{ t('ui.m_lm1d6n') }}</th><th>{{ t('ui.m_1tfe97u') }}</th></tr></thead><tbody>
-              @for (event of auditEvents; track event.id) { <tr><td class="date-cell" [attr.data-label]="t('ui.m_vucw08')">{{ formatDate(event.created_at) }}</td><td [attr.data-label]="t('ui.m_bnvfl5')"><span class="status-pill">{{ auditActionLabel(event.action) }}</span></td><td [attr.data-label]="t('ui.m_17isxeg')"><strong>{{ event.business_name }}</strong><small class="muted">{{ event.business_id }}</small></td><td class="subject" [attr.data-label]="t('ui.m_s2x2wd')">{{ event.actor_subject || '—' }}</td><td [attr.data-label]="t('ui.m_lm1d6n')">{{ auditTargetLabel(event.target_type) }}<small class="muted">{{ event.target_id || '—' }}</small></td><td class="summary-cell" [attr.data-label]="t('ui.m_1tfe97u')">{{ event.change_summary || '—' }}</td></tr> }
+            <div class="table-wrap" role="region" tabindex="0" [attr.aria-label]="t('ui.m_x4vism')"><table><thead><tr><th>{{ t('ui.m_vucw08') }}</th><th>{{ t('ui.m_bnvfl5') }}</th><th>{{ t('ui.m_17isxeg') }}</th><th>{{ t('ui.m_s2x2wd') }}</th><th>{{ t('ui.m_lm1d6n') }}</th></tr></thead><tbody>
+              @for (event of auditEvents; track event.id) { <tr><td class="date-cell" [attr.data-label]="t('ui.m_vucw08')">{{ formatDate(event.created_at) }}</td><td [attr.data-label]="t('ui.m_bnvfl5')"><span class="status-pill">{{ auditActionLabel(event.action) }}</span></td><td [attr.data-label]="t('ui.m_17isxeg')"><strong>{{ event.business_name }}</strong><small class="muted">{{ event.business_id }}</small></td><td class="subject" [attr.data-label]="t('ui.m_s2x2wd')">{{ event.actor_subject || '—' }}</td><td [attr.data-label]="t('ui.m_lm1d6n')">{{ auditTargetLabel(event.target_type) }}<small class="muted">{{ event.target_id || '—' }}</small></td></tr> }
             </tbody></table></div>
             <div class="pagination"><span>{{ t('ui.m_dxe4hc') }} {{ auditOffset + 1 }}–{{ auditOffset + auditEvents.length }} {{ t('ui.m_14bv2kn') }} {{ auditTotal }}</span><div><button type="button" class="outline-button" [disabled]="auditOffset === 0 || auditLoading" (click)="loadAudit(previousPageOffset(auditOffset))">{{ t('ui.m_14wy3hz') }}</button><button type="button" class="outline-button" [disabled]="auditOffset + pageSize >= auditTotal || auditLoading" (click)="loadAudit(auditOffset + pageSize)">{{ t('ui.m_thb9eg') }}</button></div></div>
           }
@@ -200,12 +206,15 @@ type AdminSection = 'overview' | 'businesses' | 'activity' | 'users' | 'permissi
             <button class="outline-button" type="button" [disabled]="usersLoading" (click)="loadUsers(0, true)">{{ t('ui.m_3h5ms6') }}</button>
           </div>
           <div class="data-note"><span aria-hidden="true">ⓘ</span><div><strong>{{ t('ui.m_8u8pdx') }}</strong><p>{{ t('ui.m_7m4mfn') }}</p><small>{{ t('ui.m_1lnx01m') }}</small></div></div>
-          <form class="filters" (ngSubmit)="searchUsers()">
+          <form class="admin-filter-form" (ngSubmit)="searchUsers()">
+            <aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [hasActiveFilter]="!!userQuery" [filterSummary]="userQuery" (clear)="userQuery = ''; searchUsers()">
+              <div class="filters user-filters">
             <label class="search-field"><span>{{ t('ui.m_1aeosv4') }}</span><input name="userQuery" maxlength="254" [(ngModel)]="userQuery" [placeholder]="t('ui.m_13pefsd')"></label>
             <button type="submit" class="primary-button" [disabled]="usersLoading">{{ t('ui.m_11ucx5t') }}</button>
-            @if (userQuery) { <button type="button" class="outline-button" [disabled]="usersLoading" (click)="userQuery=''; searchUsers()">{{ t('ui.m_yxfbrp') }}</button> }
+              </div>
+            </aba-filter-bar>
           </form>
-          @if (usersLoading) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('ui.m_1jn0uis') }}</div> }
+          @if (usersLoading) { @if (users.length) { <div class="loading-block" role="status"><span class="spinner"></span>{{ t('ui.m_1jn0uis') }}</div> } @else { <aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /> } }
           @if (usersError) { <div class="notice error" role="alert">{{ usersError }} <button type="button" class="text-action" (click)="loadUsers(userPageIndex)">{{ t('ui.m_worzj7') }}</button></div> }
           @if (!usersLoading && !usersError && !users.length) { <div class="empty-panel"><span class="empty-icon" aria-hidden="true">♙</span><h3>{{ userQuery.trim() ? t('ui.m_120nvvf') : t('ui.m_hfxoa') }}</h3><p>{{ userQuery.trim() ? t('ui.m_fgk9ur') : t('ui.m_knureo') }}</p></div> }
           @if (!usersLoading && users.length) {
@@ -663,6 +672,40 @@ export class PlatformAdminComponent implements OnInit {
     this.userPageTokens = [null];
     this.selectedAdminUser = null;
     void this.loadUsers(0, true);
+  }
+
+  // 3A-700 (U20/G1): the filter bars name the active filter while folded and
+  // clear it in one action; the forms keep their submit-to-server behaviour.
+  get businessFilterSummary(): string {
+    const parts: string[] = [];
+    if (this.businessQuery.trim()) parts.push(this.businessQuery.trim());
+    if (this.businessStatus === 'active') parts.push(this.t('ui.m_1vhpjk3'));
+    if (this.businessStatus === 'inactive') parts.push(this.t('ui.m_1qniai1'));
+    return parts.join(' · ');
+  }
+
+  clearBusinessFilters(): void {
+    this.businessQuery = '';
+    this.businessStatus = 'all';
+    void this.loadBusinesses(0);
+  }
+
+  get auditFilterSummary(): string {
+    const parts: string[] = [];
+    if (this.auditAction) parts.push(this.auditAction);
+    if (this.auditActor) parts.push(this.auditActor);
+    if (this.auditBusinessId) parts.push(this.auditBusinessId);
+    if (this.auditFrom || this.auditTo) parts.push(`${this.auditFrom || '…'} → ${this.auditTo || '…'}`);
+    return parts.join(' · ');
+  }
+
+  clearAuditFilters(): void {
+    this.auditAction = '';
+    this.auditActor = '';
+    this.auditBusinessId = '';
+    this.auditFrom = '';
+    this.auditTo = '';
+    void this.loadAudit(0);
   }
 
   nextUsersPage(): void {
