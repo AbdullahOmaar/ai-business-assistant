@@ -634,7 +634,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                     </label>
                   </div>
                   </aba-filter-bar>
-                  <div class="invoice-actions">
+                  <div class="invoice-list-actions">
                   @if (customersHasMore) {
                     <button class="secondary invoice-load-more-customers" type="button" (click)="loadMoreInvoiceCustomers()" [disabled]="customersLoadingMore">
                       {{ customersLoadingMore ? t('ui.m_14qa8nk') : t('ui.m_8ighyf') }}
