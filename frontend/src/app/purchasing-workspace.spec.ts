@@ -125,9 +125,10 @@ test('receipt and activity history wrap on words', () => {
 
 test('purchase order actions are shown only for the order current state', () => {
   assert.match(workspace, /@if \(canEdit\(order\)\) \{ <button[^>]*>{{ t\('edit'\) }}<\/button> \}/);
-  assert.match(workspace, /@if \(canApprove\(order\)\) \{ <button[^>]*>{{ t\('approve'\) }}<\/button> \}/);
+  // 3A-696: the approve and receive primaries now carry an icon before the label.
+  assert.match(workspace, /@if \(canApprove\(order\)\) \{ <button[^>]*><aba-icon name="check" \/>{{ t\('approve'\) }}<\/button> \}/);
   assert.match(workspace, /@if \(canCancel\(order\)\) \{ <button[^>]*>{{ t\('cancelOrder'\) }}<\/button> \}/);
-  assert.match(workspace, /@if \(canReceive\(order\)\) \{ <button[^>]*>{{ t\('receive'\) }}<\/button> \}/);
+  assert.match(workspace, /@if \(canReceive\(order\)\) \{ <button[^>]*><aba-icon name="document" \/>{{ t\('receive'\) }}<\/button> \}/);
 });
 
 test('purchase line inputs preserve decimal strings and match backend precision constraints', () => {

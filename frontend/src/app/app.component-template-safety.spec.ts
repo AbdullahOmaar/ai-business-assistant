@@ -1147,7 +1147,8 @@ test('purchase orders remain creatable by members while approval, receiving and 
 test('local CSV exports follow the backend owner-only export permission', () => {
   assert.equal((source.match(/\(click\)="exportCurrentList\(\)"/g) || []).length, 3,
     'the three current-list export buttons must remain available to owners');
-  assert.equal((source.match(/@if \(business\?\.role === 'owner'\) \{ <button class="secondary(?: invoice-export| customers-tool)?" type="button" \(click\)="exportCurrentList\(\)"/g) || []).length, 3);
+  // 3A-696: the products export joined the tool-class pattern (products-tool).
+  assert.equal((source.match(/@if \(business\?\.role === 'owner'\) \{ <button class="secondary(?: invoice-export| customers-tool| products-tool)?" type="button" \(click\)="exportCurrentList\(\)"/g) || []).length, 3);
   const listExportStart = source.indexOf('exportCurrentList(): void');
   const listExportEnd = source.indexOf('syncPaymentCustomer(): void', listExportStart);
   const listExport = source.slice(listExportStart, listExportEnd);
