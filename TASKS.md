@@ -7,7 +7,7 @@
 - **One-tap rollback:** every proposal carries its previous value; restoring is a PUT, and removing a key a proposal created is the new owner-only `DELETE /settings/{setting_key}` (audited `setting.deleted`, key only) — matrix now 92 routes.
 - **Docs:** `docs/CONVERSATIONAL_SETUP.md` (the flow, the guard, what the assistant cannot do, the settings surface honestly).
 - **NOT deployed:** no release markers — the settings screen itself is still deferred to Stage E; the DELETE endpoint reaches production with the next grouped API release.
-- **Next in the queue:** Stage C opens after Stage B closes — C1 (double-entry T44) is **gated on the owner's T37 decision** (plan decision point 1); C2 (financial-depth build-out — 14h) is the ready next task.
+- **Next in the queue (prepared):** Stage C opens after Stage B closes — C1 (double-entry T44) is **gated on the owner's T37 decision** (plan decision point 1); C2 (financial-depth build-out — 14h) is the ready next task — issue **3A-726** created as Backlog (Phase 2 label) before B7 closes; starts after B7 closes.
 
 ## Phase 2 — B6: assistant write-governance + second approval + role-bounded execution + computer-use policy (Linear 3A-724) — 2026-11-24 ~23:10 EET (PR #477 MERGED `c1a05b1`, 3A-724 CLOSED Done «فعلي: 1 ساعة»)
 
