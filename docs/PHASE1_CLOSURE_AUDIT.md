@@ -172,6 +172,30 @@ Round-2 review (3A-445) debts, status after the 1.13.0 release:
   injection). G3 font embedding stays blocked on owner-supplied font
   files (3A-416). **Phase 1 is still NOT closable.**
 
+## Addendum 4 — 2026-11-24 ~04:48 EET (blocker 6 resolved — 3A-267 closed Done)
+
+- **Blocker 6 (3A-267 delivery proof) — RESOLVED.** The CI failure
+  notifier now provably delivers to Slack. Three enablers landed: a
+  Slack app «3A CI Alerts» (bot scope `chat:write` only) installed on
+  the 3A Automation workspace and a member of **#ci-alerts**
+  (`C0CLH2M4MAQ`); the `SLACK_BOT_TOKEN` repository secret set; and PR
+  #462 (merged `8848ddf`) pointing `SLACK_CHANNEL_ID` at the real
+  channel in the workflow and the script fallback.
+- **Proof:** controlled failure PR #463 (one intentionally failing
+  frontend spec; closed unmerged, branch deleted) failed CI run
+  45311294333; notifier run 45311364833 completed success («Slack
+  failure notification delivered.»); the alert from the bot is in
+  #ci-alerts at 2026-11-24 04:18:24 EET (message TS 1795486704.759459).
+  **QA independently verified the arrival and closed 3A-267 Done**
+  (completedAt 2026-11-24T02:47:34Z). Full record: TASKS.md checkpoint
+  (PR #464, merged `d29ae8a`) and the proof comment on 3A-267.
+- **What still blocks Phase 1 closure — decisions only, no code:**
+  blocker 1 (U12–U23 owner definition), blocker 2 (criterion
+  correction — follows the owner's U12–U23 decision), and G3 font
+  embedding (owner-supplied font files, 3A-416). The criterion-3
+  residuals remain Phase 2 planning items. **Phase 1 is still NOT
+  closable — but every remaining blocker now sits with the owner.**
+
 ## Live evidence gathered for this audit (2026-11-23 ~18:00 EET)
 
 - API `/version` 1.13.0 / commit `b721905`; `/docs`, `/openapi.json`,
