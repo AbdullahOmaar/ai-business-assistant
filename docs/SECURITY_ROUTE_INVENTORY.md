@@ -105,6 +105,7 @@ All paths below inherit the business ID and require a trusted principal plus act
 | POST | `/purchase-orders/{order_id}/approve` | OWNER only; draft-only transition with one audit event |
 | POST | `/imports/{entity_type}.csv/preview` | OWNER only; validate/preview without persistent writes |
 | GET | `/reports/receivables-aging` | Membership required; currency-separated outstanding balances |
+| GET | `/reports/payables-aging` | Membership required; per-supplier ordered/received/outstanding, currency-separated (C2, 3A-726) — outstanding equals received totals until supplier payments exist |
 | GET | `/customers/{customer_id}/statement` | Membership and same-business customer; read-only, currency-safe |
 | GET | `/audit-events` | OWNER only; paginated and business-scoped |
 | GET | `/reports/data-integrity` | OWNER only; read-only integrity findings scoped to business |

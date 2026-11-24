@@ -97,6 +97,7 @@ MATRIX = [
     ("GET", "/api/v1/businesses/{business_id}/reports/summary", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/reports/tax-summary", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/reports/receivables-aging", "allow"),
+    ("GET", "/api/v1/businesses/{business_id}/reports/payables-aging", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/reports/data-integrity", "deny"),
     ("GET", "/api/v1/businesses/{business_id}/exports/{entity_type}.csv", "deny"),
     ("POST", "/api/v1/businesses/{business_id}/imports/{entity_type}.csv/preview", "deny"),
