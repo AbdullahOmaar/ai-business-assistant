@@ -50,6 +50,26 @@ environment.
    `backend/app/rate_limit.py`). Production values are the defaults
    unless an override is recorded in the evidence register.
 
+## Automated parity checks (3A-701 — Phase 2 A1)
+
+`scripts/production_smoke.py` automates the checks above that are
+observable from outside the Vercel projects. It runs the repo version
+chain (all eight version fields), the live versions on both surfaces,
+the web security headers, the API docs gating, and the authenticated
+demo flows including a synthetic write cycle — and it fails (exit 1)
+whenever the repo chain, the live web and the live API disagree, so a
+divergence is reported by the run itself instead of being discovered by
+accident. `python scripts/production_smoke.py --repo-only` runs the
+chain check with no network and is gated in CI (`release-chain` job).
+
+Still manual, because they cannot be seen from outside the projects:
+Vercel environment variables (including `SENTRY_DSN` on the API
+project — a received test event is the evidence, not the merged code),
+and the applied-migration state (the smoke proves `/readyz` only; the
+release evidence row records which migrations were applied at deploy
+time). Nothing in this section may be claimed from the script's
+evidence alone.
+
 ## Legitimate differences (not drift)
 
 - Test suites run on SQLite with per-test resolvers; production runs
