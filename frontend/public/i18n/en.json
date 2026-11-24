@@ -1180,6 +1180,7 @@
       "v1100_security": "Version 1.10.0: an internal security completion — automated secret scanning now checks every proposed change, closing the last open item of the security-verification batch. No change to any user-visible behaviour.",
       "v1110_duplicate": "Version 1.11.0: a “Duplicate invoice” button in the invoice details creates a new draft with the same lines, customer, currency and totals (at current catalogue prices), so you can re-order without retyping the invoice.",
       "v1120_payroll": "Version 1.12.0: employee and payroll cycle acceptance completed — the failure states (payroll for a deactivated employee, editing or re-approving approved or paid payroll) are now pinned by regression tests. Internal quality completion with no user-visible change.",
+      "v1150_auth": "Version 1.15.0: the sign-in gate now carries the app identity — the character and the app name on the sign-in card, the demo entry is a clear secondary action below the primary sign-in button, and error messages appear right by the form and clear when you switch between sign-in and sign-up.",
       "v1140_filters": "Version 1.14.0: list filters now fold behind the filter button — invoices, purchasing and the stock-movement log keep the current filter visible as a short summary while the controls stay tucked away until you open them, and purchasing gains status and supplier filters.",
       "v1130_layout": "Version 1.13.0: home indicator cards now lay out two per row on mobile and four across on wide screens, and the stray loading card that appeared under every screen is gone — the assistant now appears only on its own screen."
     },
@@ -1347,6 +1348,7 @@
       "v1100_title": "Security: secret scanning on every change",
       "v1110_title": "Invoice duplication: re-order in one tap",
       "v1120_title": "Version 1.12.0",
+      "v1150_title": "Version 1.15.0",
       "v1140_title": "Version 1.14.0",
       "v1130_title": "Version 1.13.0"
     }

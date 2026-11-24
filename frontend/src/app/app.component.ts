@@ -114,7 +114,10 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       } @else if (!signedIn) {
         <main class="auth-card">
           <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
-          <div class="brand-mark">A</div>
+          <div class="auth-identity">
+            <img class="auth-character" src="identity/loader-character.png" alt="" aria-hidden="true">
+            <span class="auth-app-name">{{ t('common.app_title') }}</span>
+          </div>
           <p class="eyebrow">{{ t('ui.m_ll4uy7') }}</p>
           <h1 id="auth-form-heading">{{ signingUp ? t('ui.m_1cuf5gq') : t('ui.m_cfel9w') }}</h1>
           <p class="muted">{{ t('ui.m_1euk0tm') }}</p>
@@ -131,6 +134,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             </label>
             <button class="primary" type="submit" [disabled]="loading">{{ loading ? t('ui.m_jxz3f3') : (signingUp ? t('ui.m_1hggna5') : t('ui.m_h8edye')) }}</button>
           </form>
+          @if (error) { <aba-state-message kind="error" [description]="error" /> }
           @if (!signingUp) {
             <button class="demo-login-button" type="button" (click)="submitDemoLogin()" [disabled]="loading">
               <span class="demo-login-icon" aria-hidden="true">✦</span>
@@ -139,8 +143,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             </button>
             <p class="demo-login-note">{{ t('demo.login.note') }}</p>
           }
-          <button class="text-button" type="button" (click)="signingUp = !signingUp">{{ signingUp ? t('ui.m_1uh3cl9') : t('ui.m_1fdki9f') }}</button>
-          @if (error) { <aba-state-message kind="error" [description]="error" /> }
+          <button class="text-button" type="button" (click)="toggleAuthMode()">{{ signingUp ? t('ui.m_1uh3cl9') : t('ui.m_1fdki9f') }}</button>
           @if (!isInstalled) {
             <section class="mobile-install-card auth-mobile-install" [attr.aria-label]="t('ui.m_1ig5s72')">
               <div class="mobile-install-copy">
@@ -1869,6 +1872,13 @@ export class AppComponent implements OnInit, OnDestroy {
       this.platformAdminAvailable = false;
       if (this.tab === 'platform-admin') this.setTab('overview');
     }
+  }
+
+  // 3A-698 (U22): switching between sign-in and sign-up keeps the same card;
+  // a stale failure from the other mode must not follow the user across.
+  toggleAuthMode(): void {
+    this.signingUp = !this.signingUp;
+    this.error = '';
   }
 
   async submitAuth(): Promise<void> {
