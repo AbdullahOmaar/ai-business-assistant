@@ -19,6 +19,7 @@ export interface BusinessInvitation {
 }
 export interface BusinessInvitationCreated extends BusinessInvitation { token: string; }
 export interface BusinessMembership { id: string; business_id: string; role: 'owner' | 'staff'; created_at: string | null; }
+export interface WorkspaceMembership { id: string; user_subject: string; role: 'owner' | 'staff'; created_at: string | null; }
 export interface Customer { id: string; name: string; email?: string | null; phone?: string | null; address?: string | null; notes?: string | null; created_at?: string | null; }
 export interface Product { id: string; name: string; sku?: string | null; description?: string | null; unit?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; created_at?: string | null; }
 export type StockMovementType = 'opening' | 'receipt' | 'sale' | 'return' | 'adjustment';
@@ -542,6 +543,9 @@ export class ApiService {
   }
   businessInvitations(businessId: string): Promise<BusinessInvitation[]> {
     return this.request<BusinessInvitation[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invitations`);
+  }
+  businessMemberships(businessId: string): Promise<WorkspaceMembership[]> {
+    return this.request<WorkspaceMembership[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/memberships`);
   }
   revokeBusinessInvitation(businessId: string, invitationId: string): Promise<void> {
     return this.request<void>(

@@ -371,6 +371,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <aba-section-header [title]=" t('ui.m_18z2l5z') " [description]=" t('ui.m_1ps0q5f') "><span class="count">{{ operationalHealth ? operationalHealthStatusLabel(operationalHealth.status) : t('ui.m_159bgv6') }}</span></aba-section-header>
                 <button class="primary" type="button" (click)="loadOperationalHealth()" [disabled]="healthLoading">{{ healthLoading ? t('ui.m_1v22gnm') : t('ui.m_9aw201') }}</button>
                 @if (healthError) { <aba-state-message kind="error" [description]="healthError" /> }
+                @if (healthLoading && !operationalHealth) { <aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /> }
                 @if (operationalHealth) {
                   <div class="metric-grid">
                     <article class="metric"><span>{{ t('ui.m_1ko8298') }}</span><strong>{{ operationalHealth.database_connected ? t('ui.m_1mjv33c') : t('ui.m_1mbcqq8') }}</strong></article>
@@ -2155,6 +2156,9 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
   async createWorkspace(): Promise<void> {
+    // 3A-700 (U23): in-flight guard — the disabled submit is the visible
+    // control, this keeps a programmatic re-entry from double-creating.
+    if (this.loading) return;
     this.loading = true;
     this.error = '';
     try {

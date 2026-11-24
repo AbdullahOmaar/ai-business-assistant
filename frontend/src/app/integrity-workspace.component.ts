@@ -26,6 +26,10 @@ import { AbaRecordTableComponent, type AbaRecordTableColumn, type AbaRecordTable
                 <aba-section-header [title]=" t('ui.m_3j4vfw') " [description]=" t('ui.m_rq55ji') "><span class="count">{{ formatRecordDate(dataIntegrityReport?.generated_at, 'short') || t('ui.m_xo2kma') }}</span></aba-section-header>
                 <button class="primary" type="button" (click)="loadDataIntegrity(0)" [disabled]="integrityLoading">{{ integrityLoading ? t('ui.m_1v22gnm') : t('ui.m_t1s0tt') }}</button>
                 @if (integrityError) { <aba-state-message kind="error" [description]="integrityError" /> }
+                @if (integrityLoading && !dataIntegrityReport) {
+                  <aba-record-table [ariaLabel]="t('ui.m_1muvs8z')" [columns]="integrityInvoiceColumns" [rows]="[]" [loading]="true" [loadingDescription]="t('ui.m_19p9gnl')" [emptyTitle]="t('ui.m_ej8yte')" [emptyDescription]="t('ui.m_ydex7x')" />
+                  <aba-record-table [ariaLabel]="t('ui.m_xbtfmu')" [columns]="integrityAllocationColumns" [rows]="[]" [loading]="true" [loadingDescription]="t('ui.m_19p9gnl')" [emptyTitle]="t('ui.m_hrqqij')" [emptyDescription]="t('ui.m_uxsaek')" />
+                }
                 @if (dataIntegrityReport) {
                   <div class="notice warning-notice"><strong>{{ t('ui.m_8kfz56') }}</strong><span>{{ integrityWarningLabel(dataIntegrityReport.warning) }}</span></div>
                   <div class="metric-grid">
@@ -34,9 +38,9 @@ import { AbaRecordTableComponent, type AbaRecordTableColumn, type AbaRecordTable
                     <article class="metric"><span>{{ t('ui.m_15jyanv') }}</span><strong>{{ dataIntegrityReport.customer_mismatched_allocations.total }}</strong></article>
                   </div>
                   <aba-section-header [level]="3" [title]="t('ui.m_h5fuqc')" />
-                  <aba-record-table [ariaLabel]="t('ui.m_1muvs8z')" [columns]="integrityInvoiceColumns" [rows]="integrityInvoiceRows" [emptyTitle]="t('ui.m_ej8yte')" [emptyDescription]="t('ui.m_ydex7x')" />
+                  <aba-record-table [ariaLabel]="t('ui.m_1muvs8z')" [columns]="integrityInvoiceColumns" [rows]="integrityInvoiceRows" [loading]="integrityLoading && !integrityInvoiceRows.length" [loadingDescription]="t('ui.m_19p9gnl')" [emptyTitle]="t('ui.m_ej8yte')" [emptyDescription]="t('ui.m_ydex7x')" />
                   <aba-section-header [level]="3" [title]="t('ui.m_ord1a3')" />
-                  <aba-record-table [ariaLabel]="t('ui.m_xbtfmu')" [columns]="integrityAllocationColumns" [rows]="integrityAllocationRows" [emptyTitle]="t('ui.m_hrqqij')" [emptyDescription]="t('ui.m_uxsaek')" />
+                  <aba-record-table [ariaLabel]="t('ui.m_xbtfmu')" [columns]="integrityAllocationColumns" [rows]="integrityAllocationRows" [loading]="integrityLoading && !integrityAllocationRows.length" [loadingDescription]="t('ui.m_19p9gnl')" [emptyTitle]="t('ui.m_hrqqij')" [emptyDescription]="t('ui.m_uxsaek')" />
                   <div class="inline-form"><span class="muted">{{ t('ui.m_3dypht') }} {{ dataIntegrityReport.offset }} · {{ t('ui.m_1o0uw0o') }} {{ dataIntegrityReport.limit }}</span><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset > 0 ? dataIntegrityReport.offset - dataIntegrityReport.limit : 0)" [disabled]="integrityLoading || dataIntegrityReport.offset === 0">{{ t('ui.m_14wy3hz') }}</button><button class="secondary" type="button" (click)="loadDataIntegrity(dataIntegrityReport.offset + dataIntegrityReport.limit)" [disabled]="integrityLoading || dataIntegrityReport.offset + dataIntegrityReport.limit >= maxIntegrityTotal">{{ t('ui.m_thb9eg') }}</button></div>
                 }
               </section>
