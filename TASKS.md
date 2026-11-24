@@ -1,4 +1,14 @@
-## Phase 2 — B5: page integrity + audit-log anomaly (Linear 3A-723) — 2026-11-24 ~22:05 EET (PR pending QA review)
+## Phase 2 — B6: assistant write-governance + second approval + role-bounded execution + computer-use policy (Linear 3A-724) — 2026-11-24 ~23:10 EET (PR pending QA review)
+
+- **Eighth Phase 2 execution task, started immediately after B5 closed per the sequencing rule** («فيز 2 — B6: حوكمة تنفيذ المساعد + موافقة ثانية + تنفيذ محكوم بالدور + سياسة computer-use», تقدير: 14 ساعة, In Progress).
+- **Honest starting point (verified from the code):** the assistant executes NOTHING today — one endpoint (`POST …/assistant/chat`, Q&A only), no tool calls, no write path. The API as a whole has 50 write endpoints (34 POST + 8 PATCH + 2 PUT + 6 DELETE), all classified in the governance doc.
+- **Policy as code `backend/app/assistant_write_policy.py`:** the closed list — 9 ALLOWED actions (drafts + directory records, caller's role, no second approval) + 19 NEEDS_SECOND_APPROVAL actions (money-posting / commitment / blast-radius; the approval flow does not exist yet, so they cannot execute today either) + everything else FORBIDDEN by default (every DELETE, membership/role/platform, settings, business/account deletion, employees). `verdict()` enforces the caller's role (STAFF can never execute an OWNER-only write) and the second approval; `is_forbidden()` / `requires_second_approval()` classify any action.
+- **Tripwire test:** the assistant router exposes only `POST /chat` — adding an execution endpoint fails the suite until it is routed through the policy.
+- **Docs `docs/ASSISTANT_WRITE_GOVERNANCE.md`:** the full matrix (all 50 write endpoints classified), the second-approval design (propose → owner confirms an approval token bound to the exact payload → execute with an audit event naming asker + approver; payroll SoD is the precedent), and the computer-use policy — NOT permitted (no browser/OS control, no screenshots, no credential access; zero footprint in the code today; any future proposal is an owner decision).
+- **NOT deployed:** no release markers — policy + tests + docs only; no execution path exists or is built in this task.
+- **Next in the queue (prepared):** B7 (conversational setup with financial-numbers guard — 10h) — issue **3A-725** created as Backlog (Phase 2 label) before B6 closes; starts after B6 closes.
+
+## Phase 2 — B5: page integrity + audit-log anomaly (Linear 3A-723) — 2026-11-24 ~22:05 EET (PR #476 MERGED `5a870ed`, 3A-723 CLOSED Done «فعلي: 1 ساعة»)
 
 - **Seventh Phase 2 execution task, started immediately after B4 closed per the sequencing rule** («فيز 2 — B5: سلامة الصفحة + كشف الشذوذ في سجل التدقيق», تقدير: 10 ساعات, In Progress).
 - **Page integrity:** the live page's script inventory read from production (web 1.17.0): 2 same-origin hashed bundles + 1 inline bootstrap script pinned by a CSP sha256 hash, zero third-party scripts. The smoke gains flow `web-scripts` (11 flows now): fails on any third-party script, any unhashed bundle, any inline script not pinned by the CSP, a missing CSP, or `'unsafe-inline'`/wildcard in script-src; fetches each script src (HTTP 200 required); orphan CSP hashes are informational notes, not failures.
@@ -6,7 +16,7 @@
 - **Anomaly detection:** pure rules in `backend/app/audit_anomaly.py` (R1 destructive burst ≥3/10min, R2 mass export ≥3/60min, R3 off-hours per business timezone, R4 one actor in ≥3 businesses/60min, R5 settings churn ≥10/60min) + `scripts/audit_anomaly_report.py` (DATABASE_URL, never production directly; exit 0 on a produced report). Honest limit documented: denied requests write no AuditEvent, so repeated denials are invisible to the detector (platform security logs only).
 - **Docs:** `docs/PAGE_INTEGRITY_AND_ANOMALY.md` (live inventory + CSP finding + smoke flow + rules + weekly / pre-release review cadence).
 - **NOT deployed:** no release markers — the vercel.json tightening reaches production with the next grouped web release; the anomaly report is a manager-side weekly run.
-- **Next in the queue (prepared):** B6 (assistant write-governance + role-bounded execution + computer-use policy — 14h) — issue **3A-724** created as Backlog (Phase 2 label) before B5 closes; starts after B5 closes.
+- **Next in the queue:** B6 (assistant write-governance + role-bounded execution + computer-use policy — 14h) — **3A-724** started immediately after B5 closed per the sequencing rule; its checkpoint is the section above.
 
 ## Phase 2 — B4: privacy promise + who-sees-what review + ZDR/sovereignty (Linear 3A-722) — 2026-11-24 ~21:17 EET (PR #475 MERGED `61ffb76`, 3A-722 CLOSED Done «فعلي: 1 ساعة»)
 
