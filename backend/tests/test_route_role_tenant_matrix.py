@@ -135,6 +135,11 @@ MATRIX = [
     ("GET", "/api/v1/platform-admin/users", "deny"),
     ("POST", "/api/v1/platform-admin/users/{user_uid}/roles", "deny"),
     ("GET", "/api/v1/platform-admin/role-audit-events", "deny"),
+    # B3 (3A-721): business deletion + the verifiable full export are
+    # owner-only; the positive pass fires the delete LAST (it
+    # soft-deletes business A).
+    ("GET", "/api/v1/businesses/{business_id}/export", "deny"),
+    ("DELETE", "/api/v1/businesses/{business_id}", "deny"),
 ]
 
 EXCLUDED_FROM_MATRIX = {
@@ -146,6 +151,9 @@ EXCLUDED_FROM_MATRIX = {
     # Public by design (the demo account's shared credentials are
     # intentional); covered by test_demo_auth_api.py.
     ("POST", "/api/v1/demo/session"),
+    # Not business-scoped: the caller deletes their OWN account
+    # (B3); covered by test_business_deletion_export.py.
+    ("DELETE", "/api/v1/me"),
 }
 
 
@@ -318,6 +326,7 @@ def test_full_route_role_tenant_denial_matrix():
         }
         bodies = {
             ("POST", "/api/v1/businesses/{business_id}/invitations"): {"email": "inv@example.com"},
+            ("DELETE", "/api/v1/businesses/{business_id}"): {"confirm_name": "Matrix A"},
             ("PATCH", "/api/v1/businesses/{business_id}"): {"name": "Renamed"},
             ("PATCH", "/api/v1/businesses/{business_id}/memberships/{membership_id}"): {"role": "staff"},
             ("POST", "/api/v1/businesses/{business_id}/customers"): {"name": "Probe"},
@@ -426,6 +435,9 @@ def test_full_route_role_tenant_denial_matrix():
                 }
             elif method in ("POST", "PATCH", "PUT"):
                 kwargs = {"json": bodies.get((method, template), {})}
+            if method == "DELETE" and (method, template) in bodies:
+                # httpx delete() takes no json kwarg; request() does.
+                return client.request(method, url, json=bodies[(method, template)])
             return getattr(client, method.lower())(url, **kwargs)
 
         def assert_denied(actor_label: str, method: str, template: str, expected: int) -> None:
@@ -647,6 +659,7 @@ def test_owner_positive_matrix():
         }
         bodies = {
             ("POST", "/api/v1/businesses/{business_id}/invitations"): {"email": "inv@example.com"},
+            ("DELETE", "/api/v1/businesses/{business_id}"): {"confirm_name": "Matrix A"},
             ("PATCH", "/api/v1/businesses/{business_id}"): {"name": "Renamed"},
             ("PATCH", "/api/v1/businesses/{business_id}/memberships/{membership_id}"): {"role": "staff"},
             ("POST", "/api/v1/businesses/{business_id}/customers"): {"name": "Probe"},
@@ -737,6 +750,9 @@ def test_owner_positive_matrix():
                 # These endpoints require a canonical UUID Idempotency-Key
                 # header (3A-342); denied actors never reach the check.
                 kwargs["headers"] = {"Idempotency-Key": str(uuid4())}
+            if method == "DELETE" and (method, template) in bodies:
+                # httpx delete() takes no json kwarg; request() does.
+                return client.request(method, url, json=bodies[(method, template)])
             return getattr(client, method.lower())(url, **kwargs)
 
         def assert_positive(actor_label: str, method: str, template: str):
@@ -762,6 +778,12 @@ def test_owner_positive_matrix():
                 response = assert_positive("owner", method, template)
                 assert [row["id"] for row in response.json()] == [a_id], response.text
                 continue
+            if (method, template) == ("DELETE", "/api/v1/businesses/{business_id}"):
+                # The PATCH row above renamed the business ("Renamed");
+                # the delete confirmation must use the CURRENT name.
+                current = client.get(f"/api/v1/businesses/{a_id}")
+                assert current.status_code == 200, current.text
+                bodies[(method, template)] = {"confirm_name": current.json()["name"]}
             if (method, template) == ("PATCH", "/api/v1/businesses/{business_id}/invoices/{invoice_id}"):
                 ids["invoice_id"] = draft_b_id
             if (method, template) == ("POST", "/api/v1/businesses/{business_id}/invoices/{invoice_id}/void"):

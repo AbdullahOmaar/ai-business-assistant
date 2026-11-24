@@ -61,6 +61,12 @@ class Business(Base):
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     address: Mapped[str | None] = mapped_column(String(500), nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    # Soft-deletion marker (B3, 3A-721): set together with is_active=False
+    # by DELETE /businesses/{id}; the retention window for the purge is
+    # measured from this timestamp. NULL while the business is live.
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
