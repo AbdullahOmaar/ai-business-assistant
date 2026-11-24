@@ -617,21 +617,24 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   <article class="invoice-summary-card"><span>{{ t('app.invoiceList.summaryIssued') }}</span><strong>{{ invoiceStatusCounts.issued }}</strong></article>
                 </div>
                 <div class="invoice-controls">
-                  <aba-filter-bar variant="chips" [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="invoiceFilterSummary()" [hasActiveFilter]="invoiceSearch.trim() !== '' || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId !== ''" (clear)="clearInvoiceFilters()">
+                  <aba-filter-bar variant="chips" [foldExtras]="true" [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="invoiceFilterSummary()" [hasActiveFilter]="invoiceSearch.trim() !== '' || invoiceStatusFilter !== 'all' || invoiceFilterCustomerId !== ''" (clear)="clearInvoiceFilters()">
                   <aba-search-field class="invoice-search" name="invoiceSearch" [ariaLabel]="t('ui.m_qwjq9v')" [placeholder]="t('ui.m_2onysz')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="invoiceSearch" (ngModelChange)="invoicePageIndex = 0" />
-                  <div class="invoice-status-chips" role="group" [attr.aria-label]="t('app.invoiceList.statusFilters')" filterExtras>
+                  <div class="invoice-filter-panel" filterExtras>
+                    <div class="invoice-status-chips" role="group" [attr.aria-label]="t('app.invoiceList.statusFilters')">
                     <button type="button" class="invoice-status-chip" [class.active]="invoiceStatusFilter === 'all'" [attr.aria-pressed]="invoiceStatusFilter === 'all'" (click)="setInvoiceStatusFilter('all')">{{ t('ui.m_1cyu9lp') }} <span>{{ invoiceStatusCounts.all }}</span></button>
                     <button type="button" class="invoice-status-chip" [class.active]="invoiceStatusFilter === 'draft'" [attr.aria-pressed]="invoiceStatusFilter === 'draft'" (click)="setInvoiceStatusFilter('draft')">{{ t('ui.m_1vbs2bw') }} <span>{{ invoiceStatusCounts.draft }}</span></button>
                     <button type="button" class="invoice-status-chip" [class.active]="invoiceStatusFilter === 'issued'" [attr.aria-pressed]="invoiceStatusFilter === 'issued'" (click)="setInvoiceStatusFilter('issued')">{{ t('ui.m_7bugfd') }} <span>{{ invoiceStatusCounts.issued }}</span></button>
                     <button type="button" class="invoice-status-chip" [class.active]="invoiceStatusFilter === 'void'" [attr.aria-pressed]="invoiceStatusFilter === 'void'" (click)="setInvoiceStatusFilter('void')">{{ t('ui.m_1a2uk7t') }} <span>{{ invoiceStatusCounts.void }}</span></button>
+                    </div>
+                    <label class="invoice-filter"><span>{{ t('ui.m_ubgrc2') }}</span>
+                      <select name="invoiceFilterCustomer" [attr.aria-label]="t('ui.m_1k3k63e')" [(ngModel)]="invoiceFilterCustomerId" (ngModelChange)="invoicePageIndex = 0">
+                        <option value="">{{ t('ui.m_1c6r7y7') }}</option>
+                        @for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }
+                      </select>
+                    </label>
                   </div>
                   </aba-filter-bar>
-                  <label class="invoice-filter"><span>{{ t('ui.m_ubgrc2') }}</span>
-                    <select name="invoiceFilterCustomer" [attr.aria-label]="t('ui.m_1k3k63e')" [(ngModel)]="invoiceFilterCustomerId" (ngModelChange)="invoicePageIndex = 0">
-                      <option value="">{{ t('ui.m_1c6r7y7') }}</option>
-                      @for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }
-                    </select>
-                  </label>
+                  <div class="invoice-list-actions">
                   @if (customersHasMore) {
                     <button class="secondary invoice-load-more-customers" type="button" (click)="loadMoreInvoiceCustomers()" [disabled]="customersLoadingMore">
                       {{ customersLoadingMore ? t('ui.m_14qa8nk') : t('ui.m_8ighyf') }}
@@ -639,6 +642,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                   @if (business?.role === 'owner') { <button class="secondary invoice-export" type="button" (click)="exportCurrentList()" [disabled]="!filteredInvoices.length"><aba-icon name="export" />{{ t('ui.m_nbsw3y') }}</button> }
                   <button class="secondary invoice-density-toggle" type="button" [attr.aria-pressed]="invoiceDensity === 'compact'" (click)="toggleInvoiceDensity()">{{ invoiceDensity === 'compact' ? t('app.invoiceList.cards') : t('app.invoiceList.compact') }}</button>
+                  </div>
                 </div>
                 @if (loading && !invoices.length) {
                   <div class="defer-skeleton" role="status"><span class="sr-only">{{ t('ui.m_x2q4oa') }}</span><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /><aba-skeleton variant="list-row" /></div>
