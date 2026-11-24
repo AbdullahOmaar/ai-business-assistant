@@ -1,3 +1,9 @@
+## 3A-267 CI failure notifications to Slack — DELIVERY PROVEN (Linear 3A-267) — 2026-11-24 (proof recorded; QA verifies and closes)
+
+- **Proven end to end 2026-11-24 ~04:18 EET.** Controlled failure PR #463 (one intentionally failing frontend spec, closed unmerged, branch deleted): CI run 45311294333 failed (frontend-unit-tests + all-checks-passed); notifier run 45311364833 completed success with «Slack failure notification delivered.» in its log; the alert from bot «3A CI Alerts» is visible in **#ci-alerts** (message 1795486704.759459, https://3a-automation.slack.com/archives/C0CLH2M4MAQ/p1795486704759459) with repo, workflow, branch, failed jobs and run link.
+- **What made it work:** Slack app «3A CI Alerts» (A0CL74YFJ75), bot scope `chat:write` only, installed on 3A Automation and a member of #ci-alerts; repo secret `SLACK_BOT_TOKEN` set (value entered only into the GitHub secret field); PR #462 (merged `8848ddf`) pointed `SLACK_CHANNEL_ID` at `C0CLH2M4MAQ` in the workflow and the script fallback. The earlier diagnosis (PR #461) stands: the workflow always ran; it was the missing secret + nonexistent channel that blocked delivery.
+- **Status:** proof recorded on 3A-267; the issue itself is left for the QA/review line to verify independently and close.
+
 ## Version 1.14.0 candidate — 3A-696 Phase 1 closure batch CLOSED (Linear 3A-696) — 2026-11-24 (merged, NOT deployed)
 
 - **Closed Done 2026-11-24 ~03:00 EET, «فعلي: 1 ساعة»** (vs «تقدير: 10 ساعة»). All three stacked PRs merged by the independent QA/review line and verified via `gh pr view` (state + mergeCommit) before closing: **#457** G1 `29b47c6`, **#458** U03/G5/G2 `5f417c7`, **#459** G7 `9157d37`. Main head `9157d37`, candidate version 1.14.0. Blocker 3 of the Phase 1 closure audit is resolved (Addendum 3 in `docs/PHASE1_CLOSURE_AUDIT.md`).
