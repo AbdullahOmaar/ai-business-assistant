@@ -5,7 +5,7 @@
 - **Review `docs/PRIVACY_REVIEW.md`:** the who-sees-what map read from the code (roles × data classes) + the assistant's per-question data flow (bounded 20+20, role-filtered expenses, client-supplied history, nothing persisted server-side) + the third-party table (Firebase identity only; Neon is the DB; Vercel hosts; Sentry no-PII; provider gets per-question records only; demo limiter stores a hash, not the raw IP) + the ZDR/sovereignty position (no copies outside the business DB; sovereignty partial — third-party managed services) + the promise-vs-code check table.
 - **Gaps tracked, not hidden:** GAP-1 provider retention terms unverified (manager — verify before any marketing ZDR claim); GAP-2 data residency not pinned (manager — Neon + Vercel regions into ENVIRONMENT_PARITY.md); GAP-3 demo boundary (already handled in the promise text).
 - **NOT deployed:** no release markers — docs only; no production deploy in this task.
-- **Next in the queue (prepared):** B5 (Page Integrity + audit-log anomaly — 10h) — issue to be created as Backlog before B4 closes.
+- **Next in the queue (prepared):** B5 (Page Integrity + audit-log anomaly — 10h) — issue **3A-723** created as Backlog (Phase 2 label) before B4 closes; starts after B4 closes.
 
 ## Phase 2 — B3: account/business deletion + verifiable full export (Linear 3A-721) — 2026-11-24 ~20:35 EET (PR #474 MERGED `74840de`, 3A-721 CLOSED Done «فعلي: 1 ساعة»)
 
