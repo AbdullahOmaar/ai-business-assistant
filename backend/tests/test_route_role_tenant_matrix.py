@@ -93,6 +93,7 @@ MATRIX = [
     ("POST", "/api/v1/businesses/{business_id}/notifications", "deny"),
     ("GET", "/api/v1/businesses/{business_id}/notifications", "allow"),
     ("PUT", "/api/v1/businesses/{business_id}/settings/{setting_key}", "deny"),
+    ("DELETE", "/api/v1/businesses/{business_id}/settings/{setting_key}", "deny"),
     ("GET", "/api/v1/businesses/{business_id}/reports/summary", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/reports/tax-summary", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/reports/receivables-aging", "allow"),

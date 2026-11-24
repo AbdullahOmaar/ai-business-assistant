@@ -20,9 +20,18 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.assistant_settings import validate_suggestions
 from app.dependencies import get_principal, get_session
 from app.domain_rules import money
-from app.models import Business, Customer, Expense, Invoice, Product, Supplier
+from app.models import (
+    Business,
+    BusinessSetting,
+    Customer,
+    Expense,
+    Invoice,
+    Product,
+    Supplier,
+)
 from app.rate_limit import rate_limit
 from app.security import (
     AuthenticatedPrincipal,
@@ -409,6 +418,16 @@ async def chat(
     draft_invoice_count = session.scalar(select(func.count()).select_from(Invoice).where(
         Invoice.business_id == business_id, Invoice.status == "draft"
     )) or 0
+    # Current settings, for the conversational-setup suggestions (B7):
+    # each proposal carries its previous value so the user can preview
+    # old -> new and roll back in one tap. The assistant never applies
+    # a setting itself; it only proposes.
+    current_settings = {
+        row.setting_key: row.setting_value
+        for row in session.scalars(
+            select(BusinessSetting).where(BusinessSetting.business_id == business_id)
+        ).all()
+    }
 
     source_records = {}
     invoice_rows = []
@@ -587,6 +606,7 @@ async def chat(
             "model": "local-fallback",
             "grounding": "business-records",
             "mode": "local-fallback",
+            "suggestions": [],
         }
 
     system_prompt = (
@@ -597,7 +617,12 @@ async def chat(
         "State when the supplied data is insufficient or limited to recent records. Do not claim to have executed "
         "an action. Return JSON only with exactly two keys: answer (string) and source_ids (array of supplied source_id "
         "strings that support the answer). Cite sources in the answer using their invoice number or expense category "
-        "when useful. If no record supports an answer, return an empty source_ids array."
+        "when useful. If no record supports an answer, return an empty source_ids array. "
+        "When the user asks to change a setting, you MAY add an optional third key: suggestions (an array of at most 3 "
+        "objects, each with setting_key, setting_value and reason). Suggest only plain identifier keys, never a key "
+        "that holds a secret, password, token or API key, and never suggest a financial number (tax, price, currency, "
+        "discount, fee) without saying in the answer that it needs the user's explicit confirmation. Suggestions are "
+        "proposals only — you never apply them."
     )
     messages = [{"role": "system", "content": system_prompt + "\nBusiness data JSON:\n" + json.dumps(context, ensure_ascii=False)}]
     for item in body.history[-8:]:
@@ -632,11 +657,17 @@ async def chat(
             cited = []
         allowed_ids = set(source_records)
         source_ids = list(dict.fromkeys(item for item in cited if isinstance(item, str) and item in allowed_ids))
+        # Conversational setup (B7): the model's setting suggestions are
+        # validated here — bad keys, duplicates and extras are dropped,
+        # financial ones are flagged requires_confirmation — and the
+        # answer is never failed by a bad suggestion. Nothing is applied.
+        suggestions = validate_suggestions(parsed.get("suggestions"), current_settings)
         return {
             "answer": answer.strip(),
             "sources": [source_records[item] for item in source_ids],
             "model": model,
             "grounding": "business-records",
+            "suggestions": suggestions,
         }
     except HTTPException:
         raise

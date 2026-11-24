@@ -95,6 +95,68 @@ def test_setting_create_and_update_write_audit_events_without_the_value():
         _restore(previous_factory, previous_resolver)
 
 
+def test_setting_delete_writes_audit_event_and_removes_the_key():
+    """B7 (3A-725): DELETE /settings/{key} is the one-tap rollback for
+    conversational setup — it removes a key a proposal created. The
+    audit event names the key only, never the value."""
+    factory, _subject, previous_factory, previous_resolver = _environment()
+    try:
+        client = TestClient(app, raise_server_exceptions=False)
+        business = client.post(
+            "/api/v1/businesses", json={"name": "Settings Delete", "currency_code": "EGP"}
+        )
+        assert business.status_code == 201, business.text
+        business_id = UUID(business.json()["id"])
+        base = f"/api/v1/businesses/{business_id}"
+
+        created = client.put(f"{base}/settings/rollback_probe", json={"setting_value": "v1"})
+        assert created.status_code == 200, created.text
+        deleted = client.delete(f"{base}/settings/rollback_probe")
+        assert deleted.status_code == 204, deleted.text
+        events = _events(factory, business_id)
+        by_action = {event.action: event for event in events}
+        assert set(by_action) == {"setting.created", "setting.deleted"}
+        assert by_action["setting.deleted"].change_summary == "Setting rollback_probe deleted"
+        assert "v1" not in (by_action["setting.deleted"].change_summary or "")
+
+        # A second delete finds nothing.
+        missing = client.delete(f"{base}/settings/rollback_probe")
+        assert missing.status_code == 404, missing.text
+    finally:
+        _restore(previous_factory, previous_resolver)
+
+
+def test_setting_delete_denied_for_staff():
+    factory, subject, previous_factory, previous_resolver = _environment()
+    try:
+        client = TestClient(app, raise_server_exceptions=False)
+        business = client.post(
+            "/api/v1/businesses", json={"name": "Settings Delete Denied", "currency_code": "EGP"}
+        )
+        assert business.status_code == 201, business.text
+        business_id = UUID(business.json()["id"])
+        base = f"/api/v1/businesses/{business_id}"
+        created = client.put(f"{base}/settings/keep_me", json={"setting_value": "v1"})
+        assert created.status_code == 200, created.text
+
+        with factory() as session:
+            session.add(
+                BusinessMembership(
+                    business_id=business_id,
+                    user_subject="settings-staff",
+                    role=MembershipRole.STAFF,
+                )
+            )
+            session.commit()
+        subject["value"] = "settings-staff"
+        denied = client.delete(f"{base}/settings/keep_me")
+        assert denied.status_code == 403, denied.text
+        events = _events(factory, business_id)
+        assert {event.action for event in events} == {"setting.created"}
+    finally:
+        _restore(previous_factory, previous_resolver)
+
+
 def test_rejected_and_denied_setting_writes_leave_no_audit_event():
     factory, subject, previous_factory, previous_resolver = _environment()
     try:

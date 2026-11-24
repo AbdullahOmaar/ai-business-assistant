@@ -125,6 +125,7 @@ All paths below inherit the business ID and require a trusted principal plus act
 | POST | `/notifications` | OWNER only; creation may trigger downstream delivery |
 | GET | `/notifications` | Membership required; filter by business |
 | PUT | `/settings/{setting_key}` | OWNER only; setting key validated; audit event written since B1 (3A-703) — `setting.created`/`setting.updated`, key named, value never copied |
+| DELETE | `/settings/{setting_key}` | OWNER only; one-tap rollback for conversational setup (B7, 3A-725) — removes a key a proposal created; audit event `setting.deleted`, key named, value never copied |
 | GET | `/reports/summary` | Membership required; aggregates scoped by business and currency |
 | GET | `/exports/{entity_type}.csv` | OWNER only; supported export data scoped by business and CSV cells formula-neutralized |
 | POST | `/imports/{entity_type}.csv` | OWNER only; bounded CSV input, schema/row validation, business-scoped writes |
