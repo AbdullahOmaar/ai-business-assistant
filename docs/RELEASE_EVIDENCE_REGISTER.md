@@ -69,3 +69,9 @@ manually from the repo root after a deploy.
 5. A divergence the smoke reports is recorded in this register the
    moment it is seen; a run that passes all flows but shows a
    divergence still exits non-zero.
+6. A rollback is recorded in this register the same day, with what
+   was rolled back, why, and the smoke result after it
+   (`docs/ROLLBACK_RUNBOOK.md`).
+7. Every migration ships with its downgrade + rollback note, and its
+   applied revision is recorded with the deploy
+   (`docs/MIGRATION_POLICY.md`).

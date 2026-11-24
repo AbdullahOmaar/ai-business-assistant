@@ -53,6 +53,14 @@ elif [[ "$*" == *"current_database()"* ]]; then
   fi
 elif [[ "$*" == *"SELECT count(*) FROM ("* ]]; then
   printf '%s\n' "${FAKE_OBJECT_COUNT:-0}"
+elif [[ "$*" == *"information_schema.tables"* ]]; then
+  if [[ "$1" == "$SOURCE_DATABASE_URL" ]]; then
+    printf '%s\n' "${FAKE_TABLE_COUNT_SOURCE:-${FAKE_TABLE_COUNT:-3}}"
+  else
+    printf '%s\n' "${FAKE_TABLE_COUNT_RESTORE:-${FAKE_TABLE_COUNT:-3}}"
+  fi
+elif [[ "$*" == *"alembic_version"* ]]; then
+  printf '0011_report_indexes\n'
 else
   echo 'FAIL: unexpected psql query' >&2
   exit 98
@@ -87,3 +95,71 @@ fi
 grep -q 'Restore target is not empty' "$tmp/stderr"
 [[ ! -e "${nonempty}.gpg" ]]
 echo 'PASS: non-empty restore target is rejected'
+
+# Happy path (stubbed): dump + encrypt + decrypt + restore + table-count
+# parity + timing evidence. The guards above run with failing command
+# stubs; here the stubs succeed so the full drill runs end to end.
+cat > "$tmp/bin/pg_dump" <<'PG_DUMP_STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+for arg in "$@"; do
+  case "$arg" in
+    --file=*) : > "${arg#--file=}" ;;
+  esac
+done
+PG_DUMP_STUB
+cat > "$tmp/bin/pg_restore" <<'PG_RESTORE_STUB'
+#!/usr/bin/env bash
+exit 0
+PG_RESTORE_STUB
+cat > "$tmp/bin/gpg" <<'GPG_STUB'
+#!/usr/bin/env bash
+set -euo pipefail
+output=""
+prev=""
+for arg in "$@"; do
+  if [[ "$prev" == "--output" ]]; then output="$arg"; fi
+  prev="$arg"
+done
+[[ -n "$output" ]] && : > "$output"
+GPG_STUB
+cat > "$tmp/bin/sha256sum" <<'SHA_STUB'
+#!/usr/bin/env bash
+printf 'deadbeef  %s\n' "$1"
+SHA_STUB
+chmod +x "$tmp/bin/pg_dump" "$tmp/bin/pg_restore" "$tmp/bin/gpg" "$tmp/bin/sha256sum"
+
+run_drill() {
+  env SOURCE_DATABASE_URL='postgresql://source/db' \
+    RESTORE_DATABASE_URL='postgresql://restore/db' \
+    BACKUP_PATH="$1" BACKUP_PASSPHRASE='test-only' \
+    CONFIRM_ISOLATED_RESTORE_TARGET=YES \
+    FAKE_PSQL_MODE="${FAKE_PSQL_MODE:-distinct}" \
+    FAKE_OBJECT_COUNT="${FAKE_OBJECT_COUNT:-0}" \
+    FAKE_TABLE_COUNT_SOURCE="${FAKE_TABLE_COUNT_SOURCE:-3}" \
+    FAKE_TABLE_COUNT_RESTORE="${FAKE_TABLE_COUNT_RESTORE:-3}" \
+    PATH="$tmp/bin:$PATH" \
+    bash "$backup_script" >"$tmp/stdout" 2>"$tmp/stderr"
+}
+
+happy="$tmp/happy-path/backup"
+if ! run_drill "$happy"; then
+  echo 'FAIL: stubbed happy-path drill did not pass' >&2
+  cat "$tmp/stderr" >&2
+  exit 1
+fi
+grep -q 'Restore drill passed' "$tmp/stdout"
+grep -q '^DRILL TABLES: source=3 restored=3$' "$tmp/stdout"
+grep -q '^DRILL TIMING: dump=[0-9]*s restore=[0-9]*s total=[0-9]*s$' "$tmp/stdout"
+[[ -e "${happy}.gpg" ]]
+[[ -e "${happy}.gpg.sha256" ]]
+echo 'PASS: stubbed happy-path drill passes with table-count parity and timing evidence'
+
+# A table-count mismatch between source and restored database fails the drill.
+mismatch="$tmp/mismatch/backup"
+if FAKE_TABLE_COUNT_RESTORE=2 run_drill "$mismatch"; then
+  echo 'FAIL: table-count mismatch was accepted' >&2
+  exit 1
+fi
+grep -q 'does not match source' "$tmp/stderr"
+echo 'PASS: table-count mismatch fails the drill'
