@@ -66,3 +66,26 @@ None of these is a pricing decision: the commercial model and the
 price itself remain the owner's call (plan decision point 3). This
 guide only states what the product must do for the comparison to
 be honest.
+
+## Addendum — independent cross-check (2026-11-25)
+
+The column list above was cross-checked with **Gemini**
+(`gemini-3.1-flash-lite`, via the company AI-tools registry,
+3A-380), which proposed 8 standard SMB capabilities outside the
+list. Each was verified against the code before being recorded:
+
+- **New verified gaps (absent — zero references in the backend):**
+  quotes/estimates (pre-order documents); customer/vendor
+  statement generation (periodic balance summaries); bank feeds /
+  bank reconciliation.
+- **Folded into existing columns:** landed-cost allocation
+  (freight/duties into inventory value) belongs to the
+  valuation/COGS gap; FX gain/loss on multi-currency settlement
+  is a missing column adjacent to it (currencies are kept
+  separate everywhere today, so no gain/loss is ever computed).
+- **Already planned, not new:** inventory adjustments / stock
+  takes (plan task C5); chart of accounts / general ledger (plan
+  task C1, gated on the owner's T37 decision).
+- **Rejected after verification:** user roles & permission
+  controls — already shipped (the route × role × tenant matrix);
+  the suggestion did not survive contact with the code.
