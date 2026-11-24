@@ -6,7 +6,7 @@
 - **Anomaly detection:** pure rules in `backend/app/audit_anomaly.py` (R1 destructive burst ≥3/10min, R2 mass export ≥3/60min, R3 off-hours per business timezone, R4 one actor in ≥3 businesses/60min, R5 settings churn ≥10/60min) + `scripts/audit_anomaly_report.py` (DATABASE_URL, never production directly; exit 0 on a produced report). Honest limit documented: denied requests write no AuditEvent, so repeated denials are invisible to the detector (platform security logs only).
 - **Docs:** `docs/PAGE_INTEGRITY_AND_ANOMALY.md` (live inventory + CSP finding + smoke flow + rules + weekly / pre-release review cadence).
 - **NOT deployed:** no release markers — the vercel.json tightening reaches production with the next grouped web release; the anomaly report is a manager-side weekly run.
-- **Next in the queue (prepared):** B6 (assistant write-governance + role-bounded execution + computer-use policy — 14h) — issue to be created as Backlog before B5 closes.
+- **Next in the queue (prepared):** B6 (assistant write-governance + role-bounded execution + computer-use policy — 14h) — issue **3A-724** created as Backlog (Phase 2 label) before B5 closes; starts after B5 closes.
 
 ## Phase 2 — B4: privacy promise + who-sees-what review + ZDR/sovereignty (Linear 3A-722) — 2026-11-24 ~21:17 EET (PR #475 MERGED `61ffb76`, 3A-722 CLOSED Done «فعلي: 1 ساعة»)
 
