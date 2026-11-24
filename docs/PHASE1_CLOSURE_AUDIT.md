@@ -135,6 +135,43 @@ Round-2 review (3A-445) debts, status after the 1.13.0 release:
   correction), 3 (the 7 partial screens + partial rules batch) and 6
   (3A-267 delivery proof).
 
+## Addendum 3 — 2026-11-24 ~03:00 EET (blocker 3 resolved — 3A-696 merged)
+
+- **Blocker 3 (the 7 partial screens + partial rules batch) — RESOLVED.**
+  Linear 3A-696, «تقدير: 10 ساعة», **«فعلي: 1 ساعة»** (most of the batch
+  verified already-done by the verification pass before any code was
+  written). Executed as three stacked PRs, candidate version **1.14.0**,
+  merged by the independent QA/review line in order and verified by this
+  chat via `gh pr view` (state + mergeCommit) before the issue was
+  closed:
+  - PR #457 (G1) — MERGED `29b47c6` — foldable filter panels: the
+    `aba-filter-bar` `foldExtras` mode, invoices + stock-movement filters
+    fold behind the filter button with an active-filter summary, and
+    purchasing gains a filter bar (status + supplier).
+  - PR #458 (U03/G5/G2) — MERGED `5f417c7` — products tools unified on
+    the customers pattern; invoice-card amounts glued to their currency;
+    the three export buttons and the six purchasing primaries gain icons.
+    U04 export closed by evidence with no change (the 40px trim is the
+    register's «تصغير», already applied).
+  - PR #459 (G7) — MERGED `9157d37` — list scroll save/restore for
+    purchasing and products, copied from the customer workspace (T18
+    Slice U02); invoices need no change (drawer over a never-unmounted
+    list).
+- **Verified already-done by the 3A-696 verification pass (no code
+  touched):** U04 compact table + title, U08 detail reorganisation +
+  localised activity, U09 warnings separation, G4 skeletons everywhere,
+  G5 in purchasing, U07 email wrap, U11 form widths, G7 for invoices.
+- **Final evidence:** frontend unit suite **790/790**; production build
+  Initial total **689.31 kB** (under the ≤690 kB line); no backend
+  changes in the batch. Main head after the chain: `9157d37`.
+- **What still blocks Phase 1 closure:** blocker 1 (U12–U23 owner
+  definition), blocker 2 (criterion correction — follows the owner's
+  U12–U23 decision), blocker 6 (3A-267 delivery proof — manager's call),
+  plus the criterion-3 residuals already classified as Phase 2 planning
+  (account/business deletion, RUM/Web Vitals, contract/mutation/fault
+  injection). G3 font embedding stays blocked on owner-supplied font
+  files (3A-416). **Phase 1 is still NOT closable.**
+
 ## Live evidence gathered for this audit (2026-11-23 ~18:00 EET)
 
 - API `/version` 1.13.0 / commit `b721905`; `/docs`, `/openapi.json`,

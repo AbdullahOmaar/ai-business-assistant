@@ -1,3 +1,10 @@
+## Version 1.14.0 candidate — 3A-696 Phase 1 closure batch CLOSED (Linear 3A-696) — 2026-11-24 (merged, NOT deployed)
+
+- **Closed Done 2026-11-24 ~03:00 EET, «فعلي: 1 ساعة»** (vs «تقدير: 10 ساعة»). All three stacked PRs merged by the independent QA/review line and verified via `gh pr view` (state + mergeCommit) before closing: **#457** G1 `29b47c6`, **#458** U03/G5/G2 `5f417c7`, **#459** G7 `9157d37`. Main head `9157d37`, candidate version 1.14.0. Blocker 3 of the Phase 1 closure audit is resolved (Addendum 3 in `docs/PHASE1_CLOSURE_AUDIT.md`).
+- **Final evidence:** frontend 790/790; production build Initial total 689.31 kB; no backend changes.
+- **Phase 1 still NOT closable** — remaining blockers are decisions, not code: U12–U23 (owner), criterion correction (follows U12–U23), 3A-267 delivery proof (manager), G3 font files (owner, 3A-416).
+- **Next:** production release of 1.14.0 stays a manager decision (grouped release discipline); this closeout PR (audit Addendum 3 + this checkpoint) is docs-only, no release markers.
+
 ## Version 1.14.0 candidate — 3A-696 Phase 1 closure batch, part 3: G7 scroll preservation (Linear 3A-696) — 2026-11-24 (NOT merged, NOT deployed)
 
 - **Candidate:** branch `aiba/closure-g7-3a-696` stacked on part 2 (`aiba/closure-u03-g2-3a-696`); same 1.14.0 unit, no further version bump. PR #459.
