@@ -1,4 +1,13 @@
-## Phase 2 — B3: account/business deletion + verifiable full export (Linear 3A-721) — 2026-11-24 ~20:35 EET (PR pending QA review)
+## Phase 2 — B4: privacy promise + who-sees-what review + ZDR/sovereignty (Linear 3A-722) — 2026-11-24 ~21:17 EET (PR pending QA review)
+
+- **Sixth Phase 2 execution task, started immediately after B3 closed per the sequencing rule** («فيز 2 — B4: وعد الخصوصية + مراجعة «من يرى ماذا» + عدم الاحتفاظ وسيادة البيانات», تقدير: 12 ساعة, In Progress).
+- **Promise `docs/PRIVACY_PROMISE.md`:** final publishable text (Arabic + English) — only claims the code proves: never sold/shared/used to train; platform team sees workspace metadata only; the assistant reads at most 20 issued invoices + 20 expenses per question and stores nothing; full export + real deletion; the demo account stated as a public-by-design exception. Publication itself is the owner's «انشر» decision — this task prepares text + proof, it does not publish.
+- **Review `docs/PRIVACY_REVIEW.md`:** the who-sees-what map read from the code (roles × data classes) + the assistant's per-question data flow (bounded 20+20, role-filtered expenses, client-supplied history, nothing persisted server-side) + the third-party table (Firebase identity only; Neon is the DB; Vercel hosts; Sentry no-PII; provider gets per-question records only; demo limiter stores a hash, not the raw IP) + the ZDR/sovereignty position (no copies outside the business DB; sovereignty partial — third-party managed services) + the promise-vs-code check table.
+- **Gaps tracked, not hidden:** GAP-1 provider retention terms unverified (manager — verify before any marketing ZDR claim); GAP-2 data residency not pinned (manager — Neon + Vercel regions into ENVIRONMENT_PARITY.md); GAP-3 demo boundary (already handled in the promise text).
+- **NOT deployed:** no release markers — docs only; no production deploy in this task.
+- **Next in the queue (prepared):** B5 (Page Integrity + audit-log anomaly — 10h) — issue to be created as Backlog before B4 closes.
+
+## Phase 2 — B3: account/business deletion + verifiable full export (Linear 3A-721) — 2026-11-24 ~20:35 EET (PR #474 MERGED `74840de`, 3A-721 CLOSED Done «فعلي: 1 ساعة»)
 
 - **Fifth Phase 2 execution task, started immediately after B2 closed per the sequencing rule** («فيز 2 — B3: حذف الحساب/النشاط + تصدير البيانات الكامل القابل للتحقق», تقدير: 14 ساعة, In Progress).
 - **Business deletion (soft, immediate, audited):** `DELETE /businesses/{id}` — owner only + typed name confirmation (422 on mismatch); flips `is_active=False` + stamps the new `deleted_at` column (migration `0012_business_deleted_at`, single Alembic head) and writes `business.deleted`. Access ends at once everywhere because `authorize_membership` already requires an active business (workspace, API, extended routes, assistant).
@@ -8,7 +17,7 @@
 - **Proof:** new `test_business_deletion_export.py` (5 tests) + purge tests (3) + matrix rows for both business routes (91 routes; `/me` excluded as non-business-scoped with dedicated coverage). Backend 518 passed locally, frontend green, Ruff zero. Audit labels + filters added for the three new actions.
 - **Deferred, explicitly:** the settings-screen UI for export/delete (buttons + confirm dialog in the app shell) — the API is complete; the UI hook belongs with the experience-stage work and is flagged to the manager rather than rushed into the shell.
 - **NOT deployed:** no release markers — reaches production with the next grouped API release, which must apply migration 0012 (manager's build command) as part of that release.
-- **Next in the queue (prepared):** B4 (privacy promise + review + zero-data-retention/sovereignty — 12h) — issue **3A-722** created as Backlog (Phase 2 label) before B3 closes; starts after B3 closes.
+- **Next in the queue:** B4 (privacy promise + review + zero-data-retention/sovereignty — 12h) — **3A-722** started immediately after B3 closed per the sequencing rule; its checkpoint is the section above.
 
 ## Phase 2 — B2: pen-test program (Linear 3A-704) — 2026-11-24 ~20:16 EET (PR #473 MERGED `fe874af`, 3A-704 CLOSED Done «فعلي: 1 ساعة»)
 
