@@ -1,4 +1,13 @@
-## Phase 2 — B1: independent security verification + 3A-417 (Linear 3A-703) — 2026-11-24 ~19:40 EET (PR pending QA review)
+## Phase 2 — B2: pen-test program (Linear 3A-704) — 2026-11-24 ~20:16 EET (PR pending QA review)
+
+- **Fourth Phase 2 execution task, started immediately after B1 closed per the sequencing rule (manager decision 2026-11-24 ~19:26 EET)** («فيز 2 — B2: برنامج اختبار الاختراق (نطاق + تحضير + تنفيذ داخلي أول)», تقدير: 12 ساعة, In Progress). External execution is an OWNER decision (spend) — not started, not quoted.
+- **Program doc `docs/PENTEST_PROGRAM.md`:** scope = B1's 11 threats; rules of engagement (disposable targets only, no production data/accounts, stop conditions, evidence-before-claims, findings become tracked work); internal-round definition + cadence (before each grouped release / after security-relevant changes / at least monthly in Phase 2); external decision pack (scope + what internal rounds cover + quotes missing — manager obtains 2–3 before public launch).
+- **Round 1 executed `docs/PENTEST_ROUND_2026-11-24.md`:** gitleaks working tree + full history (2,010 commits) 0 findings + positive control (realistic fake GitHub PAT caught, rule `github-pat`); pip-audit no known vulnerabilities; npm audit SKIP (sandbox registry policy — CI job is the enforcement); security tests 87 passed / 2 skipped; frontend 809/809; live smoke 10/10 (web 1.17.0 @ `2529a70`, API 1.13.0 divergence stands). **Findings: none.** Working-tree scan first flagged 3 strings in gitignored scratch (stale `frontend/dist` build output + compiled `.pyc` of the fake-token test) — deleted, re-scan 0, config NOT widened for them.
+- **Repeatable script `scripts/internal_security_round.sh`:** gitleaks + pip-audit + npm audit + security tests + smoke (--live optional); per-check PASS/FAIL/SKIP, exit non-zero on any FAIL. Validated end-to-end: 4 PASS, 1 SKIP, 0 failures.
+- **NOT deployed:** no release markers — docs + a script; no production deploy in this task.
+- **Next in the queue (prepared):** B3 (account deletion + full export — 14h) — issue **3A-721** created as Backlog (Phase 2 label) before B2 closes; starts after B2 closes.
+
+## Phase 2 — B1: independent security verification + 3A-417 (Linear 3A-703) — 2026-11-24 ~19:40 EET (PR #472 MERGED `2529a70`, 3A-703 CLOSED Done «فعلي: 1 ساعة»)
 
 - **Third Phase 2 execution task, started by manager decision 2026-11-24 ~19:26 EET** («فيز 2 — B1: حملة التحقق الأمني المستقل + خطة اكتمال التحقق الأمني (3A-417)», تقدير: 12 ساعة, In Progress). The manager's sequencing rule from the same decision: sequential Phase 2 tasks now start immediately one after another without waiting for a signal (owner-reserved / irreversible-production steps still stop and ask).
 - **3A-417 item 1 — settings audit gap FIXED:** `PUT /settings/{setting_key}` now writes `setting.created`/`setting.updated` AuditEvents in the same transaction (key named, value never copied); frontend labels + audit-workspace filters added; `backend/tests/test_settings_audit_events.py` (2 tests).
@@ -6,7 +15,7 @@
 - **Campaign record:** `docs/SECURITY_VERIFICATION.md` (11-threat matrix with controls/verification/evidence/verifier per row; live smoke 2026-11-24 ~19:36 EET — security flows PASS, one transient demo-reads transport drop; backend 513 passed locally, frontend 809/809, Ruff zero). Inventory doc updated: both named open items struck through as closed by B1.
 - **Still open (honest):** authenticated production smoke with a real account (never run — manager/owner side); external pen test → B2 (owner decision on spend); physical-device/PWA/screen-reader acceptance.
 - **NOT deployed:** no release markers — one backend audit-behaviour change + tests + labels + docs; the audit change reaches production with the next grouped release.
-- **Next in the queue (prepared):** B2 (pen-test program — 12h) — issue **3A-704** created as Backlog (Phase 2 label) before B1 closes; external execution is an owner decision.
+- **Next in the queue:** B2 (pen-test program — 12h) — **3A-704** started immediately after B1 closed per the sequencing rule (manager decision 2026-11-24 ~19:26 EET); its checkpoint is the section above.
 
 ## Phase 2 — A2: backup/restore/rollback (Linear 3A-702) — 2026-11-24 ~18:56 EET (PR #471 MERGED `7a396a3`, 3A-702 CLOSED Done «فعلي: 1 ساعة»)
 
