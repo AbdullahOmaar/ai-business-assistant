@@ -6,7 +6,7 @@
 - **Tripwire test:** the assistant router exposes only `POST /chat` — adding an execution endpoint fails the suite until it is routed through the policy.
 - **Docs `docs/ASSISTANT_WRITE_GOVERNANCE.md`:** the full matrix (all 50 write endpoints classified), the second-approval design (propose → owner confirms an approval token bound to the exact payload → execute with an audit event naming asker + approver; payroll SoD is the precedent), and the computer-use policy — NOT permitted (no browser/OS control, no screenshots, no credential access; zero footprint in the code today; any future proposal is an owner decision).
 - **NOT deployed:** no release markers — policy + tests + docs only; no execution path exists or is built in this task.
-- **Next in the queue (prepared):** B7 (conversational setup with financial-numbers guard — 10h) — issue to be created as Backlog before B6 closes.
+- **Next in the queue (prepared):** B7 (conversational setup with financial-numbers guard — 10h) — issue **3A-725** created as Backlog (Phase 2 label) before B6 closes; starts after B6 closes.
 
 ## Phase 2 — B5: page integrity + audit-log anomaly (Linear 3A-723) — 2026-11-24 ~22:05 EET (PR #476 MERGED `5a870ed`, 3A-723 CLOSED Done «فعلي: 1 ساعة»)
 
