@@ -1,11 +1,21 @@
-## Phase 2 — B4: privacy promise + who-sees-what review + ZDR/sovereignty (Linear 3A-722) — 2026-11-24 ~21:17 EET (PR pending QA review)
+## Phase 2 — B5: page integrity + audit-log anomaly (Linear 3A-723) — 2026-11-24 ~22:05 EET (PR pending QA review)
+
+- **Seventh Phase 2 execution task, started immediately after B4 closed per the sequencing rule** («فيز 2 — B5: سلامة الصفحة + كشف الشذوذ في سجل التدقيق», تقدير: 10 ساعات, In Progress).
+- **Page integrity:** the live page's script inventory read from production (web 1.17.0): 2 same-origin hashed bundles + 1 inline bootstrap script pinned by a CSP sha256 hash, zero third-party scripts. The smoke gains flow `web-scripts` (11 flows now): fails on any third-party script, any unhashed bundle, any inline script not pinned by the CSP, a missing CSP, or `'unsafe-inline'`/wildcard in script-src; fetches each script src (HTTP 200 required); orphan CSP hashes are informational notes, not failures.
+- **Finding — one stale CSP hash:** the served CSP carried a second sha256 token matching no inline script on the page (leftover from a removed script). Harmless, removed from `frontend/vercel.json` in this PR; the tightening lands with the next grouped web release.
+- **Anomaly detection:** pure rules in `backend/app/audit_anomaly.py` (R1 destructive burst ≥3/10min, R2 mass export ≥3/60min, R3 off-hours per business timezone, R4 one actor in ≥3 businesses/60min, R5 settings churn ≥10/60min) + `scripts/audit_anomaly_report.py` (DATABASE_URL, never production directly; exit 0 on a produced report). Honest limit documented: denied requests write no AuditEvent, so repeated denials are invisible to the detector (platform security logs only).
+- **Docs:** `docs/PAGE_INTEGRITY_AND_ANOMALY.md` (live inventory + CSP finding + smoke flow + rules + weekly / pre-release review cadence).
+- **NOT deployed:** no release markers — the vercel.json tightening reaches production with the next grouped web release; the anomaly report is a manager-side weekly run.
+- **Next in the queue (prepared):** B6 (assistant write-governance + role-bounded execution + computer-use policy — 14h) — issue **3A-724** created as Backlog (Phase 2 label) before B5 closes; starts after B5 closes.
+
+## Phase 2 — B4: privacy promise + who-sees-what review + ZDR/sovereignty (Linear 3A-722) — 2026-11-24 ~21:17 EET (PR #475 MERGED `61ffb76`, 3A-722 CLOSED Done «فعلي: 1 ساعة»)
 
 - **Sixth Phase 2 execution task, started immediately after B3 closed per the sequencing rule** («فيز 2 — B4: وعد الخصوصية + مراجعة «من يرى ماذا» + عدم الاحتفاظ وسيادة البيانات», تقدير: 12 ساعة, In Progress).
 - **Promise `docs/PRIVACY_PROMISE.md`:** final publishable text (Arabic + English) — only claims the code proves: never sold/shared/used to train; platform team sees workspace metadata only; the assistant reads at most 20 issued invoices + 20 expenses per question and stores nothing; full export + real deletion; the demo account stated as a public-by-design exception. Publication itself is the owner's «انشر» decision — this task prepares text + proof, it does not publish.
 - **Review `docs/PRIVACY_REVIEW.md`:** the who-sees-what map read from the code (roles × data classes) + the assistant's per-question data flow (bounded 20+20, role-filtered expenses, client-supplied history, nothing persisted server-side) + the third-party table (Firebase identity only; Neon is the DB; Vercel hosts; Sentry no-PII; provider gets per-question records only; demo limiter stores a hash, not the raw IP) + the ZDR/sovereignty position (no copies outside the business DB; sovereignty partial — third-party managed services) + the promise-vs-code check table.
 - **Gaps tracked, not hidden:** GAP-1 provider retention terms unverified (manager — verify before any marketing ZDR claim); GAP-2 data residency not pinned (manager — Neon + Vercel regions into ENVIRONMENT_PARITY.md); GAP-3 demo boundary (already handled in the promise text).
 - **NOT deployed:** no release markers — docs only; no production deploy in this task.
-- **Next in the queue (prepared):** B5 (Page Integrity + audit-log anomaly — 10h) — issue **3A-723** created as Backlog (Phase 2 label) before B4 closes; starts after B4 closes.
+- **Next in the queue:** B5 (Page Integrity + audit-log anomaly — 10h) — **3A-723** started immediately after B4 closed per the sequencing rule; its checkpoint is the section above.
 
 ## Phase 2 — B3: account/business deletion + verifiable full export (Linear 3A-721) — 2026-11-24 ~20:35 EET (PR #474 MERGED `74840de`, 3A-721 CLOSED Done «فعلي: 1 ساعة»)
 

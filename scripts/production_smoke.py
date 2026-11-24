@@ -10,7 +10,7 @@ in the environment labelled Production; the demo business is synthetic).
 
 Two modes:
   --repo-only   only the repo version-chain check (no network; safe in CI).
-  (default)     repo chain + 10 live smoke flows + divergence verdict.
+  (default)     repo chain + 11 live smoke flows + divergence verdict.
 
 Exit 0 only when every flow passes AND the repo chain, the live web
 version and the live API version agree. A divergence is reported, never
@@ -118,6 +118,78 @@ def divergence_lines(repo: str | None, web: str | None, api: str | None) -> list
     return lines
 
 
+# --- Page integrity (B5, 3A-723): what scripts does the served page load? ---
+
+def sha256_b64(text: str) -> str:
+    """The base64 SHA-256 of a string, as a CSP hash token carries it."""
+    import base64
+    import hashlib
+
+    return base64.b64encode(hashlib.sha256(text.encode("utf-8")).digest()).decode()
+
+
+def parse_page_scripts(html: str) -> dict[str, list[str]]:
+    """Split a page's <script> tags into external srcs and inline bodies."""
+    external: list[str] = []
+    inline: list[str] = []
+    for tag in re.finditer(r"<script\b[^>]*>(.*?)</script>", html, re.S | re.I):
+        src = re.search(r'\bsrc=["\']([^"\']+)["\']', tag.group(0), re.I)
+        if src:
+            external.append(src.group(1))
+        else:
+            inline.append(tag.group(1))
+    return {"external": external, "inline": inline}
+
+
+def check_page_scripts(html: str, csp: str | None) -> tuple[bool, list[str]]:
+    """Verify the served page's script inventory (B5 page integrity).
+
+    Fails on: any script loaded from another origin; any external
+    script that is not a same-origin hashed bundle (the Angular build
+    emits name-<HASH>.js); any inline script whose SHA-256 is not
+    pinned in the CSP; a missing CSP; or a script-src that allows
+    'unsafe-inline' or a wildcard. A CSP hash that matches no served
+    inline script is reported as an informational note only — the live
+    CSP lags the repo until the next web deploy, so an orphan hash is
+    not a live failure.
+    """
+    notes: list[str] = []
+    scripts = parse_page_scripts(html)
+    ok = True
+    for src in scripts["external"]:
+        if re.match(r"https?://", src, re.I):
+            notes.append(f"third-party script src: {src}")
+            ok = False
+        elif not re.match(r"^[A-Za-z0-9_.-]+-[A-Z0-9]{8}\.js$", src):
+            notes.append(f"external script is not a hashed bundle: {src}")
+            ok = False
+    if csp is None:
+        notes.append("no Content-Security-Policy header")
+        return False, notes
+    script_src = ""
+    match = re.search(r"script-src\s+([^;]+)", csp)
+    if match:
+        script_src = match.group(1)
+    if "'unsafe-inline'" in script_src or "*" in script_src:
+        notes.append("script-src allows 'unsafe-inline' or a wildcard")
+        ok = False
+    pinned = set(re.findall(r"'sha256-([^']+)'", script_src))
+    for body in scripts["inline"]:
+        digest = sha256_b64(body)
+        if digest not in pinned:
+            notes.append("inline script not pinned by a CSP sha256 hash")
+            ok = False
+    served = {sha256_b64(body) for body in scripts["inline"]}
+    for token in sorted(pinned - served):
+        notes.append(f"orphan CSP hash (matches no served inline script): sha256-{token[:12]}…")
+    if not notes:
+        notes.append(
+            f"{len(scripts['external'])} same-origin hashed script(s), "
+            f"{len(scripts['inline'])} inline script(s) pinned by CSP"
+        )
+    return ok, notes
+
+
 @dataclass
 class Flow:
     name: str
@@ -202,14 +274,14 @@ def _json(text: str) -> dict | list | None:
 def run_live(
     api_base: str, web_base: str, *, timeout: float = 120.0, skip_write: bool = False
 ) -> SmokeResult:
-    """Run the 10 live smoke flows against the production deployments."""
+    """Run the 11 live smoke flows against the production deployments."""
     result = SmokeResult()
 
     def record(name: str, ok: bool, seconds: float, detail: str) -> None:
         result.flows.append(Flow(name, ok, seconds, detail))
 
     # 1. Web shell + security headers (one response carries both checks).
-    status, headers, _text, secs = http("GET", f"{web_base}/", timeout=timeout)
+    status, headers, shell_html, secs = http("GET", f"{web_base}/", timeout=timeout)
     expected_headers = {
         "content-security-policy": None,
         "x-frame-options": "DENY",
@@ -230,7 +302,28 @@ def run_live(
         f"HTTP {status}" + (f"; missing/wrong headers: {', '.join(missing)}" if missing else "; security headers present"),
     )
 
-    # 2. Live web version from the served service worker.
+    # 2. Page integrity: the served page's script inventory (B5).
+    #    Every script src is fetched too — a missing or tampered bundle fails.
+    scripts_ok, script_notes = check_page_scripts(
+        shell_html, headers.get("content-security-policy")
+    )
+    fetched_ok = True
+    if status == 200:
+        for src in parse_page_scripts(shell_html)["external"]:
+            if re.match(r"https?://", src, re.I):
+                continue
+            fetch_status, _h, _t, _s = http("GET", f"{web_base}/{src.lstrip('/')}", timeout=timeout)
+            if fetch_status != 200:
+                fetched_ok = False
+                script_notes.append(f"script src did not return 200: {src} (HTTP {fetch_status})")
+    record(
+        "web-scripts",
+        status == 200 and scripts_ok and fetched_ok,
+        secs,
+        "; ".join(script_notes) if script_notes else f"HTTP {status}",
+    )
+
+    # 3. Live web version from the served service worker.
     status, _headers, text, secs = http("GET", f"{web_base}/sw.js", timeout=timeout)
     match = re.search(r"CACHE_NAME\s*=\s*'aba-shell-v([^-']+)-([0-9a-f]+)'", text)
     if match:
@@ -242,7 +335,7 @@ def run_live(
         f"HTTP {status}; CACHE_NAME v{result.web_version or '?'} commit {result.web_commit or '?'}",
     )
 
-    # 3. API liveness (process only; does not imply database readiness).
+    # 4. API liveness (process only; does not imply database readiness).
     status, _headers, text, secs = http("GET", f"{api_base}/health", timeout=timeout)
     record(
         "api-health",
@@ -251,7 +344,7 @@ def run_live(
         f"HTTP {status}",
     )
 
-    # 4. Live API version.
+    # 5. Live API version.
     status, _headers, text, secs = http("GET", f"{api_base}/version", timeout=timeout)
     body = _json(text)
     if isinstance(body, dict):
@@ -264,7 +357,7 @@ def run_live(
         f"HTTP {status}; version {result.api_version or '?'} commit {result.api_commit or '?'}",
     )
 
-    # 5. API readiness: a real SELECT 1 against the production database.
+    # 6. API readiness: a real SELECT 1 against the production database.
     status, _headers, text, secs = http("GET", f"{api_base}/readyz", timeout=timeout)
     record(
         "api-readyz",
@@ -273,7 +366,7 @@ def run_live(
         f"HTTP {status}",
     )
 
-    # 6. Interactive API docs must stay gated in production (404 by design).
+    # 7. Interactive API docs must stay gated in production (404 by design).
     docs_statuses = {}
     docs_secs = 0.0
     for path in ("/docs", "/redoc", "/openapi.json"):
@@ -287,7 +380,7 @@ def run_live(
         "; ".join(f"{path} {code}" for path, code in docs_statuses.items()),
     )
 
-    # 7. Demo session: mints a Firebase custom token; the rate-limit upsert
+    # 8. Demo session: mints a Firebase custom token; the rate-limit upsert
     #    is itself a committed write against the production database.
     #    180s + one retry: the first call once took ~116s on a cold
     #    serverless instance (Firebase Admin init).
@@ -307,7 +400,7 @@ def run_live(
     if not custom_token:
         return result
 
-    # 8. Exchange the custom token and read the demo business.
+    # 9. Exchange the custom token and read the demo business.
     #    The Firebase web API key is a public client key, read from the
     #    live public runtime-config.json.
     id_token = None
@@ -343,7 +436,7 @@ def run_live(
     if not id_token or not demo_business_id:
         return result
 
-    # 9. Authenticated workspace reads (customers + invoices).
+    # 10. Authenticated workspace reads (customers + invoices).
     auth_headers = {"Authorization": f"Bearer {id_token}"}
     started = time.monotonic()
     status_c, _h, text_c, _s = http(
@@ -365,7 +458,7 @@ def run_live(
         f"invoices HTTP {status_i} ({len(invoices) if isinstance(invoices, list) else '?'} rows)",
     )
 
-    # 10. Synthetic write cycle inside the demo business only: create a
+    # 11. Synthetic write cycle inside the demo business only: create a
     #    throwaway customer, verify it reads back, delete it in a finally.
     if skip_write:
         record("demo-write-cycle", True, 0.0, "skipped (--skip-write)")
@@ -416,7 +509,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--web", default=WEB_BASE, help="Production web base URL.")
     parser.add_argument("--repo-root", default=None, help="Repo root (default: parent of scripts/).")
     parser.add_argument("--repo-only", action="store_true", help="Only the repo version-chain check (no network).")
-    parser.add_argument("--skip-write", action="store_true", help="Skip the demo write cycle (flow 10).")
+    parser.add_argument("--skip-write", action="store_true", help="Skip the demo write cycle (flow 11).")
     parser.add_argument("--timeout", type=float, default=120.0, help="Per-request timeout in seconds.")
     args = parser.parse_args(argv)
 

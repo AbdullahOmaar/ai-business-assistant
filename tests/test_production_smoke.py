@@ -94,6 +94,74 @@ class TestDivergenceVerdict(unittest.TestCase):
         self.assertTrue(any("inconsistent" in line for line in lines))
 
 
+class TestPageIntegrity(unittest.TestCase):
+    """Page-integrity checks (B5, 3A-723): the served page's script inventory."""
+
+    def _csp(self, inline: str = "boot") -> str:
+        return (
+            "default-src 'self'; script-src 'self' "
+            f"'sha256-{smoke.sha256_b64(inline)}' 'unsafe-hashes'"
+        )
+
+    def _page(self, *, external: tuple[str, ...] = ("main-AB12CD34.js",), inline: str = "boot") -> str:
+        scripts = "".join(f'<script src="{src}" type="module"></script>' for src in external)
+        if inline is not None:
+            scripts += f"<script>{inline}</script>"
+        return f"<!doctype html><html><head>{scripts}</head><body></body></html>"
+
+    def test_clean_page_passes(self) -> None:
+        ok, notes = smoke.check_page_scripts(self._page(), self._csp())
+        self.assertTrue(ok)
+        self.assertEqual(
+            notes, ["1 same-origin hashed script(s), 1 inline script(s) pinned by CSP"]
+        )
+
+    def test_third_party_script_fails(self) -> None:
+        ok, notes = smoke.check_page_scripts(
+            self._page(external=("https://cdn.example.com/evil.js",)), self._csp()
+        )
+        self.assertFalse(ok)
+        self.assertTrue(any("third-party" in note for note in notes))
+
+    def test_unhashed_bundle_fails(self) -> None:
+        ok, notes = smoke.check_page_scripts(self._page(external=("main.js",)), self._csp())
+        self.assertFalse(ok)
+        self.assertTrue(any("not a hashed bundle" in note for note in notes))
+
+    def test_unpinned_inline_script_fails(self) -> None:
+        ok, _notes = smoke.check_page_scripts(self._page(inline="tampered"), self._csp())
+        self.assertFalse(ok)
+
+    def test_missing_csp_fails(self) -> None:
+        ok, notes = smoke.check_page_scripts(self._page(), None)
+        self.assertFalse(ok)
+        self.assertTrue(any("no Content-Security-Policy" in note for note in notes))
+
+    def test_unsafe_inline_in_script_src_fails(self) -> None:
+        csp = "script-src 'self' 'unsafe-inline'"
+        ok, notes = smoke.check_page_scripts(self._page(inline=None), csp)
+        self.assertFalse(ok)
+        self.assertTrue(any("unsafe-inline" in note for note in notes))
+
+    def test_orphan_csp_hash_is_a_note_not_a_failure(self) -> None:
+        # The live CSP carried a stale hash until the next web deploy;
+        # an orphan hash is reported, it does not fail the flow.
+        csp = (
+            "default-src 'self'; script-src 'self' "
+            f"'sha256-{smoke.sha256_b64('boot')}' 'sha256-{smoke.sha256_b64('gone')}' 'unsafe-hashes'"
+        )
+        ok, notes = smoke.check_page_scripts(self._page(), csp)
+        self.assertTrue(ok)
+        self.assertTrue(any("orphan CSP hash" in note for note in notes))
+
+    def test_parse_page_scripts_splits_src_and_inline(self) -> None:
+        parsed = smoke.parse_page_scripts(
+            '<script src="main-AB12CD34.js"></script><script>boot</script>'
+        )
+        self.assertEqual(parsed["external"], ["main-AB12CD34.js"])
+        self.assertEqual(parsed["inline"], ["boot"])
+
+
 class TestHttpHelper(unittest.TestCase):
     def _mock_response(self, status: int, body: str) -> MagicMock:
         response = MagicMock()
