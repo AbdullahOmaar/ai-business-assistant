@@ -1174,13 +1174,22 @@ def put_setting(business_id: UUID, setting_key: str, body: SettingInput,
             BusinessSetting.business_id == business_id,
             BusinessSetting.setting_key == safe_key,
         ).with_for_update()).one_or_none()
-        if item is None:
+        created = item is None
+        if created:
             item = BusinessSetting(business_id=business_id, setting_key=safe_key,
                                    setting_value=body.setting_value)
             session.add(item)
         else:
             item.setting_value = body.setting_value
             item.updated_at = datetime.now(UTC)
+        session.flush()
+        # 3A-417: a setting change is a business change — record it in the
+        # audit trail like every other mutation. The summary names the key
+        # only; setting values are never copied into the audit trail.
+        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
+            action="setting.created" if created else "setting.updated",
+            target_type="business_setting", target_id=str(item.id),
+            change_summary=f"Setting {safe_key} {'created' if created else 'updated'}"))
         session.flush()
         return item
     item = _commit(session, op)

@@ -11,7 +11,7 @@
 - **One designed exception:** `GET /api/v1/businesses` lists the *caller's own* memberships — there is no tenant to deny. The matrix pins the scoping property instead: outsider → `[]`, cross-tenant owner → only their own business, staff → only the business they belong to.
 - **Excluded from the matrix, with their own coverage:** `GET /health`, `GET /readyz`, `GET /version` (public operational), `POST /api/v1/businesses` (no tenant exists yet; principal-only), `POST /api/v1/invitations/accept` (token-based; `test_membership_invitations_api.py`), `POST /api/v1/demo/session` (public by design — the demo account's shared credentials are intentional; `test_demo_auth_api.py`).
 - **Rows this completion added to the tables below:** `GET /sales-returns`, `POST /sales-returns/{return_id}/credit-note`, `GET /credit-notes` (extended workflows). The invitation routes and the purchasing detail routes were already recorded in the 2026-11-16 delta section.
-- **What remains open (unchanged, honestly):** authenticated production smoke with a real account; per-route OWNER-positive cases beyond the targeted suites already cited below; the `PUT /settings/{setting_key}` business audit-event gap noted in its table row. No authorization policy, permission or route behaviour was changed by this completion — verification and documentation only.
+- **What remains open (unchanged, honestly):** authenticated production smoke with a real account. ~~Per-route OWNER-positive cases~~ and the ~~`PUT /settings/{setting_key}` business audit-event gap~~ were **closed by B1 (3A-703, 2026-11-24)**: the settings PUT now writes its AuditEvent (`setting.created`/`setting.updated`), and `test_owner_positive_matrix` proves every registry route (89/89) for its owner — see `docs/SECURITY_VERIFICATION.md`. No authorization policy, permission or route behaviour was changed by this completion — verification and documentation only.
 
 
 ## Denied-mutation regression evidence — merged successors and remaining scope
@@ -121,7 +121,7 @@ All paths below inherit the business ID and require a trusted principal plus act
 | POST | `/pricing-rules` | OWNER only |
 | POST | `/notifications` | OWNER only; creation may trigger downstream delivery |
 | GET | `/notifications` | Membership required; filter by business |
-| PUT | `/settings/{setting_key}` | OWNER only; setting key validated; business audit-event gap remains under review |
+| PUT | `/settings/{setting_key}` | OWNER only; setting key validated; audit event written since B1 (3A-703) — `setting.created`/`setting.updated`, key named, value never copied |
 | GET | `/reports/summary` | Membership required; aggregates scoped by business and currency |
 | GET | `/exports/{entity_type}.csv` | OWNER only; supported export data scoped by business and CSV cells formula-neutralized |
 | POST | `/imports/{entity_type}.csv` | OWNER only; bounded CSV input, schema/row validation, business-scoped writes |

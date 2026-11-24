@@ -1,4 +1,14 @@
-## Phase 2 — A2: backup/restore/rollback (Linear 3A-702) — 2026-11-24 ~18:56 EET (PR pending QA review)
+## Phase 2 — B1: independent security verification + 3A-417 (Linear 3A-703) — 2026-11-24 ~19:40 EET (PR pending QA review)
+
+- **Third Phase 2 execution task, started by manager decision 2026-11-24 ~19:26 EET** («فيز 2 — B1: حملة التحقق الأمني المستقل + خطة اكتمال التحقق الأمني (3A-417)», تقدير: 12 ساعة, In Progress). The manager's sequencing rule from the same decision: sequential Phase 2 tasks now start immediately one after another without waiting for a signal (owner-reserved / irreversible-production steps still stop and ask).
+- **3A-417 item 1 — settings audit gap FIXED:** `PUT /settings/{setting_key}` now writes `setting.created`/`setting.updated` AuditEvents in the same transaction (key named, value never copied); frontend labels + audit-workspace filters added; `backend/tests/test_settings_audit_events.py` (2 tests).
+- **3A-417 item 2 — owner-positive proof set CONSOLIDATED:** new `test_owner_positive_matrix` fires **every registry route (89/89)** as its owner (platform routes as a configured super admin) requiring 2xx — authorization now proven symmetric with the denial matrix. Findings surfaced: payroll separation of duties is real (409 "approved by a different owner than its creator"); Idempotency-Key headers enforced on stock movements + PO receipts; sales-return approval requires a recorded reason.
+- **Campaign record:** `docs/SECURITY_VERIFICATION.md` (11-threat matrix with controls/verification/evidence/verifier per row; live smoke 2026-11-24 ~19:36 EET — security flows PASS, one transient demo-reads transport drop; backend 513 passed locally, frontend 809/809, Ruff zero). Inventory doc updated: both named open items struck through as closed by B1.
+- **Still open (honest):** authenticated production smoke with a real account (never run — manager/owner side); external pen test → B2 (owner decision on spend); physical-device/PWA/screen-reader acceptance.
+- **NOT deployed:** no release markers — one backend audit-behaviour change + tests + labels + docs; the audit change reaches production with the next grouped release.
+- **Next in the queue (prepared):** B2 (pen-test program — 12h) — issue **3A-704** created as Backlog (Phase 2 label) before B1 closes; external execution is an owner decision.
+
+## Phase 2 — A2: backup/restore/rollback (Linear 3A-702) — 2026-11-24 ~18:56 EET (PR #471 MERGED `7a396a3`, 3A-702 CLOSED Done «فعلي: 1 ساعة»)
 
 - **Second Phase 2 execution task, started by manager decision 2026-11-24 ~18:51 EET** («فيز 2 — A2: النسخ والاسترداد والتراجع», تقدير: 12 ساعة, In Progress). Scope: a backup/restore drill program with RTO/RPO targets + a full rollback runbook + a zero-downtime (expand-only) migration policy.
 - **Drill script hardened `scripts/backup-restore-drill.sh`:** prints `DRILL TABLES` (source vs restored user-table count — a mismatch fails the drill) and `DRILL TIMING` (dump/restore/total seconds — the RTO evidence). Test file extended with a stubbed happy path (all 6 drill tests pass: 4 guards + happy path + mismatch case).
@@ -7,7 +17,7 @@
 - **Register:** standing rules 6–7 added (rollback recorded the same day; every migration's applied revision recorded with the deploy).
 - **Hard boundary, stated honestly:** a production-source drill cannot run from this chat — the production `DATABASE_URL` is a Vercel Sensitive variable, write-only and never readable; the quarterly production drill is a manager-side step with its prerequisites listed in the drill doc. No CI job may receive production secrets.
 - **NOT deployed:** no release markers on this PR — tooling + docs only; no production deploy is part of A2.
-- **Next in the queue (prepared):** B1 (independent security verification + 3A-417 — 12h) — issue **3A-703** created as Backlog (Phase 2 label) before A2 closes; starts after A2 closes.
+- **Next in the queue:** B1 (independent security verification + 3A-417 — 12h) — **3A-703** started by manager decision 2026-11-24 ~19:26 EET; its checkpoint is the section above.
 
 ## Phase 2 — A1: release-loop closure (Linear 3A-701) — 2026-11-24 ~17:45 EET (PR #470 MERGED `59f57e5`, 3A-701 CLOSED Done «فعلي: 1 ساعة»)
 
