@@ -298,6 +298,22 @@ jobs:
           python -m unittest discover -s tests -p 'test_github_actions_slack_failure.py' -v
           python -m unittest discover -s tests -p 'test_ci_validation_scope.py' -v
 
+  release-chain:
+    name: release-chain
+    needs: [detect-changes]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - name: Verify exact source SHA
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
+      - name: Verify repo version chain and smoke unit tests
+        run: |
+          python scripts/production_smoke.py --repo-only
+          python -m unittest discover -s tests -p 'test_production_smoke.py' -v
+
   backend-accounting:
     name: backend-accounting
     needs: [detect-changes]
@@ -614,11 +630,13 @@ jobs:
       - backend-container
       - authenticated-api-smoke
       - project-knowledge
+      - release-chain
       - secrets-scan
     steps:
       - name: Require every selected validation job to succeed
         env:
           DETECT: ${{ needs.detect-changes.result }}
+          CHAIN: ${{ needs.release-chain.result }}
           BACKEND: ${{ needs.backend-accounting.result }}
           BACKEND_REQUIRED: ${{ needs.detect-changes.outputs.backend_tests }}
           BACKEND_CONTAINER: ${{ needs.backend-container.result }}
@@ -639,6 +657,7 @@ jobs:
         run: |
           set -euo pipefail
           test "$DETECT" = "success" || { echo "::error::Change detection did not succeed: $DETECT"; exit 1; }
+          test "$CHAIN" = "success" || { echo "::error::release-chain did not succeed: $CHAIN"; exit 1; }
           test "$SECRETS" = "success" || { echo "::error::secrets-scan did not succeed: $SECRETS"; exit 1; }
           check_job() {
             name="$1"; result="$2"; required="$3"
