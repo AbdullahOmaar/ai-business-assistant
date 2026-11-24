@@ -1,3 +1,10 @@
+## Phase 1 closure complete — U12–U23 execution merged (2026-11-24 ~10:25 EET; paperwork PR pending QA review)
+
+- QA (independent review line) merged the full closure stack in order, each verified MERGED with its mergeCommit before closing anything: **PR #466 → `4189fc6`** (batch 1, 3A-698, U21+U22, 1.15.0), **PR #467 → `24779e7`** (batch 2, 3A-699, U12+U16+U14, 1.16.0), **PR #468 → `6b9a696`** (batch 3, 3A-700, U13+U15+U17+U20+U18+U19+U23, 1.17.0). Main head = `6b9a696`. Frontend tests 809/809 at the head; production build succeeds (689.97 kB).
+- **The Phase 1 exit criterion's inventory part is now complete**: U00–U24 fully executed. Issues 3A-698/699/700 closed Done, each «فعلي: 1 ساعة» (vs تقدير 5/14/21h — verification found most of the derivation already conforming).
+- Closure paperwork (this branch): the manager's criterion-correction section (restored verbatim from the worktree edit — it was lost in a reset during branch setup and re-applied from the captured diff, no wording change) + **Addendum 5** in `docs/PHASE1_CLOSURE_AUDIT.md` (blocker 1 fully resolved; follow-ups recorded, not blockers: U15 mark-read needs a backend batch; U20 structured summary needs a backend change; platform-account / new-account / device / screen-reader acceptance never run).
+- **NOT deployed**: no release markers were on any batch PR, so production still serves 1.14.0 web / 1.13.0 API as last verified. The grouped production release of 1.15.0–1.17.0 and the Phase 1 closure announcement are manager decisions.
+
 ## Version 1.17.0 candidate — Phase 1 closure batch 3 of 3: U13 team + U17 integrity + U20 platform admin + U18 health + U23 workspace creation (Linear 3A-700) — 2026-11-24 (NOT merged, NOT deployed)
 
 - **Stacked on batch 2** (branch `aiba/closure-u13-u23` on `aiba/closure-u12-u16-u14` / PR #467, candidate 1.16.0); this batch bumps the chain to 1.17.0. Verification-first: U19 needs nothing (all copy via the catalog); U15's search already rides the shared pattern and its read/unread concept needs a backend read flag — out of this presentation batch, recorded on the issue; U23's form was conforming except a missing in-flight guard.
