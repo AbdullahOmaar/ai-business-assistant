@@ -158,7 +158,7 @@ def gh_output(args: list[str]) -> tuple[int, str]:
 
 def notify() -> int:
     token = os.environ.get("SLACK_BOT_TOKEN", "")
-    channel = os.environ.get("SLACK_CHANNEL_ID", "C0CFWGM87HC")
+    channel = os.environ.get("SLACK_CHANNEL_ID", "C0CLH2M4MAQ")
     run_id = os.environ.get("GH_RUN_ID", "")
     repository = os.environ.get("GH_REPOSITORY", "AbdullahOmaar/ai-business-assistant")
 
