@@ -34,5 +34,5 @@ jobs:
           GH_HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
           GH_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
           SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-          SLACK_CHANNEL_ID: C0CFWGM87HC
+          SLACK_CHANNEL_ID: C0CLH2M4MAQ
         run: python scripts/ci/github_actions_slack_failure.py
