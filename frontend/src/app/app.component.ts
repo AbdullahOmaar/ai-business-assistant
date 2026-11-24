@@ -491,9 +491,8 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @if (tab === 'products' && business?.id) {
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ui.m_137u0ee')" [description]="t('ui.m_snu8sb')" />
-                @if (business?.role === 'owner') { <button class="secondary" type="button" (click)="exportCurrentList()"><aba-icon name="export" />{{ t('ui.m_nbsw3y') }}</button> }
                 <details class="aba-record-create" [open]="productCreateOpen" (toggle)="productCreateOpen = $any($event.target).open">
-                  <summary><span>{{ t('ui.m_1nbakc8') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
+                  <summary><span class="products-tool"><aba-icon name="add" />{{ t('ui.m_1nbakc8') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
                 <form #productForm="ngForm" class="inline-form" (ngSubmit)="productForm.valid && createProduct()">
                   <label>{{ t('ui.m_h0c2cm') }}<input #productNameModel="ngModel" [attr.aria-label]="t('ui.m_h0c2cm')" name="productName" [placeholder]="t('ui.m_h0c2cm')" required [(ngModel)]="productName" [attr.aria-invalid]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'true' : null" [attr.aria-describedby]="productNameModel.invalid && (productNameModel.touched || productForm.submitted) ? 'product-name-error' : null">
@@ -522,8 +521,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 
                   </div>
                 </details>
+                @if (business?.role === 'owner') { <button class="secondary products-tool" type="button" (click)="exportCurrentList()"><aba-icon name="export" />{{ t('ui.m_nbsw3y') }}</button> }
                 @if (productMessage) { <aba-state-message [kind]="productMessageKind" [description]="productMessage" /> }
-                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span>{{ t('ui.m_1wgx28b') }}</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_ps78ce')">
+                @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span><aba-icon name="import" />{{ t('ui.m_1wgx28b') }}</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_ps78ce')">
                   <aba-section-header [level]="3" [title]="t('ui.m_1wgx28b')" [description]="t('ui.m_1kaqi1p')" />
                   <input type="file" accept=".csv,text/csv" [attr.aria-label]="t('ui.m_1yr2ptt')" (change)="onImportFileSelected($event)" [disabled]="importLoading">
                   @if (importFileName) { <small>{{ importFileName }}</small> }
@@ -714,18 +714,18 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                         <div class="invoice-card-financials">
                           <div>
                             <small>{{ t('ui.m_l97slj') }}</small>
-                            <strong><bdi dir="ltr">{{ formatNumber(invoice.total) }}</bdi></strong>
+                            <strong><bdi dir="ltr">{{ formatNumber(invoice.total) }} {{ invoice.currency_code }}</bdi></strong>
                           </div>
                           <div>
                             <small>{{ t('ui.m_twygqw') }}</small>
                             <strong>@if (invoice.allocated_payments !== undefined) {
-                              <bdi dir="ltr">{{ formatNumber(invoice.allocated_payments) }}</bdi>
+                              <bdi dir="ltr">{{ formatNumber(invoice.allocated_payments) }} {{ invoice.currency_code }}</bdi>
                             } @else { — }</strong>
                           </div>
                           <div>
                             <small>{{ t('ui.m_1e1esfj') }}</small>
                             <strong>@if (invoice.status === 'issued' && invoice.outstanding_amount !== undefined) {
-                              <bdi dir="ltr">{{ formatNumber(invoice.outstanding_amount) }}</bdi>
+                              <bdi dir="ltr">{{ formatNumber(invoice.outstanding_amount) }} {{ invoice.currency_code }}</bdi>
                             } @else { — }</strong>
                           </div>
                         </div>
@@ -853,7 +853,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
             @if (tab === 'payments' && business.role === 'owner') {
               <section abaCard class="panel"><aba-section-header [title]="t('ui.m_3k0fux')" [description]="t('ui.m_cj3m99')">
-                  <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t('ui.m_1ouah2m') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length">{{ t('ui.m_nbsw3y') }}</button><button class="secondary" type="button" (click)="showPaymentForm = !showPaymentForm" [disabled]="paymentRetryPending">{{ showPaymentForm ? t('ui.m_pw64as') : t('ui.m_3k0fux') }}</button></div>
+                  <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t('ui.m_1ouah2m') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length"><aba-icon name="export" />{{ t('ui.m_nbsw3y') }}</button><button class="secondary" type="button" (click)="showPaymentForm = !showPaymentForm" [disabled]="paymentRetryPending">{{ showPaymentForm ? t('ui.m_pw64as') : t('ui.m_3k0fux') }}</button></div>
                 </aba-section-header>
                 @if (showPaymentForm || paymentRetryPending) {
                 <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="(paymentRetryPending || paymentForm.valid) && createPayment()">

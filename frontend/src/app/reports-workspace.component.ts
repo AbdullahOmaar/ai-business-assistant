@@ -6,6 +6,7 @@ import { LocalizationService } from './localization.service';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { CSV_FORMULA_TRIGGER_ASCII, escapeCsvFormulaPrefix } from './csv-export';
 import { reportLimitationKey } from './report-labels';
+import { AbaIconComponent } from './shared/ui/aba-icon.component';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
 import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
@@ -29,7 +30,7 @@ import { AbaDateRangeComponent } from './shared/ui/aba-date-range.component';
 @Component({
   selector: 'aba-reports-workspace',
   standalone: true,
-  imports: [CommonModule, FormsModule, AbaCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent, AbaRecordTableComponent, AbaDateRangeComponent],
+  imports: [CommonModule, FormsModule, AbaCardComponent, AbaSectionHeaderComponent, AbaStateMessageComponent, AbaRecordTableComponent, AbaDateRangeComponent, AbaIconComponent],
   // Default change detection, like the shell this was extracted from (and
   // like employee-payroll): the loaders assign plain fields after await, so
   // OnPush would leave the view stale. The newer signal workspaces use
@@ -60,7 +61,7 @@ import { AbaDateRangeComponent } from './shared/ui/aba-date-range.component';
   <form #agingForm="ngForm" class="inline-form aging-form" (ngSubmit)="agingForm.valid && loadReceivablesAging()"><label>{{ t('ui.m_tyw1lj') }}<input #agingAsOfControl="ngModel" type="date" name="agingAsOf" required [attr.aria-invalid]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'true' : null" [attr.aria-describedby]="agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted) ? 'aging-as-of-error' : null" [(ngModel)]="agingAsOf">@if (agingAsOfControl.invalid && (agingAsOfControl.touched || agingForm.submitted)) { <small id="aging-as-of-error" class="field-error" role="alert">{{ t('ui.m_4apqf4') }}</small> }</label><button class="primary" type="submit" [disabled]="agingLoading">{{ agingLoading ? t('ui.m_1rza5t5') : t('ui.m_1gsyti0') }}</button></form>
   @if (agingError) { <aba-state-message kind="error" [description]="agingError" /> }
   @if (agingReport) {
-    <div class="section-head"><p class="muted">{{ t('ui.m_vnv6l5') }} {{ agingReport.as_of_date }} · {{ agingReport.invoice_count }} {{ t('ui.m_pe8fvb') }}</p><button class="secondary" type="button" (click)="exportReceivablesAgingCsv()" [disabled]="!agingReport.invoices.length">{{ t('ui.m_nbsw3y') }}</button></div>
+    <div class="section-head"><p class="muted">{{ t('ui.m_vnv6l5') }} {{ agingReport.as_of_date }} · {{ agingReport.invoice_count }} {{ t('ui.m_pe8fvb') }}</p><button class="secondary" type="button" (click)="exportReceivablesAgingCsv()" [disabled]="!agingReport.invoices.length"><aba-icon name="export" />{{ t('ui.m_nbsw3y') }}</button></div>
     @for (summary of agingReport.by_currency; track summary.currency_code) {
       <article class="metric"><span>{{ t('ui.m_1dusybc') }} · {{ summary.currency_code }}</span><strong>{{ summary.total_outstanding }} {{ summary.currency_code }}</strong><div class="aging-buckets">@for (bucket of summary.buckets; track bucket.bucket) { <div><small>{{ agingBucketLabel(bucket.bucket) }}</small><strong>{{ bucket.outstanding_amount }} {{ summary.currency_code }}</strong></div> }</div></article>
     }

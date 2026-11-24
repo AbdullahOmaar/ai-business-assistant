@@ -2149,6 +2149,8 @@
  * with the label (16px, the same size as the statement-card action icons). */
 :root body .shell .customers-tool{display:inline-flex;align-items:center;gap:7px}
 :root body .shell .customers-tool aba-icon{width:16px;height:16px}
+:root body .shell .products-tool{display:inline-flex;align-items:center;gap:7px}
+:root body .shell .products-tool aba-icon{width:16px;height:16px}
 :root body .shell details.aba-record-secondary.csv-disclosure>summary>span{display:inline-flex;align-items:center;gap:7px;min-width:0}
 :root body .shell details.aba-record-secondary.csv-disclosure>summary aba-icon{width:16px;height:16px}
 :root body .shell details.aba-record-create>summary::-webkit-details-marker,:root body .shell details.aba-record-secondary>summary::-webkit-details-marker{display:none}

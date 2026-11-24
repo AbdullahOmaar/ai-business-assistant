@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';
+import { AbaIconComponent } from './shared/ui/aba-icon.component';
 import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
 import {
   ApiService,
@@ -25,7 +26,7 @@ type PurchaseAction = 'approve' | 'cancel';
 @Component({
   selector: 'aba-purchasing-workspace',
   standalone: true,
-  imports: [FormsModule, AbaFilterBarComponent, AbaSkeletonComponent],
+  imports: [FormsModule, AbaFilterBarComponent, AbaIconComponent, AbaSkeletonComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     <section class="purchasing-workspace" [attr.dir]="language() === 'ar' ? 'rtl' : 'ltr'" [attr.aria-label]="t('title')">
@@ -36,7 +37,7 @@ type PurchaseAction = 'approve' | 'cancel';
           <p class="pw__muted">{{ t('subtitle') }}</p>
         </div>
         @if (mode() === 'list') {
-          <button class="pw__primary" type="button" (click)="startCreate()" [disabled]="loading()">{{ t('newOrder') }}</button>
+          <button class="pw__primary" type="button" (click)="startCreate()" [disabled]="loading()"><aba-icon name="add" />{{ t('newOrder') }}</button>
         }
       </header>
       @if (success()) { <p class="pw__notice pw__notice--success" role="status">{{ success() }}</p> }
@@ -137,7 +138,7 @@ type PurchaseAction = 'approve' | 'cancel';
             }
             @if (formError()) { <p class="pw__notice pw__notice--error" role="alert">{{ formError() }}</p> }
             <div class="pw__actions">
-              <button class="pw__primary" type="submit" [disabled]="saving()">{{ saving() ? t('loading') : t('save') }}</button>
+              <button class="pw__primary" type="submit" [disabled]="saving()"><aba-icon name="check" />{{ saving() ? t('loading') : t('save') }}</button>
               <button class="pw__secondary" type="button" (click)="cancelEditor()" [disabled]="saving()">{{ t('cancel') }}</button>
             </div>
           </form>
@@ -170,15 +171,15 @@ type PurchaseAction = 'approve' | 'cancel';
             @if (isOwner()) {
               <div class="pw__actions">
                 @if (canEdit(order)) { <button class="pw__secondary" type="button" (click)="startEdit()">{{ t('edit') }}</button> }
-                @if (canApprove(order)) { <button class="pw__primary" type="button" (click)="requestAction('approve')">{{ t('approve') }}</button> }
+                @if (canApprove(order)) { <button class="pw__primary" type="button" (click)="requestAction('approve')"><aba-icon name="check" />{{ t('approve') }}</button> }
                 @if (canCancel(order)) { <button class="pw__danger" type="button" (click)="requestAction('cancel')">{{ t('cancelOrder') }}</button> }
                 <button class="pw__secondary" type="button" (click)="duplicateOrder()">{{ t('duplicateOrder') }}</button>
-                @if (canReceive(order)) { <button class="pw__primary" type="button" (click)="startReceipt()">{{ t('receive') }}</button> }
+                @if (canReceive(order)) { <button class="pw__primary" type="button" (click)="startReceipt()"><aba-icon name="document" />{{ t('receive') }}</button> }
               </div>
               @if (pendingAction()) {
                 <div class="pw__confirm" role="group">
                   <p>{{ confirmationPrompt() }}</p>
-                  <button class="pw__primary" type="button" (click)="confirmAction()" [disabled]="actionLoading()">{{ confirmationConfirmLabel() }}</button>
+                  <button class="pw__primary" type="button" (click)="confirmAction()" [disabled]="actionLoading()"><aba-icon name="check" />{{ confirmationConfirmLabel() }}</button>
                   <button class="pw__secondary" type="button" (click)="pendingAction.set(null)" [disabled]="actionLoading()">{{ confirmationCancelLabel() }}</button>
                 </div>
               }
@@ -195,7 +196,7 @@ type PurchaseAction = 'approve' | 'cancel';
                   }
                   @if (receiptError()) { <p class="pw__notice pw__notice--error" role="alert">{{ receiptError() }}</p> }
                   <div class="pw__actions">
-                    <button class="pw__primary" type="submit" [disabled]="actionLoading()">{{ t('submitReceipt') }}</button>
+                    <button class="pw__primary" type="submit" [disabled]="actionLoading()"><aba-icon name="check" />{{ t('submitReceipt') }}</button>
                     <button class="pw__secondary" type="button" (click)="cancelReceipt()" [disabled]="actionLoading()">{{ t('cancel') }}</button>
                   </div>
                 </form>
@@ -277,7 +278,8 @@ type PurchaseAction = 'approve' | 'cancel';
     .pw__actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
     .purchasing-workspace button{min-height:42px;padding:8px 12px;border:1px solid var(--aba-color-border-strong,#cbd5e1);border-radius:10px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033);font:inherit;font-size:12px;font-weight:750;cursor:pointer}
     .purchasing-workspace button:disabled{opacity:.55;cursor:wait}
-    .pw__primary{border-color:var(--aba-color-primary-strong,#0f766e)!important;background:var(--aba-color-primary-strong,#0f766e)!important;color:#fff!important}
+    .pw__primary{border-color:var(--aba-color-primary-strong,#0f766e)!important;background:var(--aba-color-primary-strong,#0f766e)!important;color:#fff!important;display:inline-flex;align-items:center;justify-content:center;gap:7px}
+    .pw__primary aba-icon{width:16px;height:16px}
     .pw__danger{border-color:#fecaca!important;background:#fff7f7!important;color:#b42318!important}
     .pw__back{justify-self:start}
     .pw__state{padding:22px;border:1px dashed var(--aba-color-border-strong,#cbd5e1);border-radius:12px;color:var(--aba-color-text-secondary,#64748b);text-align:center}
