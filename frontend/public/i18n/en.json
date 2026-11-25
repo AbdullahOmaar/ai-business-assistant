@@ -1182,7 +1182,11 @@
         "lines": "Lines",
         "allocations": "Allocations",
         "csv_text": "Data file",
-        "receive": "Receive"
+        "receive": "Receive",
+        "phone": "Phone",
+        "address": "Address",
+        "incurred_at": "Incurred at",
+        "vendor_name": "Vendor name"
       },
       "proposalPreview": "Proposal preview",
       "proposalEdit": "Edit",

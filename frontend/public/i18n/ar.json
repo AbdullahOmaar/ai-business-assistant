@@ -1182,7 +1182,11 @@
         "lines": "البنود",
         "allocations": "التخصيصات",
         "csv_text": "ملف البيانات",
-        "receive": "الاستلام"
+        "receive": "الاستلام",
+        "phone": "الهاتف",
+        "address": "العنوان",
+        "incurred_at": "تاريخ المصروف",
+        "vendor_name": "اسم المورّد"
       },
       "proposalPreview": "معاينة الاقتراح",
       "proposalEdit": "عدّل",
