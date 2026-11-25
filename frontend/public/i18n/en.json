@@ -1242,6 +1242,63 @@
       "micListening": "Listening…",
       "micError": "Couldn't start the microphone — check the permission and retry",
       "editInvalidValue": "Invalid value — check the field"
+    },
+    "assistantHistory": {
+      "title": "Conversation history",
+      "open": "History",
+      "close": "Close",
+      "empty": "No saved conversations yet — send a first message and the assistant will keep it here.",
+      "loading": "Loading history…",
+      "error": "Couldn't load the history. Try again.",
+      "resume": "Resume",
+      "itemMeta": "{{count}} messages · {{date}}",
+      "untitled": "Untitled conversation"
+    },
+    "assistantSettings": {
+      "title": "Assistant settings",
+      "open": "Settings",
+      "dialect": "Assistant dialect",
+      "dialectHint": "The chosen dialect applies to the morning brief.",
+      "dialectEgyptian": "Friendly Egyptian",
+      "dialectFormal": "Formal Arabic",
+      "dialectEnglish": "English",
+      "morningBrief": "Morning brief",
+      "morningBriefHint": "A daily summary from your real business data: overdue invoices, low stock and recurring invoices.",
+      "optOuts": "Actions without a second question",
+      "optOutsEmpty": "No waivers — a second approval is required for every sensitive action.",
+      "revoke": "Revoke",
+      "ownerOnly": "Owner only",
+      "saved": "Saved",
+      "loadError": "Couldn't load the settings.",
+      "saveError": "Couldn't save. Try again."
+    },
+    "assistantBrief": {
+      "title": "Morning brief",
+      "dismiss": "Dismiss",
+      "refresh": "Refresh",
+      "loading": "Preparing the morning brief…",
+      "error": "Couldn't load the morning brief.",
+      "overdue": "{{count}} overdue invoices",
+      "overdueItem": "{{invoiceNumber}} — {{outstanding}} {{currency}} ({{days}} days overdue)",
+      "lowStock": "{{count}} items running low",
+      "lowStockItem": "{{name}} — {{quantity}} left",
+      "lowStockOutItem": "{{name}} — out of stock",
+      "recurringDue": "{{count}} recurring invoices due tomorrow",
+      "recurringItem": "Recurring invoice every {{days}} days",
+      "salesGrowth": "Sales growth",
+      "growthItem": "{{currency}}: {{current}} (was {{previous}})",
+      "growthNew": "First week",
+      "nothingToDo": "Nothing urgent today"
+    },
+    "assistantPersistence": {
+      "proposalLabel": "Proposal",
+      "proposalProposed": "Proposed",
+      "proposalApproved": "Approved",
+      "proposalExecuting": "Executing…",
+      "proposalExecuted": "Executed",
+      "proposalExpired": "Expired",
+      "proposalRejected": "Cancelled",
+      "proposalUnknown": "Unknown state"
     }
   },
   "common": {

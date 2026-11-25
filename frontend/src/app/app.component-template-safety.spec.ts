@@ -397,7 +397,10 @@ test('chat send preserves retry draft behavior and keeps the existing API contra
   const start = assistantWorkspaceSource.indexOf('async sendChat(): Promise<void>');
   const end = assistantWorkspaceSource.indexOf('private message(error:', start);
   const method = assistantWorkspaceSource.slice(start, end);
-  assert.match(method, /this\.api\.chat\(requestContext\.workspaceId, question, history\)/);
+  // Slice 4: the send rejoins the persisted thread — the optional 4th
+  // argument carries the conversation id (undefined on the first turn,
+  // when the API creates the thread and returns its id).
+  assert.match(method, /this\.api\.chat\(requestContext\.workspaceId, question, history, this\.currentConversationId \?\? undefined\)/);
   assert.match(method, /this\.chatDraft = question/);
   assert.match(method, /onFinally: \(\) => \{\s*this\.chatSending = false;/);
   assert.doesNotMatch(method, /this\.api\.chat\(this\.business\.id/);
@@ -1622,8 +1625,11 @@ test('unapproved discount and tax rates remain read-only and saved values are pr
 
 test('AI assistant new-chat control resets only in-memory conversation state', () => {
   // 3A-351: the assistant tab lives in the deferred assistant workspace now.
+  // Slice the method body itself (to its closing brace), not to the next
+  // method — the Slice 4 loaders sit between startNewChat and the copy
+  // helper now and do call the API.
   const start = assistantWorkspaceSource.indexOf('startNewChat(): void');
-  const end = assistantWorkspaceSource.indexOf('async copyAssistantMessage(', start);
+  const end = assistantWorkspaceSource.indexOf('\n  }\n', start);
   const method = assistantWorkspaceSource.slice(start, end);
   assert.ok(method.includes('if (this.chatSending) return;'));
   assert.ok(method.includes('this.chatMessages = [];'));
@@ -1631,6 +1637,9 @@ test('AI assistant new-chat control resets only in-memory conversation state', (
   assert.ok(method.includes("this.chatError = '';"));
   assert.ok(method.includes('this.chatConfigurationMissing = false;'));
   assert.ok(method.includes('this.chatCopyStatus = null;'));
+  // Slice 4: a new chat also drops the persisted thread id, so the
+  // next send starts a fresh thread server-side.
+  assert.ok(method.includes('this.currentConversationId = null;'));
   assert.ok(!method.includes('this.api.'));
   assert.ok(!method.includes('this.auth.'));
   assert.ok(!method.includes('localStorage'));
