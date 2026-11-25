@@ -22,6 +22,7 @@ from sqlalchemy import (
     Integer,
     Numeric,
     String,
+    Text,
     UniqueConstraint,
     Uuid,
     func,
@@ -1186,6 +1187,85 @@ class AssistantConfirmationOptOut(Base):
     )
     user_subject: Mapped[str] = mapped_column(String(128), nullable=False)
     action: Mapped[str] = mapped_column(String(80), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class AssistantConversation(Base):
+    """One persisted assistant chat thread (Slice 4).
+
+    A conversation belongs to a business and to the user who started
+    it, but it is business-visible: any member may list and resume any
+    conversation in the business — the cross-owner approval path needs
+    the owner to open a staff requester's conversation and click
+    approve on the proposal card that lives in it. ``title`` is the
+    first user message truncated, never model-generated.
+    ``updated_at`` moves on every appended message so the history list
+    orders by most recent activity.
+    """
+
+    __tablename__ = "assistant_conversations"
+    __table_args__ = (
+        Index("ix_assistant_conversations_business_updated", "business_id", "updated_at"),
+        Index("ix_assistant_conversations_business_subject", "business_id", "user_subject"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    user_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    title: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class AssistantMessage(Base):
+    """One persisted chat turn (Slice 4).
+
+    ``role`` is 'user' or 'assistant'; ``content`` is the exact text
+    shown. ``proposal_id`` links the message that carried a proposal
+    card to its proposal row — the proposal itself is never copied
+    into the message: GET-one re-reads the proposal from its own
+    table, so a resumed card shows the proposal's CURRENT state (a
+    proposal whose 5 minutes elapsed reads ``expired``, honestly,
+    never as still-valid). ON DELETE SET NULL keeps the message even
+    if its proposal row is ever removed.
+    """
+
+    __tablename__ = "assistant_messages"
+    __table_args__ = (
+        CheckConstraint(
+            "role IN ('user', 'assistant')",
+            name="ck_assistant_messages_role",
+        ),
+        Index("ix_assistant_messages_conversation_created", "conversation_id", "created_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    conversation_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("assistant_conversations.id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    role: Mapped[str] = mapped_column(String(16), nullable=False)
+    content: Mapped[str] = mapped_column(Text, nullable=False)
+    proposal_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("assistant_proposals.id", ondelete="SET NULL"),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

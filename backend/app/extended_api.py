@@ -1403,6 +1403,25 @@ def list_notifications(business_id: UUID, limit: int = Query(default=50, ge=1, l
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 
 
+@router.get("/settings")
+def list_settings(business_id: UUID,
+                  session: Session = Depends(get_session),
+                  principal: AuthenticatedPrincipal = Depends(get_principal)):
+    """List the business's settings (Slice 4: the assistant tab reads
+    the dialect + morning-brief switch through this). Any member may
+    read — setting keys are restricted to safe identifiers and
+    secret-like keys are rejected at write time, so nothing sensitive
+    lives here; writes stay owner-only (PUT/DELETE below)."""
+    try:
+        _authorized(session, principal, business_id)
+        items = session.scalars(select(BusinessSetting).where(
+            BusinessSetting.business_id == business_id).order_by(
+            BusinessSetting.setting_key.asc())).all()
+        return [_dict(x, ("id", "setting_key", "setting_value", "updated_at")) for x in items]
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
 @router.put("/settings/{setting_key}")
 def put_setting(business_id: UUID, setting_key: str, body: SettingInput,
                 session: Session = Depends(get_session),
