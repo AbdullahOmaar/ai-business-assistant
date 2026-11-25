@@ -1085,7 +1085,160 @@
     "m_2ifq4l": "تغيير مساحة العمل",
     "actions": "الإجراءات",
     "taxOperationalNote": "ملخص تشغيلي من بيانات الفواتير المحفوظة — ليس إقرارًا ضريبيًا رسميًا.",
-    "m_c8v101": "الإصدار {{version}} — نُشر {{publishedAt}}"
+    "m_c8v101": "الإصدار {{version}} — نُشر {{publishedAt}}",
+    "assistantExecution": {
+      "action": {
+        "customer": {
+          "create": "إنشاء عميل",
+          "update": "تعديل عميل"
+        },
+        "supplier": {
+          "create": "إنشاء مورّد"
+        },
+        "product": {
+          "create": "إنشاء منتج"
+        },
+        "invoice": {
+          "create": "إنشاء فاتورة مسودة",
+          "update": "تعديل فاتورة",
+          "update_draft": "تعديل فاتورة مسودة",
+          "duplicate": "نسخ فاتورة",
+          "issue": "إصدار فاتورة",
+          "void": "إبطال فاتورة"
+        },
+        "payment": {
+          "record": "تسجيل دفعة"
+        },
+        "stock": {
+          "movement": "حركة مخزون"
+        },
+        "expense": {
+          "create": "إنشاء مصروف"
+        },
+        "purchase_order": {
+          "create": "إنشاء أمر شراء",
+          "duplicate": "نسخ أمر شراء",
+          "approve": "اعتماد أمر شراء",
+          "receive": "استلام أمر شراء",
+          "cancel": "إلغاء أمر شراء"
+        },
+        "sales_return": {
+          "create": "إنشاء مرتجع مبيعات",
+          "approve": "اعتماد مرتجع مبيعات"
+        },
+        "credit_note": {
+          "issue": "إصدار إشعار دائن"
+        },
+        "recurring_invoice": {
+          "create": "إنشاء فاتورة متكررة"
+        },
+        "pricing_rule": {
+          "create": "إنشاء قاعدة تسعير"
+        },
+        "payroll": {
+          "create": "إنشاء مرتب",
+          "approve": "اعتماد مرتب",
+          "pay": "صرف مرتب",
+          "update": "تعديل مرتب"
+        },
+        "data_import": {
+          "create": "استيراد بيانات"
+        },
+        "notification": {
+          "create": "إنشاء إشعار"
+        }
+      },
+      "field": {
+        "name": "الاسم",
+        "invoice_number": "رقم الفاتورة",
+        "currency_code": "العملة",
+        "amount": "المبلغ",
+        "quantity": "الكمية",
+        "unit_price": "سعر الوحدة",
+        "customer_id": "العميل",
+        "supplier_id": "المورّد",
+        "product_id": "المنتج",
+        "employee_id": "الموظف",
+        "invoice_id": "الفاتورة",
+        "order_id": "أمر الشراء",
+        "return_id": "المرتجع",
+        "payroll_id": "المرتب",
+        "notes": "ملاحظات",
+        "description": "الوصف",
+        "discount_rate": "نسبة الخصم",
+        "tax_rate": "نسبة الضريبة",
+        "reason": "السبب",
+        "method": "الطريقة",
+        "reference": "المرجع",
+        "movement_type": "نوع الحركة",
+        "quantity_delta": "تغيّر الكمية",
+        "category": "التصنيف",
+        "entity_type": "نوع البيانات",
+        "idempotency_key": "مفتاح عدم التكرار",
+        "setting_key": "الإعداد",
+        "setting_value": "القيمة",
+        "update": "التعديل",
+        "patch": "التعديل",
+        "lines": "البنود",
+        "allocations": "التخصيصات",
+        "csv_text": "ملف البيانات",
+        "receive": "الاستلام"
+      },
+      "proposalPreview": "معاينة الاقتراح",
+      "proposalEdit": "عدّل",
+      "proposalSaveNew": "احفظ كاقتراح جديد",
+      "proposalDiscardEdit": "إلغاء التعديل",
+      "proposalExecute": "اعمل",
+      "proposalCancel": "إلغاء",
+      "proposalApprove": "أنا المالك — أكّد",
+      "requestedAs": "مطلوب كـ {{action}}",
+      "secondApprovalBadge": "موافقة تانية",
+      "approvalCountdown": "الصلاحية: {{time}}",
+      "approvalExpired": "انتهت صلاحية التأكيد — أعد إصدار الاقتراح",
+      "proposalExpiredNote": "انتهت صلاحية الاقتراح (٥ دقايق) — اطلبه من الأول",
+      "proposalWaitingOwner": "مستني تأكيد المالك",
+      "optOutLabel": "متعرضش التأكيد ده تاني",
+      "cannotApproveOwn": "اللي طلب الاقتراح ما يقدرش يأكّده بنفسه",
+      "staffCannotApprove": "التأكيد التاني من المالك بس",
+      "editInvalidatesApproval": "أي تعديل بيلغي التأكيد وبيطلع كارت جديد",
+      "previewTruncated": "المعاينة مختصرة — الحمولة الكاملة محفوظة على الخادم",
+      "executing": "جارٍ التنفيذ…",
+      "executedTitle": "اتنفذ بنجاح",
+      "openRecord": "فتح السجل",
+      "executionFailed": "التنفيذ فشل",
+      "executionCancelled": "الاقتراح اتلغى",
+      "refusalTitle": "مش من صلاحياتي",
+      "refusalAlternative": "اللي أقدر أعمله بدل كده:",
+      "refusalAlternativeDelete": "أوقف التعامل بدل الحذف النهائي — السجل المالي بيفضل موجود",
+      "refusalAlternativeSettings": "أقترح التغيير كإعداد تراجعه وتطبّقه بنفسك",
+      "refusalAlternativeMembership": "تغيير العضويات والأدوار من المالك مباشرة",
+      "refusalAlternativeGeneric": "اطلب فعل تاني من القائمة المسموحة",
+      "stoppedTitle": "وقفت فورًا",
+      "stoppedChatDone": "اللي اتعمل: مفيش حاجة اتنفذت من الطلب ده",
+      "stoppedChatNotDone": "اللي ما اتعملش: السؤال ما اتجاوبش",
+      "stoppedExecutedDone": "اللي اتعمل: التنفيذ اكتمل قبل الوقف",
+      "stoppedExecutedNotDone": "اللي ما اتعملش: مفيش خطوات تانية بعد كده",
+      "stoppedNotExecutedDone": "اللي اتعمل: مفيش حاجة اتنفذت",
+      "stoppedNotExecutedNotDone": "اللي ما اتعملش: التنفيذ ما بدأش",
+      "stoppedResume": "كمّل",
+      "stoppedReviewDrafts": "مراجعة المسودات",
+      "stoppedClearDrafts": "مسح المسودات",
+      "stopButton": "وقف",
+      "suggestionTitle": "اقتراح إعداد",
+      "suggestionOld": "الحالي",
+      "suggestionNew": "المقترح",
+      "suggestionApply": "طبّق",
+      "suggestionRollback": "تراجع",
+      "suggestionApplied": "اتطبّق",
+      "suggestionRolledBack": "اتراجع عنه",
+      "suggestionConfirmFinancial": "ده رقم مالي — محتاج تأكيدك الصريح قبل التطبيق",
+      "suggestionConfirmApply": "تأكيد التطبيق",
+      "suggestionReason": "السبب",
+      "micLabel": "إدخال صوتي",
+      "micListening": "بيسمع…",
+      "micError": "مقدرتش أشغّل الميكروفون — اتأكد من الإذن وحاول تاني",
+      "editInvalidValue": "قيمة غير صالحة — راجع الحقل"
+    }
   },
   "common": {
     "app_title": "مساعد الأعمال الذكي",

@@ -193,7 +193,26 @@ export interface Dashboard {
   outstanding_balances: MoneyTotal[];
 }
 // `mode` is returned by the API so the UI can disclose the free, non-generative fallback.
-export interface ChatReply { answer: string; sources: Array<{ type: string; id: string; date: string | null; invoice_number?: string; category?: string }>; model?: string; grounding?: string; mode?: 'local-fallback' | 'generative'; }
+export interface ChatReply { answer: string; sources: Array<{ type: string; id: string; date: string | null; invoice_number?: string; category?: string }>; model?: string; grounding?: string; mode?: 'local-fallback' | 'generative'; suggestions?: SettingSuggestion[]; proposal?: AssistantProposalView; }
+
+// Assistant execution (Slice 1 API, Slice 2 UI): one proposal binds a
+// closed-list action to its exact payload; sensitive actions need a second
+// owner approval (or the owner's stored opt-out) inside 5 minutes.
+export interface AssistantProposalView {
+  id: string; business_id: string; action: string; effective_action: string;
+  payload: Record<string, unknown>; payload_hash: string; status: string;
+  requires_second_approval: boolean; requester_subject: string;
+  approver_subject: string | null; approved_at: string | null;
+  executed_at: string | null; expires_at: string; created_at: string;
+  result: { target_type: string; target_id: string } | null;
+  execution_note: string | null;
+}
+export interface AssistantExecutionResult { target_type: string; target_id: string; [key: string]: unknown; }
+export interface SettingSuggestion {
+  setting_key: string; current_value: string | null; proposed_value: string;
+  is_financial: boolean; requires_confirmation: boolean; reason: string;
+}
+export interface AssistantOptOut { id: string; business_id: string; user_subject: string; action: string; created_at: string | null; }
 
 export class ApiRequestError extends Error {
   constructor(message: string, readonly status: number) {
@@ -946,6 +965,62 @@ export class ApiService {
   chat(businessId: string, message: string, history: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<ChatReply> {
     return this.request<ChatReply>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/assistant/chat`, 'POST', { message, history }
+    );
+  }
+
+  // Assistant execution (Slice 2): proposals, approvals, opt-outs.
+  private assistantBase(businessId: string): string {
+    return `/api/v1/businesses/${encodeURIComponent(businessId)}/assistant`;
+  }
+  createProposal(businessId: string, action: string, payload: Record<string, unknown>): Promise<AssistantProposalView> {
+    return this.request<AssistantProposalView>(
+      `${this.assistantBase(businessId)}/proposals`, 'POST', { action, payload }
+    );
+  }
+  getProposal(businessId: string, proposalId: string): Promise<AssistantProposalView> {
+    return this.request<AssistantProposalView>(
+      `${this.assistantBase(businessId)}/proposals/${encodeURIComponent(proposalId)}`
+    );
+  }
+  approveProposal(businessId: string, proposalId: string, payloadHash: string): Promise<AssistantProposalView> {
+    return this.request<AssistantProposalView>(
+      `${this.assistantBase(businessId)}/proposals/${encodeURIComponent(proposalId)}/approve`, 'POST', { payload_hash: payloadHash }
+    );
+  }
+  executeProposal(businessId: string, proposalId: string): Promise<AssistantProposalView & { result: AssistantExecutionResult }> {
+    return this.request<AssistantProposalView & { result: AssistantExecutionResult }>(
+      `${this.assistantBase(businessId)}/proposals/${encodeURIComponent(proposalId)}/execute`, 'POST', {}
+    );
+  }
+  cancelProposal(businessId: string, proposalId: string): Promise<AssistantProposalView> {
+    return this.request<AssistantProposalView>(
+      `${this.assistantBase(businessId)}/proposals/${encodeURIComponent(proposalId)}/cancel`, 'POST', {}
+    );
+  }
+  createOptOut(businessId: string, action: string): Promise<AssistantOptOut> {
+    return this.request<AssistantOptOut>(
+      `${this.assistantBase(businessId)}/confirmation-opt-outs`, 'POST', { action }
+    );
+  }
+  deleteOptOut(businessId: string, action: string): Promise<void> {
+    return this.request<void>(
+      `${this.assistantBase(businessId)}/confirmation-opt-outs/${encodeURIComponent(action)}`, 'DELETE'
+    );
+  }
+  listOptOuts(businessId: string): Promise<AssistantOptOut[]> {
+    return this.request<AssistantOptOut[]>(`${this.assistantBase(businessId)}/confirmation-opt-outs`);
+  }
+
+  // Conversational setup (B7): the user applies a setting suggestion
+  // themselves, through the existing owner-only settings endpoints.
+  updateSetting(businessId: string, key: string, value: string): Promise<{ setting_key: string; setting_value: string }> {
+    return this.request<{ setting_key: string; setting_value: string }>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/settings/${encodeURIComponent(key)}`, 'PUT', { setting_value: value }
+    );
+  }
+  deleteSetting(businessId: string, key: string): Promise<void> {
+    return this.request<void>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/settings/${encodeURIComponent(key)}`, 'DELETE'
     );
   }
 }
