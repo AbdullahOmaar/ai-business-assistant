@@ -85,7 +85,7 @@ type CustomerWorkspaceContext = { businessId: string; userId: string; role: 'own
      * unaffected. */
     @media(max-width:520px){.customer-workspace__toolbar{align-items:stretch;flex-direction:column}.customer-workspace__search{width:100%}}
     @media(max-width:220px){.customer-workspace__search{flex-direction:column}.customer-workspace__search input{width:100%}.customer-workspace__search button{width:100%}}
-    @media(max-width:760px){.customer-workspace__search input{min-height:48px;font-size:16px}.customer-workspace__search button{min-height:48px}}
+    @media(max-width:760px){.customer-workspace__search input{min-height:48px;font-size:16px}.customer-workspace__search input::placeholder{font-size:12px}.customer-workspace__search button{min-height:48px;padding-inline:10px}}
     @media(forced-colors:active){.customer-workspace button,.customer-workspace input{border:1px solid CanvasText}.customer-workspace :is(button,input):focus-visible{outline-color:Highlight}}
   `],
 })

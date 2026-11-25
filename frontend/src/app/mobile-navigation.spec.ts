@@ -28,9 +28,9 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   assert.doesNotMatch(source, /\.sidebar\{position:fixed;inset:auto 0 0;width:100%/);
   // Safe-area insets carry a 0px fallback so the dock and the More menu keep their
   // offsets where env() is unsupported; the menu bottom derives from the dock height
-  // (75px dock + 8px lift + 5px gap = 88px; 62px narrow dock + 8 + 5 = 75px).
-  assert.match(source, /bottom:calc\(88px \+ env\(safe-area-inset-bottom,0px\)\)/);
-  assert.match(source, /\.mobile-more-menu\{bottom:calc\(75px \+ env\(safe-area-inset-bottom,0px\)\)\}/);
+  // (68px dock after the 2026-11-25 slimming + 8px lift + 5px gap = 81px at both widths).
+  assert.match(source, /bottom:calc\(81px \+ env\(safe-area-inset-bottom,0px\)\)/);
+  assert.match(source, /\.mobile-more-menu\{bottom:calc\(81px \+ env\(safe-area-inset-bottom,0px\)\)\}/);
   // Narrow dock: 52px tab (T18 Slice K), still a comfortable touch target.
   assert.match(source, /\.nav-item\{min-height:52px;font-size:9px\}/);
   // Active tab uses the brand teal gradient with an amber ring (T18 Slice K).
