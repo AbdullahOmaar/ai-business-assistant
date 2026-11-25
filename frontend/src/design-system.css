@@ -1963,19 +1963,29 @@
 }
 
 
-/* Keyboard users can bypass repeated workspace navigation on every route. */
+/* Keyboard users can bypass repeated workspace navigation on every route.
+ * Hotfix 2026-11-25 (owner render): the old hide relied on a transform plus
+ * logical inset properties; on the owner's device the link rendered as a
+ * plain visible link at the top of the page. The hidden state is now the
+ * clip-based visually-hidden pattern (1px box + overflow hidden + clip-path),
+ * which holds even when transforms or logical properties are dropped, and
+ * the pill is restored on focus. Physical `top` backs up `inset-block-start`. */
 :root body .shell .skip-link {
   position: absolute;
   z-index: 1200;
+  top: 12px;
   inset-block-start: 12px;
   inset-inline-start: 12px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 44px;
-  max-width: calc(100vw - 24px);
-  padding: 10px 16px;
-  transform: translateY(calc(-100% - 16px));
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
   border: 1px solid var(--aiba-brand-strong);
   border-radius: var(--aiba-radius-control);
   background: var(--aiba-brand-strong);
@@ -1985,10 +1995,17 @@
   line-height: 1.4;
   text-decoration: none;
   box-shadow: var(--aiba-shadow-popover);
-  transition: transform var(--aiba-motion);
 }
 
 :root body .shell .skip-link:focus {
+  width: auto;
+  height: auto;
+  min-height: 44px;
+  max-width: calc(100vw - 24px);
+  padding: 10px 16px;
+  overflow: visible;
+  clip-path: none;
+  white-space: normal;
   transform: translateY(0);
 }
 

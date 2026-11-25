@@ -125,6 +125,10 @@ body {
   color: var(--aba-color-text-primary);
   background: var(--aba-color-page);
   font-family: var(--aba-font-family);
+  /* Hotfix 2026-11-25: stop mobile browsers from auto-inflating text
+   * (font boosting), which distorted card text on the owner's device. */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 button, input, select { font: inherit; }
 /* Installed-PWA updates stay explicit and keyboard/touch accessible. */
@@ -667,6 +671,11 @@ aba-metric-card.metric-card-action:active .aba-metric-card {
 }
 .dashboard-action {
   display: flex;
+  /* Hotfix 2026-11-25 (owner render): full-width is explicit so the card can
+   * never degrade to a shrink-to-fit inline button on engines that drop the
+   * grid/flex treatment; the copy lines are blocks (below) so the title and
+   * description stack even if the flex layout is lost. */
+  width: 100%;
   align-items: center;
   gap: 12px;
   min-width: 0;
@@ -718,11 +727,13 @@ aba-metric-card.metric-card-action:active .aba-metric-card {
   gap: 3px;
 }
 .dashboard-action__copy strong {
+  display: block;
   overflow-wrap: anywhere;
   font-size: 14px;
   line-height: 1.35;
 }
 .dashboard-action__copy small {
+  display: block;
   overflow-wrap: anywhere;
   color: var(--aba-color-text-muted, #475569);
   font-size: 12px;
