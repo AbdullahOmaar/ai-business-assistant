@@ -1,4 +1,16 @@
-## Phase 2 — C2: financial depth with evidence (Linear 3A-726) — 2026-11-25 ~00:40 EET (PR pending QA review)
+## Phase 2 — C3: cashbox for centres (Linear 3A-727) — 2026-11-25 ~02:20 EET (PR pending QA review)
+
+- **Eleventh Phase 2 execution task — second in Stage C** («فيز 2 — C3: الخزنة (صندوق النقدية للمراكز)», تقدير: 10 ساعات, In Progress). **Started while C2's PR #479 waits on QA review, per the owner's no-standing-on-a-blocker rule (2026-11-25 ~02:17 EET): a task blocked on an external step continues with the next task in the sequence.** This branch is therefore based on main `6b803be` (pre-C2); the C2/C3 overlap was limited to additive rows in the matrix, the route inventory and TASKS.md, and reconciled by rebasing onto C2's merge (only TASKS.md conflicted; the code files unioned cleanly).
+- **Inspection (prep file `~/workspace/aiba-phase2-plan/c3-prep.md`):** zero cashbox code existed — a greenfield build on verified pieces (Expense/Payment money patterns, audit events, the B3 export).
+- **Model + migration `0013_cashbox` (additive, single Alembic head verified):** `CashboxEntry` (kind opening/deposit/withdrawal, amount > 0, currency, reason, recorded_by) + `CashboxClosing` (closed_date, expected/counted/variance, handed_by/received_by handover receipt, unique per business+currency+day). **The balance is computed from signed entries, never stored.**
+- **Endpoints (5 new, matrix now 98 routes after the union with C2):** `POST /cashbox/entries` (any member — the expenses/payments pattern; a withdrawal larger than the balance is rejected 422), `GET /cashbox/balance`, `GET /cashbox/entries`, `POST /cashbox/close` (**owner-only** — the close is the control point; variance = counted − expected, recorded never hidden), `GET /cashbox/closings`. Every movement + the close writes an audit event (`cashbox.opened/deposit/withdrawal/closed`, labels + filters added). Entries are append-only — a mistake is corrected by a counter-entry, never an edit.
+- **Export:** cashbox entries + closings join the B3 full export (24 → 26 entities); the purge derives its order from metadata, so the new tables are covered by construction.
+- **Docs:** `docs/CASHBOX.md` (semantics, roles, the daily close). The cashbox row in `docs/FINANCIAL_DEPTH_AUDIT.md` flips to shipped when C2 merges (that file lives on the C2 branch — deliberately untouched here).
+- **Two bugs found by the new tests and fixed:** AuditEvent.target_id is a string column (raw UUID → SQLite binding 500); WorkflowError has no global handler (raised directly → 500; the endpoints now raise HTTPException 422 directly, the module's direct-endpoint pattern).
+- **NOT deployed:** no release markers — migration 0013 applies with the next grouped API release (manager-side build command, same as 0012).
+- **Next in the queue:** C4 (T45 customer orders/delivery — 14h) is **gated on the delivery-model decision (plan decision point 8, manager/owner)**; C5 depends on C4. A3/A4 (Stage A leftovers) remain pending plan tasks without issues.
+
+## Phase 2 — C2: financial depth with evidence (Linear 3A-726) — 2026-11-25 ~00:40 EET (PR #479 MERGED `4ab03ab`, 3A-726 CLOSED Done «فعلي: 1 ساعة»)
 
 - **Tenth Phase 2 execution task — first in Stage C, started immediately after B7 closed per the sequencing rule** («فيز 2 — C2: العمق المالي بالأدلة (سد فجوات المشتريات والمبيعات)», تقدير: 14 ساعة, In Progress). C1 stays gated on the owner's T37 decision.
 - **Source honesty:** the round-16 audit text itself is not recoverable locally (rounds 1–18 payloads are not on disk; the 3A-694 window covers only the newest 200 comments) — so the audit was rebuilt from the code itself, which is what the task requires: every verdict carries its file/route as evidence.
@@ -6,7 +18,7 @@
 - **Gap closed in C2:** payables visibility — new `GET /reports/payables-aging` (per supplier + currency: ordered/received/outstanding; outstanding equals received totals until supplier payments exist, stated in the response). Matrix now 93 routes.
 - **Gaps NOT closed (documented with owners, not hidden):** supplier bills + payments (financial semantics — owner-gated like T37); purchase returns (C5/C4 by the stock-movement contract); recurring execution (D2 — needs a scheduler); pricing-rule application (changes invoice totals — owner decision under the batch constants); valuation/COGS (needs a valuation policy first); cashbox (C3, next in the queue).
 - **NOT deployed:** no release markers — the report reaches production with the next grouped API release.
-- **Next in the queue (prepared):** C3 (cashbox — 10h) — issue **3A-727** created as Backlog (Phase 2 label) before C2 closes; starts after C2 closes.
+- **Next in the queue (prepared):** C3 (cashbox — 10h) — issue **3A-727**; it started under the owner's no-standing-on-a-blocker rule while C2 was in QA review — its checkpoint is the section above.
 
 ## Phase 2 — B7: conversational setup with financial-numbers guard (Linear 3A-725) — 2026-11-24 ~23:40 EET (PR #478 MERGED `6b803be`, 3A-725 CLOSED Done «فعلي: 1 ساعة»)
 
