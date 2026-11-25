@@ -1085,7 +1085,164 @@
     "m_2ifq4l": "Change workspace",
     "actions": "Actions",
     "taxOperationalNote": "Operational summary from saved invoice data — not an official tax filing.",
-    "m_c8v101": "Version {{version}} — Published {{publishedAt}}"
+    "m_c8v101": "Version {{version}} — Published {{publishedAt}}",
+    "assistantExecution": {
+      "action": {
+        "customer": {
+          "create": "Create customer",
+          "update": "Update customer"
+        },
+        "supplier": {
+          "create": "Create supplier"
+        },
+        "product": {
+          "create": "Create product"
+        },
+        "invoice": {
+          "create": "Create draft invoice",
+          "update": "Update invoice",
+          "update_draft": "Update draft invoice",
+          "duplicate": "Duplicate invoice",
+          "issue": "Issue invoice",
+          "void": "Void invoice"
+        },
+        "payment": {
+          "record": "Record payment"
+        },
+        "stock": {
+          "movement": "Record stock movement"
+        },
+        "expense": {
+          "create": "Create expense"
+        },
+        "purchase_order": {
+          "create": "Create purchase order",
+          "duplicate": "Duplicate purchase order",
+          "approve": "Approve purchase order",
+          "receive": "Receive purchase order",
+          "cancel": "Cancel purchase order"
+        },
+        "sales_return": {
+          "create": "Create sales return",
+          "approve": "Approve sales return"
+        },
+        "credit_note": {
+          "issue": "Issue credit note"
+        },
+        "recurring_invoice": {
+          "create": "Create recurring invoice"
+        },
+        "pricing_rule": {
+          "create": "Create pricing rule"
+        },
+        "payroll": {
+          "create": "Create payroll",
+          "approve": "Approve payroll",
+          "pay": "Pay payroll",
+          "update": "Update payroll"
+        },
+        "data_import": {
+          "create": "Import data"
+        },
+        "notification": {
+          "create": "Create notification"
+        }
+      },
+      "field": {
+        "name": "Name",
+        "invoice_number": "Invoice number",
+        "currency_code": "Currency",
+        "amount": "Amount",
+        "quantity": "Quantity",
+        "unit_price": "Unit price",
+        "customer_id": "Customer",
+        "supplier_id": "Supplier",
+        "product_id": "Product",
+        "employee_id": "Employee",
+        "invoice_id": "Invoice",
+        "order_id": "Purchase order",
+        "return_id": "Return",
+        "payroll_id": "Payroll",
+        "notes": "Notes",
+        "description": "Description",
+        "discount_rate": "Discount rate",
+        "tax_rate": "Tax rate",
+        "reason": "Reason",
+        "method": "Method",
+        "reference": "Reference",
+        "movement_type": "Movement type",
+        "quantity_delta": "Quantity change",
+        "category": "Category",
+        "entity_type": "Data type",
+        "idempotency_key": "Idempotency key",
+        "setting_key": "Setting",
+        "setting_value": "Value",
+        "update": "Update",
+        "patch": "Update",
+        "lines": "Lines",
+        "allocations": "Allocations",
+        "csv_text": "Data file",
+        "receive": "Receive",
+        "phone": "Phone",
+        "address": "Address",
+        "incurred_at": "Incurred at",
+        "vendor_name": "Vendor name"
+      },
+      "proposalPreview": "Proposal preview",
+      "proposalEdit": "Edit",
+      "proposalSaveNew": "Save as new proposal",
+      "proposalDiscardEdit": "Discard edit",
+      "proposalExecute": "Do it",
+      "proposalCancel": "Cancel",
+      "proposalApprove": "I am the owner — confirm",
+      "requestedAs": "Requested as {{action}}",
+      "secondApprovalBadge": "Second approval",
+      "approvalCountdown": "Valid for: {{time}}",
+      "approvalExpired": "Approval expired — issue a new proposal",
+      "proposalExpiredNote": "Proposal expired (5 minutes) — ask again from the start",
+      "proposalWaitingOwner": "Waiting for the owner's approval",
+      "optOutLabel": "Don't ask again for this",
+      "cannotApproveOwn": "The requester cannot approve their own proposal",
+      "staffCannotApprove": "Second approval is owner-only",
+      "editInvalidatesApproval": "Any edit voids the approval and issues a new card",
+      "previewTruncated": "Preview shortened — the full payload is stored on the server",
+      "executing": "Executing…",
+      "executedTitle": "Executed successfully",
+      "openRecord": "Open record",
+      "executionFailed": "Execution failed",
+      "executionCancelled": "Proposal withdrawn",
+      "refusalTitle": "Outside my permissions",
+      "refusalAlternative": "What I can do instead:",
+      "refusalAlternativeDelete": "Stop dealing instead of a final delete — the financial record stays",
+      "refusalAlternativeSettings": "Suggest the change as a setting you review and apply yourself",
+      "refusalAlternativeMembership": "Membership and role changes are done by the owner directly",
+      "refusalAlternativeGeneric": "Ask for another action from the allowed list",
+      "stoppedTitle": "Stopped at once",
+      "stoppedChatDone": "Done: nothing was executed from this request",
+      "stoppedChatNotDone": "Not done: the question was not answered",
+      "stoppedExecutedDone": "Done: the execution completed before the stop",
+      "stoppedExecutedNotDone": "Not done: no further steps after this",
+      "stoppedNotExecutedDone": "Done: nothing was executed",
+      "stoppedNotExecutedNotDone": "Not done: the execution never started",
+      "stoppedResume": "Resume",
+      "stoppedReviewDrafts": "Review drafts",
+      "stoppedClearDrafts": "Clear drafts",
+      "stopButton": "Stop",
+      "suggestionTitle": "Setting suggestion",
+      "suggestionOld": "Current",
+      "suggestionNew": "Proposed",
+      "suggestionApply": "Apply",
+      "suggestionRollback": "Roll back",
+      "suggestionApplied": "Applied",
+      "suggestionRolledBack": "Rolled back",
+      "suggestionConfirmFinancial": "This is a financial number — it needs your explicit confirmation before applying",
+      "suggestionConfirmApply": "Confirm apply",
+      "suggestionReason": "Reason",
+      "micLabel": "Voice input",
+      "micListening": "Listening…",
+      "micError": "Couldn't start the microphone — check the permission and retry",
+      "editInvalidValue": "Invalid value — check the field"
+    }
   },
   "common": {
     "app_title": "AI Business Assistant",

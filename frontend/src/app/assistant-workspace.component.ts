@@ -9,16 +9,82 @@
 // view stale. The assistant's layout rules moved with the template into this
 // component's styles; the shell keeps the rules that target its own chrome
 // (.sidebar/.main under .shell.keyboard-open).
-import { Component, ElementRef, inject, input, OnChanges, output, SimpleChanges, ViewChild } from '@angular/core';
+import { Component, ElementRef, inject, input, OnChanges, OnDestroy, output, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiService, type ChatReply } from './api.service';
+import { ApiRequestError, ApiService, type AssistantProposalView, type ChatReply, type SettingSuggestion } from './api.service';
 import { LocalizationService } from './localization.service';
 import { WorkspaceLoadGuard, runTenantScopedRequest, type TenantRequestContext } from './workspace-load-guard';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
 import { AbaSectionHeaderComponent } from './shared/ui/aba-section-header.component';
 import { AbaStateMessageComponent } from './shared/ui/aba-state-message.component';
 import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
+import {
+  coerceScalar,
+  flattenPayload,
+  formatPayloadValue,
+  isStopWord,
+  proposalCountdown,
+  recordTabForTarget,
+  refusalAlternative,
+  setAtPath,
+  type PayloadRow,
+} from './assistant-execution-ui';
+import { workspaceUrlFor } from './core/navigation/workspace-route';
+
+// Slice 2 — execution UI: proposal/confirmation cards, B7 suggestion
+// cards, refusal and stopped cards. A chat message carries its cards as
+// attachments; the producer of proposal attachments is Slice 3 (chat
+// intent -> proposal draft), while B7 suggestions already arrive in the
+// chat reply today. The component never executes anything itself — every
+// action goes through the Slice 1 proposal API (verdict() on the server).
+interface ProposalCardState {
+  proposal: AssistantProposalView;
+  busy: 'approve' | 'execute' | 'cancel' | 'edit' | null;
+  error: string;
+  editing: boolean;
+  editDraft: Record<string, unknown> | null;
+  editInputs: Record<string, string>;
+  optOutChecked: boolean;
+}
+interface SuggestionCardState {
+  suggestion: SettingSuggestion;
+  state: 'pending' | 'confirming' | 'applied' | 'rolled-back';
+  busy: boolean;
+  error: string;
+}
+interface RefusalCardState {
+  action: string;
+  alternative: 'delete' | 'settings' | 'membership' | 'generic';
+  detail: string;
+}
+interface StoppedCardState {
+  kind: 'chat' | 'executed' | 'not-executed';
+}
+type ChatAttachment =
+  | { kind: 'proposal'; card: ProposalCardState }
+  | { kind: 'suggestion'; card: SuggestionCardState }
+  | { kind: 'refusal'; card: RefusalCardState }
+  | { kind: 'stopped'; card: StoppedCardState };
+interface ChatMessage {
+  role: 'user' | 'assistant';
+  content: string;
+  sources?: ChatReply['sources'];
+  mode?: string;
+  attachments?: ChatAttachment[];
+}
+// Minimal structural type for the Web Speech API (no lib.dom dependency on
+// the prefixed constructor).
+interface SpeechRecognitionLike {
+  lang: string;
+  interimResults: boolean;
+  continuous: boolean;
+  onresult: ((event: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: { error?: string }) => void) | null;
+  start(): void;
+  stop(): void;
+}
 
 @Component({
   selector: 'aba-assistant-workspace',
@@ -46,8 +112,119 @@ import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
             }
           </div>
           @if (message.mode === 'local-fallback') { <small class="source-list">{{ t('ui.m_1raguvh') }}</small> }
-          <p>{{ message.content }}</p>
+          @if (message.content) { <p>{{ message.content }}</p> }
           @if (message.sources?.length) { <small class="source-list">{{ t('ui.m_1uui693') }} @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? t('ui.m_1nfhuv2') : (source.type === 'expense' ? t('ui.m_q7obp1') : source.type) }} · {{ source.invoice_number || (source.type === 'expense' && source.category ? expenseCategoryLabel(source.category) : (source.category || source.id)) }}</span> }</small> }
+          @for (attachment of message.attachments ?? []; track $index) {
+            @if (attachment.kind === 'proposal') {
+              <article class="proposal-card" [id]="'proposal-' + attachment.card.proposal.id">
+                <div class="proposal-card-head">
+                  <strong>{{ actionLabel(attachment.card.proposal.effective_action) }}</strong>
+                  @if (attachment.card.proposal.requires_second_approval) { <span class="proposal-badge">{{ t('ui.assistantExecution.secondApprovalBadge') }}</span> }
+                </div>
+                @if (attachment.card.proposal.effective_action !== attachment.card.proposal.action) { <small class="proposal-sub">{{ t('ui.assistantExecution.requestedAs', {action: actionLabel(attachment.card.proposal.action)}) }}</small> }
+                @if (attachment.card.proposal.execution_note) { <p class="proposal-note">{{ attachment.card.proposal.execution_note }}</p> }
+                <p class="proposal-preview-title">{{ t('ui.assistantExecution.proposalPreview') }}</p>
+                <dl class="proposal-rows">
+                  @for (row of payloadRows(attachment.card.proposal); track row.path) {
+                    <div class="proposal-row">
+                      <dt>{{ fieldLabel(row.path) }}</dt>
+                      @if (attachment.card.editing && row.editable) { <dd><input type="text" [value]="editInputValue(attachment.card, row)" (input)="onEditInput(attachment.card, row, $event)" [disabled]="attachment.card.busy !== null" [attr.aria-label]="fieldLabel(row.path)"></dd> }
+                      @else { <dd>{{ formatValue(row.value) }}</dd> }
+                    </div>
+                  }
+                </dl>
+                @if (payloadTruncated(attachment.card.proposal)) { <small class="proposal-sub">{{ t('ui.assistantExecution.previewTruncated') }}</small> }
+                @if (attachment.card.proposal.status === 'executed' && attachment.card.proposal.result) {
+                  <p class="proposal-success">{{ t('ui.assistantExecution.executedTitle') }}</p>
+                  @if (resultSummary(attachment.card)) { <p class="proposal-sub">{{ resultSummary(attachment.card) }}</p> }
+                  @if (hasRecordLink(attachment.card)) { <div class="proposal-actions"><button type="button" class="proposal-action-button" (click)="openRecord(attachment.card)">{{ t('ui.assistantExecution.openRecord') }}</button></div> }
+                } @else if (proposalExpired(attachment.card)) {
+                  <p class="proposal-error-text">{{ t('ui.assistantExecution.proposalExpiredNote') }}</p>
+                } @else if (attachment.card.proposal.status === 'rejected') {
+                  <p class="proposal-sub">{{ t('ui.assistantExecution.executionCancelled') }}</p>
+                } @else {
+                  @if (attachment.card.proposal.requires_second_approval && attachment.card.proposal.status === 'proposed') {
+                    <p class="proposal-countdown">{{ t('ui.assistantExecution.approvalCountdown', {time: proposalCountdownText(attachment.card)}) }}</p>
+                    @if (isOwner()) { <label class="proposal-opt-out"><input type="checkbox" [(ngModel)]="attachment.card.optOutChecked" [ngModelOptions]="{standalone: true}" [disabled]="attachment.card.busy !== null"> {{ t('ui.assistantExecution.optOutLabel') }}</label> }
+                    <div class="proposal-actions">
+                      <button type="button" class="proposal-action-button primary" (click)="approveProposal(attachment.card)" [disabled]="attachment.card.busy !== null || !canApprove(attachment.card)">{{ t('ui.assistantExecution.proposalApprove') }}</button>
+                    </div>
+                    @if (!canApprove(attachment.card)) {
+                      @if (attachment.card.proposal.requester_subject === userId()) { <p class="proposal-sub">{{ t('ui.assistantExecution.cannotApproveOwn') }}</p> }
+                      @else if (!isOwner()) { <p class="proposal-sub">{{ t('ui.assistantExecution.staffCannotApprove') }}</p> }
+                      @else { <p class="proposal-sub">{{ t('ui.assistantExecution.proposalWaitingOwner') }}</p> }
+                    }
+                  }
+                  <div class="proposal-actions">
+                    @if (!(attachment.card.proposal.requires_second_approval && attachment.card.proposal.status === 'proposed')) {
+                      <button type="button" class="proposal-action-button primary" (click)="executeProposal(attachment.card)" [disabled]="attachment.card.busy !== null || !canExecute(attachment.card)">{{ t('ui.assistantExecution.proposalExecute') }}</button>
+                    }
+                    @if (!attachment.card.editing) { <button type="button" class="proposal-action-button" (click)="startEditProposal(attachment.card)" [disabled]="attachment.card.busy !== null">{{ t('ui.assistantExecution.proposalEdit') }}</button> }
+                    <button type="button" class="proposal-action-button" (click)="cancelProposal(attachment.card)" [disabled]="attachment.card.busy !== null">{{ t('ui.assistantExecution.proposalCancel') }}</button>
+                  </div>
+                  @if (attachment.card.editing) {
+                    <p class="proposal-sub">{{ t('ui.assistantExecution.editInvalidatesApproval') }}</p>
+                    <div class="proposal-actions">
+                      <button type="button" class="proposal-action-button primary" (click)="saveEditedProposal(attachment.card)" [disabled]="attachment.card.busy !== null">{{ t('ui.assistantExecution.proposalSaveNew') }}</button>
+                      <button type="button" class="proposal-action-button" (click)="discardEditProposal(attachment.card)" [disabled]="attachment.card.busy !== null">{{ t('ui.assistantExecution.proposalDiscardEdit') }}</button>
+                    </div>
+                  }
+                }
+                @if (attachment.card.busy === 'execute') { <p class="proposal-sub">{{ t('ui.assistantExecution.executing') }}</p> }
+                @if (attachment.card.error) { <p class="proposal-error-text" role="alert">{{ attachment.card.error }}</p> }
+              </article>
+            }
+            @if (attachment.kind === 'suggestion') {
+              <article class="suggestion-proposal-card">
+                <div class="proposal-card-head"><strong>{{ t('ui.assistantExecution.suggestionTitle') }}</strong></div>
+                <p class="proposal-sub">{{ attachment.card.suggestion.setting_key }}</p>
+                @if (attachment.card.suggestion.reason) { <p class="proposal-sub">{{ t('ui.assistantExecution.suggestionReason') }}: {{ attachment.card.suggestion.reason }}</p> }
+                <dl class="proposal-rows">
+                  <div class="proposal-row"><dt>{{ t('ui.assistantExecution.suggestionOld') }}</dt><dd>{{ attachment.card.suggestion.current_value ?? '—' }}</dd></div>
+                  <div class="proposal-row"><dt>{{ t('ui.assistantExecution.suggestionNew') }}</dt><dd>{{ attachment.card.suggestion.proposed_value }}</dd></div>
+                </dl>
+                @if (attachment.card.suggestion.is_financial) { <p class="proposal-note">{{ t('ui.assistantExecution.suggestionConfirmFinancial') }}</p> }
+                @if (attachment.card.state === 'applied') { <p class="proposal-success">{{ t('ui.assistantExecution.suggestionApplied') }}</p> }
+                @else if (attachment.card.state === 'rolled-back') { <p class="proposal-success">{{ t('ui.assistantExecution.suggestionRolledBack') }}</p> }
+                @if (isOwner() && attachment.card.state !== 'applied') {
+                  <div class="proposal-actions">
+                    @if (attachment.card.state === 'confirming') {
+                      <button type="button" class="proposal-action-button primary" (click)="confirmApplySuggestion(attachment.card)" [disabled]="attachment.card.busy">{{ t('ui.assistantExecution.suggestionConfirmApply') }}</button>
+                      <button type="button" class="proposal-action-button" (click)="cancelConfirmSuggestion(attachment.card)" [disabled]="attachment.card.busy">{{ t('ui.assistantExecution.proposalCancel') }}</button>
+                    } @else {
+                      <button type="button" class="proposal-action-button primary" (click)="applySuggestion(attachment.card)" [disabled]="attachment.card.busy">{{ t('ui.assistantExecution.suggestionApply') }}</button>
+                    }
+                  </div>
+                }
+                @if (isOwner() && attachment.card.state === 'applied') {
+                  <div class="proposal-actions">
+                    <button type="button" class="proposal-action-button" (click)="rollbackSuggestion(attachment.card)" [disabled]="attachment.card.busy">{{ t('ui.assistantExecution.suggestionRollback') }}</button>
+                  </div>
+                }
+                @if (attachment.card.error) { <p class="proposal-error-text" role="alert">{{ attachment.card.error }}</p> }
+              </article>
+            }
+            @if (attachment.kind === 'refusal') {
+              <article class="refusal-card">
+                <strong>{{ t('ui.assistantExecution.refusalTitle') }}</strong>
+                @if (attachment.card.detail) { <p>{{ attachment.card.detail }}</p> }
+                <p>{{ t('ui.assistantExecution.refusalAlternative') }}</p>
+                <p>{{ refusalAlternativeText(attachment.card) }}</p>
+              </article>
+            }
+            @if (attachment.kind === 'stopped') {
+              <article class="stopped-card">
+                <strong>{{ t('ui.assistantExecution.stoppedTitle') }}</strong>
+                <p>{{ stoppedDoneText(attachment.card) }}</p>
+                <p>{{ stoppedNotDoneText(attachment.card) }}</p>
+                <div class="proposal-actions">
+                  <button type="button" class="proposal-action-button" (click)="dismissStopped(message, attachment)">{{ t('ui.assistantExecution.stoppedResume') }}</button>
+                  <button type="button" class="proposal-action-button" (click)="reviewDrafts()">{{ t('ui.assistantExecution.stoppedReviewDrafts') }}</button>
+                  <button type="button" class="proposal-action-button" (click)="clearDrafts()">{{ t('ui.assistantExecution.stoppedClearDrafts') }}</button>
+                </div>
+              </article>
+            }
+          }
         </article>
       }
       @if (chatSending) {
@@ -59,9 +236,10 @@ import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
     </div>
   
     @if (chatError) { <aba-state-message kind="error" [description]="chatError" [actionLabel]="chatConfigurationMissing ? '' : t('ui.m_worzj7')" [actionDisabled]="chatSending || !chatDraft.trim()" (action)="sendChat()" /> }
-    <form #chatForm="ngForm" class="chat-form" (ngSubmit)="chatForm.valid && chatDraft.trim() && sendChat()"><textarea #chatMessageControl="ngModel" name="chatMessage" rows="2" maxlength="2000" enterkeyhint="send" (keydown.enter)="handleChatKeydown($any($event))" [attr.aria-label]="t('ui.m_1d2fatg')" [attr.aria-invalid]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'true' : null" [attr.aria-describedby]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'chat-message-hint chat-message-error' : 'chat-message-hint'" [placeholder]="t('ui.m_1pafgoq')" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea><button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t('ui.m_1sgwbzd') : t('ui.m_rf7y63') }}</button></form>
+    <form #chatForm="ngForm" class="chat-form" (ngSubmit)="chatForm.valid && chatDraft.trim() && sendChat()"><textarea #chatMessageControl="ngModel" name="chatMessage" rows="2" maxlength="2000" enterkeyhint="send" (keydown.enter)="handleChatKeydown($any($event))" [attr.aria-label]="t('ui.m_1d2fatg')" [attr.aria-invalid]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'true' : null" [attr.aria-describedby]="(chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted) ? 'chat-message-hint chat-message-error' : 'chat-message-hint'" [placeholder]="t('ui.m_1pafgoq')" required [(ngModel)]="chatDraft" [disabled]="chatSending"></textarea>@if (!(chatSending || executingProposalId)) { <button class="primary" type="submit" [disabled]="chatSending || !chatDraft.trim()">{{ chatSending ? t('ui.m_1sgwbzd') : t('ui.m_rf7y63') }}</button> } @else { <button type="button" class="stop-button" (click)="stopAssistantWork()">⛔ {{ t('ui.assistantExecution.stopButton') }}</button> }@if (micSupported) { <button type="button" class="mic-button" (click)="toggleMic()" [disabled]="chatSending" [attr.aria-label]="t('ui.assistantExecution.micLabel')" [attr.aria-pressed]="micListening ? 'true' : 'false'">{{ micListening ? t('ui.assistantExecution.micListening') : '🎙' }}</button> }</form>
     <div class="chat-composer-meta"><small id="chat-message-hint">{{ t('ui.m_vdvf9x') }}</small><small>{{ chatDraft.length }} / 2000</small></div>
     @if ((chatMessageControl.invalid || !chatDraft.trim()) && (chatMessageControl.touched || chatForm.submitted)) { <small id="chat-message-error" class="field-error" role="alert">{{ t('ui.m_18j0gfn') }}</small> }
+    @if (micError) { <small class="field-error" role="alert">{{ micError }}</small> }
     <p class="footnote">{{ t('ui.m_118u9lx') }}</p>
   </section>
   <aside class="assistant-suggestions" aria-label="{{ t('ui.m_1is9ve0') }}"><p>{{ t('ui.m_lxd4e7') }}</p><div class="suggestion-grid"><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_1clvjpr'))"><span class="suggestion-icon">↗</span><strong>{{ t('ui.m_1dkpjlm') }}</strong><small>{{ t('ui.m_70o2ur') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_1ij9tr8'))"><span class="suggestion-icon">✦</span><strong>{{ t('ui.m_159lqb4') }}</strong><small>{{ t('ui.m_1ktypo7') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_4tgkt3'))"><span class="suggestion-icon">▦</span><strong>{{ t('ui.m_yezco3') }}</strong><small>{{ t('ui.m_1a12moo') }}</small></button><button type="button" class="suggestion-card" [disabled]="chatSending" (click)="useAssistantSuggestion(t('ui.m_xc417r'))"><span class="suggestion-icon">◎</span><strong>{{ t('ui.m_b2oroc') }}</strong><small>{{ t('ui.m_ap19ks') }}</small></button></div></aside>
@@ -84,7 +262,7 @@ import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
 .chat-new-button:hover:not(:disabled){background:var(--aba-color-surface-subtle,#f8fafc);border-color:var(--aba-color-primary,#0f766e)}
 .chat-log{min-height:280px;max-height:55vh}
 @media(max-width:900px){.assistant-workspace{grid-template-columns:minmax(0,1fr)}.assistant-suggestions{grid-row:2}.assistant-workspace:not(.has-chat) .assistant-suggestions{grid-row:1}.assistant-workspace:not(.has-chat) .chat-panel{grid-row:2}.suggestion-grid{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}.suggestion-grid{scroll-snap-type:x proximity;overscroll-behavior-inline:contain;scrollbar-width:thin}.suggestion-card{flex:0 0 175px;min-height:82px;scroll-snap-align:start}}
-@media(max-width:480px){.assistant-suggestions{padding:12px}.suggestion-card{flex-basis:158px;min-height:82px;padding:8px}.chat-log{min-height:220px;max-height:48vh}.chat-message{max-width:96%}.chat-header-actions{gap:6px}.chat-new-button{min-height:40px}.chat-form{grid-template-columns:minmax(0,1fr) 84px;gap:8px}.chat-form .primary{padding-inline:8px}.chat-composer-meta{align-items:flex-start}.chat-composer-meta small{font-size:9px}}
+@media(max-width:480px){.assistant-suggestions{padding:12px}.suggestion-card{flex-basis:158px;min-height:82px;padding:8px}.chat-log{min-height:220px;max-height:48vh}.chat-message{max-width:96%}.chat-header-actions{gap:6px}.chat-new-button{min-height:40px}.chat-form{grid-template-columns:minmax(0,1fr) auto 84px;gap:8px}.chat-form .primary{padding-inline:8px}.chat-composer-meta{align-items:flex-start}.chat-composer-meta small{font-size:9px}}
 .chat-log{min-height:280px;max-height:55vh;overflow:auto;border:1px solid #edf0f5;border-radius:11px;padding:12px}
 .chat-message{max-width:85%;padding:11px 13px;border-radius:12px;background:#f3f4f6;margin:8px 0}
 .chat-message.user-message{margin-inline-end:auto;margin-inline-start:0;background:#e0f2fe}
@@ -93,9 +271,12 @@ import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
 .chat-copy-button{min-height:32px;min-width:44px;padding:5px 8px;border:1px solid var(--aba-color-border-subtle,#dbe2ea);border-radius:8px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-secondary,#475569);font-size:10px;font-weight:700}
 .chat-copy-button:hover{border-color:var(--aba-color-primary,#0f766e);color:var(--aba-color-primary,#0f766e)}
 .chat-message p{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:5px 0 0}
-.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px;margin-top:12px}
+.chat-form{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;margin-top:12px}
 .chat-form textarea{resize:vertical;min-height:48px;max-height:180px;line-height:1.5}
-.chat-form .primary{min-width:84px;min-height:48px}
+.chat-form .primary{min-width:84px;min-height:48px;grid-column:3}
+.chat-form .mic-button{grid-column:2;min-width:48px;min-height:48px;border:1px solid var(--aba-color-border-subtle,#dbe2ea);border-radius:10px;background:var(--aba-color-surface,#fff);font-size:18px;cursor:pointer}
+.chat-form .mic-button[aria-pressed="true"]{border-color:var(--aba-color-primary,#0f766e);background:#e0f2fe}
+.chat-form .stop-button{grid-column:3;min-width:84px;min-height:48px;border:1px solid #b91c1c;border-radius:10px;background:#fef2f2;color:#b91c1c;font-weight:800;cursor:pointer}
 .chat-composer-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:6px;color:var(--aba-color-text-tertiary,#64748b)}
 .chat-composer-meta small{font-size:10px;line-height:1.5}
 .chat-composer-meta small:last-child{flex:0 0 auto;font-variant-numeric:tabular-nums}
@@ -106,9 +287,33 @@ import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
 .assistant-suggestions .suggestion-card{min-height:68px}
 @media(max-width:600px){.suggestion-grid{grid-template-columns:minmax(0,1fr)}}
 @media(max-width:760px){.chat-form{position:sticky;bottom:calc(var(--aba-keyboard-inset,0px) + var(--aba-dock-offset,8px));z-index:25;align-items:end;padding:8px 0;background:linear-gradient(180deg,rgba(255,255,255,0),#fff 18%)}.shell.keyboard-open .chat-form{position:fixed;inset-inline:12px;bottom:calc(var(--aba-keyboard-inset,0px) + 8px);margin-top:0;padding:8px 10px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:14px;background:var(--aba-color-surface,#fff);box-shadow:0 8px 24px #0f172a1a}.chat-form textarea{min-height:48px;max-height:25dvh;resize:none}.shell.keyboard-open .chat-log{min-height:100px;max-height:35dvh}}
+.proposal-card,.suggestion-proposal-card,.refusal-card,.stopped-card{margin-top:10px;padding:12px;border:1px solid var(--aba-color-border-subtle,#dbe2ea);border-radius:12px;background:var(--aba-color-surface,#fff)}
+.proposal-card-head{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.proposal-card-head strong{font-size:13px}
+.proposal-badge{font-size:10px;font-weight:800;padding:3px 8px;border-radius:999px;background:#fef3c7;color:#92400e;white-space:nowrap}
+.proposal-preview-title{font-size:11px;font-weight:800;margin:10px 0 4px;color:var(--aba-color-text-secondary,#475569)}
+.proposal-rows{margin:0}
+.proposal-row{display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px solid #f1f5f9;font-size:12px}
+.proposal-row:last-child{border-bottom:0}
+.proposal-row dt{color:var(--aba-color-text-secondary,#475569);flex:0 0 auto}
+.proposal-row dd{margin:0;text-align:end;overflow-wrap:anywhere;min-width:0}
+.proposal-row dd input{width:100%;min-height:36px;text-align:end}
+.proposal-note{font-size:11px;line-height:1.6;color:var(--aba-color-text-secondary,#475569);margin:8px 0 0}
+.proposal-sub{font-size:11px;line-height:1.6;color:var(--aba-color-text-secondary,#475569);margin:6px 0 0}
+.proposal-countdown{font-size:12px;font-weight:800;font-variant-numeric:tabular-nums;margin:10px 0 0}
+.proposal-opt-out{display:flex;align-items:center;gap:8px;font-size:12px;margin-top:10px;cursor:pointer}
+.proposal-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.proposal-action-button{min-height:40px;padding:8px 14px;border:1px solid var(--aba-color-border-subtle,#dbe2ea);border-radius:10px;background:var(--aba-color-surface,#fff);font-weight:700;font-size:12px;cursor:pointer}
+.proposal-action-button.primary{background:var(--aba-color-primary,#0f766e);border-color:var(--aba-color-primary,#0f766e);color:#fff}
+.proposal-action-button:disabled{opacity:.5;cursor:not-allowed}
+.proposal-success{font-size:12px;font-weight:800;color:#15803d;margin:10px 0 0}
+.proposal-error-text{font-size:12px;line-height:1.6;color:#b91c1c;margin:10px 0 0}
+.refusal-card strong,.stopped-card strong{font-size:13px}
+.refusal-card p,.stopped-card p{font-size:12px;line-height:1.65;margin:6px 0 0}
+@media(max-width:480px){.proposal-card,.suggestion-proposal-card,.refusal-card,.stopped-card{padding:10px}.proposal-row{font-size:12px}.proposal-action-button{min-height:40px}}
   `],
 })
-export class AssistantWorkspaceComponent implements OnChanges {
+export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
   readonly businessId = input.required<string>();
   readonly userId = input.required<string>();
   readonly role = input.required<string | null | undefined>();
@@ -121,12 +326,23 @@ export class AssistantWorkspaceComponent implements OnChanges {
   private readonly localization = inject(LocalizationService);
 
   chatDraft = '';
-  chatMessages: Array<{ role: 'user' | 'assistant'; content: string; sources?: ChatReply['sources']; mode?: string }> = [];
+  chatMessages: ChatMessage[] = [];
   chatSending = false;
   chatError = '';
   chatConfigurationMissing = false;
   chatCopyStatus: { index: number; success: boolean } | null = null;
   @ViewChild('chatLog') private chatLog?: ElementRef<HTMLElement>;
+
+  // Slice 2: the 5-minute countdown ticks from this clock (1s interval).
+  nowTick = Date.now();
+  private countdownTimer: ReturnType<typeof setInterval> | null = null;
+  // The proposal whose execute call is currently in flight, if any.
+  executingProposalId: string | null = null;
+  private stopRequested = false;
+  micSupported = typeof window !== 'undefined' && ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window);
+  micListening = false;
+  micError = '';
+  private micRecognition: SpeechRecognitionLike | null = null;
 
   private readonly chatRequestGuard = new WorkspaceLoadGuard();
 
@@ -150,6 +366,29 @@ export class AssistantWorkspaceComponent implements OnChanges {
     this.chatError = '';
     this.chatConfigurationMissing = false;
     this.chatCopyStatus = null;
+    this.resetExecutionState();
+  }
+
+  ngOnDestroy(): void {
+    if (this.countdownTimer !== null) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
+    }
+    this.micRecognition?.stop();
+    this.micRecognition = null;
+  }
+
+  private resetExecutionState(): void {
+    if (this.countdownTimer !== null) {
+      clearInterval(this.countdownTimer);
+      this.countdownTimer = null;
+    }
+    this.executingProposalId = null;
+    this.stopRequested = false;
+    this.micListening = false;
+    this.micError = '';
+    this.micRecognition?.stop();
+    this.micRecognition = null;
   }
 
   private chatRequestContext(): TenantRequestContext {
@@ -194,6 +433,7 @@ export class AssistantWorkspaceComponent implements OnChanges {
     this.chatError = '';
     this.chatConfigurationMissing = false;
     this.chatCopyStatus = null;
+    this.resetExecutionState();
   }
 
   async copyAssistantMessage(content: string, index: number): Promise<void> {
@@ -256,6 +496,14 @@ export class AssistantWorkspaceComponent implements OnChanges {
     if (!requestContext.signedIn || !requestContext.userId || !requestContext.role || !requestContext.workspaceId) return;
 
     const question = this.chatDraft.trim();
+    // Slice 2: a stop word typed while a proposal execution is in flight
+    // stops it — it never goes to the model as a question. (Chat
+    // generation is stopped by the stop button; sendChat cannot run then.)
+    if (isStopWord(question) && this.executingProposalId !== null) {
+      this.chatDraft = '';
+      this.stopAssistantWork();
+      return;
+    }
     const history = this.chatMessages.slice(-8);
     const shouldFollowLatest = this.isChatLogNearBottom();
     this.chatMessages = [...this.chatMessages, { role: 'user', content: question }];
@@ -273,7 +521,15 @@ export class AssistantWorkspaceComponent implements OnChanges {
       {
         onSuccess: (reply: ChatReply) => {
           const shouldFollowLatest = this.isChatLogNearBottom();
-          this.chatMessages = [...this.chatMessages, { role: 'assistant', content: reply.answer, sources: reply.sources, mode: reply.mode }];
+          const attachments: ChatAttachment[] = [];
+          for (const suggestion of reply.suggestions ?? []) {
+            attachments.push({ kind: 'suggestion', card: { suggestion, state: 'pending', busy: false, error: '' } });
+          }
+          if (reply.proposal) {
+            attachments.push({ kind: 'proposal', card: this.newProposalCard(reply.proposal) });
+            this.ensureCountdownTimer();
+          }
+          this.chatMessages = [...this.chatMessages, { role: 'assistant', content: reply.answer, sources: reply.sources, mode: reply.mode, attachments }];
           this.scrollChatToLatest(shouldFollowLatest);
         },
         onError: error => {
@@ -297,6 +553,424 @@ export class AssistantWorkspaceComponent implements OnChanges {
         },
       },
     );
+  }
+
+  // ---- Slice 2: assistant execution UI ----
+
+  isOwner(): boolean {
+    return this.role() === 'owner';
+  }
+
+  private newProposalCard(proposal: AssistantProposalView): ProposalCardState {
+    return { proposal, busy: null, error: '', editing: false, editDraft: null, editInputs: {}, optOutChecked: false };
+  }
+
+  private ensureCountdownTimer(): void {
+    if (this.countdownTimer !== null) return;
+    this.countdownTimer = setInterval(() => {
+      this.nowTick = Date.now();
+    }, 1000);
+  }
+
+  actionLabel(action: string): string {
+    const key = 'ui.assistantExecution.action.' + action;
+    const translated = this.t(key);
+    return translated === key ? action : translated;
+  }
+
+  fieldLabel(path: string): string {
+    const segment = path.split('.').pop()?.replace(/\[\d+\]/g, '') ?? path;
+    const key = 'ui.assistantExecution.field.' + segment;
+    const translated = this.t(key);
+    return translated === key ? segment.replace(/_/g, ' ') : translated;
+  }
+
+  payloadRows(proposal: AssistantProposalView): PayloadRow[] {
+    return flattenPayload(proposal.payload).rows;
+  }
+
+  payloadTruncated(proposal: AssistantProposalView): boolean {
+    return flattenPayload(proposal.payload).truncated;
+  }
+
+  formatValue(value: unknown): string {
+    return formatPayloadValue(value);
+  }
+
+  proposalCountdownText(card: ProposalCardState): string {
+    return proposalCountdown(card.proposal.expires_at, this.nowTick).text;
+  }
+
+  proposalExpired(card: ProposalCardState): boolean {
+    return proposalCountdown(card.proposal.expires_at, this.nowTick).expired;
+  }
+
+  canApprove(card: ProposalCardState): boolean {
+    const proposal = card.proposal;
+    return this.isOwner()
+      && proposal.status === 'proposed'
+      && proposal.requires_second_approval
+      && proposal.requester_subject !== this.userId()
+      && !this.proposalExpired(card);
+  }
+
+  canExecute(card: ProposalCardState): boolean {
+    const proposal = card.proposal;
+    const executable = (proposal.status === 'approved')
+      || (proposal.status === 'proposed' && !proposal.requires_second_approval);
+    const party = proposal.requester_subject === this.userId()
+      || proposal.approver_subject === this.userId();
+    return executable && party && !this.proposalExpired(card);
+  }
+
+  async approveProposal(card: ProposalCardState): Promise<void> {
+    if (card.busy !== null || !this.canApprove(card)) return;
+    card.busy = 'approve';
+    card.error = '';
+    try {
+      // The opt-out waives only the second-approval *question* for the
+      // owner's own requests; if storing it fails, do not approve.
+      if (card.optOutChecked) {
+        await this.api.createOptOut(this.businessId(), card.proposal.action);
+      }
+      card.proposal = await this.api.approveProposal(
+        this.businessId(), card.proposal.id, card.proposal.payload_hash,
+      );
+    } catch (error) {
+      card.error = this.message(error);
+    } finally {
+      card.busy = null;
+    }
+  }
+
+  async executeProposal(card: ProposalCardState): Promise<void> {
+    if (card.busy !== null || !this.canExecute(card)) return;
+    card.busy = 'execute';
+    card.error = '';
+    this.executingProposalId = card.proposal.id;
+    try {
+      card.proposal = await this.api.executeProposal(this.businessId(), card.proposal.id);
+    } catch (error) {
+      card.error = this.message(error);
+      if (error instanceof ApiRequestError && error.status === 403) {
+        this.appendRefusalCard(card.proposal.action, this.message(error));
+      }
+    } finally {
+      card.busy = null;
+      this.executingProposalId = null;
+      // A stop requested mid-execution reconciles against the server's
+      // truth: the card reports executed vs still proposed, never a guess.
+      if (this.stopRequested) {
+        this.stopRequested = false;
+        try {
+          const view = await this.api.getProposal(this.businessId(), card.proposal.id);
+          card.proposal = view;
+          this.appendStoppedCard(view.status === 'executed' ? 'executed' : 'not-executed');
+        } catch {
+          this.appendStoppedCard('not-executed');
+        }
+      }
+    }
+  }
+
+  async cancelProposal(card: ProposalCardState): Promise<void> {
+    if (card.busy !== null) return;
+    card.busy = 'cancel';
+    card.error = '';
+    try {
+      card.proposal = await this.api.cancelProposal(this.businessId(), card.proposal.id);
+    } catch (error) {
+      card.error = this.message(error);
+    } finally {
+      card.busy = null;
+    }
+  }
+
+  startEditProposal(card: ProposalCardState): void {
+    card.editing = true;
+    card.error = '';
+    card.editDraft = JSON.parse(JSON.stringify(card.proposal.payload)) as Record<string, unknown>;
+    card.editInputs = {};
+  }
+
+  discardEditProposal(card: ProposalCardState): void {
+    card.editing = false;
+    card.editDraft = null;
+    card.editInputs = {};
+    card.error = '';
+  }
+
+  onEditInput(card: ProposalCardState, row: PayloadRow, event: Event): void {
+    card.editInputs[row.path] = (event.target as HTMLInputElement).value;
+  }
+
+  editInputValue(card: ProposalCardState, row: PayloadRow): string {
+    return card.editInputs[row.path] ?? formatPayloadValue(row.value);
+  }
+
+  async saveEditedProposal(card: ProposalCardState): Promise<void> {
+    if (card.busy !== null || !card.editDraft) return;
+    // Proposals are immutable: an edit submits a NEW proposal, then the
+    // old one is cancelled so a failed create keeps the old card alive.
+    const draft = JSON.parse(JSON.stringify(card.editDraft)) as Record<string, unknown>;
+    for (const row of flattenPayload(card.proposal.payload).rows) {
+      if (!row.editable) continue;
+      const raw = card.editInputs[row.path];
+      if (raw === undefined) continue;
+      const coerced = coerceScalar(raw, row.value);
+      if (!coerced.ok) {
+        card.error = this.t('ui.assistantExecution.editInvalidValue');
+        return;
+      }
+      setAtPath(draft, row.path, coerced.value);
+    }
+    card.busy = 'edit';
+    card.error = '';
+    try {
+      const view = await this.api.createProposal(this.businessId(), card.proposal.action, draft);
+      try {
+        card.proposal = await this.api.cancelProposal(this.businessId(), card.proposal.id);
+      } catch (error) {
+        card.error = this.message(error);
+      }
+      card.editing = false;
+      card.editDraft = null;
+      card.editInputs = {};
+      this.chatMessages = [
+        ...this.chatMessages,
+        { role: 'assistant', content: '', attachments: [{ kind: 'proposal', card: this.newProposalCard(view) }] },
+      ];
+      this.ensureCountdownTimer();
+      this.scrollChatToLatest(true);
+    } catch (error) {
+      card.error = this.message(error);
+      if (error instanceof ApiRequestError && error.status === 403) {
+        this.appendRefusalCard(card.proposal.action, this.message(error));
+      }
+    } finally {
+      card.busy = null;
+    }
+  }
+
+  hasRecordLink(card: ProposalCardState): boolean {
+    const result = card.proposal.result;
+    if (!result) return false;
+    return recordTabForTarget(result.target_type, card.proposal.payload) !== null;
+  }
+
+  resultSummary(card: ProposalCardState): string {
+    const result = card.proposal.result;
+    if (!result) return '';
+    for (const field of ['invoice_number', 'order_number', 'name', 'total'] as const) {
+      const value = (result as Record<string, unknown>)[field];
+      if (typeof value === 'string' && value) return value;
+      if (typeof value === 'number') return String(value);
+    }
+    return '';
+  }
+
+  openRecord(card: ProposalCardState): void {
+    const result = card.proposal.result;
+    if (!result) return;
+    const tab = recordTabForTarget(result.target_type, card.proposal.payload);
+    if (!tab) return;
+    // No per-record URLs exist by design (nested paths fail closed), so
+    // the link opens the record's tab; the new record lists first there.
+    const url = workspaceUrlFor(tab, window.location.search, window.location.hash);
+    window.history.pushState(window.history.state, '', url);
+    window.dispatchEvent(new PopStateEvent('popstate'));
+  }
+
+  // ---- B7 setting suggestions ----
+
+  applySuggestion(card: SuggestionCardState): void {
+    // A financial suggestion needs an explicit separate confirm step first.
+    if (card.suggestion.is_financial && card.suggestion.requires_confirmation && card.state === 'pending') {
+      card.state = 'confirming';
+      return;
+    }
+    void this.doApplySuggestion(card);
+  }
+
+  confirmApplySuggestion(card: SuggestionCardState): void {
+    void this.doApplySuggestion(card);
+  }
+
+  cancelConfirmSuggestion(card: SuggestionCardState): void {
+    card.state = 'pending';
+  }
+
+  private async doApplySuggestion(card: SuggestionCardState): Promise<void> {
+    if (card.busy) return;
+    card.busy = true;
+    card.error = '';
+    try {
+      await this.api.updateSetting(this.businessId(), card.suggestion.setting_key, card.suggestion.proposed_value);
+      card.state = 'applied';
+    } catch (error) {
+      card.error = this.message(error);
+    } finally {
+      card.busy = false;
+    }
+  }
+
+  async rollbackSuggestion(card: SuggestionCardState): Promise<void> {
+    if (card.busy) return;
+    card.busy = true;
+    card.error = '';
+    try {
+      if (card.suggestion.current_value === null) {
+        await this.api.deleteSetting(this.businessId(), card.suggestion.setting_key);
+      } else {
+        await this.api.updateSetting(this.businessId(), card.suggestion.setting_key, card.suggestion.current_value);
+      }
+      card.state = 'rolled-back';
+    } catch (error) {
+      card.error = this.message(error);
+    } finally {
+      card.busy = false;
+    }
+  }
+
+  // ---- Refusal / stopped cards ----
+
+  private appendRefusalCard(action: string, detail: string): void {
+    this.chatMessages = [
+      ...this.chatMessages,
+      { role: 'assistant', content: '', attachments: [{ kind: 'refusal', card: { action, alternative: refusalAlternative(action), detail } }] },
+    ];
+    this.scrollChatToLatest(true);
+  }
+
+  refusalAlternativeText(card: RefusalCardState): string {
+    // Full key literals (see stoppedDoneText): the localization guard
+    // collects every literal key, so prefixes must be real keys.
+    const keys = {
+      delete: 'ui.assistantExecution.refusalAlternativeDelete',
+      settings: 'ui.assistantExecution.refusalAlternativeSettings',
+      membership: 'ui.assistantExecution.refusalAlternativeMembership',
+      generic: 'ui.assistantExecution.refusalAlternativeGeneric',
+    };
+    return this.t(keys[card.alternative]);
+  }
+
+  private appendStoppedCard(kind: StoppedCardState['kind']): void {
+    this.chatMessages = [
+      ...this.chatMessages,
+      { role: 'assistant', content: '', attachments: [{ kind: 'stopped', card: { kind } }] },
+    ];
+    this.scrollChatToLatest(true);
+  }
+
+  stoppedDoneText(card: StoppedCardState): string {
+    // Full key literals: the localization guard collects every literal
+    // key, so a shared 'stopped' prefix would read as a missing key.
+    const keys = {
+      chat: 'ui.assistantExecution.stoppedChatDone',
+      executed: 'ui.assistantExecution.stoppedExecutedDone',
+      'not-executed': 'ui.assistantExecution.stoppedNotExecutedDone',
+    };
+    return this.t(keys[card.kind]);
+  }
+
+  stoppedNotDoneText(card: StoppedCardState): string {
+    const keys = {
+      chat: 'ui.assistantExecution.stoppedChatNotDone',
+      executed: 'ui.assistantExecution.stoppedExecutedNotDone',
+      'not-executed': 'ui.assistantExecution.stoppedNotExecutedNotDone',
+    };
+    return this.t(keys[card.kind]);
+  }
+
+  stopAssistantWork(): void {
+    if (this.chatSending) {
+      // runTenantScopedRequest drops the late response after invalidate
+      // (neither onFinally nor onStale runs), so the flag resets here.
+      this.chatRequestGuard.invalidate();
+      this.chatSending = false;
+      this.appendStoppedCard('chat');
+      return;
+    }
+    if (this.executingProposalId !== null) {
+      // The execute settle handler reconciles the true outcome.
+      this.stopRequested = true;
+    }
+  }
+
+  dismissStopped(message: ChatMessage, attachment: ChatAttachment): void {
+    message.attachments = (message.attachments ?? []).filter(item => item !== attachment);
+    if (!message.content && !(message.attachments ?? []).length) {
+      this.chatMessages = this.chatMessages.filter(item => item !== message);
+    }
+  }
+
+  reviewDrafts(): void {
+    for (const message of this.chatMessages) {
+      for (const attachment of message.attachments ?? []) {
+        if (attachment.kind !== 'proposal') continue;
+        const status = attachment.card.proposal.status;
+        if (status !== 'proposed' && status !== 'approved') continue;
+        document.getElementById('proposal-' + attachment.card.proposal.id)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        return;
+      }
+    }
+  }
+
+  clearDrafts(): void {
+    for (const message of this.chatMessages) {
+      for (const attachment of message.attachments ?? []) {
+        if (attachment.kind !== 'proposal') continue;
+        const status = attachment.card.proposal.status;
+        if (status === 'proposed' || status === 'approved') {
+          void this.cancelProposal(attachment.card);
+        }
+      }
+    }
+  }
+
+  // ---- Voice input (Web Speech API) ----
+
+  toggleMic(): void {
+    if (this.micListening) {
+      this.micRecognition?.stop();
+      return;
+    }
+    if (typeof window === 'undefined') return;
+    const win = window as unknown as {
+      SpeechRecognition?: new () => SpeechRecognitionLike;
+      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
+    };
+    const Constructor = win.SpeechRecognition ?? win.webkitSpeechRecognition;
+    if (!Constructor) {
+      this.micError = this.t('ui.assistantExecution.micError');
+      return;
+    }
+    const recognition = new Constructor();
+    recognition.lang = this.language().startsWith('ar') ? 'ar-EG' : 'en-US';
+    recognition.interimResults = true;
+    recognition.continuous = false;
+    const baseDraft = this.chatDraft;
+    recognition.onresult = event => {
+      let transcript = '';
+      for (const result of Array.from(event.results)) {
+        transcript += result[0]?.transcript ?? '';
+      }
+      this.chatDraft = baseDraft ? baseDraft + ' ' + transcript : transcript;
+    };
+    recognition.onend = () => {
+      this.micListening = false;
+      this.micRecognition = null;
+    };
+    recognition.onerror = () => {
+      this.micError = this.t('ui.assistantExecution.micError');
+      this.micListening = false;
+      this.micRecognition = null;
+    };
+    this.micRecognition = recognition;
+    this.micError = '';
+    this.micListening = true;
+    recognition.start();
   }
 
   private lastErrorKind: 'session-expired' | 'access-denied' | null = null;
