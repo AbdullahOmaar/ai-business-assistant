@@ -124,6 +124,10 @@ All paths below inherit the business ID and require a trusted principal plus act
 | PATCH | `/teams/{team_id}` | **Owner only**; rename/move to another department |
 | POST | `/employees/{employee_id}/assign` | **Owner only**; full-replace assignment (a team implies its department; nulls clear) |
 | POST | `/memberships/{membership_id}/assign` | **Owner only**; full-replace assignment, same rules |
+| POST | `/invoices/bulk-void` | **Owner only**; per-item results over the single void operation; at most 100 ids (C8 Part 2, 3A-686) |
+| POST | `/purchase-orders/bulk-cancel` | **Owner only**; per-item results over the single draft-cancel operation; at most 100 ids (C8 Part 2) |
+| POST | `/customers/bulk-deactivate` | **Owner only**; per-item results over the single deactivate operation; at most 100 ids (C8 Part 2) |
+| POST | `/products/bulk-deactivate` | **Owner only**; per-item results over the single deactivate operation; at most 100 ids (C8 Part 2) |
 | GET | `/suppliers` | Membership required; list only active suppliers scoped to the requested business |
 | GET | `/purchase-orders` | Membership required; orders and lines scoped to the requested business |
 | POST | `/purchase-orders` | Membership; supplier/products must be in same business |

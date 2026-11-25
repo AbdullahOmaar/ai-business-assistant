@@ -1,3 +1,9 @@
+## C8 Part 2 — bulk operations endpoints (3A-686) — 2026-11-25 ~07:05 EET (PR pending QA review)
+
+- **What Part 2 ships:** 4 owner-only endpoints in new module `backend/app/bulk_api.py` — `POST /invoices/bulk-void`, `POST /purchase-orders/bulk-cancel`, `POST /customers/bulk-deactivate`, `POST /products/bulk-deactivate` — plus an optional `?ids=` filter on the existing CSV export for bulk export. Each endpoint **orchestrates the existing single-item operation per id** (no financial/lifecycle logic duplicated) and returns per-item results (`succeeded`/`failed` with reasons) instead of failing the batch; cap 100 ids, empty list 422, duplicates de-duplicated. One summary audit event per call (`*.bulk_*`) on top of the per-item events. No bulk financial deletion (3A-686's explicit limit).
+- **Sequencing note:** built from main under the owner's no-blocker rule while Part 1 (PR #483) sits at QA (the C3 precedent); the two branches touch the matrix/inventory additively and rebase-union cleanly (Part 1: 106 routes, Part 2: 102 routes, union 110).
+- **Validation:** `test_bulk_operations.py` 4/4 (partial failure, limits, staff 403s, export filter); matrix 102 routes; docs in `docs/BULK_OPERATIONS.md`. UI (multi-select in lists) deferred to coordination via بوس with the assistant-execution chat, same as Part 1's screens.
+
 ## C8 Part 1 — org structure backend (departments/teams/assignment) — 2026-11-25 ~05:20 EET (PR pending QA review)
 
 - **Source:** Phase 2 plan, Stage C — C8 (org structure + bulk operations, 12h; round 17 + 3A-686). Recorded as a comment on **3A-392** (Linear free-issue cap full — no dedicated issue possible). تقدير: 12 ساعة (whole C8).

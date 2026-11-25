@@ -80,6 +80,10 @@ import { auditActionLabel, auditTargetLabel } from './audit-labels';
             <option value="org_team.updated">{{ t('audit.actions.m_c8d104') }}</option>
             <option value="employee.assigned">{{ t('audit.actions.m_c8d105') }}</option>
             <option value="membership.assigned">{{ t('audit.actions.m_c8d106') }}</option>
+            <option value="invoice.bulk_voided">{{ t('audit.actions.m_c8b201') }}</option>
+            <option value="purchase_order.bulk_cancelled">{{ t('audit.actions.m_c8b202') }}</option>
+            <option value="customer.bulk_deactivated">{{ t('audit.actions.m_c8b203') }}</option>
+            <option value="product.bulk_deactivated">{{ t('audit.actions.m_c8b204') }}</option>
             <option value="business.deleted">{{ t('audit.actions.m_j0lw40') }}</option>
             <option value="business.exported">{{ t('audit.actions.m_jlt81r') }}</option>
             <option value="account.deleted">{{ t('audit.actions.m_8lnrmq') }}</option>
