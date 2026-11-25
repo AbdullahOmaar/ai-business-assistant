@@ -9,6 +9,7 @@ from sqlalchemy.orm import sessionmaker
 
 from app.api import router as business_router
 from app.assistant_api import router as assistant_router
+from app.bulk_api import router as bulk_router
 from app.core_features_api import router as core_features_router
 from app.database import create_database_engine
 from app.demo_auth_api import router as demo_auth_router
@@ -84,6 +85,7 @@ app.include_router(platform_admin_router)
 app.include_router(employee_payroll_router)
 app.include_router(org_router)
 app.include_router(demo_auth_router)
+app.include_router(bulk_router)
 
 
 @app.on_event("startup")

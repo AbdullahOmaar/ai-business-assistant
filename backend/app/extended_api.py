@@ -1498,10 +1498,24 @@ def report_summary(business_id: UUID,
 
 @router.get("/exports/{entity_type}.csv")
 def export_csv(business_id: UUID, entity_type: str,
+               ids: str | None = Query(default=None),
                session: Session = Depends(get_session),
                principal: AuthenticatedPrincipal = Depends(get_principal)):
     try:
         _authorized(session, principal, business_id, owner_only=True)
+        # Bulk export (C8 Part 2, 3A-686): an optional comma-separated ids
+        # filter narrows the export to the caller's multi-selection.
+        wanted_ids: set[UUID] | None = None
+        if ids:
+            try:
+                wanted_ids = {
+                    UUID(part.strip()) for part in ids.split(",") if part.strip()
+                }
+            except ValueError:
+                raise HTTPException(
+                    status_code=422,
+                    detail="ids must be comma-separated UUIDs",
+                ) from None
         supported = {
             "customers": ("customers", ("id", "name", "email", "phone", "address", "created_at")),
             "products": ("products", ("id", "sku", "name", "unit", "unit_price", "is_stock_tracked", "created_at")),
@@ -1513,6 +1527,8 @@ def export_csv(business_id: UUID, entity_type: str,
         _model_name, columns = supported[entity_type]
         model = {"customers": Customer, "products": Product, "expenses": Expense}[entity_type]
         rows = session.scalars(select(model).where(model.business_id == business_id)).all()
+        if wanted_ids is not None:
+            rows = [row for row in rows if row.id in wanted_ids]
         buffer = io.StringIO(newline="")
         writer = csv.writer(buffer)
         writer.writerow(columns)
