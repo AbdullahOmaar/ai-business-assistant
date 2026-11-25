@@ -1457,6 +1457,10 @@
       "m_c8d104": "Team updated",
       "m_c8d105": "Employee assigned",
       "m_c8d106": "Membership assigned",
+      "m_c8b201": "Invoices bulk-voided",
+      "m_c8b202": "Purchase orders bulk-cancelled",
+      "m_c8b203": "Customers bulk-deactivated",
+      "m_c8b204": "Products bulk-deactivated",
       "m_j0lw40": "Business deleted",
       "m_jlt81r": "Business data exported",
       "m_8lnrmq": "Account deleted"

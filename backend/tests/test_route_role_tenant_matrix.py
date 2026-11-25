@@ -30,6 +30,7 @@ from sqlalchemy.pool import StaticPool
 from app import (
     api,
     assistant_api,
+    bulk_api,
     core_features_api,
     demo_auth_api,
     employee_payroll_api,
@@ -143,6 +144,13 @@ MATRIX = [
     ("GET", "/api/v1/platform-admin/users", "deny"),
     ("POST", "/api/v1/platform-admin/users/{user_uid}/roles", "deny"),
     ("GET", "/api/v1/platform-admin/role-audit-events", "deny"),
+    # C8 Part 2 (3A-686): bulk operations are owner-only; the positive
+    # pass fires them on dedicated seeds (fresh draft invoice / draft
+    # purchase order / second customer / second product).
+    ("POST", "/api/v1/businesses/{business_id}/invoices/bulk-void", "deny"),
+    ("POST", "/api/v1/businesses/{business_id}/purchase-orders/bulk-cancel", "deny"),
+    ("POST", "/api/v1/businesses/{business_id}/customers/bulk-deactivate", "deny"),
+    ("POST", "/api/v1/businesses/{business_id}/products/bulk-deactivate", "deny"),
     # B3 (3A-721): business deletion + the verifiable full export are
     # owner-only; the positive pass fires the delete LAST (it
     # soft-deletes business A).
@@ -184,6 +192,7 @@ def _live_route_table() -> set[tuple[str, str]]:
         assistant_api.router,
         platform_admin_api.router,
         employee_payroll_api.router,
+        bulk_api.router,
         purchasing_api.router,
         demo_auth_api.router,
         org_api.router,
@@ -391,6 +400,18 @@ def test_full_route_role_tenant_denial_matrix():
             ("POST", "/api/v1/businesses/{business_id}/cashbox/close"): {
                 "currency_code": "EGP", "counted_amount": "10.00",
                 "handed_by": "probe", "received_by": "probe",
+            },
+            ("POST", "/api/v1/businesses/{business_id}/invoices/bulk-void"): {
+                "ids": [random_id],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/purchase-orders/bulk-cancel"): {
+                "ids": [random_id],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/customers/bulk-deactivate"): {
+                "ids": [random_id],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/products/bulk-deactivate"): {
+                "ids": [random_id],
             },
             ("POST", "/api/v1/businesses/{business_id}/purchase-orders"): {
                 "supplier_id": supplier_id, "order_number": "PO-PROBE", "currency_code": "EGP",
@@ -635,6 +656,21 @@ def test_owner_positive_matrix():
 
         po_a_id = make_purchase_order("PO-A")
         po_b_id = make_purchase_order("PO-B")
+        # C8 Part 2: dedicated seeds for the bulk rows -- a draft invoice
+        # and a draft purchase order nothing else touches, plus a second
+        # customer and product: the bulk rows are POSTs, so they fire
+        # BEFORE the single DELETE rows, and deactivating the shared
+        # customer/product would 404 those rows.
+        bulk_invoice_id = make_invoice("INV-BULK")
+        bulk_po_id = make_purchase_order("PO-BULK")
+        bulk_customer_id = client.post(
+            f"{base}/customers", json={"name": "Customer Bulk"}
+        ).json()["id"]
+        bulk_product_id = client.post(
+            f"{base}/products",
+            json={"name": "Product Bulk", "unit_price": "10.00",
+                  "is_stock_tracked": True, "opening_quantity": "10"},
+        ).json()["id"]
         with app.state.session_factory() as session:
             from sqlalchemy import select as _select
 
@@ -747,6 +783,18 @@ def test_owner_positive_matrix():
             ("POST", "/api/v1/businesses/{business_id}/cashbox/close"): {
                 "currency_code": "EGP", "counted_amount": "10.00",
                 "handed_by": "probe", "received_by": "probe",
+            },
+            ("POST", "/api/v1/businesses/{business_id}/invoices/bulk-void"): {
+                "ids": [bulk_invoice_id],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/purchase-orders/bulk-cancel"): {
+                "ids": [bulk_po_id],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/customers/bulk-deactivate"): {
+                "ids": [bulk_customer_id],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/products/bulk-deactivate"): {
+                "ids": [bulk_product_id],
             },
             ("POST", "/api/v1/businesses/{business_id}/purchase-orders"): {
                 "supplier_id": supplier_id, "order_number": "PO-PROBE", "currency_code": "EGP",
