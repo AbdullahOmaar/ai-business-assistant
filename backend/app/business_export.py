@@ -35,6 +35,7 @@ from app.models import (
     CashboxEntry,
     CreditNote,
     Customer,
+    Department,
     Employee,
     Expense,
     ImportJob,
@@ -53,6 +54,7 @@ from app.models import (
     SalesReturnLine,
     StockMovement,
     Supplier,
+    Team,
 )
 
 # Entity name -> model. Every model here carries business_id (except
@@ -78,6 +80,8 @@ EXPORT_ENTITIES: dict[str, type] = {
     "sales_return_lines": SalesReturnLine,
     "credit_notes": CreditNote,
     "employees": Employee,
+    "departments": Department,
+    "teams": Team,
     "payroll_records": PayrollRecord,
     "recurring_schedules": RecurringInvoiceSchedule,
     "pricing_rules": PricingRule,

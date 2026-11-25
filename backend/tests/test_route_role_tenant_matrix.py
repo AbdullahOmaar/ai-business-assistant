@@ -34,6 +34,7 @@ from app import (
     demo_auth_api,
     employee_payroll_api,
     extended_api,
+    org_api,
     platform_admin_api,
     purchasing_api,
 )
@@ -147,6 +148,15 @@ MATRIX = [
     # soft-deletes business A).
     ("GET", "/api/v1/businesses/{business_id}/export", "deny"),
     ("DELETE", "/api/v1/businesses/{business_id}", "deny"),
+    # C8 Part 1 (3A-392): org structure — writes owner-only, reads any member.
+    ("POST", "/api/v1/businesses/{business_id}/departments", "deny"),
+    ("GET", "/api/v1/businesses/{business_id}/departments", "allow"),
+    ("PATCH", "/api/v1/businesses/{business_id}/departments/{department_id}", "deny"),
+    ("POST", "/api/v1/businesses/{business_id}/teams", "deny"),
+    ("GET", "/api/v1/businesses/{business_id}/teams", "allow"),
+    ("PATCH", "/api/v1/businesses/{business_id}/teams/{team_id}", "deny"),
+    ("POST", "/api/v1/businesses/{business_id}/employees/{employee_id}/assign", "deny"),
+    ("POST", "/api/v1/businesses/{business_id}/memberships/{membership_id}/assign", "deny"),
 ]
 
 EXCLUDED_FROM_MATRIX = {
@@ -176,6 +186,7 @@ def _live_route_table() -> set[tuple[str, str]]:
         employee_payroll_api.router,
         purchasing_api.router,
         demo_auth_api.router,
+        org_api.router,
     ):
         for route in router.routes:
             if isinstance(route, APIRoute):
@@ -327,6 +338,8 @@ def test_full_route_role_tenant_denial_matrix():
             "payroll_id": payroll_id,
             "membership_id": staff_membership_id,
             "invitation_id": random_id,
+            "department_id": random_id,
+            "team_id": random_id,
             "entity_type": "customers",
             "setting_key": "matrix_key",
             "user_uid": "some-uid",
@@ -365,6 +378,12 @@ def test_full_route_role_tenant_denial_matrix():
                 "category": "ops", "description": "probe", "amount": "1.00",
                 "currency_code": "EGP", "incurred_at": "2026-01-01T00:00:00Z",
             },
+            ("POST", "/api/v1/businesses/{business_id}/departments"): {"name": "Probe"},
+            ("PATCH", "/api/v1/businesses/{business_id}/departments/{department_id}"): {"name": "Renamed"},
+            ("POST", "/api/v1/businesses/{business_id}/teams"): {"name": "Probe", "department_id": random_id},
+            ("PATCH", "/api/v1/businesses/{business_id}/teams/{team_id}"): {"name": "Renamed"},
+            ("POST", "/api/v1/businesses/{business_id}/employees/{employee_id}/assign"): {"department_id": random_id},
+            ("POST", "/api/v1/businesses/{business_id}/memberships/{membership_id}/assign"): {"department_id": random_id},
             ("POST", "/api/v1/businesses/{business_id}/cashbox/entries"): {
                 "kind": "deposit", "amount": "10.00", "currency_code": "EGP",
                 "reason": "probe",
@@ -652,6 +671,13 @@ def test_owner_positive_matrix():
         employee_id = client.post(
             f"{base}/employees", json={"name": "Employee A", "monthly_salary": "1000"}
         ).json()["id"]
+        department_id = client.post(
+            f"{base}/departments", json={"name": "Matrix Dept"}
+        ).json()["id"]
+        team_id = client.post(
+            f"{base}/teams",
+            json={"name": "Matrix Team", "department_id": department_id},
+        ).json()["id"]
         payroll_id = client.post(
             f"{base}/employees/{employee_id}/payroll", json={"period": "2026-01"}
         ).json()["id"]
@@ -668,6 +694,8 @@ def test_owner_positive_matrix():
             "payroll_id": payroll_id,
             "membership_id": staff_membership_id,
             "invitation_id": str(uuid4()),
+            "department_id": department_id,
+            "team_id": team_id,
             "entity_type": "customers",
             "setting_key": "matrix_key",
             "user_uid": "some-uid",
@@ -706,6 +734,12 @@ def test_owner_positive_matrix():
                 "category": "ops", "description": "probe", "amount": "1.00",
                 "currency_code": "EGP", "incurred_at": "2026-01-01T00:00:00Z",
             },
+            ("POST", "/api/v1/businesses/{business_id}/departments"): {"name": "Probe"},
+            ("PATCH", "/api/v1/businesses/{business_id}/departments/{department_id}"): {"name": "Renamed"},
+            ("POST", "/api/v1/businesses/{business_id}/teams"): {"name": "Probe", "department_id": department_id},
+            ("PATCH", "/api/v1/businesses/{business_id}/teams/{team_id}"): {"name": "Renamed"},
+            ("POST", "/api/v1/businesses/{business_id}/employees/{employee_id}/assign"): {"department_id": department_id},
+            ("POST", "/api/v1/businesses/{business_id}/memberships/{membership_id}/assign"): {"department_id": department_id},
             ("POST", "/api/v1/businesses/{business_id}/cashbox/entries"): {
                 "kind": "deposit", "amount": "10.00", "currency_code": "EGP",
                 "reason": "probe",
