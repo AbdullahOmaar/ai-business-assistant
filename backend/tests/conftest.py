@@ -16,6 +16,6 @@ import pytest
 
 @pytest.fixture(scope="session", autouse=True)
 def _raise_rate_limit_ceilings_for_suite():
-    for scope in ("BUSINESS_CREATE", "INVITATION_ACCEPT", "ASSISTANT_CHAT", "CSV_IMPORT"):
+    for scope in ("BUSINESS_CREATE", "INVITATION_ACCEPT", "ASSISTANT_CHAT", "ASSISTANT_EXECUTION", "CSV_IMPORT"):
         os.environ.setdefault(f"RATE_LIMIT_{scope}_PER_MINUTE", "100000")
     yield
