@@ -3,7 +3,7 @@
 This schema is groundwork only. Authentication and request-level tenant
 authorization must be implemented before business-data endpoints are exposed.
 """
-from datetime import datetime
+from datetime import date, datetime
 from decimal import Decimal
 from enum import Enum
 from uuid import UUID, uuid4
@@ -14,6 +14,7 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     CheckConstraint,
+    Date,
     DateTime,
     ForeignKey,
     ForeignKeyConstraint,
@@ -454,6 +455,75 @@ class Expense(Base):
     incurred_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     vendor_name: Mapped[str | None] = mapped_column(String(160), nullable=True)
     reference: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class CashboxEntry(Base):
+    """One physical-cash movement in a business's cashbox (C3, 3A-727).
+
+    The balance is computed from signed entries, never stored:
+    opening and deposit add, withdrawal subtracts. Every entry is
+    recorded by a named member and mirrored by an audit event.
+    """
+
+    __tablename__ = "cashbox_entries"
+    __table_args__ = (
+        CheckConstraint("amount > 0", name="ck_cashbox_entries_amount_positive"),
+        CheckConstraint(
+            "kind IN ('opening', 'deposit', 'withdrawal')",
+            name="ck_cashbox_entries_kind",
+        ),
+        UniqueConstraint("id", "business_id", name="uq_cashbox_entries_id_business"),
+        Index("ix_cashbox_entries_business_created", "business_id", "created_at"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    kind: Mapped[str] = mapped_column(String(16), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    reason: Mapped[str] = mapped_column(String(500), nullable=False)
+    reference: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    recorded_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class CashboxClosing(Base):
+    """A daily cashbox close with a documented handover receipt (C3).
+
+    Expected is the computed balance at close time; counted is what
+    was physically in the drawer; variance is counted minus
+    expected and may be negative. One closing per business,
+    currency and day.
+    """
+
+    __tablename__ = "cashbox_closings"
+    __table_args__ = (
+        UniqueConstraint(
+            "business_id", "currency_code", "closed_date",
+            name="uq_cashbox_closings_business_currency_date",
+        ),
+        UniqueConstraint("id", "business_id", name="uq_cashbox_closings_id_business"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    closed_date: Mapped[date] = mapped_column(Date, nullable=False)
+    currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    expected_amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    counted_amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    variance: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    handed_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    received_by: Mapped[str] = mapped_column(String(255), nullable=False)
+    note: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )

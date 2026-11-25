@@ -111,6 +111,11 @@ All paths below inherit the business ID and require a trusted principal plus act
 | GET | `/reports/data-integrity` | OWNER only; read-only integrity findings scoped to business |
 | POST | `/expenses` | Membership required |
 | GET | `/expenses` | Membership required; filter by business |
+| POST | `/cashbox/entries` | Membership required; withdrawal cannot exceed the computed balance (C3, 3A-727) |
+| GET | `/cashbox/balance` | Membership required; computed from signed entries, never stored |
+| GET | `/cashbox/entries` | Membership required; optional kind filter |
+| POST | `/cashbox/close` | **Owner only**; daily close with counted amount, variance and handover receipt; one per currency per day |
+| GET | `/cashbox/closings` | Membership required |
 | GET | `/suppliers` | Membership required; list only active suppliers scoped to the requested business |
 | GET | `/purchase-orders` | Membership required; orders and lines scoped to the requested business |
 | POST | `/purchase-orders` | Membership; supplier/products must be in same business |

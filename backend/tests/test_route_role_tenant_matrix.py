@@ -70,6 +70,11 @@ MATRIX = [
     ("POST", "/api/v1/businesses/{business_id}/payments", "deny"),
     ("POST", "/api/v1/businesses/{business_id}/expenses", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/expenses", "allow"),
+    ("POST", "/api/v1/businesses/{business_id}/cashbox/entries", "allow"),
+    ("GET", "/api/v1/businesses/{business_id}/cashbox/balance", "allow"),
+    ("GET", "/api/v1/businesses/{business_id}/cashbox/entries", "allow"),
+    ("POST", "/api/v1/businesses/{business_id}/cashbox/close", "deny"),
+    ("GET", "/api/v1/businesses/{business_id}/cashbox/closings", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/suppliers", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/purchase-orders", "allow"),
     ("POST", "/api/v1/businesses/{business_id}/purchase-orders", "allow"),
@@ -359,6 +364,14 @@ def test_full_route_role_tenant_denial_matrix():
             ("POST", "/api/v1/businesses/{business_id}/expenses"): {
                 "category": "ops", "description": "probe", "amount": "1.00",
                 "currency_code": "EGP", "incurred_at": "2026-01-01T00:00:00Z",
+            },
+            ("POST", "/api/v1/businesses/{business_id}/cashbox/entries"): {
+                "kind": "deposit", "amount": "10.00", "currency_code": "EGP",
+                "reason": "probe",
+            },
+            ("POST", "/api/v1/businesses/{business_id}/cashbox/close"): {
+                "currency_code": "EGP", "counted_amount": "10.00",
+                "handed_by": "probe", "received_by": "probe",
             },
             ("POST", "/api/v1/businesses/{business_id}/purchase-orders"): {
                 "supplier_id": supplier_id, "order_number": "PO-PROBE", "currency_code": "EGP",
@@ -692,6 +705,14 @@ def test_owner_positive_matrix():
             ("POST", "/api/v1/businesses/{business_id}/expenses"): {
                 "category": "ops", "description": "probe", "amount": "1.00",
                 "currency_code": "EGP", "incurred_at": "2026-01-01T00:00:00Z",
+            },
+            ("POST", "/api/v1/businesses/{business_id}/cashbox/entries"): {
+                "kind": "deposit", "amount": "10.00", "currency_code": "EGP",
+                "reason": "probe",
+            },
+            ("POST", "/api/v1/businesses/{business_id}/cashbox/close"): {
+                "currency_code": "EGP", "counted_amount": "10.00",
+                "handed_by": "probe", "received_by": "probe",
             },
             ("POST", "/api/v1/businesses/{business_id}/purchase-orders"): {
                 "supplier_id": supplier_id, "order_number": "PO-PROBE", "currency_code": "EGP",
