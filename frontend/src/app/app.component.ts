@@ -413,6 +413,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               <section abaCard class="panel">
                 <div [hidden]="statementVisible">
                 <aba-section-header [title]="t('ui.m_1lifkl9')" [description]="t('ui.m_15gmqko')" />
+                <div class="record-tools-row">
                 <button class="primary customers-tool" type="button" (click)="customerCreateRequest = customerCreateRequest + 1"><aba-icon name="add" />{{ t('customerWorkspace.newCustomer') }}</button>
                 @if (business?.role === 'owner') { <button class="secondary customers-tool" type="button" (click)="exportCurrentList()"><aba-icon name="export" />{{ t('ui.m_nbsw3y') }}</button> }
                 @if (business?.role === 'owner') { <details class="aba-record-secondary csv-disclosure"><summary><span><aba-icon name="import" />{{ t('ui.m_p4xhry') }}</span></summary><div class="aba-record-secondary__body"><section abaCard class="csv-import-panel" [attr.aria-label]="t('ui.m_1cobl8b')">
@@ -435,6 +436,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                   @if (customerImportMessage) { <aba-state-message [kind]="customerImportMessageKind" [description]="customerImportMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('ui.m_15zjjtn')" /> }
+                </div>
                 @defer (when tab === 'customers' && business?.id) {
                   <aba-customer-workspace
                     [businessId]="business.id"
@@ -495,6 +497,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             @if (tab === 'products' && business?.id) {
               <section abaCard class="panel">
                 <aba-section-header [title]="t('ui.m_137u0ee')" [description]="t('ui.m_snu8sb')" />
+                <div class="record-tools-row">
                 <details class="aba-record-create" [open]="productCreateOpen" (toggle)="productCreateOpen = $any($event.target).open">
                   <summary><span class="products-tool"><aba-icon name="add" />{{ t('ui.m_1nbakc8') }}</span><span class="aba-record-create__icon" aria-hidden="true">＋</span></summary>
                   <div class="aba-record-create__body">
@@ -547,6 +550,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                   }
                   @if (importMessage) { <aba-state-message [kind]="importMessageKind" [description]="importMessage" /> }
                 </section></div></details> } @else { <aba-state-message kind="info" [description]="t('ui.m_15zjjtn')" /> }
+                </div>
                 @defer (when tab === 'products' && business?.id) {
                   <aba-product-workspace
                     [businessId]="business.id"
