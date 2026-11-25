@@ -1105,3 +1105,87 @@ class DemoRateLimitCounter(Base):
         nullable=False,
         server_default=sa.text("CURRENT_TIMESTAMP"),
     )
+
+
+class AssistantProposal(Base):
+    """One assistant-proposed write, bound to its exact payload (Slice 1).
+
+    The lifecycle is request -> proposal -> (second approval, when the
+    action is in the 19) -> execute -> result. The payload is stored
+    server-side and never changes between proposal and execution; the
+    approval binds to its hash, so a tampered or re-issued payload can
+    never ride an old approval. ``expires_at`` is creation + 5 minutes
+    (owner decision 2026-11-25); expiry is derived on read — no lazy
+    write mutates the row — so ``status`` stays ``proposed``/``approved``
+    in the database and the API reports ``expired`` once the deadline
+    passes. ``approved_action`` records the effective action the
+    approval was granted for (draft vs issued invoice update), so an
+    approval given for a draft edit cannot execute an issued edit if
+    the invoice's status changed underneath. ``executing`` is a
+    transient claim state: the execute step atomically moves the
+    proposal to ``executing`` (committed before dispatch) so a second
+    concurrent execute cannot dispatch the same payload again; a
+    failed dispatch releases the claim back to the pre-execution
+    status, so the approval is not burned.
+    """
+
+    __tablename__ = "assistant_proposals"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('proposed', 'approved', 'executing', 'executed', 'expired', 'rejected')",
+            name="ck_assistant_proposals_status",
+        ),
+        Index("ix_assistant_proposals_business_created", "business_id", "created_at"),
+        Index("ix_assistant_proposals_business_status", "business_id", "status"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    requester_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    action: Mapped[str] = mapped_column(String(80), nullable=False)
+    payload: Mapped[dict] = mapped_column(JSON, nullable=False)
+    payload_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="proposed")
+    approver_subject: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    approved_action: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    executed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    result_target_type: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    result_target_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class AssistantConfirmationOptOut(Base):
+    """An owner's explicit per-action waiver of the second-approval question.
+
+    Slice 1 (owner decision 2026-11-25, DESIGN.md §5.3): the owner may
+    enable "don't ask again" for any of the 19 sensitive actions. The
+    waiver covers only the *question*: role, payload binding and audit
+    still apply, and it waives approval only for the owner's own
+    requests — a staff member's money action always needs a live owner
+    approval. One row per (business, owner, action).
+    """
+
+    __tablename__ = "assistant_confirmation_opt_outs"
+    __table_args__ = (
+        UniqueConstraint(
+            "business_id", "user_subject", "action",
+            name="uq_assistant_opt_outs_business_user_action",
+        ),
+        Index("ix_assistant_opt_outs_business_user", "business_id", "user_subject"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    user_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    action: Mapped[str] = mapped_column(String(80), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )

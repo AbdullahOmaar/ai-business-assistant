@@ -4,10 +4,14 @@ The policy is a closed list: the assistant may execute only the
 actions named in it, with the caller's role, and the sensitive ones
 only after a second owner approval. The tests prove the list maps
 to real routes, the verdicts, and — the tripwire — that the
-assistant router today exposes no write route at all, so any future
-execution path must go through this policy or fail the suite.
+assistant router exposes write routes ONLY through the policy gate:
+every non-chat route must delegate to ``app.assistant_execution``
+(the only place ``verdict()`` is called for assistant writes), so
+a direct-write endpoint added to this router fails the suite.
 """
 from __future__ import annotations
+
+from pathlib import Path
 
 import pytest
 
@@ -52,17 +56,49 @@ def test_closed_list_has_no_duplicates_or_overlap() -> None:
     assert not (set(actions) & set(approval))
 
 
-def test_assistant_router_exposes_no_write_route() -> None:
-    """Tripwire: the assistant answers questions only. If a future
-    execution endpoint is added to this router, this test fails until
-    the endpoint is routed through the write policy."""
-    routes = list(assistant_router.routes)
-    assert len(routes) == 1
-    methods = getattr(routes[0], "methods", set())
-    path = getattr(routes[0], "path", "")
-    assert path == "/api/v1/businesses/{business_id}/assistant/chat" and methods == {"POST"}, (
-        f"unexpected assistant route: {methods} {path}"
+_CHAT_ROUTE = ("POST", "/api/v1/businesses/{business_id}/assistant/chat")
+
+# Slice 1 execution routes — the complete set. A new route on this
+# router fails the suite until it is added here AND proven policy-gated.
+_EXECUTION_ROUTES = {
+    ("POST", "/api/v1/businesses/{business_id}/assistant/proposals"),
+    ("GET", "/api/v1/businesses/{business_id}/assistant/proposals/{proposal_id}"),
+    ("POST", "/api/v1/businesses/{business_id}/assistant/proposals/{proposal_id}/approve"),
+    ("POST", "/api/v1/businesses/{business_id}/assistant/proposals/{proposal_id}/execute"),
+    ("POST", "/api/v1/businesses/{business_id}/assistant/proposals/{proposal_id}/cancel"),
+    ("POST", "/api/v1/businesses/{business_id}/assistant/confirmation-opt-outs"),
+    ("DELETE", "/api/v1/businesses/{business_id}/assistant/confirmation-opt-outs/{action}"),
+    ("GET", "/api/v1/businesses/{business_id}/assistant/confirmation-opt-outs"),
+}
+
+
+def test_assistant_router_exposes_only_policy_gated_execution_routes() -> None:
+    """Tripwire: the assistant router may expose write routes only
+    through the policy gate. Every non-chat route must delegate to
+    app.assistant_execution — the module that calls verdict() — so a
+    handler that writes directly fails this test."""
+    seen: set[tuple[str, str]] = set()
+    for route in assistant_router.routes:
+        for method in getattr(route, "methods", set()):
+            seen.add((method, route.path))
+    assert seen == {_CHAT_ROUTE} | _EXECUTION_ROUTES, (
+        f"unexpected assistant route set: {sorted(seen)}"
     )
+    for route in assistant_router.routes:
+        if route.path.endswith("/chat"):
+            continue
+        endpoint = route.endpoint
+        assert "execution" in endpoint.__code__.co_names, (
+            f"{route.path} does not delegate to app.assistant_execution — "
+            "assistant writes must go through the policy gate"
+        )
+
+
+def test_execution_module_gates_through_verdict() -> None:
+    """The gate itself: both the proposal-creation role check and the
+    execution check must call verdict(). Removing either fails here."""
+    source = (Path(__file__).parent.parent / "app" / "assistant_execution.py").read_text()
+    assert source.count("policy.verdict(") >= 2
 
 
 def test_allowed_action_passes_for_staff() -> None:
@@ -106,6 +142,19 @@ def test_requires_second_approval_classification() -> None:
     assert policy.requires_second_approval("invoice.issue") is True
     assert policy.requires_second_approval("customer.create") is False
     assert policy.requires_second_approval("business.delete") is False
+
+
+def test_draft_invoice_edit_is_allowed_without_second_approval() -> None:
+    """Formal B6 amendment (owner decision 2026-11-25, DESIGN.md §7.3):
+    editing a DRAFT invoice joins the allowed list — same PATCH route,
+    STAFF, no second approval. An issued invoice stays in the 19."""
+    item = policy.verdict("invoice.update_draft", "STAFF")
+    assert item.action == "invoice.update_draft"
+    assert item.second_approval is False
+    assert policy.requires_second_approval("invoice.update_draft") is False
+    assert policy.requires_second_approval("invoice.update") is True
+    with pytest.raises(policy.AssistantWriteNeedsApproval):
+        policy.verdict("invoice.update", "OWNER")
 
 
 if __name__ == "__main__":

@@ -1,11 +1,13 @@
 """Assistant write governance (B6, 3A-724) — the closed list.
 
-The assistant executes NOTHING today: its only endpoint is
-POST /api/v1/businesses/{id}/assistant/chat, a question-answering
-endpoint, and its system prompt forbids claiming an execution.
-This module is the contract the future execution path (plan tasks
-D2/B7) must satisfy before it executes anything. It is a closed
-list: an action not named here is forbidden by default.
+The assistant executes only through the proposal flow
+(``app.assistant_execution``): a proposal binds an action to its
+exact payload, sensitive actions need a second owner approval (or
+the owner's stored per-action opt-out), and every execution runs
+through ``verdict()`` below with the caller's own role. The chat
+endpoint itself stays read-only; its system prompt forbids
+claiming an execution. It is a closed list: an action not named
+here is forbidden by default.
 
 Three classes:
 - ALLOWED: reversible, low-value writes the assistant may execute
@@ -13,9 +15,9 @@ Three classes:
   directory records only — nothing that posts money).
 - NEEDS_APPROVAL: writes that post money, commit a business, or
   carry a large blast radius. They may execute ONLY after a second
-  approval by the business owner (the approval flow is a design in
-  docs/ASSISTANT_WRITE_GOVERNANCE.md; it does not exist yet, so
-  today these are effectively forbidden too).
+  approval by the business owner, through the proposal flow
+  (``app.assistant_execution``), or the owner's stored per-action
+  opt-out for their own requests.
 - FORBIDDEN: never executable by the assistant, even with approval
   — deletes, membership/role/platform changes, settings, payroll,
   employees, and anything outside the business.
@@ -48,6 +50,12 @@ ASSISTANT_WRITABLE: tuple[WriteAction, ...] = (
     WriteAction("product.create", "POST", "/api/v1/businesses/{business_id}/products", "STAFF", False),
     WriteAction("customer.update", "PATCH", "/api/v1/businesses/{business_id}/customers/{customer_id}", "STAFF", False),
     WriteAction("invoice.create", "POST", "/api/v1/businesses/{business_id}/invoices", "STAFF", False),
+    # Formal B6 amendment (owner decision 2026-11-25, DESIGN.md §7.3):
+    # editing an invoice while it is a DRAFT joins the allowed list.
+    # The execution path maps "invoice.update" to this entry ONLY when
+    # the target invoice's status is "draft"; an issued invoice stays
+    # "invoice.update" in NEEDS_SECOND_APPROVAL below. Same PATCH route.
+    WriteAction("invoice.update_draft", "PATCH", "/api/v1/businesses/{business_id}/invoices/{invoice_id}", "STAFF", False),
     WriteAction("invoice.duplicate", "POST", "/api/v1/businesses/{business_id}/invoices/{invoice_id}/duplicate", "STAFF", False),
     WriteAction("purchase_order.create", "POST", "/api/v1/businesses/{business_id}/purchase-orders", "STAFF", False),
     WriteAction("purchase_order.duplicate", "POST", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}/duplicate", "STAFF", False),
@@ -55,8 +63,9 @@ ASSISTANT_WRITABLE: tuple[WriteAction, ...] = (
 )
 
 # Writes that post money, commit the business, or carry a large blast
-# radius. Second approval by the owner is required — and the approval
-# flow does not exist yet, so these cannot execute today.
+# radius. Second approval by the owner is required — via the proposal
+# flow (app.assistant_execution), or the owner's stored per-action
+# opt-out for their own requests (DESIGN.md §5.3).
 NEEDS_SECOND_APPROVAL: tuple[WriteAction, ...] = (
     WriteAction("expense.create", "POST", "/api/v1/businesses/{business_id}/expenses", "STAFF", True),
     WriteAction("invoice.update", "PATCH", "/api/v1/businesses/{business_id}/invoices/{invoice_id}", "STAFF", True),

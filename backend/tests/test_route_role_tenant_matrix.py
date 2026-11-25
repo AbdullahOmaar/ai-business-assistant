@@ -122,6 +122,19 @@ MATRIX = [
     ("GET", "/api/v1/businesses/{business_id}/invoices/{invoice_id}", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/assistant/insights", "allow"),
     ("POST", "/api/v1/businesses/{business_id}/assistant/chat", "allow"),
+    # Slice 1 (assistant execution): proposals are creatable/readable by
+    # any member; approve/execute/cancel are owner/party-only; opt-outs
+    # are owner-only to write, readable by any member. The DELETE
+    # opt-out row sits here (early) so it fires before DELETE
+    # /businesses in the positive pass.
+    ("POST", "/api/v1/businesses/{business_id}/assistant/proposals", "allow"),
+    ("GET", "/api/v1/businesses/{business_id}/assistant/proposals/{proposal_id}", "allow"),
+    ("POST", "/api/v1/businesses/{business_id}/assistant/proposals/{proposal_id}/approve", "deny"),
+    ("POST", "/api/v1/businesses/{business_id}/assistant/proposals/{proposal_id}/execute", "deny"),
+    ("POST", "/api/v1/businesses/{business_id}/assistant/proposals/{proposal_id}/cancel", "deny"),
+    ("POST", "/api/v1/businesses/{business_id}/assistant/confirmation-opt-outs", "deny"),
+    ("GET", "/api/v1/businesses/{business_id}/assistant/confirmation-opt-outs", "allow"),
+    ("DELETE", "/api/v1/businesses/{business_id}/assistant/confirmation-opt-outs/{action}", "deny"),
     ("GET", "/api/v1/businesses/{business_id}/customers/{customer_id}/statement", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/audit-events", "deny"),
     ("GET", "/api/v1/businesses/{business_id}/operations/health", "deny"),
@@ -326,6 +339,33 @@ def test_full_route_role_tenant_denial_matrix():
                 .id
             )
 
+        # --- Assistant execution proposals (Slice 1) ------------------------
+        # P1 needs a second approval (expense.create, requested by
+        # owner-a); P2 is a plain cancellable proposal. The opt-out lets
+        # the DELETE opt-out row exercise a real row in the positive pass.
+        p1_response = client.post(
+            f"/api/v1/businesses/{a_id}/assistant/proposals",
+            json={"action": "expense.create", "payload": {
+                "category": "ops", "description": "matrix expense",
+                "amount": "1.00", "currency_code": "EGP",
+                "incurred_at": "2026-01-01T00:00:00Z",
+            }},
+        )
+        assert p1_response.status_code == 201, p1_response.text
+        p1 = p1_response.json()
+        p2_response = client.post(
+            f"/api/v1/businesses/{a_id}/assistant/proposals",
+            json={"action": "customer.create",
+                  "payload": {"name": "Matrix Proposal Customer 2"}},
+        )
+        assert p2_response.status_code == 201, p2_response.text
+        p2 = p2_response.json()
+        opt_out_response = client.post(
+            f"/api/v1/businesses/{a_id}/assistant/confirmation-opt-outs",
+            json={"action": "payment.record"},
+        )
+        assert opt_out_response.status_code == 201, opt_out_response.text
+
         # --- Business B: the cross-tenant actor's own workspace ------------
         as_user("matrix-owner-b")
         business_b = client.post(
@@ -352,9 +392,21 @@ def test_full_route_role_tenant_denial_matrix():
             "entity_type": "customers",
             "setting_key": "matrix_key",
             "user_uid": "some-uid",
+            "proposal_id": p1["id"],
+            "action": "payment.record",
         }
         bodies = {
             ("POST", "/api/v1/businesses/{business_id}/invitations"): {"email": "inv@example.com"},
+            ("POST", "/api/v1/businesses/{business_id}/assistant/proposals"): {
+                "action": "customer.create",
+                "payload": {"name": "Matrix Proposal Customer"},
+            },
+            ("POST", "/api/v1/businesses/{business_id}/assistant/proposals/{proposal_id}/approve"): {
+                "payload_hash": p1["payload_hash"],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/assistant/confirmation-opt-outs"): {
+                "action": "payment.record",
+            },
             ("DELETE", "/api/v1/businesses/{business_id}"): {"confirm_name": "Matrix A"},
             ("PATCH", "/api/v1/businesses/{business_id}"): {"name": "Renamed"},
             ("PATCH", "/api/v1/businesses/{business_id}/memberships/{membership_id}"): {"role": "staff"},
@@ -718,6 +770,33 @@ def test_owner_positive_matrix():
             f"{base}/employees/{employee_id}/payroll", json={"period": "2026-01"}
         ).json()["id"]
 
+        # Assistant execution proposals (Slice 1): P1 needs a second
+        # approval (expense.create, requested by owner-a); P2 is a plain
+        # cancellable proposal. The opt-out lets the DELETE opt-out row
+        # exercise a real row.
+        p1_response = client.post(
+            f"{base}/assistant/proposals",
+            json={"action": "expense.create", "payload": {
+                "category": "ops", "description": "matrix expense",
+                "amount": "1.00", "currency_code": "EGP",
+                "incurred_at": "2026-01-01T00:00:00Z",
+            }},
+        )
+        assert p1_response.status_code == 201, p1_response.text
+        p1 = p1_response.json()
+        p2_response = client.post(
+            f"{base}/assistant/proposals",
+            json={"action": "customer.create",
+                  "payload": {"name": "Matrix Proposal Customer 2"}},
+        )
+        assert p2_response.status_code == 201, p2_response.text
+        p2 = p2_response.json()
+        opt_out_response = client.post(
+            f"{base}/assistant/confirmation-opt-outs",
+            json={"action": "payment.record"},
+        )
+        assert opt_out_response.status_code == 201, opt_out_response.text
+
         ids = {
             "business_id": a_id,
             "customer_id": customer_id,
@@ -735,6 +814,8 @@ def test_owner_positive_matrix():
             "entity_type": "customers",
             "setting_key": "matrix_key",
             "user_uid": "some-uid",
+            "proposal_id": p1["id"],
+            "action": "payment.record",
         }
         bodies = {
             ("POST", "/api/v1/businesses/{business_id}/invitations"): {"email": "inv@example.com"},
@@ -825,6 +906,16 @@ def test_owner_positive_matrix():
             ("PATCH", "/api/v1/businesses/{business_id}/customers/{customer_id}"): {"name": "Probe 2"},
             ("PATCH", "/api/v1/businesses/{business_id}/products/{product_id}"): {"unit_price": "2.00"},
             ("POST", "/api/v1/businesses/{business_id}/assistant/chat"): {"message": "hi"},
+            ("POST", "/api/v1/businesses/{business_id}/assistant/proposals"): {
+                "action": "customer.create",
+                "payload": {"name": "Matrix Proposal Customer"},
+            },
+            ("POST", "/api/v1/businesses/{business_id}/assistant/proposals/{proposal_id}/approve"): {
+                "payload_hash": p1["payload_hash"],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/assistant/confirmation-opt-outs"): {
+                "action": "payment.record",
+            },
             ("POST", "/api/v1/businesses/{business_id}/employees"): {"name": "Probe", "monthly_salary": "1000"},
             ("PATCH", "/api/v1/businesses/{business_id}/employees/{employee_id}"): {"name": "Probe 2"},
             ("POST", "/api/v1/businesses/{business_id}/employees/{employee_id}/payroll"): {"period": "2026-02"},
@@ -904,6 +995,15 @@ def test_owner_positive_matrix():
                 # Separation of duties: payroll is approved (and paid) by
                 # a different owner than its creator.
                 as_user("matrix-owner-a2")
+            if (method, template) == ("POST", "/api/v1/businesses/{business_id}/assistant/proposals/{proposal_id}/approve"):
+                # Separation of duties: P1 was requested by owner-a, so
+                # a different owner (a2) approves it.
+                as_user("matrix-owner-a2")
+            if (method, template) == ("POST", "/api/v1/businesses/{business_id}/assistant/proposals/{proposal_id}/cancel"):
+                # P1 is executed by now; cancel P2 instead, as its
+                # requester (owner-a).
+                as_user("matrix-owner-a")
+                ids["proposal_id"] = p2["id"]
             response = assert_positive("owner", method, template)
             if (method, template) == ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/pay"):
                 as_user("matrix-owner-a")

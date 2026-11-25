@@ -20,6 +20,8 @@ from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import assistant_execution as execution
+from app import assistant_write_policy as policy
 from app.assistant_settings import validate_suggestions
 from app.dependencies import get_principal, get_session
 from app.domain_rules import money
@@ -39,6 +41,7 @@ from app.security import (
     apply_expense_visibility,
     authorize_membership,
 )
+from app.services import WorkflowError
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}/assistant", tags=["AI assistant"])
 
@@ -673,3 +676,185 @@ async def chat(
         raise
     except (httpx.HTTPError, KeyError, IndexError, ValueError, TypeError, json.JSONDecodeError) as exc:
         raise HTTPException(status_code=502, detail="The AI provider returned an invalid or unavailable response.") from exc
+
+
+# ---------------------------------------------------------------------------
+# Execution endpoints (Slice 1) — proposals, approvals, opt-outs.
+#
+# Thin handlers only: the lifecycle, verdict() gate and dispatch live in
+# app.assistant_execution. Every route is tenant-scoped through
+# authorize_membership (inside the service functions) and rate-limited
+# like the chat endpoint. The chat endpoint above is unchanged.
+# ---------------------------------------------------------------------------
+
+_EXECUTION_LIMIT = Depends(rate_limit("ASSISTANT_EXECUTION", default_limit=60, per_business=True))
+
+
+class _ProposalCreateRequest(BaseModel):
+    action: str = Field(min_length=1, max_length=80)
+    payload: dict = Field(default_factory=dict)
+
+
+class _ProposalApproveRequest(BaseModel):
+    payload_hash: str = Field(min_length=64, max_length=64)
+
+
+class _OptOutCreateRequest(BaseModel):
+    action: str = Field(min_length=1, max_length=80)
+
+
+def _raise_mapped(exc: Exception) -> None:
+    """Translate execution-layer failures to their HTTP status.
+
+    Unmapped exceptions re-raise unchanged (a real 500), so a bug is
+    never disguised as a client error.
+    """
+    if isinstance(exc, HTTPException):
+        raise exc
+    if isinstance(exc, execution.ProposalNotFound):
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    if isinstance(exc, execution.ProposalExpired):
+        raise HTTPException(status_code=410, detail=str(exc)) from exc
+    if isinstance(exc, execution.ProposalConflict):
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if isinstance(exc, execution.ProposalForbidden):
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    if isinstance(exc, (policy.AssistantWriteForbidden, policy.AssistantWriteRoleDenied)):
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    if isinstance(exc, policy.AssistantWriteNeedsApproval):
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if isinstance(exc, AuthorizationError):
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+    if isinstance(exc, WorkflowError):
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    raise exc
+
+
+@router.post("/proposals", status_code=201, dependencies=[_EXECUTION_LIMIT])
+def create_proposal_endpoint(
+    business_id: UUID,
+    body: _ProposalCreateRequest,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Propose one closed-list write. The proposal binds the exact payload."""
+    try:
+        return execution.create_proposal(
+            session, principal=principal, business_id=business_id,
+            action=body.action, payload=body.payload,
+        )
+    except Exception as exc:
+        _raise_mapped(exc)
+
+
+@router.get("/proposals/{proposal_id}", dependencies=[_EXECUTION_LIMIT])
+def get_proposal_endpoint(
+    business_id: UUID,
+    proposal_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    try:
+        return execution.get_proposal(
+            session, principal=principal, business_id=business_id, proposal_id=proposal_id,
+        )
+    except Exception as exc:
+        _raise_mapped(exc)
+
+
+@router.post("/proposals/{proposal_id}/approve", dependencies=[_EXECUTION_LIMIT])
+def approve_proposal_endpoint(
+    business_id: UUID,
+    proposal_id: UUID,
+    body: _ProposalApproveRequest,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Second owner approval: a different owner than the requester, bound to the payload hash."""
+    try:
+        return execution.approve_proposal(
+            session, principal=principal, business_id=business_id,
+            proposal_id=proposal_id, payload_hash=body.payload_hash,
+        )
+    except Exception as exc:
+        _raise_mapped(exc)
+
+
+@router.post("/proposals/{proposal_id}/execute", dependencies=[_EXECUTION_LIMIT])
+def execute_proposal_endpoint(
+    business_id: UUID,
+    proposal_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Execute a proposal through verdict() and dispatch; audits the result."""
+    try:
+        return execution.execute_proposal(
+            session, principal=principal, business_id=business_id, proposal_id=proposal_id,
+        )
+    except Exception as exc:
+        _raise_mapped(exc)
+
+
+@router.post("/proposals/{proposal_id}/cancel", dependencies=[_EXECUTION_LIMIT])
+def cancel_proposal_endpoint(
+    business_id: UUID,
+    proposal_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Withdraw a proposal before it executes (requester or approver)."""
+    try:
+        return execution.cancel_proposal(
+            session, principal=principal, business_id=business_id, proposal_id=proposal_id,
+        )
+    except Exception as exc:
+        _raise_mapped(exc)
+
+
+@router.post("/confirmation-opt-outs", status_code=201, dependencies=[_EXECUTION_LIMIT])
+def create_opt_out_endpoint(
+    business_id: UUID,
+    body: _OptOutCreateRequest,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Owner-only: record "don't ask again" for one of the 19 sensitive actions."""
+    try:
+        return execution.create_opt_out(
+            session, principal=principal, business_id=business_id, action=body.action,
+        )
+    except Exception as exc:
+        _raise_mapped(exc)
+
+
+@router.delete("/confirmation-opt-outs/{action}", status_code=204, dependencies=[_EXECUTION_LIMIT])
+def delete_opt_out_endpoint(
+    business_id: UUID,
+    action: str,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Owner-only: revoke one of the caller's opt-outs."""
+    try:
+        execution.delete_opt_out(
+            session, principal=principal, business_id=business_id, action=action,
+        )
+    except Exception as exc:
+        _raise_mapped(exc)
+    return None
+
+
+@router.get("/confirmation-opt-outs", dependencies=[_EXECUTION_LIMIT])
+def list_opt_outs_endpoint(
+    business_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """The caller's own opt-outs in this business."""
+    try:
+        return execution.list_opt_outs(
+            session, principal=principal, business_id=business_id,
+        )
+    except Exception as exc:
+        _raise_mapped(exc)
