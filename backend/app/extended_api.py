@@ -113,6 +113,26 @@ def _receivable_aging_bucket(due_date: date | None, as_of: date) -> tuple[str, i
         return "61_90_days", days_overdue
     return "over_90_days", days_overdue
 
+def _payable_classify(status: str) -> tuple[bool, bool]:
+    """Classify a purchase order for the payables report: (counts as
+    ordered/committed, counts as received). Drafts are neither — they
+    commit nothing yet. Cancelled orders are excluded by the query,
+    not by this helper."""
+    if status in ("approved", "partially_received", "received"):
+        return True, status in ("partially_received", "received")
+    return False, False
+
+
+def _payable_outstanding(received: Decimal, paid: Decimal) -> tuple[Decimal, bool]:
+    """Outstanding supplier balance: received goods minus supplier
+    payments. No supplier-payment records exist yet (see
+    docs/FINANCIAL_DEPTH_AUDIT.md), so paid is always zero today;
+    the parameter exists so the day payments land the same helper
+    still holds. Overpayment is flagged, never hidden."""
+    outstanding = received - paid
+    return outstanding, paid > received
+
+
 def _receivable_outstanding(total: Decimal, allocated: Decimal) -> tuple[Decimal, bool]:
     """Return the balance and flag allocations that exceed an invoice total."""
     outstanding = total - allocated
@@ -1940,6 +1960,111 @@ def receivables_aging(
                 "Legacy invoices without customer links are flagged for review, not auto-corrected.",
                 "Currency-mismatched allocations are listed as warnings and never reduce receivables.",
                 "This is an accounts-receivable aging report, not net profit or a full general ledger.",
+            ],
+        }
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
+
+
+@router.get("/reports/payables-aging")
+def payables_aging(
+    business_id: UUID,
+    as_of: date | None = Query(default=None),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Return what the business owes suppliers, by supplier and currency.
+
+    The mirror of receivables-aging for the purchase side (C2, 3A-726):
+    approved and received purchase orders, summed per supplier without
+    cross-currency netting. Outstanding equals received totals because
+    no supplier-payment records exist yet — that is stated in the
+    response, not hidden: supplier bills and payments are the
+    documented gap in docs/FINANCIAL_DEPTH_AUDIT.md.
+    """
+    try:
+        _authorized(session, principal, business_id)
+        report_date = as_of or datetime.now(UTC).date()
+        orders = session.scalars(
+            select(PurchaseOrder).where(
+                PurchaseOrder.business_id == business_id,
+                PurchaseOrder.status.in_((
+                    "draft", "approved", "partially_received", "received",
+                )),
+            ).order_by(
+                PurchaseOrder.currency_code, PurchaseOrder.order_number
+            )
+        ).all()
+        suppliers = {
+            row.id: row
+            for row in session.scalars(
+                select(Supplier).where(Supplier.business_id == business_id)
+            ).all()
+        }
+
+        order_rows = []
+        supplier_totals: dict[tuple[UUID, str], dict[str, Decimal]] = {}
+        for order in orders:
+            counts_ordered, counts_received = _payable_classify(order.status)
+            if not counts_ordered and not counts_received:
+                continue
+            total = Decimal(str(order.total or ZERO))
+            supplier = suppliers.get(order.supplier_id)
+            key = (order.supplier_id, order.currency_code)
+            bucket = supplier_totals.setdefault(key, {
+                "ordered": ZERO, "received": ZERO,
+            })
+            if counts_ordered:
+                bucket["ordered"] += total
+            if counts_received:
+                bucket["received"] += total
+            order_rows.append({
+                "order_id": str(order.id),
+                "order_number": order.order_number,
+                "supplier_id": str(order.supplier_id),
+                "supplier_name": supplier.name if supplier else None,
+                "supplier_link_missing": supplier is None,
+                "currency_code": order.currency_code,
+                "status": order.status,
+                "order_total": str(total),
+                "counts_as_ordered": counts_ordered,
+                "counts_as_received": counts_received,
+            })
+
+        summaries = []
+        for (supplier_id, currency), bucket in sorted(
+            supplier_totals.items(), key=lambda item: (str(item[0][0]), item[0][1])
+        ):
+            outstanding, _overpaid = _payable_outstanding(bucket["received"], ZERO)
+            supplier = suppliers.get(supplier_id)
+            summaries.append({
+                "supplier_id": str(supplier_id),
+                "supplier_name": supplier.name if supplier else None,
+                "currency_code": currency,
+                "ordered_total": str(bucket["ordered"]),
+                "received_total": str(bucket["received"]),
+                "outstanding_total": str(outstanding),
+            })
+        return {
+            "as_of_date": report_date.isoformat(),
+            "source": "approved and received purchase orders, grouped by supplier and currency",
+            "currency_policy": (
+                "Purchase orders are summed per currency only; different "
+                "currencies are never combined."
+            ),
+            "note": (
+                "No supplier-payment records exist yet, so outstanding "
+                "equals received totals. Supplier bills and payments are "
+                "the documented gap in docs/FINANCIAL_DEPTH_AUDIT.md."
+            ),
+            "order_count": len(order_rows),
+            "by_supplier": summaries,
+            "orders": order_rows,
+            "limitations": [
+                "Draft orders commit nothing and are excluded from totals.",
+                "Cancelled orders are excluded from the report.",
+                "Received totals are goods received, not a valuation: no inventory valuation or COGS exists yet.",
+                "This is a supplier-payables report, not net profit or a full general ledger.",
             ],
         }
     except AuthorizationError as exc:

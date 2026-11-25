@@ -1,4 +1,14 @@
-## Phase 2 — B7: conversational setup with financial-numbers guard (Linear 3A-725) — 2026-11-24 ~23:40 EET (PR pending QA review)
+## Phase 2 — C2: financial depth with evidence (Linear 3A-726) — 2026-11-25 ~00:40 EET (PR pending QA review)
+
+- **Tenth Phase 2 execution task — first in Stage C, started immediately after B7 closed per the sequencing rule** («فيز 2 — C2: العمق المالي بالأدلة (سد فجوات المشتريات والمبيعات)», تقدير: 14 ساعة, In Progress). C1 stays gated on the owner's T37 decision.
+- **Source honesty:** the round-16 audit text itself is not recoverable locally (rounds 1–18 payloads are not on disk; the 3A-694 window covers only the newest 200 comments) — so the audit was rebuilt from the code itself, which is what the task requires: every verdict carries its file/route as evidence.
+- **The evidence guide `docs/FINANCIAL_DEPTH_AUDIT.md`:** purchases + sales, column by column, against the NMS anchor (1,200 EGP/month/centre). **Shipped:** PO lifecycle + receipt idempotency, supplier directory, invoice cycle, payments + allocations, credit notes, sales returns, receivables aging, tax summary, data integrity. **Partial:** recurring schedules (stored, never executed — `next_run_at` only orders the list), pricing rules (stored, never applied — zero references outside creation + export), profit-loss (revenue − expenses; purchases/COGS absent). **Missing:** supplier bills, supplier payments, purchase returns, inventory valuation/COGS — the purchasing module's own docstring states the first four (`purchasing_api.py:4`).
+- **Gap closed in C2:** payables visibility — new `GET /reports/payables-aging` (per supplier + currency: ordered/received/outstanding; outstanding equals received totals until supplier payments exist, stated in the response). Matrix now 93 routes.
+- **Gaps NOT closed (documented with owners, not hidden):** supplier bills + payments (financial semantics — owner-gated like T37); purchase returns (C5/C4 by the stock-movement contract); recurring execution (D2 — needs a scheduler); pricing-rule application (changes invoice totals — owner decision under the batch constants); valuation/COGS (needs a valuation policy first); cashbox (C3, next in the queue).
+- **NOT deployed:** no release markers — the report reaches production with the next grouped API release.
+- **Next in the queue (prepared):** C3 (cashbox — 10h) — issue **3A-727** created as Backlog (Phase 2 label) before C2 closes; starts after C2 closes.
+
+## Phase 2 — B7: conversational setup with financial-numbers guard (Linear 3A-725) — 2026-11-24 ~23:40 EET (PR #478 MERGED `6b803be`, 3A-725 CLOSED Done «فعلي: 1 ساعة»)
 
 - **Ninth Phase 2 execution task, started immediately after B6 closed per the sequencing rule** («فيز 2 — B7: إعداد حسو بالمحادثة مع حارس الأرقام المالية», تقدير: 10 ساعات, In Progress).
 - **Honest starting point (verified from the code):** settings are a free-form key/value store (`BusinessSetting`); no code consumes setting values today, and there is no settings screen in the app yet (the B3 deferral to Stage E stands). B7 builds the proposal + guard + rollback contract on the backend.
@@ -7,7 +17,7 @@
 - **One-tap rollback:** every proposal carries its previous value; restoring is a PUT, and removing a key a proposal created is the new owner-only `DELETE /settings/{setting_key}` (audited `setting.deleted`, key only) — matrix now 92 routes.
 - **Docs:** `docs/CONVERSATIONAL_SETUP.md` (the flow, the guard, what the assistant cannot do, the settings surface honestly).
 - **NOT deployed:** no release markers — the settings screen itself is still deferred to Stage E; the DELETE endpoint reaches production with the next grouped API release.
-- **Next in the queue (prepared):** Stage C opens after Stage B closes — C1 (double-entry T44) is **gated on the owner's T37 decision** (plan decision point 1); C2 (financial-depth build-out — 14h) is the ready next task — issue **3A-726** created as Backlog (Phase 2 label) before B7 closes; starts after B7 closes.
+- **Next in the queue:** Stage C opens after Stage B closes — C1 (double-entry T44) is **gated on the owner's T37 decision** (plan decision point 1); C2 (financial-depth build-out — 14h) — **3A-726** started immediately after B7 closed per the sequencing rule; its checkpoint is the section above.
 
 ## Phase 2 — B6: assistant write-governance + second approval + role-bounded execution + computer-use policy (Linear 3A-724) — 2026-11-24 ~23:10 EET (PR #477 MERGED `c1a05b1`, 3A-724 CLOSED Done «فعلي: 1 ساعة»)
 
