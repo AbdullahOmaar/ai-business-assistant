@@ -119,7 +119,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .demo-login-icon{font-size:19px}
 .demo-login-arrow{margin-inline-start:auto;font-size:18px}
 .demo-login-note{margin:7px 0 0!important;text-align:center;font-size:10px!important;color:var(--aba-color-text-tertiary,#64748b)!important}
-.splash-build-time{display:block;margin:-8px 0 18px;color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.6;text-align:center}
+.splash-release-line{display:block;margin:-8px 0 18px;color:var(--aba-color-text-primary,#0f172a);font-size:13.5px;font-weight:600;line-height:1.6;text-align:center}
 footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px}
 footer span{color:var(--aba-color-nav-muted,#9ca3af)}
 .section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -431,7 +431,9 @@ footer span{color:var(--aba-color-nav-muted,#9ca3af)}
 /* Opening-card release metadata stays grouped, centered and direction-safe. */
 .splash-release-meta{display:grid;justify-items:center;gap:7px;width:100%;min-width:0;margin:0 0 18px;direction:inherit;text-align:center}
 .splash-version{justify-self:center;max-width:100%;white-space:normal;line-height:1.45;text-align:center;overflow-wrap:anywhere}
-.splash-build-time{display:block;max-width:100%;margin:0;color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.55;text-align:center;overflow-wrap:anywhere;unicode-bidi:plaintext}
+.splash-release-line{display:block;max-width:100%;margin:0;color:var(--aba-color-text-primary,#0f172a);font-size:13.5px;font-weight:600;line-height:1.55;text-align:center;overflow-wrap:anywhere;unicode-bidi:plaintext}
+.sidebar-release-line{display:block;margin-top:5px;font-size:12px;font-weight:600;line-height:1.5;overflow-wrap:anywhere;unicode-bidi:plaintext}
+.mobile-more-release{margin:10px 4px 2px;padding-top:10px;border-top:1px solid var(--aba-color-nav-border,#334155);color:var(--aba-color-nav-muted,#94a3b8);font-size:12.5px;font-weight:600;line-height:1.55;text-align:center;overflow-wrap:anywhere;unicode-bidi:plaintext}
 /* Adopted Arabic-first type and teal accent tokens; all controls retain high-contrast states. */
 :host{--aba-color-primary:#0f766e;--aba-color-primary-strong:#0f766e;--aba-color-primary-soft:#ccfbf1;--aba-color-primary-border:#5eead4;--aba-color-focus-ring:#0f766e;font-family:Tajawal,ui-sans-serif,system-ui,sans-serif}
 .shell .primary{border-color:var(--aba-color-primary,#0f766e);background:var(--aba-color-primary,#0f766e);color:#fff}

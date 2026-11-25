@@ -74,9 +74,15 @@ test('Product and Service use a segmented toggle with no reorder controls or lar
 });
 
 
-test('startup screen shows the Cairo-localized build date and time beneath release versions', () => {
-  assert.match(appSource, /class="splash-release-meta"[\s\S]*?class="version-pill splash-version"[\s\S]*?class="splash-build-time"/);
-  assert.match(appSource, /Build date & time/);
+// Owner rule (2026-11-25): the release line «Version X — Published [date
+// time]» is prominent on the splash AND inside the app shell (sidebar +
+// mobile More menu), built from the build metadata (APP_BUILD_INFO).
+test('startup screen and shell show the release line beneath release versions', () => {
+  assert.match(appSource, /class="splash-release-meta"[\s\S]*?class="version-pill splash-version"[\s\S]*?class="release-line splash-release-line"/);
+  assert.match(appSource, /class="release-line sidebar-release-line"/);
+  assert.match(appSource, /class="release-line mobile-more-release"/);
+  assert.match(appSource, /get releaseLineLabel\(\): string/);
+  assert.match(appSource, /— Published \{\{publishedAt\}\}/);
   assert.match(appSource, /@if \(loading && initialized\) \{ <div class="global-loading"/);
   assert.match(appSource, /\.splash-release-meta\{display:grid;justify-items:center/);
   assert.match(appSource, /get buildTimeLabel\(\): string/);

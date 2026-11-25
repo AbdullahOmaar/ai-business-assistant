@@ -85,7 +85,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           <p class="muted">{{ t('ui.m_1uzdlys') }}</p>
           <div class="splash-release-meta">
             <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
-            <small class="splash-build-time">{{ t('ui.m_1y28k2h') }} {{ buildTimeLabel }}</small>
+            <p class="release-line splash-release-line">{{ releaseLineLabel }}</p>
           </div>
         </main>
       } @else if (startupFailed) {
@@ -196,7 +196,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               </button>
             </div>
           </nav>
-          <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('ui.m_17dx7ed') }}<small>{{ t('ui.m_ab5ft9') }}</small></div>
+          <div class="sidebar-bottom"><span class="status-dot"></span> {{ t('ui.m_17dx7ed') }}<small>{{ t('ui.m_ab5ft9') }}</small><span class="release-line sidebar-release-line">{{ releaseLineLabel }}</span></div>
         
         </aside>
         @if (mobileMoreOpen) {
@@ -218,6 +218,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <button class="nav-item mobile-menu-action" type="button" (click)="toggleLanguage()"><span class="nav-icon" aria-hidden="true">文</span><span>{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</span></button>
                 <button class="nav-item mobile-menu-action" type="button" (click)="logout()"><span class="nav-icon" aria-hidden="true">↪</span><span>{{ t('ui.m_r2b303') }}</span></button>
               </div>
+              <p class="release-line mobile-more-release">{{ releaseLineLabel }}</p>
             </nav>
           </div>
         }
@@ -1097,6 +1098,11 @@ export class AppComponent implements OnInit, OnDestroy {
   get buildTimeLabel(): string {
     if (!APP_BUILD_INFO.builtAt) return this.t('ui.m_1ilhynh');
     return this.localization.formatDate(APP_BUILD_INFO.builtAt, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Cairo' });
+  }
+  // Owner rule (2026-11-25): the version + publish-time line, built from the
+  // build metadata itself — shown on the splash and inside the app shell.
+  get releaseLineLabel(): string {
+    return this.t('ui.m_c8v101', { version: this.appVersion, publishedAt: this.buildTimeLabel });
   }
   apiVersionLabel = '';
   apiCommitLabel = 'unknown';
