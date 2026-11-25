@@ -6,6 +6,7 @@
     "m_16hli7m": "Refresh now",
     "m_g3351m": "UI and API release versions",
     "m_1y28k2h": "Build date & time:",
+    "releaseLine": "Version {{version}} — published {{date}}",
     "m_1dygc0g": "Starting the app",
     "m_1uzdlys": "Checking configuration and your sign-in session before opening the workspace.",
     "m_tee7tu": "Unable to load app configuration",

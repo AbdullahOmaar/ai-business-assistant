@@ -432,6 +432,10 @@ footer span{color:var(--aba-color-nav-muted,#9ca3af)}
 .splash-release-meta{display:grid;justify-items:center;gap:7px;width:100%;min-width:0;margin:0 0 18px;direction:inherit;text-align:center}
 .splash-version{justify-self:center;max-width:100%;white-space:normal;line-height:1.45;text-align:center;overflow-wrap:anywhere}
 .splash-build-time{display:block;max-width:100%;margin:0;color:var(--aba-color-text-secondary,#64748b);font-size:11px;line-height:1.55;text-align:center;overflow-wrap:anywhere;unicode-bidi:plaintext}
+.release-line{margin:0;font-size:13px;font-weight:800;line-height:1.5;color:var(--aba-color-text-primary,#172033);unicode-bidi:plaintext}
+.release-line-splash{font-size:14px;text-align:center}
+.release-line-mobile{display:none}
+@media(max-width:760px){.release-line-mobile{display:block}}
 /* Adopted Arabic-first type and teal accent tokens; all controls retain high-contrast states. */
 :host{--aba-color-primary:#0f766e;--aba-color-primary-strong:#0f766e;--aba-color-primary-soft:#ccfbf1;--aba-color-primary-border:#5eead4;--aba-color-focus-ring:#0f766e;font-family:Tajawal,ui-sans-serif,system-ui,sans-serif}
 .shell .primary{border-color:var(--aba-color-primary,#0f766e);background:var(--aba-color-primary,#0f766e);color:#fff}

@@ -84,6 +84,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           <h1>{{ t('common.app_title') }}</h1>
           <p class="muted">{{ t('ui.m_1uzdlys') }}</p>
           <div class="splash-release-meta">
+            <p class="release-line release-line-splash">{{ releaseLine }}</p>
             <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
             <small class="splash-build-time">{{ t('ui.m_1y28k2h') }} {{ buildTimeLabel }}</small>
           </div>
@@ -280,9 +281,11 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 @for (item of businesses; track item.id) { <option [value]="item.id">{{ item.name }}</option> }
               </select>
               <div class="workspace-release-meta workspace-release-meta-inline" [attr.aria-label]="t('ui.m_zepwzq')">
+                <p class="release-line">{{ releaseLine }}</p>
                 <span class="version-pill" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
                 <small>{{ t('ui.m_1d7lshv') }} {{ buildTimeLabel }}</small>
               </div>
+              <p class="release-line release-line-mobile">{{ releaseLine }}</p>
             </section>
             <aba-mobile-app-header
               [language]="language"
@@ -1097,6 +1100,13 @@ export class AppComponent implements OnInit, OnDestroy {
   get buildTimeLabel(): string {
     if (!APP_BUILD_INFO.builtAt) return this.t('ui.m_1ilhynh');
     return this.localization.formatDate(APP_BUILD_INFO.builtAt, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Africa/Cairo' });
+  }
+  // Owner rule 2026-11-25: one prominent release line ("Version X —
+  // published [date/time]", ui.releaseLine) on the splash and inside the
+  // app, built only from the generated build metadata (APP_BUILD_INFO),
+  // never typed by hand.
+  get releaseLine(): string {
+    return this.t('ui.releaseLine', { version: this.appVersion, date: this.buildTimeLabel });
   }
   apiVersionLabel = '';
   apiCommitLabel = 'unknown';
