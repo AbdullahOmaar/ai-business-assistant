@@ -168,8 +168,9 @@ def record_turn(
     and the assistant reply, in ONE transaction — a failed commit
     persists nothing, so a turn is never half-saved. The caller passes
     the assistant reply already computed; a persistence failure
-    surfaces (the chat wrapper turns it into a 500) instead of
-    silently dropping the turn."""
+    surfaces to the chat wrapper, which logs it and returns the
+    answer unpersisted (no conversation id) instead of silently
+    dropping the turn or losing the answer."""
     if conversation_id is None:
         conversation = create_conversation(
             session, business_id=business_id, user_subject=user_subject,

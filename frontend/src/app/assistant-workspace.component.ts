@@ -266,13 +266,13 @@ interface SpeechRecognitionLike {
                 } @else {
                   @if (attachment.card.proposal.requires_second_approval && attachment.card.proposal.status === 'proposed') {
                     <p class="proposal-countdown">{{ t('ui.assistantExecution.approvalCountdown', {time: proposalCountdownText(attachment.card)}) }}</p>
-                    @if (isOwner()) { <label class="proposal-opt-out"><input type="checkbox" [(ngModel)]="attachment.card.optOutChecked" [ngModelOptions]="{standalone: true}" [disabled]="attachment.card.busy !== null"> {{ t('ui.assistantExecution.optOutLabel') }}</label> }
+                    @if (isOwner) { <label class="proposal-opt-out"><input type="checkbox" [(ngModel)]="attachment.card.optOutChecked" [ngModelOptions]="{standalone: true}" [disabled]="attachment.card.busy !== null"> {{ t('ui.assistantExecution.optOutLabel') }}</label> }
                     <div class="proposal-actions">
                       <button type="button" class="proposal-action-button primary" (click)="approveProposal(attachment.card)" [disabled]="attachment.card.busy !== null || !canApprove(attachment.card)">{{ t('ui.assistantExecution.proposalApprove') }}</button>
                     </div>
                     @if (!canApprove(attachment.card)) {
                       @if (attachment.card.proposal.requester_subject === userId()) { <p class="proposal-sub">{{ t('ui.assistantExecution.cannotApproveOwn') }}</p> }
-                      @else if (!isOwner()) { <p class="proposal-sub">{{ t('ui.assistantExecution.staffCannotApprove') }}</p> }
+                      @else if (!isOwner) { <p class="proposal-sub">{{ t('ui.assistantExecution.staffCannotApprove') }}</p> }
                       @else { <p class="proposal-sub">{{ t('ui.assistantExecution.proposalWaitingOwner') }}</p> }
                     }
                   }
@@ -307,7 +307,7 @@ interface SpeechRecognitionLike {
                 @if (attachment.card.suggestion.is_financial) { <p class="proposal-note">{{ t('ui.assistantExecution.suggestionConfirmFinancial') }}</p> }
                 @if (attachment.card.state === 'applied') { <p class="proposal-success">{{ t('ui.assistantExecution.suggestionApplied') }}</p> }
                 @else if (attachment.card.state === 'rolled-back') { <p class="proposal-success">{{ t('ui.assistantExecution.suggestionRolledBack') }}</p> }
-                @if (isOwner() && attachment.card.state !== 'applied') {
+                @if (isOwner && attachment.card.state !== 'applied') {
                   <div class="proposal-actions">
                     @if (attachment.card.state === 'confirming') {
                       <button type="button" class="proposal-action-button primary" (click)="confirmApplySuggestion(attachment.card)" [disabled]="attachment.card.busy">{{ t('ui.assistantExecution.suggestionConfirmApply') }}</button>
@@ -317,7 +317,7 @@ interface SpeechRecognitionLike {
                     }
                   </div>
                 }
-                @if (isOwner() && attachment.card.state === 'applied') {
+                @if (isOwner && attachment.card.state === 'applied') {
                   <div class="proposal-actions">
                     <button type="button" class="proposal-action-button" (click)="rollbackSuggestion(attachment.card)" [disabled]="attachment.card.busy">{{ t('ui.assistantExecution.suggestionRollback') }}</button>
                   </div>
@@ -627,6 +627,7 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
 
   growthLabel(changePct: number | null): string {
     return formatGrowth(changePct) ?? this.t('ui.assistantBrief.growthNew');
+  }
 
   private resetExecutionState(): void {
   }
@@ -902,7 +903,6 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
       this.stopAssistantWork();
       return;
     }
-    const history = this.chatMessages.slice(-8);
     // Only the text turns travel as history — a resumed proposal card
     // is server state, not model context.
     const history = this.chatMessages.slice(-8).map(message => ({ role: message.role, content: message.content }));
@@ -967,10 +967,6 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
 
   // ---- Slice 2: assistant execution UI ----
 
-  isOwner(): boolean {
-    return this.role() === 'owner';
-  }
-
   private newProposalCard(proposal: AssistantProposalView): ProposalCardState {
     return { proposal, busy: null, error: '', editing: false, editDraft: null, editInputs: {}, optOutChecked: false };
   }
@@ -1017,7 +1013,7 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
 
   canApprove(card: ProposalCardState): boolean {
     const proposal = card.proposal;
-    return this.isOwner()
+    return this.isOwner
       && proposal.status === 'proposed'
       && proposal.requires_second_approval
       && proposal.requester_subject !== this.userId()

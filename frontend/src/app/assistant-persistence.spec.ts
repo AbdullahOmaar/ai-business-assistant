@@ -2,9 +2,9 @@
 // and the conversation settings surface (assistant-persistence.ts),
 // plus pins on the assistant workspace component's Slice 4 seams:
 // history/settings/brief panels, the resumed-proposal state chip,
-// and the persisted-thread wiring of sendChat. No Slice 2 code is
-// copied in — the component must not reference its unmerged card
-// builders (the rebase adds them).
+// and the persisted-thread wiring of sendChat. Slice 2 is merged now,
+// so the component references its card builders (one copy, from the
+// merged Slice 2) — the rebase seam is closed.
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
@@ -164,8 +164,9 @@ test('sendChat rejoins the persisted thread and history resumes it', () => {
   assert.ok(component.includes('reply.conversation_id'));
   assert.ok(component.includes('resumeConversation(item.id)'));
   assert.ok(component.includes('toChatMessages(detail)'));
-  // No Slice 2 code is copied in: the full proposal cards arrive at rebase.
-  assert.doesNotMatch(component, /newProposalCard|proposalCard|assistantExecution/);
+  // Slice 2 is merged now: the full proposal cards live here (one copy,
+  // from the merged Slice 2) — the rebase seam is closed.
+  assert.match(component, /newProposalCard/);
   // The 375px panel rules stay phone-sized (no full-width fixed panels).
   assert.doesNotMatch(component, /\.assistant-(history|settings|brief)\{[^}]*position:\s*fixed/);
 });
