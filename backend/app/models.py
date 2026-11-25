@@ -98,6 +98,13 @@ class BusinessMembership(Base):
     # The identity provider and token-verification design remain separate decisions.
     user_subject: Mapped[str] = mapped_column(String(128), nullable=False)
     role: Mapped[MembershipRole] = mapped_column(membership_role_type, nullable=False)
+    # Org assignment (C8): nullable — a member with no assignment is unassigned.
+    department_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("departments.id", ondelete="SET NULL"), nullable=True
+    )
+    team_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("teams.id", ondelete="SET NULL"), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -132,6 +139,59 @@ class BusinessInvitation(Base):
     revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class Department(Base):
+    """Business-scoped org unit (C8). Departments may nest via parent_id."""
+
+    __tablename__ = "departments"
+    __table_args__ = (
+        UniqueConstraint("business_id", "name", name="uq_departments_business_name"),
+        Index("ix_departments_business_parent", "business_id", "parent_id"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    parent_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("departments.id", ondelete="SET NULL"), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
+    )
+
+
+class Team(Base):
+    """Business-scoped team inside exactly one department (C8)."""
+
+    __tablename__ = "teams"
+    __table_args__ = (
+        UniqueConstraint(
+            "business_id", "department_id", "name",
+            name="uq_teams_business_department_name",
+        ),
+        Index("ix_teams_business_department", "business_id", "department_id"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    department_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("departments.id", ondelete="CASCADE"), nullable=False
+    )
+    name: Mapped[str] = mapped_column(String(120), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now(), onupdate=func.now()
     )
 
 
@@ -953,6 +1013,14 @@ class Employee(Base):
     email: Mapped[str | None] = mapped_column(String(254), nullable=True)
     phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
     department: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    # Org assignment (C8): the free-text `department` above stays as legacy
+    # display text; the FKs below are the authoritative structure.
+    department_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("departments.id", ondelete="SET NULL"), nullable=True
+    )
+    team_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("teams.id", ondelete="SET NULL"), nullable=True
+    )
     job_title: Mapped[str | None] = mapped_column(String(120), nullable=True)
     monthly_salary: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")

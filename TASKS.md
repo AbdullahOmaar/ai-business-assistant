@@ -1,3 +1,12 @@
+## C8 Part 1 — org structure backend (departments/teams/assignment) — 2026-11-25 ~05:20 EET (PR pending QA review)
+
+- **Source:** Phase 2 plan, Stage C — C8 (org structure + bulk operations, 12h; round 17 + 3A-686). Recorded as a comment on **3A-392** (Linear free-issue cap full — no dedicated issue possible). تقدير: 12 ساعة (whole C8).
+- **Inspection:** `Employee.department` is free text only — no Department/Team model existed; memberships had no org assignment either. The org model is greenfield on top of the existing employee/membership tables.
+- **What Part 1 ships:** `Department` (nesting via parent_id, cycle rejected 422) + `Team` (exactly one department) + nullable assignment FKs on `Employee` and `BusinessMembership` (legacy free-text department column untouched) + migration `0014_org_structure` (single Alembic head verified) + 8 endpoints in new module `backend/app/org_api.py` (writes owner-only, reads any member; assignment is full-replace: a team implies its department, nulls clear) + audit events (`department.created/updated`, `org_team.created/updated`, `employee.assigned`, `membership.assigned`) + i18n + filter options + export now 28 entities + matrix 106 routes + `docs/ORG_STRUCTURE.md`.
+- **Also in this PR:** the C3 follow-up — the cashbox item in `docs/FINANCIAL_DEPTH_AUDIT.md` flipped from planned to shipped (C3 merged).
+- **Deferred explicitly (owner redistribution 2026-11-25 ~03:31):** the UI (multi-select in lists + org screens) follows coordination via بوس with the assistant-execution chat; the API is complete and proven, same pattern as B3's deferred settings screen. Part 2 (bulk endpoints per 3A-686) follows after Part 1 merges.
+- **NOT deployed:** no release markers — migration 0014 applies with the next grouped API release (manager-side build command, same as 0012/0013).
+
 ## Version + publish-time line (owner rule, 2026-11-25 ~06:19 EET) — 2026-11-25 ~06:25 EET (PR pending QA review)
 
 - **Rule:** the version number and publish time appear prominently as one line — «الإصدار X — نُشر [date & time]» — inside the app AND on the splash, built from the build metadata itself, never hand-written. No release passes review without it.

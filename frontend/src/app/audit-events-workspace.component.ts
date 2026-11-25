@@ -74,6 +74,12 @@ import { auditActionLabel, auditTargetLabel } from './audit-labels';
             <option value="cashbox.deposit">{{ t('audit.actions.m_c3b1a02') }}</option>
             <option value="cashbox.withdrawal">{{ t('audit.actions.m_c3b1a03') }}</option>
             <option value="cashbox.closed">{{ t('audit.actions.m_c3b1a04') }}</option>
+            <option value="department.created">{{ t('audit.actions.m_c8d101') }}</option>
+            <option value="department.updated">{{ t('audit.actions.m_c8d102') }}</option>
+            <option value="org_team.created">{{ t('audit.actions.m_c8d103') }}</option>
+            <option value="org_team.updated">{{ t('audit.actions.m_c8d104') }}</option>
+            <option value="employee.assigned">{{ t('audit.actions.m_c8d105') }}</option>
+            <option value="membership.assigned">{{ t('audit.actions.m_c8d106') }}</option>
             <option value="business.deleted">{{ t('audit.actions.m_j0lw40') }}</option>
             <option value="business.exported">{{ t('audit.actions.m_jlt81r') }}</option>
             <option value="account.deleted">{{ t('audit.actions.m_8lnrmq') }}</option>

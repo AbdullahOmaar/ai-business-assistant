@@ -116,6 +116,14 @@ All paths below inherit the business ID and require a trusted principal plus act
 | GET | `/cashbox/entries` | Membership required; optional kind filter |
 | POST | `/cashbox/close` | **Owner only**; daily close with counted amount, variance and handover receipt; one per currency per day |
 | GET | `/cashbox/closings` | Membership required |
+| POST | `/departments` | **Owner only**; name unique per business; optional parent (C8 Part 1, 3A-392) |
+| GET | `/departments` | Membership required; ordered by name |
+| PATCH | `/departments/{department_id}` | **Owner only**; rename/reparent; a parent cycle is rejected (422) |
+| POST | `/teams` | **Owner only**; team belongs to exactly one department |
+| GET | `/teams` | Membership required; optional department filter |
+| PATCH | `/teams/{team_id}` | **Owner only**; rename/move to another department |
+| POST | `/employees/{employee_id}/assign` | **Owner only**; full-replace assignment (a team implies its department; nulls clear) |
+| POST | `/memberships/{membership_id}/assign` | **Owner only**; full-replace assignment, same rules |
 | GET | `/suppliers` | Membership required; list only active suppliers scoped to the requested business |
 | GET | `/purchase-orders` | Membership required; orders and lines scoped to the requested business |
 | POST | `/purchase-orders` | Membership; supplier/products must be in same business |

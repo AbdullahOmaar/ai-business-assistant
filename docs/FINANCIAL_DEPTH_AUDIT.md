@@ -60,7 +60,7 @@ here, only the mapping:
 5. **Inventory valuation / COGS** — purchases must flow into
    profit-loss. Owns: C5/C6 — needs a valuation policy (FIFO /
    average) decided before any code.
-6. **Cashbox** — NMS's third leg. Owns: C3 (next in the queue).
+6. **Cashbox** — NMS's third leg. ✅ Shipped in C3 (3A-727, PR #480, migration 0013).
 
 None of these is a pricing decision: the commercial model and the
 price itself remain the owner's call (plan decision point 3). This
