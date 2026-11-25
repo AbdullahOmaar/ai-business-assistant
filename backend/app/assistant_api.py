@@ -22,6 +22,11 @@ from sqlalchemy.orm import Session
 
 from app import assistant_execution as execution
 from app import assistant_write_policy as policy
+from app.assistant_intent import (
+    draft_answer,
+    extract_deterministic_intent,
+    owner_needed_answer,
+)
 from app.assistant_settings import validate_suggestions
 from app.dependencies import get_principal, get_session
 from app.domain_rules import money
@@ -357,6 +362,74 @@ async def chat(
             "mode": "local-fallback",
         }
 
+    # Deterministic intent -> proposal draft (Slice 3): an action
+    # request whose payload is extractable without guessing returns a
+    # proposal draft through the same create_proposal path instead of a
+    # refusal. Questions are answered, never extracted. A staff caller
+    # asking for an owner-only action gets an honest owner-needed
+    # answer; any other create_proposal failure falls through to the
+    # existing refusal / fallback flow (logged), never a 500.
+    business_row = session.scalars(
+        select(Business).where(Business.id == business_id)
+    ).one_or_none()
+    business_name = business_row.name if business_row is not None else "this business"
+    business_currency = (
+        business_row.currency_code if business_row is not None else "EGP"
+    )
+    if not _is_question(_normalize_message(body.message)):
+        intent = extract_deterministic_intent(
+            session, business_id=business_id, message=body.message,
+            business_currency=business_currency,
+        )
+        if intent.kind == "proposal" and intent.action and intent.payload is not None:
+            try:
+                proposal = execution.create_proposal(
+                    session, principal=principal, business_id=business_id,
+                    action=intent.action, payload=intent.payload,
+                )
+            except policy.AssistantWriteRoleDenied:
+                return {
+                    "answer": owner_needed_answer(
+                        arabic=_is_arabic_message(body.message)
+                    ),
+                    "sources": [],
+                    "model": "local-fallback",
+                    "grounding": "business-records",
+                    "mode": "local-fallback",
+                    "suggestions": [],
+                }
+            except (policy.AssistantWriteForbidden, WorkflowError) as exc:
+                logger.warning(
+                    "Deterministic intent fell through to refusal/fallback "
+                    "for business %s (action %r): %s",
+                    business_id, intent.action, exc,
+                )
+            else:
+                return {
+                    "answer": draft_answer(
+                        intent.action,
+                        arabic=_is_arabic_message(body.message),
+                        requires_second_approval=bool(
+                            proposal.get("requires_second_approval")
+                        ),
+                    ),
+                    "sources": [],
+                    "model": "local-fallback",
+                    "grounding": "business-records",
+                    "mode": "local-fallback",
+                    "suggestions": [],
+                    "proposal": proposal,
+                }
+        elif intent.kind in ("clarify", "honest") and intent.answer:
+            return {
+                "answer": intent.answer,
+                "sources": [],
+                "model": "local-fallback",
+                "grounding": "business-records",
+                "mode": "local-fallback",
+                "suggestions": [],
+            }
+
     # Sensitive actions are refused server-side, before either the local
     # fallback or the provider path: no mutation is attempted, no provider
     # call is made, and the answer states plainly that nothing changed.
@@ -389,10 +462,6 @@ async def chat(
         }
 
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
-
-    business_name = session.scalar(select(Business.name).where(
-        Business.id == business_id
-    )) or "this business"
 
     invoices = session.scalars(
         select(Invoice).where(
