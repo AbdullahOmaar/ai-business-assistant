@@ -1084,7 +1084,8 @@
     "m_1l0ize9": "Account options",
     "m_2ifq4l": "Change workspace",
     "actions": "Actions",
-    "taxOperationalNote": "Operational summary from saved invoice data — not an official tax filing."
+    "taxOperationalNote": "Operational summary from saved invoice data — not an official tax filing.",
+    "m_c8v101": "Version {{version}} — Published {{publishedAt}}"
   },
   "common": {
     "app_title": "AI Business Assistant",
