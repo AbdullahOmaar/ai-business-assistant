@@ -155,6 +155,7 @@ MATRIX = [
     # belongs to owner-a, so STAFF is denied.
     ("POST", "/api/v1/businesses/{business_id}/assistant/whatsapp/link-codes", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/assistant/whatsapp/links", "allow"),
+    ("GET", "/api/v1/businesses/{business_id}/assistant/whatsapp/status", "allow"),
     ("DELETE", "/api/v1/businesses/{business_id}/assistant/whatsapp/links/{link_id}", "deny"),
     ("GET", "/api/v1/businesses/{business_id}/customers/{customer_id}/statement", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/audit-events", "deny"),

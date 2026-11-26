@@ -168,6 +168,22 @@ def revoke_link_endpoint(
     return None
 
 
+@router.get("/status")
+def channel_status_endpoint(
+    business_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """The channel's live state for the settings surface (owner rule
+    2026-11-26: an unlaunched feature shows a designed dormant state,
+    never a live-looking flow). The kill switch is per business and
+    DEFAULT OFF, so the settings block renders its «coming soon»
+    state from this flag instead of offering a link code that the
+    webhook would silently ignore."""
+    _member(session, principal, business_id)
+    return {"channel_enabled": linking.channel_enabled(session, business_id=business_id)}
+
+
 # ---------------------------------------------------------------------------
 # Webhook.
 # ---------------------------------------------------------------------------

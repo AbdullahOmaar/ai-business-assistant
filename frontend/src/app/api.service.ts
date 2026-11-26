@@ -235,6 +235,7 @@ export interface AssistantBrief { generated_at: string; business_timezone: strin
 export interface AssistantOptOut { id: string; business_id: string; user_subject: string; action: string; created_at: string | null; }
 export interface AssistantWhatsappLink { id: string; business_id: string; user_subject: string; phone_masked: string; status: string; linked_at: string | null; revoked_at: string | null; created_at: string | null; }
 export interface AssistantWhatsappLinkCode { code: string; expires_at: string | null; }
+export interface AssistantWhatsappStatus { channel_enabled: boolean; }
 
 export class ApiRequestError extends Error {
   constructor(message: string, readonly status: number) {
@@ -1070,6 +1071,9 @@ export class ApiService {
   }
   listWhatsappLinks(businessId: string): Promise<AssistantWhatsappLink[]> {
     return this.request<AssistantWhatsappLink[]>(`${this.assistantBase(businessId)}/whatsapp/links`);
+  }
+  getWhatsappStatus(businessId: string): Promise<AssistantWhatsappStatus> {
+    return this.request<AssistantWhatsappStatus>(`${this.assistantBase(businessId)}/whatsapp/status`);
   }
   revokeWhatsappLink(businessId: string, linkId: string): Promise<void> {
     return this.request<void>(
