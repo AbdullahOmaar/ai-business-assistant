@@ -206,9 +206,14 @@ def test_provider_is_not_called_for_refused_action(assistant_client, monkeypatch
 def test_read_questions_are_not_refused(assistant_client):
     business_id = _seed_business(assistant_client)
     # A read about a single invoice is answered from records, not refused.
+    # Phase ق-1 (2026-11-26): the §٩.١ invoice-detail read tool now
+    # serves this question deterministically, so the answer carries
+    # ISS-1's OWN total (100.00) instead of the fallback's aggregate
+    # of all issued invoices (600.00). The not-refused intent of this
+    # assertion is unchanged; the figure is now the more precise one.
     payload = _ask(assistant_client, business_id, "Show me invoice ISS-1")
     assert "لا يمكنني تنفيذ" not in payload["answer"]
-    assert "600.00" in payload["answer"]
+    assert "100.00" in payload["answer"]
     # A read about when an invoice was issued ("أُصدرت") is not an action.
     payload = _ask(assistant_client, business_id, "متى أُصدرت الفاتورة ISS-1؟")
     assert "لا يمكنني تنفيذ" not in payload["answer"]
