@@ -313,6 +313,12 @@ def test_audio_with_provider_transcribes_prefixes_and_proposes_like_text(
     assert response.status_code == 200, response.text
     text_reply = fake.outbox[-1]["body"]
     assert not text_reply.startswith("فهمت:")
+    # Snapshot the typed proposal's id NOW: the two proposals can
+    # share a created_at tick, so list order alone cannot tell the
+    # voice proposal from the typed one later.
+    before = proposals_for(business)
+    assert len(before) == 1
+    text_proposal_id = str(before[0].id)
 
     # The same command spoken: transcript prefix first, then the
     # pipeline's answer — and the SAME proposal as the typed text.
@@ -343,7 +349,10 @@ def test_audio_with_provider_transcribes_prefixes_and_proposes_like_text(
     voice_turn = messages[-2:]
     assert voice_turn[0].role == "user" and voice_turn[0].content == VOICE_TEXT
     assert voice_turn[1].role == "assistant" and voice_turn[1].content == voice_reply
-    assert str(voice_turn[1].proposal_id) == str(proposals[1].id)
+    # The voice turn links to the VOICE proposal (the new one), not
+    # the typed turn's — compared by id, not by list position.
+    assert str(voice_turn[1].proposal_id) in {str(p.id) for p in proposals}
+    assert str(voice_turn[1].proposal_id) != text_proposal_id
 
 
 def test_audio_low_confidence_gets_ask_to_type_and_no_proposal(

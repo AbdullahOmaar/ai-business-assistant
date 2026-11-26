@@ -88,8 +88,12 @@ def _fold_light(message: str) -> tuple[str, list[int]]:
     for raw_index, char in enumerate(message):
         if _ARABIC_DIACRITICS.match(char):
             continue
-        folded = _DIGIT_FOLD.get(char, char)
-        folded = _ALEF_NORMALIZE.get(folded, folded)
+        # str.maketrans tables are keyed by ordinal — they must be
+        # applied with translate(), not .get(char): a .get() lookup
+        # with a str key never matches and silently folds nothing
+        # (the voice gate caught this, 2026-11-26: ة-spelled and
+        # Arabic-Indic-digit messages extracted no intent at all).
+        folded = char.translate(_DIGIT_FOLD).translate(_ALEF_NORMALIZE)
         out.append(folded)
         index_map.append(raw_index)
     return "".join(out), index_map

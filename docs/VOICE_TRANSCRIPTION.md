@@ -163,17 +163,20 @@ report exists.
   satisfies the contract's display/correction rule in-app; a
   future move to server-side STT in-app would reuse this module
   unchanged.
-- **Gate finding — the matcher does not fold ة (2026-11-26).**
-  The harness caught a real defect in the shipped Slice 3
-  matcher: `assistant_intent._fold_light` looks its fold table up
-  with `.get()` on a `str.maketrans` dict (whose keys are
-  ordinals), so ة is never folded to ه while the intent patterns
-  are written with ه. A natural STT transcript spelled
-  «فاتورة مسودة» therefore extracts no invoice intent today,
-  while the ه spelling does. The test set ships with ه spellings
-  so the gate measures the pipeline as it is; fixing the fold
-  (one-line, in the matcher) is an activation-slice follow-up —
-  when it lands, restore the ة spellings in the test set and
-  re-run the gate. This is the gate working as intended: it
-  prices a real provider against the pipeline that actually
-  exists, not the one the comments describe.
+- **Gate finding — the matcher did not fold ة (2026-11-26) —
+  FIXED on this branch (coordinator review fix).** The harness
+  caught a real defect in the shipped Slice 3 matcher:
+  `assistant_intent._fold_light` looked its fold tables up with
+  `.get()` on `str.maketrans` dicts (whose keys are ordinals), so
+  NOTHING was folded — not ة->ه, not the alef forms, not
+  Arabic-Indic digits — while the intent patterns are written
+  with ه and Western digits. A natural transcript (or a typed
+  message) spelled «فاتورة مسودة» extracted no invoice intent,
+  and amounts in Arabic-Indic digits never folded. The fix
+  applies the tables with `translate()` (every mapping is 1:1,
+  so the index map is unchanged), adds a fold regression test in
+  `test_assistant_intent.py`, and the test set now gates BOTH
+  spellings: ه fixtures (v10/v12/v13) and ة fixtures (v29, plus
+  v30 with Arabic-Indic digits). This is the gate working as
+  intended: it prices a real provider against the pipeline that
+  actually exists, not the one the comments describe.
