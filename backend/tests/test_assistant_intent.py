@@ -531,9 +531,11 @@ def test_question_still_answered(intent_client, business):
 def test_refusals_preserved(intent_client, business):
     client, _subject = intent_client
     business_id, _ids = business
+    # ق-3 (phase ق): "Issue invoice X" / "Void invoice X" are no longer
+    # blanket-refused — they are 🟡 actions with deterministic producers
+    # (see test_assistant_intents3.py). Refund and final delete stay
+    # refused exactly as before.
     for message in (
-        "Void invoice ISS-1",
-        "Issue invoice ISS-1",
         "Refund 500 EGP",
         "Delete invoice ISS-1",
     ):

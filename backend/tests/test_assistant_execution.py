@@ -593,7 +593,12 @@ def test_expiry_does_not_mutate_the_stored_row(execution_client, business) -> No
 
 # --- chat unchanged ----------------------------------------------------------
 
-def test_chat_endpoint_still_refuses_action_requests(execution_client, business) -> None:
+def test_chat_endpoint_drafts_but_never_executes_action_requests(execution_client, business) -> None:
+    # ق-3 (phase ق): "void invoice ISS-1" is a 🟡 action with a
+    # deterministic producer — the chat drafts a second-approval
+    # proposal. The Slice 1 invariant stands: the chat call itself
+    # executes nothing; the invoice stays issued until a different
+    # owner approves and someone executes.
     client, subject = execution_client
     _as(client, subject, OWNER_A)
     response = client.post(
@@ -602,8 +607,7 @@ def test_chat_endpoint_still_refuses_action_requests(execution_client, business)
     )
     assert response.status_code == 200
     body = response.json()
-    assert body["answer"].startswith("I can't take actions")
-    assert body["sources"] == []
+    assert body["proposal"]["action"] == "invoice.void"
     with app.state.session_factory() as session:
         saved = session.get(Invoice, UUID(business["issued_invoice_id"]))
         assert saved.status == "issued"
