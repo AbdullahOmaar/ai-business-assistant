@@ -1,3 +1,10 @@
+## T53 (3A-262): failed sign-in must not create a workspace — regression evidence — 2026-11-26 (IN PROGRESS, branch aiba/t53-failed-login-no-workspace)
+
+- **Finding:** the current implementation already satisfies T53 — no code fix needed. Verified path end to end: frontend `submitAuth()` awaits the Firebase sign-in and calls `loadBusinesses()` only after success; `createWorkspace()` is a separate explicit signed-in action, never reached on an auth failure. On the backend, workspace creation exists only as `POST /api/v1/businesses` behind the verified-principal dependency; the production Firebase resolver rejects missing/invalid/expired/revoked tokens with 401 before any route code runs, and principal resolution is read-only — there is no auto-provisioning anywhere in the sign-in path.
+- **Deliverable:** `backend/tests/test_failed_login_no_workspace.py` — end-to-end regression through the REAL `firebase_principal_resolver` with a rejecting verifier: failed token → 401 with Business/BusinessMembership counts staying (0, 0); missing token → 401 + (0, 0); unconfigured auth → 503 + (0, 0); control with a verified principal → 201 + (1, 1), proving the counting path does observe legitimate creation.
+- **Validation:** new file 4/4; run together with `test_firebase_auth.py` + `test_core_features_api.py` = 32 passed. Ruff clean on the new file. No behavior change, no migration, no frontend change, no AI-tools-registry tool used.
+- **NOT deployed:** no release markers; production follows the grouped-release/freeze rules.
+
 ## Assistant capabilities — Phase ق-3: deterministic intent producers for the 🟡 second-approval actions + §٩ inventory-coverage test (FULL-PLAN §٩/§١٢ phase ق) — 2026-11-26 (VERIFIED, branch aiba/assistant-intents-3 pushed — PR pending coordinator review)
 
 - **Base:** origin/main `e73b044` (slices 1–4 + WhatsApp W-foundation #492 + voice foundation #493 merged). New worktree `~/workspace/aiba-intents-3`; the main working copy is driven by another chat and is never edited. ق-1 (reads, PR #494) and ق-2 (🟢 producers, branch `aiba/assistant-intents-2`) are NOT merged yet — this batch builds on Slice 3 (merged) only.
