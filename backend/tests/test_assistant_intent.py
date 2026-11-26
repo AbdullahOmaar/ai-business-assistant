@@ -24,8 +24,14 @@ from app.models import (
     BusinessMembership,
     Customer,
     Invoice,
+    InvoiceLine,
     MembershipRole,
     Product,
+    PurchaseOrder,
+    PurchaseOrderLine,
+    SalesReturn,
+    SalesReturnLine,
+    Supplier,
 )
 from app.security import AuthenticatedPrincipal
 
@@ -609,3 +615,703 @@ def test_fold_light_normalizes_taa_digits_and_alef():
     assert folded == "فاتوره 105 ا"
     # Every fold here is 1:1, so the index map stays the identity.
     assert index_map == list(range(len("فاتورة ١٠٥ أ")))
+
+
+# --- batch ق-2: the remaining ALLOW-list producers -------------------------
+
+@pytest.fixture()
+def q2_business(intent_client, business):
+    """The Slice 3 seed plus ق-2 records: suppliers, stock-tracked
+    products, a purchase order, an issued invoice WITH lines (and an
+    approved return against one line), and drafts with lines."""
+    client, _subject = intent_client
+    business_id, base_ids = business
+    business_uuid = UUID(business_id)
+    with app.state.session_factory() as session:
+        layla = session.scalars(select(Customer).where(
+            Customer.business_id == business_uuid, Customer.name == "Layla Hassan"
+        )).one()
+        ahmed_sami = session.scalars(select(Customer).where(
+            Customer.business_id == business_uuid, Customer.name == "Ahmed Sami"
+        )).one()
+        cable = session.scalars(select(Product).where(
+            Product.business_id == business_uuid, Product.name == "Cable"
+        )).one()
+        cable_ar = session.scalars(select(Product).where(
+            Product.business_id == business_uuid, Product.name == "كابل"
+        )).one()
+        notebook = session.scalars(select(Product).where(
+            Product.business_id == business_uuid, Product.name == "Notebook"
+        )).one()
+        dft_1 = session.scalars(select(Invoice).where(
+            Invoice.business_id == business_uuid,
+            Invoice.invoice_number == "DFT-1",
+        )).one()
+        nile = Supplier(business_id=business_uuid, name="Nile Trading")
+        nile_foods = Supplier(business_id=business_uuid, name="Nile Foods")
+        nile_ar = Supplier(business_id=business_uuid, name="مورد النيل")
+        widget = Product(
+            business_id=business_uuid, name="Widget",
+            unit_price=Decimal("99.00"), is_stock_tracked=True,
+        )
+        gadget = Product(
+            business_id=business_uuid, name="Gadget",
+            unit_price=Decimal("15.00"), is_stock_tracked=True,
+        )
+        session.add_all([nile, nile_foods, nile_ar, widget, gadget])
+        session.flush()
+        iss_9 = Invoice(
+            business_id=business_uuid, customer_id=layla.id,
+            invoice_number="ISS-9", status="issued", currency_code="EGP",
+            subtotal=Decimal("2900.00"), tax_total=Decimal("0.00"),
+            discount_total=Decimal("0.00"), total=Decimal("2900.00"),
+            issue_date=datetime(2026, 11, 2, tzinfo=UTC),
+        )
+        dft_9 = Invoice(
+            business_id=business_uuid, customer_id=ahmed_sami.id,
+            invoice_number="DFT-9", status="draft", currency_code="EGP",
+            subtotal=Decimal("370.00"), tax_total=Decimal("0.00"),
+            discount_total=Decimal("0.00"), total=Decimal("370.00"),
+        )
+        dft_10 = Invoice(
+            business_id=business_uuid, customer_id=ahmed_sami.id,
+            invoice_number="DFT-10", status="draft", currency_code="EGP",
+            subtotal=Decimal("200.00"), tax_total=Decimal("0.00"),
+            discount_total=Decimal("20.00"), total=Decimal("180.00"),
+        )
+        session.add_all([iss_9, dft_9, dft_10])
+        session.flush()
+        iss_9_cable = InvoiceLine(
+            business_id=business_uuid, invoice_id=iss_9.id,
+            product_id=cable.id, description="Cable",
+            quantity=Decimal("10"), unit_price=Decimal("250.00"),
+            line_total=Decimal("2500.00"),
+        )
+        iss_9_cable_ar = InvoiceLine(
+            business_id=business_uuid, invoice_id=iss_9.id,
+            product_id=cable_ar.id, description="كابل",
+            quantity=Decimal("4"), unit_price=Decimal("100.00"),
+            line_total=Decimal("400.00"),
+        )
+        dft_9_notebook = InvoiceLine(
+            business_id=business_uuid, invoice_id=dft_9.id,
+            product_id=notebook.id, description="Notebook",
+            quantity=Decimal("2"), unit_price=Decimal("60.00"),
+            line_total=Decimal("120.00"),
+        )
+        dft_9_cable = InvoiceLine(
+            business_id=business_uuid, invoice_id=dft_9.id,
+            product_id=cable.id, description="Cable",
+            quantity=Decimal("1"), unit_price=Decimal("250.00"),
+            line_total=Decimal("250.00"),
+        )
+        session.add_all([iss_9_cable, iss_9_cable_ar, dft_9_notebook, dft_9_cable])
+        session.add(InvoiceLine(
+            business_id=business_uuid, invoice_id=dft_10.id,
+            product_id=cable.id, description="Cable",
+            quantity=Decimal("1"), unit_price=Decimal("200.00"),
+            line_total=Decimal("200.00"),
+        ))
+        po_1 = PurchaseOrder(
+            business_id=business_uuid, supplier_id=nile.id,
+            order_number="PO-1", status="draft", currency_code="EGP",
+            total=Decimal("400.00"),
+        )
+        session.add(po_1)
+        session.flush()
+        session.add(PurchaseOrderLine(
+            business_id=business_uuid, purchase_order_id=po_1.id,
+            product_id=widget.id, quantity=Decimal("10"),
+            unit_cost=Decimal("40.00"), received_quantity=Decimal("0"),
+        ))
+        approved_return = SalesReturn(
+            business_id=business_uuid, invoice_id=iss_9.id,
+            status="approved", reason="damaged",
+            total=Decimal("750.00"),
+        )
+        session.add(approved_return)
+        session.flush()
+        session.add(SalesReturnLine(
+            business_id=business_uuid, sales_return_id=approved_return.id,
+            invoice_line_id=iss_9_cable.id, quantity=Decimal("3"),
+            amount=Decimal("750.00"),
+        ))
+        session.commit()
+        ids = dict(base_ids)
+        ids.update({
+            "cable": str(cable.id),
+            "dft_1": str(dft_1.id),
+            "nile": str(nile.id),
+            "nile_ar": str(nile_ar.id),
+            "widget": str(widget.id),
+            "gadget": str(gadget.id),
+            "po_1": str(po_1.id),
+            "iss_9": str(iss_9.id),
+            "dft_9": str(dft_9.id),
+            "iss_9_cable_line": str(iss_9_cable.id),
+            "iss_9_cable_ar_line": str(iss_9_cable_ar.id),
+        })
+    return business_id, ids
+
+
+# --- customer.update -------------------------------------------------------
+
+def test_update_customer_en_possessive_returns_proposal(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Update customer Layla Hassan's phone to 01001234567",
+    )
+    proposal = body["proposal"]
+    assert proposal["action"] == "customer.update"
+    assert proposal["requires_second_approval"] is False
+    assert proposal["payload"]["customer_id"] == ids["layla"]
+    assert proposal["payload"]["patch"]["phone"] == "01001234567"
+    assert proposal["payload"]["patch"]["address"] is None
+    # Nothing executed: the stored customer is unchanged.
+    with app.state.session_factory() as session:
+        row = session.scalars(select(Customer).where(
+            Customer.id == UUID(ids["layla"])
+        )).one()
+        assert row.phone is None
+
+
+def test_update_customer_en_multiple_fields(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Update customer Layla Hassan: phone to 01001234567, "
+        "email to layla@example.com",
+    )
+    proposal = body["proposal"]
+    assert proposal["action"] == "customer.update"
+    assert proposal["payload"]["customer_id"] == ids["layla"]
+    assert proposal["payload"]["patch"]["phone"] == "01001234567"
+    assert proposal["payload"]["patch"]["email"] == "layla@example.com"
+
+
+def test_update_customer_ar_field_first(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(
+        client, business_id,
+        "غيّر عنوان العميل ليلى حسن الى ١٢ شارع النيل",
+    )
+    proposal = body["proposal"]
+    assert proposal["action"] == "customer.update"
+    assert proposal["payload"]["customer_id"] == ids["layla_ar"]
+    # The value keeps the user's own spelling (Arabic-Indic digits).
+    assert proposal["payload"]["patch"]["address"] == "١٢ شارع النيل"
+
+
+def test_update_customer_ar_general_form(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(
+        client, business_id,
+        "حدّث بيانات العميل ليلى حسن: التليفون الى 01009998877",
+    )
+    proposal = body["proposal"]
+    assert proposal["action"] == "customer.update"
+    assert proposal["payload"]["customer_id"] == ids["layla_ar"]
+    assert proposal["payload"]["patch"]["phone"] == "01009998877"
+
+
+def test_update_customer_ambiguous_clarifies(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(client, business_id, "Update customer Ahmed's phone to 0100")
+    assert "proposal" not in body
+    assert "Ahmed Sami" in body["answer"]
+    assert "Ahmed Radwan" in body["answer"]
+    assert _proposal_count() == 0
+
+
+def test_update_customer_missing_is_honest(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id, "Update customer Nobody Here phone to 0100"
+    )
+    assert "proposal" not in body
+    assert "couldn't find a customer" in body["answer"]
+    assert _proposal_count() == 0
+
+
+def test_update_customer_no_field_clarifies(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(client, business_id, "Update customer Layla Hassan")
+    assert "proposal" not in body
+    assert "change" in body["answer"].lower()
+    assert _proposal_count() == 0
+
+
+def test_staff_customer_update_is_allowed(intent_client, q2_business):
+    client, subject = intent_client
+    business_id, _ids = q2_business
+    subject["value"] = STAFF_A
+    body = _ask(
+        client, business_id,
+        "Update customer Layla Hassan's phone to 01005554433",
+    )
+    assert body["proposal"]["action"] == "customer.update"
+
+
+# --- invoice.duplicate -------------------------------------------------------
+
+def test_duplicate_invoice_en_returns_proposal(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(client, business_id, "Duplicate invoice ISS-9")
+    proposal = body["proposal"]
+    assert proposal["action"] == "invoice.duplicate"
+    assert proposal["requires_second_approval"] is False
+    assert proposal["payload"] == {"invoice_id": ids["iss_9"]}
+
+
+def test_duplicate_invoice_ar_returns_proposal(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(client, business_id, "انسخ الفاتوره DFT-9")
+    proposal = body["proposal"]
+    assert proposal["action"] == "invoice.duplicate"
+    assert proposal["payload"] == {"invoice_id": ids["dft_9"]}
+
+
+def test_duplicate_invoice_without_lines_is_honest(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    # The seed's ISS-1 is a bare invoice with no lines — nothing to copy.
+    body = _ask(client, business_id, "Duplicate invoice ISS-1")
+    assert "proposal" not in body
+    assert "has no lines" in body["answer"]
+    assert _proposal_count() == 0
+
+
+def test_duplicate_invoice_missing_is_honest(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(client, business_id, "Duplicate invoice NOPE-9")
+    assert "proposal" not in body
+    assert "couldn't find an invoice" in body["answer"]
+    assert _proposal_count() == 0
+
+
+# --- purchase_order.create ---------------------------------------------------
+
+def test_create_purchase_order_en_returns_proposal(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Create purchase order PO-100 from supplier Nile Trading: "
+        "10 Widget at 40, 5 Gadget at 15",
+    )
+    proposal = body["proposal"]
+    assert proposal["action"] == "purchase_order.create"
+    assert proposal["requires_second_approval"] is False
+    assert proposal["payload"]["supplier_id"] == ids["nile"]
+    assert proposal["payload"]["order_number"] == "PO-100"
+    assert proposal["payload"]["currency_code"] == "EGP"
+    assert proposal["payload"]["lines"] == [
+        {"product_id": ids["widget"], "quantity": "10", "unit_cost": "40"},
+        {"product_id": ids["gadget"], "quantity": "5", "unit_cost": "15"},
+    ]
+
+
+def test_create_purchase_order_ar_returns_proposal(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(
+        client, business_id,
+        "اعمل امر شراء رقم PO-101 من المورد مورد النيل: ٣ Widget بسعر ٤٠",
+    )
+    proposal = body["proposal"]
+    assert proposal["action"] == "purchase_order.create"
+    assert proposal["payload"]["supplier_id"] == ids["nile_ar"]
+    assert proposal["payload"]["order_number"] == "PO-101"
+    assert proposal["payload"]["lines"] == [
+        {"product_id": ids["widget"], "quantity": "3", "unit_cost": "40"},
+    ]
+
+
+def test_create_purchase_order_no_price_clarifies(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Create purchase order PO-102 from supplier Nile Trading: 10 Widget",
+    )
+    assert "proposal" not in body
+    assert "Widget" in body["answer"] and "cost" in body["answer"].lower()
+    assert _proposal_count() == 0
+
+
+def test_create_purchase_order_existing_number_is_honest(
+    intent_client, q2_business
+):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Create purchase order PO-1 from supplier Nile Trading: "
+        "10 Widget at 40",
+    )
+    assert "proposal" not in body
+    assert "already exists" in body["answer"]
+    assert _proposal_count() == 0
+
+
+def test_create_purchase_order_no_number_clarifies(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Create purchase order from supplier Nile Trading: 10 Widget at 40",
+    )
+    assert "proposal" not in body
+    assert "number" in body["answer"].lower()
+    assert _proposal_count() == 0
+
+
+def test_create_purchase_order_ambiguous_supplier_clarifies(
+    intent_client, q2_business
+):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Create purchase order PO-103 from supplier Nile: 10 Widget at 40",
+    )
+    assert "proposal" not in body
+    assert "Nile Trading" in body["answer"]
+    assert "Nile Foods" in body["answer"]
+    assert _proposal_count() == 0
+
+
+def test_create_purchase_order_missing_supplier_is_honest(
+    intent_client, q2_business
+):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Create purchase order PO-104 from supplier Unknown Co: "
+        "10 Widget at 40",
+    )
+    assert "proposal" not in body
+    assert "couldn't find a supplier" in body["answer"]
+    assert _proposal_count() == 0
+
+
+def test_create_purchase_order_untracked_product_is_honest(
+    intent_client, q2_business
+):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Create purchase order PO-105 from supplier Nile Trading: "
+        "10 Cable at 40",
+    )
+    assert "proposal" not in body
+    assert "stock-tracked" in body["answer"]
+    assert _proposal_count() == 0
+
+
+# --- purchase_order.duplicate --------------------------------------------------
+
+def test_duplicate_purchase_order_en_returns_proposal(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(client, business_id, "Duplicate purchase order PO-1")
+    proposal = body["proposal"]
+    assert proposal["action"] == "purchase_order.duplicate"
+    assert proposal["payload"] == {"order_id": ids["po_1"]}
+
+
+def test_duplicate_purchase_order_ar_returns_proposal(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(client, business_id, "كرر امر شراء PO-1")
+    proposal = body["proposal"]
+    assert proposal["action"] == "purchase_order.duplicate"
+    assert proposal["payload"] == {"order_id": ids["po_1"]}
+
+
+def test_duplicate_purchase_order_missing_is_honest(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(client, business_id, "Duplicate purchase order PO-99")
+    assert "proposal" not in body
+    assert "couldn't find a purchase order" in body["answer"]
+    assert _proposal_count() == 0
+
+
+# --- sales_return.create -------------------------------------------------------
+
+def test_create_sales_return_en_returns_proposal(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Create a sales return for invoice ISS-9: 2 Cable",
+    )
+    proposal = body["proposal"]
+    assert proposal["action"] == "sales_return.create"
+    assert proposal["requires_second_approval"] is False
+    assert proposal["payload"]["invoice_id"] == ids["iss_9"]
+    assert proposal["payload"]["reason"] is None
+    assert proposal["payload"]["lines"] == [
+        {"invoice_line_id": ids["iss_9_cable_line"], "quantity": "2"},
+    ]
+
+
+def test_create_sales_return_ar_returns_proposal(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(
+        client, business_id, "اعمل مرتجع على الفاتوره ISS-9: ١ كابل"
+    )
+    proposal = body["proposal"]
+    assert proposal["action"] == "sales_return.create"
+    assert proposal["payload"]["invoice_id"] == ids["iss_9"]
+    assert proposal["payload"]["lines"] == [
+        {"invoice_line_id": ids["iss_9_cable_ar_line"], "quantity": "1"},
+    ]
+
+
+def test_create_sales_return_with_reason(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Create a sales return for invoice ISS-9: 2 Cable, "
+        "reason: damaged goods",
+    )
+    proposal = body["proposal"]
+    assert proposal["payload"]["reason"] == "damaged goods"
+    assert proposal["payload"]["lines"] == [
+        {"invoice_line_id": ids["iss_9_cable_line"], "quantity": "2"},
+    ]
+
+
+def test_create_sales_return_exact_remaining_is_proposal(
+    intent_client, q2_business
+):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    # ISS-9's Cable line is 10; an approved return already took 3.
+    body = _ask(
+        client, business_id,
+        "Create a sales return for invoice ISS-9: 7 Cable",
+    )
+    proposal = body["proposal"]
+    assert proposal["payload"]["lines"] == [
+        {"invoice_line_id": ids["iss_9_cable_line"], "quantity": "7"},
+    ]
+
+
+def test_create_sales_return_exceeding_remaining_is_honest(
+    intent_client, q2_business
+):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Create a sales return for invoice ISS-9: 8 Cable",
+    )
+    assert "proposal" not in body
+    assert "Only 7 of Cable" in body["answer"]
+    assert _proposal_count() == 0
+
+
+def test_create_sales_return_on_draft_is_honest(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Create a sales return for invoice DFT-9: 1 Notebook",
+    )
+    assert "proposal" not in body
+    assert "isn't issued" in body["answer"]
+    assert _proposal_count() == 0
+
+
+def test_create_sales_return_item_not_on_invoice_is_honest(
+    intent_client, q2_business
+):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Create a sales return for invoice ISS-9: 1 Notebook",
+    )
+    assert "proposal" not in body
+    assert "isn't a line on invoice ISS-9" in body["answer"]
+    assert _proposal_count() == 0
+
+
+# --- invoice.update_draft ------------------------------------------------------
+
+def _update_lines_by_description(proposal):
+    return {
+        line["description"]: line for line in proposal["payload"]["update"]["lines"]
+    }
+
+
+def test_edit_draft_invoice_en_quantity_returns_merged_proposal(
+    intent_client, q2_business
+):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Edit draft invoice DFT-9: Notebook quantity to 5",
+    )
+    proposal = body["proposal"]
+    assert proposal["action"] == "invoice.update_draft"
+    assert proposal["requires_second_approval"] is False
+    assert proposal["payload"]["invoice_id"] == ids["dft_9"]
+    update = proposal["payload"]["update"]
+    assert update["invoice_number"] == "DFT-9"
+    assert update["currency_code"] == "EGP"
+    assert update["customer_id"] == ids["ahmed_sami"]
+    assert update["discount_rate"] == "0"
+    assert update["tax_rate"] == "0"
+    lines = _update_lines_by_description(proposal)
+    assert lines["Notebook"]["quantity"] == "5"
+    assert lines["Notebook"]["unit_price"] == "60.00"
+    # The unstated line carries its stored values into the full payload.
+    assert lines["Cable"]["quantity"] == "1.000"
+    assert lines["Cable"]["unit_price"] == "250.00"
+    assert lines["Cable"]["product_id"] == ids["cable"]
+
+
+def test_edit_draft_invoice_ar_add_line_uses_catalogue_price(
+    intent_client, q2_business
+):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(client, business_id, "عدّل مسوده الفاتوره DFT-9: ضيف ٢ Cable")
+    proposal = body["proposal"]
+    assert proposal["action"] == "invoice.update_draft"
+    lines = proposal["payload"]["update"]["lines"]
+    assert len(lines) == 3
+    added = [line for line in lines if line["quantity"] == "2"]
+    assert len(added) == 1
+    assert added[0]["product_id"] == ids["cable"]
+    assert added[0]["unit_price"] == "250.00"
+
+
+def test_edit_draft_invoice_discount_and_price(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Edit draft invoice DFT-9: set discount to 10%, Cable price to 200",
+    )
+    proposal = body["proposal"]
+    assert proposal["payload"]["update"]["discount_rate"] == "10"
+    lines = _update_lines_by_description(proposal)
+    assert lines["Cable"]["unit_price"] == "200"
+
+
+def test_edit_draft_invoice_remove_line(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id, "Edit draft invoice DFT-9: remove Notebook"
+    )
+    proposal = body["proposal"]
+    lines = _update_lines_by_description(proposal)
+    assert list(lines) == ["Cable"]
+
+
+def test_edit_draft_invoice_change_customer(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Edit draft invoice DFT-9: change customer to Layla Hassan",
+    )
+    proposal = body["proposal"]
+    assert proposal["action"] == "invoice.update_draft"
+    assert proposal["payload"]["update"]["customer_id"] == ids["layla"]
+
+
+def test_edit_draft_invoice_issued_is_honest(intent_client, q2_business):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id, "Edit draft invoice ISS-9: Cable quantity to 3"
+    )
+    assert "proposal" not in body
+    assert "issued" in body["answer"]
+    assert _proposal_count() == 0
+
+
+def test_edit_draft_invoice_with_discount_totals_is_honest(
+    intent_client, q2_business
+):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    # DFT-10's stored totals carry a discount whose rate is not
+    # stored — a merged rebuild would change the totals.
+    body = _ask(
+        client, business_id, "Edit draft invoice DFT-10: Cable quantity to 3"
+    )
+    assert "proposal" not in body
+    assert "totals" in body["answer"]
+    assert _proposal_count() == 0
+
+
+def test_edit_draft_invoice_unparseable_clause_clarifies(
+    intent_client, q2_business
+):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id, "Edit draft invoice DFT-9: blah blah"
+    )
+    assert "proposal" not in body
+    assert "blah blah" in body["answer"]
+    assert _proposal_count() == 0
+
+
+def test_edit_draft_invoice_removing_last_line_is_honest(
+    intent_client, q2_business
+):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    body = _ask(
+        client, business_id,
+        "Edit draft invoice DFT-9: remove Notebook, remove Cable",
+    )
+    assert "proposal" not in body
+    assert "at least one line" in body["answer"]
+    assert _proposal_count() == 0
+
+
+def test_provider_never_called_for_q2_intents(
+    intent_client, q2_business, monkeypatch
+):
+    client, _subject = intent_client
+    business_id, _ids = q2_business
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key-that-must-not-be-used")
+
+    async def _exploding_provider(*args, **kwargs):
+        raise AssertionError("provider must not be called for a deterministic intent")
+
+    monkeypatch.setattr(assistant_api, "_provider_post", _exploding_provider)
+    body = _ask(client, business_id, "Duplicate invoice ISS-9")
+    assert body["proposal"]["action"] == "invoice.duplicate"
+    body = _ask(
+        client, business_id,
+        "Create purchase order PO-200 from supplier Nile Trading: "
+        "10 Widget at 40",
+    )
+    assert body["proposal"]["action"] == "purchase_order.create"
