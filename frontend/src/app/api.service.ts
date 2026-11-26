@@ -233,6 +233,8 @@ export interface AssistantBriefRecurring { schedule_id: string; customer_name: s
 export interface AssistantBriefGrowth { currency_code: string; current_total: string; previous_total: string; change_pct: number | null; current_window: { start_date: string; end_date: string }; previous_window: { start_date: string; end_date: string }; }
 export interface AssistantBrief { generated_at: string; business_timezone: string; date: string; enabled: boolean; dialect: string; summary: string | null; overdue_invoices: AssistantBriefOverdue[]; low_stock: AssistantBriefLowStock[]; recurring_due_tomorrow: AssistantBriefRecurring[]; sales_growth: AssistantBriefGrowth[]; low_stock_threshold: number; limitations: string[]; }
 export interface AssistantOptOut { id: string; business_id: string; user_subject: string; action: string; created_at: string | null; }
+export interface AssistantWhatsappLink { id: string; business_id: string; user_subject: string; phone_masked: string; status: string; linked_at: string | null; revoked_at: string | null; created_at: string | null; }
+export interface AssistantWhatsappLinkCode { code: string; expires_at: string | null; }
 
 export class ApiRequestError extends Error {
   constructor(message: string, readonly status: number) {
@@ -1056,6 +1058,23 @@ export class ApiService {
   }
   listOptOuts(businessId: string): Promise<AssistantOptOut[]> {
     return this.request<AssistantOptOut[]>(`${this.assistantBase(businessId)}/confirmation-opt-outs`);
+  }
+
+  // WhatsApp channel (W-foundation): linking is managed from the app
+  // only — create a 10-minute code, list the caller's links (numbers
+  // masked server-side), revoke a link.
+  createWhatsappLinkCode(businessId: string): Promise<AssistantWhatsappLinkCode> {
+    return this.request<AssistantWhatsappLinkCode>(
+      `${this.assistantBase(businessId)}/whatsapp/link-codes`, 'POST', {}
+    );
+  }
+  listWhatsappLinks(businessId: string): Promise<AssistantWhatsappLink[]> {
+    return this.request<AssistantWhatsappLink[]>(`${this.assistantBase(businessId)}/whatsapp/links`);
+  }
+  revokeWhatsappLink(businessId: string, linkId: string): Promise<void> {
+    return this.request<void>(
+      `${this.assistantBase(businessId)}/whatsapp/links/${encodeURIComponent(linkId)}`, 'DELETE'
+    );
   }
 
   // Conversational setup (B7): the user applies a setting suggestion

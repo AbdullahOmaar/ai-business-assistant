@@ -88,6 +88,25 @@ _BRIEF_ROUTES = {
     ("GET", "/api/v1/businesses/{business_id}/assistant/brief"),
 }
 
+# W-foundation (WhatsApp channel): the app-side linking surface.
+# These routes live on their own router (app.whatsapp_api) and write
+# NO business data — they bookkeep the channel's own links — so each
+# handler must delegate to app.whatsapp_linking, the same named-set
+# discipline as the Slice 4 persistence routes above.
+_WHATSAPP_ROUTES = {
+    ("POST", "/api/v1/businesses/{business_id}/assistant/whatsapp/link-codes"),
+    ("GET", "/api/v1/businesses/{business_id}/assistant/whatsapp/links"),
+    ("DELETE", "/api/v1/businesses/{business_id}/assistant/whatsapp/links/{link_id}"),
+}
+
+# W-foundation: the provider webhook — public by design (providers
+# cannot sign in), signature-verified and fail-closed in the
+# handler, covered by test_whatsapp_channel.py. It is the channel's
+# only public route; a second one fails this set.
+_WHATSAPP_WEBHOOK_ROUTES = {
+    ("POST", "/api/v1/assistant/whatsapp/webhook"),
+}
+
 
 def test_assistant_router_exposes_only_policy_gated_execution_routes() -> None:
     """Tripwire: the assistant router may expose write routes only
@@ -113,6 +132,40 @@ def test_assistant_router_exposes_only_policy_gated_execution_routes() -> None:
             "app.assistant_persistence or app.assistant_brief — assistant "
             "writes must go through the policy gate"
         )
+
+
+def test_whatsapp_routers_expose_only_the_named_foundation_routes() -> None:
+    """W-foundation tripwire: the WhatsApp routers expose exactly the
+    named route sets. The app-side handlers delegate to
+    app.whatsapp_linking (channel bookkeeping only — no business
+    writes, so no policy gate applies, exactly like the Slice 4
+    persistence set); the webhook delegates inbound text to the
+    existing chat pipeline in app.assistant_api instead of growing a
+    parallel one."""
+    from app.whatsapp_api import router as whatsapp_router
+    from app.whatsapp_api import webhook_router
+
+    seen: set[tuple[str, str]] = set()
+    for route in whatsapp_router.routes:
+        for method in getattr(route, "methods", set()):
+            seen.add((method, route.path))
+    assert seen == _WHATSAPP_ROUTES, f"unexpected whatsapp route set: {sorted(seen)}"
+    for route in whatsapp_router.routes:
+        assert "linking" in route.endpoint.__code__.co_names, (
+            f"{route.path} does not delegate to app.whatsapp_linking"
+        )
+
+    seen_hook: set[tuple[str, str]] = set()
+    for route in webhook_router.routes:
+        for method in getattr(route, "methods", set()):
+            seen_hook.add((method, route.path))
+    assert seen_hook == _WHATSAPP_WEBHOOK_ROUTES, (
+        f"unexpected whatsapp webhook route set: {sorted(seen_hook)}"
+    )
+    for route in webhook_router.routes:
+        assert "assistant_api" in route.endpoint.__code__.co_names or (
+            "_process_message" in route.endpoint.__code__.co_names
+        ), f"{route.path} does not route inbound text into the existing chat pipeline"
 
 
 def test_execution_module_gates_through_verdict() -> None:

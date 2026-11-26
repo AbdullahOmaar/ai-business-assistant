@@ -19,6 +19,7 @@ the three public operational routes (health/readyz/version), POST
 test_membership_invitations_api.py).
 """
 
+from datetime import UTC, datetime
 from uuid import UUID, uuid4
 
 from fastapi.routing import APIRoute
@@ -38,9 +39,10 @@ from app import (
     org_api,
     platform_admin_api,
     purchasing_api,
+    whatsapp_api,
 )
 from app.main import app
-from app.models import Base, BusinessMembership, MembershipRole
+from app.models import Base, BusinessMembership, MembershipRole, WhatsAppLink
 from app.security import AuthenticatedPrincipal
 
 # staff: "allow" = membership suffices (expect 200/201); "deny" = owner-only
@@ -147,6 +149,13 @@ MATRIX = [
     ("POST", "/api/v1/businesses/{business_id}/assistant/conversations", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/assistant/conversations/{conversation_id}", "allow"),
     ("POST", "/api/v1/businesses/{business_id}/assistant/conversations/{conversation_id}/messages", "allow"),
+    # W-foundation (WhatsApp channel): link-code creation and the
+    # caller's link list are member operations; revoking a link is
+    # the link owner's or a business owner's — the seeded link
+    # belongs to owner-a, so STAFF is denied.
+    ("POST", "/api/v1/businesses/{business_id}/assistant/whatsapp/link-codes", "allow"),
+    ("GET", "/api/v1/businesses/{business_id}/assistant/whatsapp/links", "allow"),
+    ("DELETE", "/api/v1/businesses/{business_id}/assistant/whatsapp/links/{link_id}", "deny"),
     ("GET", "/api/v1/businesses/{business_id}/customers/{customer_id}/statement", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/audit-events", "deny"),
     ("GET", "/api/v1/businesses/{business_id}/operations/health", "deny"),
@@ -221,6 +230,7 @@ def _live_route_table() -> set[tuple[str, str]]:
         purchasing_api.router,
         demo_auth_api.router,
         org_api.router,
+        whatsapp_api.router,
     ):
         for route in router.routes:
             if isinstance(route, APIRoute):
@@ -387,6 +397,22 @@ def test_full_route_role_tenant_denial_matrix():
         assert conversation_response.status_code == 201, conversation_response.text
         conversation_id = conversation_response.json()["id"]
 
+        # W-foundation: one WhatsApp link owned by owner-a, so the
+        # DELETE links row fires on a real row (staff must not revoke
+        # another member's link; the owner positive pass revokes it).
+        with app.state.session_factory() as session:
+            wa_link = WhatsAppLink(
+                business_id=UUID(a_id),
+                user_subject="matrix-owner-a",
+                phone_e164="+201000000001",
+                wa_id="201000000001",
+                status="linked",
+                linked_at=datetime.now(UTC),
+            )
+            session.add(wa_link)
+            session.commit()
+            wa_link_id = str(wa_link.id)
+
         # --- Business B: the cross-tenant actor's own workspace ------------
         as_user("matrix-owner-b")
         business_b = client.post(
@@ -415,6 +441,7 @@ def test_full_route_role_tenant_denial_matrix():
             "user_uid": "some-uid",
             "proposal_id": p1["id"],
             "conversation_id": conversation_id,
+            "link_id": wa_link_id,
             "action": "payment.record",
         }
         bodies = {
@@ -830,6 +857,21 @@ def test_owner_positive_matrix():
         assert conversation_response.status_code == 201, conversation_response.text
         conversation_id = conversation_response.json()["id"]
 
+        # W-foundation: one WhatsApp link owned by owner-a; the
+        # positive pass revokes it as its owner (DELETE rows fire last).
+        with app.state.session_factory() as session:
+            wa_link = WhatsAppLink(
+                business_id=UUID(a_id),
+                user_subject="matrix-owner-a",
+                phone_e164="+201000000001",
+                wa_id="201000000001",
+                status="linked",
+                linked_at=datetime.now(UTC),
+            )
+            session.add(wa_link)
+            session.commit()
+            wa_link_id = str(wa_link.id)
+
         ids = {
             "business_id": a_id,
             "customer_id": customer_id,
@@ -849,6 +891,7 @@ def test_owner_positive_matrix():
             "user_uid": "some-uid",
             "proposal_id": p1["id"],
             "conversation_id": conversation_id,
+            "link_id": wa_link_id,
             "action": "payment.record",
         }
         bodies = {

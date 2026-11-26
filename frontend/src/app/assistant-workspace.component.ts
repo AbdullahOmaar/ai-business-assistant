@@ -12,7 +12,7 @@
 import { Component, ElementRef, inject, input, OnChanges, OnDestroy, output, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiRequestError, ApiService, type AssistantBrief, type AssistantConversationSummary, type AssistantOptOut, type AssistantProposalSummary, type AssistantProposalView, type ChatReply, type SettingSuggestion } from './api.service';
+import { ApiRequestError, ApiService, type AssistantBrief, type AssistantConversationSummary, type AssistantOptOut, type AssistantProposalSummary, type AssistantProposalView, type AssistantWhatsappLink, type ChatReply, type SettingSuggestion } from './api.service';
 import {
   ASSISTANT_DIALECTS, DIALECT_SETTING_KEY, MORNING_BRIEF_SETTING_KEY,
   briefHasAttention, conversationTitleOrFallback, dialectLabelKey,
@@ -167,6 +167,28 @@ interface SpeechRecognitionLike {
                 }
               </ul>
             }
+          </div>
+          <div class="assistant-whatsapp">
+            <strong>{{ t('ui.assistantWhatsapp.title') }}</strong>
+            @if (!whatsappLinks.length) { <small>{{ t('ui.assistantWhatsapp.none') }}</small> }
+            @else {
+              <ul>
+                @for (link of whatsappLinks; track link.id) {
+                  <li>
+                    <span>{{ link.phone_masked }} · {{ t(link.status === 'linked' ? 'ui.assistantWhatsapp.linked' : 'ui.assistantWhatsapp.revoked') }}</span>
+                    @if (link.status === 'linked') { <button type="button" class="chat-new-button" (click)="revokeWhatsappLink(link.id)">{{ t('ui.assistantSettings.revoke') }}</button> }
+                  </li>
+                }
+              </ul>
+            }
+            <div>
+              <button type="button" class="chat-new-button" (click)="createWhatsappLinkCode()" [disabled]="whatsappBusy">{{ t('ui.assistantWhatsapp.linkButton') }}</button>
+            </div>
+            @if (whatsappCode) {
+              <p class="assistant-whatsapp-code">{{ whatsappCode }}</p>
+              <small class="assistant-setting-hint">{{ t('ui.assistantWhatsapp.codeHint') }}</small>
+            }
+            <small class="assistant-setting-hint">{{ t('ui.assistantWhatsapp.hint') }}</small>
           </div>
           @if (settingsSaved) { <small class="assistant-setting-saved">{{ t('ui.assistantSettings.saved') }}</small> }
         }
@@ -452,6 +474,11 @@ interface SpeechRecognitionLike {
 .assistant-optouts strong{font-size:12px}
 .assistant-optouts ul{list-style:none;margin:0;padding:0}
 .assistant-optouts li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--aba-color-border-subtle,#e2e8f0);font-size:12px}
+.assistant-whatsapp{display:grid;gap:6px;margin-top:12px}
+.assistant-whatsapp strong{font-size:12px}
+.assistant-whatsapp ul{list-style:none;margin:0;padding:0}
+.assistant-whatsapp li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--aba-color-border-subtle,#e2e8f0);font-size:12px}
+.assistant-whatsapp-code{font-size:20px;font-weight:700;letter-spacing:4px;margin:2px 0}
 .assistant-setting-saved{color:var(--aba-color-primary,#0f766e);font-weight:700}
 .assistant-brief-summary{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:0 0 8px}
 .assistant-brief-section{display:block;font-size:11px;margin-top:10px}
@@ -494,6 +521,11 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
   dialect: AssistantDialect = 'egyptian';
   briefEnabled = true;
   optOuts: AssistantOptOut[] = [];
+  // W-foundation — WhatsApp linking block (settings panel): the
+  // caller's links (masked), the one-time code after generation.
+  whatsappLinks: AssistantWhatsappLink[] = [];
+  whatsappCode = '';
+  whatsappBusy = false;
   brief: AssistantBrief | null = null;
   briefLoading = false;
   briefError = '';
@@ -592,6 +624,9 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
     this.dialect = 'egyptian';
     this.briefEnabled = true;
     this.optOuts = [];
+    this.whatsappLinks = [];
+    this.whatsappCode = '';
+    this.whatsappBusy = false;
     this.brief = null;
     this.briefLoading = false;
     this.briefError = '';
@@ -772,13 +807,15 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
       async () => ({
         settings: await this.api.listSettings(requestContext.workspaceId),
         optOuts: await this.api.listOptOuts(requestContext.workspaceId),
+        whatsappLinks: await this.api.listWhatsappLinks(requestContext.workspaceId),
       }),
       {
-        onSuccess: ({ settings, optOuts }) => {
+        onSuccess: ({ settings, optOuts, whatsappLinks }) => {
           const dialect = settingsValue(settings, DIALECT_SETTING_KEY, 'egyptian');
           this.dialect = isAssistantDialect(dialect) ? dialect : 'egyptian';
           this.briefEnabled = settingsValue(settings, MORNING_BRIEF_SETTING_KEY, 'true').trim().toLowerCase() !== 'false';
           this.optOuts = optOuts;
+          this.whatsappLinks = whatsappLinks;
         },
         onError: error => { this.settingsError = this.message(error); },
         onFinally: () => { this.settingsLoading = false; },
@@ -832,6 +869,43 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
       this.settingsError = '';
     } catch (error) {
       this.settingsError = this.message(error);
+    }
+  }
+
+  // W-foundation — WhatsApp linking. Any member manages their OWN
+  // link from here (the app is the only link-management surface);
+  // the code is shown once and completes only when it arrives from
+  // the number being linked.
+  async createWhatsappLinkCode(): Promise<void> {
+    const requestContext = this.chatRequestContext();
+    if (!requestContext.signedIn || !requestContext.workspaceId || this.whatsappBusy) return;
+    this.whatsappBusy = true;
+    try {
+      const issued = await this.api.createWhatsappLinkCode(requestContext.workspaceId);
+      this.whatsappCode = issued.code;
+      this.settingsError = '';
+    } catch (error) {
+      this.settingsError = this.message(error);
+    } finally {
+      this.whatsappBusy = false;
+    }
+  }
+
+  async revokeWhatsappLink(linkId: string): Promise<void> {
+    const requestContext = this.chatRequestContext();
+    if (!requestContext.signedIn || !requestContext.workspaceId || this.whatsappBusy) return;
+    this.whatsappBusy = true;
+    try {
+      await this.api.revokeWhatsappLink(requestContext.workspaceId, linkId);
+      this.whatsappLinks = this.whatsappLinks.map(link =>
+        link.id === linkId ? { ...link, status: 'revoked' } : link,
+      );
+      this.settingsSaved = true;
+      this.settingsError = '';
+    } catch (error) {
+      this.settingsError = this.message(error);
+    } finally {
+      this.whatsappBusy = false;
     }
   }
 
