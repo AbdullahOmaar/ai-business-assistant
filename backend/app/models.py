@@ -1269,3 +1269,124 @@ class AssistantMessage(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
+
+
+class WhatsAppLink(Base):
+    """A team member's phone number bound to their account (W-foundation).
+
+    WhatsApp channel (WHATSAPP-CHANNEL-DESIGN.md §3): linking starts
+    in the app (a short-lived code) and completes when the code
+    arrives from the number being linked. One active link per
+    (business, number) and per (business, user) — enforced in
+    app.whatsapp_linking, not by a unique constraint, because revoked
+    rows are kept as the audit trail. ``status`` is 'linked' or
+    'revoked'; a revoked link is never silently resurrected — linking
+    again creates a fresh row through a fresh code.
+    """
+
+    __tablename__ = "whatsapp_links"
+    __table_args__ = (
+        CheckConstraint(
+            "status IN ('linked', 'revoked')",
+            name="ck_whatsapp_links_status",
+        ),
+        Index("ix_whatsapp_links_business_wa", "business_id", "wa_id"),
+        Index("ix_whatsapp_links_business_user", "business_id", "user_subject"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    user_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    phone_e164: Mapped[str] = mapped_column(String(32), nullable=False)
+    wa_id: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="linked")
+    linked_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class WhatsAppMessage(Base):
+    """One WhatsApp channel ledger row (W-foundation).
+
+    Every inbound message the webhook accepts and every outbound
+    message the channel sends is recorded here. The inbound ``wamid``
+    is UNIQUE — that is the dedupe mechanism: a provider redelivery
+    of the same message collides on insert and is processed zero
+    additional times. Outbound rows carry the provider's message id
+    as their ``wamid``. ``conversation_id``/``proposal_id`` tie a
+    WhatsApp turn to its Slice 4 conversation and any proposal it
+    produced — the ledger rows are how a conversation is marked as a
+    WhatsApp-channel conversation (Slice 4 tables stay untouched).
+    ``wa_id`` is the counterparty: the sender for inbound rows, the
+    recipient for outbound rows. ``body_preview`` is a bounded copy
+    for support/debugging, never the channel of record.
+    """
+
+    __tablename__ = "whatsapp_messages"
+    __table_args__ = (
+        CheckConstraint(
+            "direction IN ('in', 'out')",
+            name="ck_whatsapp_messages_direction",
+        ),
+        UniqueConstraint("wamid", name="uq_whatsapp_messages_wamid"),
+        Index("ix_whatsapp_messages_business_created", "business_id", "created_at"),
+        Index("ix_whatsapp_messages_business_wa", "business_id", "wa_id"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    direction: Mapped[str] = mapped_column(String(8), nullable=False)
+    wamid: Mapped[str] = mapped_column(String(128), nullable=False)
+    wa_id: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    conversation_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("assistant_conversations.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    proposal_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("assistant_proposals.id", ondelete="SET NULL"),
+        nullable=True,
+    )
+    kind: Mapped[str] = mapped_column(String(24), nullable=False, default="text")
+    body_preview: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    template_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    provider_status: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
+class WhatsAppLinkCode(Base):
+    """A single-use, 10-minute linking code (W-foundation).
+
+    Created in the app by a signed-in member; only the SHA-256 hash
+    of the code is stored, so a database read never reveals a live
+    code. The code completes exactly one link (``used_at`` is set on
+    completion); creating a new code supersedes the member's earlier
+    unused codes in the same business.
+    """
+
+    __tablename__ = "whatsapp_link_codes"
+    __table_args__ = (
+        Index("ix_whatsapp_link_codes_hash", "code_hash"),
+        Index("ix_whatsapp_link_codes_business_user", "business_id", "user_subject"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    user_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    code_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )

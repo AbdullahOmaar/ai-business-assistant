@@ -20,6 +20,8 @@ from app.monitoring import configure_sentry
 from app.org_api import router as org_router
 from app.platform_admin_api import router as platform_admin_router
 from app.purchasing_api import router as purchasing_router
+from app.whatsapp_api import router as whatsapp_router
+from app.whatsapp_api import webhook_router as whatsapp_webhook_router
 
 # Error monitoring stays off unless SENTRY_DSN is set by the operator; it
 # must be configured before the app serves requests (see app/monitoring.py).
@@ -86,6 +88,8 @@ app.include_router(employee_payroll_router)
 app.include_router(org_router)
 app.include_router(demo_auth_router)
 app.include_router(bulk_router)
+app.include_router(whatsapp_router)
+app.include_router(whatsapp_webhook_router)
 
 
 @app.on_event("startup")
