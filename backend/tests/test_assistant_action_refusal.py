@@ -7,6 +7,13 @@ P6 acceptance item (5) follow-up. The endpoint is read-only by construction
 request such as "void invoice ISS-1" was silently answered with a sales
 summary instead of being refused. The refusal is server-side, before both
 the local-fallback and the provider paths.
+
+ق-3 update (phase ق, FULL-PLAN §٩): issue/void requests are no longer
+refused — they are 🟡 actions whose deterministic producers draft a
+second-approval proposal (nothing executes from chat). The tests below
+that named issue/void now pin the draft-instead behavior; the refusal
+guarantees remain pinned on the still-forbidden families (final
+deletes, refunds, role changes, …).
 """
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -138,11 +145,14 @@ def test_issue_invoice_request_is_refused_and_changes_nothing(assistant_client):
     assert _invoice_snapshot() == before
 
 
-def test_void_invoice_request_is_refused_and_changes_nothing(assistant_client):
+def test_void_invoice_request_drafts_a_proposal_and_changes_nothing(assistant_client):
+    # ق-3: voiding is a 🟡 action with a deterministic producer — the
+    # chat drafts a second-approval proposal; the invoice itself is
+    # untouched until a different owner approves and executes.
     business_id = _seed_business(assistant_client)
     before = _invoice_snapshot()
     payload = _ask(assistant_client, business_id, "Void invoice ISS-1")
-    _assert_refused(payload)
+    assert payload["proposal"]["action"] == "invoice.void"
     assert _invoice_snapshot() == before
 
 
@@ -198,7 +208,9 @@ def test_provider_is_not_called_for_refused_action(assistant_client, monkeypatch
     import httpx
 
     monkeypatch.setattr(httpx, "AsyncClient", ExplodingClient)
-    payload = _ask(assistant_client, business_id, "Void invoice ISS-1")
+    # ق-3: "Void invoice ISS-1" now drafts a proposal instead of being
+    # refused; a final delete stays refused and provider-free.
+    payload = _ask(assistant_client, business_id, "Delete invoice ISS-1")
     _assert_refused(payload)
     assert _invoice_snapshot() == before
 
@@ -245,15 +257,22 @@ COORDINATOR_ANSWERED_CASES = [
 ]
 
 COORDINATOR_REFUSED_CASES = [
-    "Issue invoice INV-1",
-    "Please void the invoice INV-2",
-    "Void invoice INV-3",
     "Delete invoice INV-4",
     "Pay invoice INV-5 now",
     "Refund invoice INV-6",
     "ألغِ الفاتورة 5",
     "أصدر فاتورة جديدة",
     "احذف الفاتورة 3",
+]
+
+# ق-3: issue/void requests left the refused list — their producers
+# draft a second-approval proposal when the target exists and answer
+# honestly when it does not (INV-1..INV-3 are not seeded here). Either
+# way the chat call itself changes nothing.
+COORDINATOR_DRAFT_CASES = [
+    "Issue invoice INV-1",
+    "Please void the invoice INV-2",
+    "Void invoice INV-3",
 ]
 
 
@@ -271,6 +290,18 @@ def test_coordinator_refused_cases_are_refused_and_change_nothing(assistant_clie
     before = _invoice_snapshot()
     payload = _ask(assistant_client, business_id, message)
     _assert_refused(payload)
+    assert _invoice_snapshot() == before
+
+
+@pytest.mark.parametrize("message", COORDINATOR_DRAFT_CASES)
+def test_coordinator_draft_cases_are_not_refused_and_change_nothing(assistant_client, message):
+    business_id = _seed_business(assistant_client)
+    before = _invoice_snapshot()
+    payload = _ask(assistant_client, business_id, message)
+    assert "لا يمكنني تنفيذ" not in payload["answer"]
+    assert "I can't take actions" not in payload["answer"]
+    # The INV targets are not seeded: honest answer, no proposal.
+    assert "proposal" not in payload
     assert _invoice_snapshot() == before
 
 
@@ -467,8 +498,10 @@ def test_unmatched_action_phrases_fall_through_to_read_only_answers(
 def test_refusal_language_follows_the_request_language(assistant_client):
     business_id = _seed_business(assistant_client)
     before = _invoice_snapshot()
-    english = _ask(assistant_client, business_id, "Void invoice ISS-1")
-    arabic = _ask(assistant_client, business_id, "ألغِ الفاتورة ISS-1")
+    # ق-3: void requests now draft proposals; final deletes stay
+    # refused and pin the refusal-language behavior in both languages.
+    english = _ask(assistant_client, business_id, "Delete invoice ISS-1")
+    arabic = _ask(assistant_client, business_id, "احذف الفاتورة ISS-1")
     assert "I can't take actions such as" in english["answer"]
     assert "no change has been made" in english["answer"]
     assert not any("\u0600" <= ch <= "\u06ff" for ch in english["answer"])

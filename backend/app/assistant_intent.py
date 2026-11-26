@@ -28,10 +28,9 @@ Deliberate boundaries (no guessing, ever):
   more); stock quantities at most 3. A number that does not fit is
   not extractable and the request falls through to the existing
   refusal / fallback flow.
-- Only the listed intent families convert. Void / issue / pay /
-  refund invoice, deletes, settings and membership changes stay
-  refused exactly as before. The provider path is untouched and is
-  never called for a deterministic intent.
+- Only the listed intent families convert. Deletes, settings and
+  membership changes stay refused exactly as before. The provider
+  path is untouched and is never called for a deterministic intent.
 - The invoice number and the customer / product names in a payload
   are the user's own spelling, sliced out of the original message
   (the folded text is only used for matching).
@@ -46,13 +45,31 @@ replaces the whole draft, so unstated fields carry their current
 values; the stored draft keeps discount/tax TOTALS, not rates, so a
 draft whose totals carry a discount or tax the message does not
 restate cannot be rebuilt exactly and is answered honestly).
+ق-3 (phase ق, FULL-PLAN §٩) adds the second-approval (🟡) families:
+issue / void an invoice by number, approve / receive-in-full /
+cancel a purchase order by number, approve a return / issue a
+credit note resolved through the return's invoice number, create a
+recurring-invoice schedule for a named customer, create a pricing
+rule, the four payroll actions for a named employee + period, and
+create a notification. Every one is a proposal draft — the second
+owner approval on the Slice 2 card governs execution, exactly like
+``payment.record``. Status honesty mirrors the service guards
+(issue = draft only, PO approve/cancel = draft only, receive =
+remaining quantities of an approved order, a return needs a reason
+before approval / crediting), so the chat never drafts a proposal
+the dispatch is known to reject. Two 🟡 actions deliberately have
+NO producer here (see the inventory-coverage test): ``invoice.update``
+(a full honest replacement payload needs the draft-edit clause
+grammar of the ق-2 batch; the app-side proposal fails closed at
+dispatch with an honest note) and ``data_import.create`` (its
+payload is an uploaded CSV file — no honest text-only build).
 """
 
 from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from types import SimpleNamespace
 from typing import Literal
@@ -62,9 +79,13 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import (
+    CreditNote,
     Customer,
+    Employee,
     Invoice,
     InvoiceLine,
+    PaymentAllocation,
+    PayrollRecord,
     Product,
     PurchaseOrder,
     PurchaseOrderLine,
@@ -430,6 +451,135 @@ def _open_invoice_counts(session: Session, business_id: UUID, customer_ids: list
 
 
 # ---------------------------------------------------------------------------
+# ق-3 resolvers: purchase orders by number, returns through their
+# invoice, employees by name, payroll records by employee + period.
+# ---------------------------------------------------------------------------
+
+def _find_purchase_order(session: Session, business_id: UUID, number: str):
+    """Find a purchase order by number: exact first, then case-insensitive."""
+    order = session.scalars(
+        select(PurchaseOrder).where(
+            PurchaseOrder.business_id == business_id,
+            PurchaseOrder.order_number == number,
+        )
+    ).first()
+    if order is not None:
+        return order
+    return session.scalars(
+        select(PurchaseOrder).where(
+            PurchaseOrder.business_id == business_id,
+            func.lower(PurchaseOrder.order_number) == number.casefold(),
+        )
+    ).first()
+
+
+def _resolve_employee(session: Session, business_id: UUID, query: str):
+    rows = session.scalars(
+        select(Employee).where(
+            Employee.business_id == business_id, Employee.is_active.is_(True)
+        )
+    ).all()
+    return _resolve_by_name(rows, query)
+
+
+def _find_payroll(
+    session: Session, business_id: UUID, employee_id: UUID, period: str
+):
+    return session.scalars(
+        select(PayrollRecord).where(
+            PayrollRecord.business_id == business_id,
+            PayrollRecord.employee_id == employee_id,
+            PayrollRecord.period == period,
+        )
+    ).one_or_none()
+
+
+def _returns_for_invoice(session: Session, business_id: UUID, invoice_id: UUID) -> list:
+    """All sales returns on one invoice, oldest first."""
+    return list(session.scalars(
+        select(SalesReturn).where(
+            SalesReturn.business_id == business_id,
+            SalesReturn.invoice_id == invoice_id,
+        ).order_by(SalesReturn.created_at.asc(), SalesReturn.id.asc())
+    ).all())
+
+
+def _allocated_total(session: Session, business_id: UUID, invoice_id: UUID) -> Decimal:
+    total = session.scalar(
+        select(func.coalesce(func.sum(PaymentAllocation.amount), 0)).where(
+            PaymentAllocation.business_id == business_id,
+            PaymentAllocation.invoice_id == invoice_id,
+        )
+    )
+    return Decimal(str(total or 0))
+
+
+_EN_MONTHS = {
+    "january": 1, "february": 2, "march": 3, "april": 4, "may": 5,
+    "june": 6, "july": 7, "august": 8, "september": 9, "october": 10,
+    "november": 11, "december": 12,
+}
+_AR_MONTHS = {
+    "يناير": 1, "فبراير": 2, "مارس": 3, "ابريل": 4, "مايو": 5,
+    "يونيو": 6, "يوليو": 7, "اغسطس": 8, "سبتمبر": 9, "اكتوبر": 10,
+    "نوفمبر": 11, "ديسمبر": 12,
+}
+_MONTH_ALT = "|".join([*_EN_MONTHS, *_AR_MONTHS])
+_PERIOD_ALT = (
+    r"(?:(?P<period>\d{4}-(?:0[1-9]|1[0-2]))"
+    r"|(?P<month>" + _MONTH_ALT + r")\s+(?P<year>\d{4}))"
+)
+
+
+def _period_of(match: re.Match) -> str | None:
+    """The canonical YYYY-MM period from a match's period/month groups."""
+    period = match.group("period")
+    if period:
+        return period
+    month_raw = (match.group("month") or "").casefold()
+    month = _EN_MONTHS.get(month_raw) or _AR_MONTHS.get(month_raw)
+    year = match.group("year")
+    if month is None or year is None:
+        return None
+    return f"{int(year):04d}-{month:02d}"
+
+
+# Payroll components (allowances / bonuses / deductions): stated only,
+# parsed from the message tail. A keyword with an amount that does not
+# fit the money shape is malformed — the caller clarifies, never guesses.
+_COMPONENT_SPECS = (
+    ("allowances", r"allowances?", r"بدلات"),
+    ("bonuses", r"bonus(?:es)?", r"مكافات|مكافاه"),
+    ("deductions", r"deductions?", r"خصومات|استقطاعات"),
+)
+
+
+def _payroll_components(rest: str) -> tuple[dict, bool]:
+    """Parse stated payroll components from a folded message tail.
+
+    Returns (components, malformed): components maps field -> Decimal
+    for every cleanly stated component; malformed is True when a
+    component keyword appears without a fittable amount.
+    """
+    components: dict[str, Decimal] = {}
+    malformed = False
+    for field, en_word, ar_word in _COMPONENT_SPECS:
+        keyword = re.compile(rf"(?:{en_word}|{ar_word})\b", re.IGNORECASE)
+        if keyword.search(rest) is None:
+            continue
+        amount_match = re.compile(
+            rf"(?:{en_word}|{ar_word})\s+(?:of\s+)?" + _AMOUNT,
+            re.IGNORECASE,
+        ).search(rest)
+        value = _price_amount(amount_match.group("amount")) if amount_match else None
+        if value is None:
+            malformed = True
+        else:
+            components[field] = value
+    return components, malformed
+
+
+# ---------------------------------------------------------------------------
 # Answers: clarifications, honest no-guess statements, draft confirmations.
 # ---------------------------------------------------------------------------
 
@@ -455,6 +605,20 @@ _ACTION_LABELS = {
     "purchase_order.create": ("إنشاء أمر شراء مسودة", "creating a draft purchase order"),
     "purchase_order.duplicate": ("نسخ أمر شراء", "duplicating a purchase order"),
     "sales_return.create": ("إنشاء مرتجع مبيعات", "creating a sales return"),
+    "invoice.issue": ("إصدار فاتورة", "issuing an invoice"),
+    "invoice.void": ("إبطال فاتورة", "voiding an invoice"),
+    "purchase_order.approve": ("اعتماد أمر شراء", "approving a purchase order"),
+    "purchase_order.receive": ("استلام أمر شراء", "receiving a purchase order"),
+    "purchase_order.cancel": ("إلغاء أمر شراء", "cancelling a purchase order"),
+    "sales_return.approve": ("اعتماد مرتجع", "approving a sales return"),
+    "credit_note.issue": ("إصدار إشعار دائن", "issuing a credit note"),
+    "recurring_invoice.create": ("إنشاء فاتورة دورية", "creating a recurring invoice schedule"),
+    "pricing_rule.create": ("إنشاء قاعدة تسعير", "creating a pricing rule"),
+    "payroll.create": ("إنشاء مرتب", "creating a payroll record"),
+    "payroll.approve": ("اعتماد مرتب", "approving a payroll record"),
+    "payroll.pay": ("صرف مرتب", "paying a payroll record"),
+    "payroll.update": ("تعديل مرتب", "updating a payroll record"),
+    "notification.create": ("إنشاء إشعار", "creating a notification"),
 }
 
 
@@ -465,10 +629,18 @@ def draft_answer(action: str, *, arabic: bool, requires_second_approval: bool) -
         answer = f"جهّزت مسودة {label_ar} — راجعها في الكارت قبل ما تتنفذ."
         if requires_second_approval:
             answer += " دي محتاجة تأكيد المالك الأول."
+        if action == "credit_note.issue":
+            # §٩.٨'s permanent caveat, stated with every credit note.
+            answer += " تنبيه دائم: الإشعار الدائن لا يقلل الدين ولا يظهر في كشف الحساب."
         return answer
     answer = f"I've prepared a draft for {label_en} — review it in the card before it runs."
     if requires_second_approval:
         answer += " This one needs the owner's confirmation first."
+    if action == "credit_note.issue":
+        answer += (
+            " Standing caveat: a credit note does not reduce the debt "
+            "and does not appear in the customer statement."
+        )
     return answer
 
 
@@ -588,6 +760,60 @@ def _line_clarify(number: str, query: str, rows: list, *, arabic: bool) -> Inten
             f"More than one line named {query} on invoice {number}: "
             f"{', '.join(options)} — which line do you mean? "
             "Name it by its price or quantity."
+        )
+    return IntentResult(kind="clarify", answer=answer)
+
+
+def _missing_employee_answer(*, arabic: bool) -> str:
+    if arabic:
+        return "مش لاقي موظف بالاسم ده — اتأكد من الاسم."
+    return "I couldn't find an employee with that name — check the spelling."
+
+
+def _employee_option(employee: Employee, *, arabic: bool) -> str:
+    detail = employee.department or employee.employee_code
+    if detail:
+        return f"{employee.name} ({detail})"
+    return employee.name
+
+
+def _employee_clarify(rows: list, query: str, *, arabic: bool) -> IntentResult:
+    options = [_employee_option(row, arabic=arabic) for row in rows]
+    count = len(options)
+    if arabic:
+        joined = " و ".join(options) if count == 2 else "، ".join(options)
+        answer = f"عندك {count} موظفين باسم {query}: {joined} — أنهي موظف تقصد؟"
+    else:
+        answer = (
+            f"There are {count} employees named {query}: {', '.join(options)} — "
+            "which one do you mean?"
+        )
+    return IntentResult(kind="clarify", answer=answer)
+
+
+def _return_option(row: SalesReturn, *, arabic: bool) -> str:
+    day = row.created_at.date().isoformat() if row.created_at else "?"
+    if arabic:
+        return f"مرتجع {day} — الإجمالي {row.total} (حالته: {row.status})"
+    return f"return of {day} — total {row.total} (status: {row.status})"
+
+
+def _return_clarify(
+    rows: list, invoice_number: str, *, arabic: bool, credit_note: bool = False
+) -> IntentResult:
+    options = [_return_option(row, arabic=arabic) for row in rows]
+    joined = "، ".join(options)
+    if arabic:
+        what = "إصدار إشعار دائن" if credit_note else "اعتماد"
+        answer = (
+            f"عندك {len(options)} مرتجعات على الفاتورة {invoice_number}: {joined} — "
+            f"حدد تاريخ المرتجع اللي عايز {what} ليه (مثال: بتاريخ 2026-11-20)."
+        )
+    else:
+        what = "issue a credit note for" if credit_note else "approve"
+        answer = (
+            f"There are {len(options)} returns on invoice {invoice_number}: {joined} — "
+            f"add the return's date to say which one to {what} (e.g. on 2026-11-20)."
         )
     return IntentResult(kind="clarify", answer=answer)
 
@@ -792,6 +1018,117 @@ _CUSTOMER_UPDATE_HEAD = (
     ),
     re.compile(
         r"^\s*(?:حدث|عدل|غير)\s+(?:بيانات\s+)?(?:ال)?عميل\s+(?P<tail>.+?)"
+        + _TAIL,
+        re.IGNORECASE,
+    ),
+)
+# --- ق-3 patterns (🟡 second-approval families) ---------------------------
+# Invoice-style numbers reuse Slice 3's token shape; purchase-order
+# numbers are free-form references, so they take any non-space token.
+_NUMBER_TOKEN = r"(?P<number>[a-z]{0,4}-?\d+)"
+_REF_TOKEN = r"(?P<number>[^\s.,!؟،]+)"
+# A return is named through its invoice; when several returns share
+# one invoice, an optional date qualifier picks one deterministically.
+_DATE_QUAL = r"(?:\s+(?:on|بتاريخ|تاريخ)\s+(?P<on>\d{4}-\d{2}-\d{2}))?"
+
+_INVOICE_ISSUE = (
+    re.compile(
+        r"(?:please\s+)?issue\s+(?:the\s+)?invoice\s+(?:number\s+|#\s*)?"
+        + _NUMBER_TOKEN + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:اصدر|اعتمد)\s+(?:ال)?فاتوره\s+(?:رقم\s+)?"
+        + _NUMBER_TOKEN + _TAIL,
+        re.IGNORECASE,
+    ),
+)
+_INVOICE_VOID = (
+    re.compile(
+        r"(?:please\s+)?void\s+(?:the\s+)?invoice\s+(?:number\s+|#\s*)?"
+        + _NUMBER_TOKEN + r"(?:\s+reason:\s*(?P<reason>.+?))?" + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:الغي|ابطل|ابطال)\s+(?:ال)?فاتوره\s+(?:رقم\s+)?"
+        + _NUMBER_TOKEN + r"(?:\s+السبب:\s*(?P<reason>.+?))?" + _TAIL,
+        re.IGNORECASE,
+    ),
+)
+_PO_APPROVE = (
+    re.compile(
+        r"(?:please\s+)?(?:approve|confirm)\s+(?:the\s+)?purchase\s+order\s+"
+        r"(?:number\s+|#\s*)?" + _REF_TOKEN + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:اعتمد|وافق\s+(?:على|علي))\s+(?:امر|طلب)\s+الشراء\s+"
+        r"(?:رقم\s+)?" + _REF_TOKEN + _TAIL,
+        re.IGNORECASE,
+    ),
+)
+_PO_RECEIVE = (
+    re.compile(
+        r"(?:please\s+)?receive\s+(?:the\s+)?purchase\s+order\s+"
+        r"(?:number\s+|#\s*)?" + _REF_TOKEN + r"(?:\s+in\s+full)?" + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:استلم|استلام)\s+(?:امر|طلب)\s+الشراء\s+(?:رقم\s+)?"
+        + _REF_TOKEN + r"(?:\s+بالكامل)?" + _TAIL,
+        re.IGNORECASE,
+    ),
+)
+_PO_CANCEL = (
+    re.compile(
+        r"(?:please\s+)?cancel\s+(?:the\s+)?purchase\s+order\s+"
+        r"(?:number\s+|#\s*)?" + _REF_TOKEN + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:الغي|الغ)\s+(?:امر|طلب)\s+الشراء\s+(?:رقم\s+)?"
+        + _REF_TOKEN + _TAIL,
+        re.IGNORECASE,
+    ),
+)
+_RETURN_APPROVE = (
+    re.compile(
+        r"(?:please\s+)?approve\s+(?:the\s+)?(?:sales\s+)?return\s+(?:for|on)\s+"
+        r"(?:invoice\s+)?(?:number\s+|#\s*)?" + _NUMBER_TOKEN + _DATE_QUAL + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:اعتمد|وافق\s+(?:على|علي))\s+(?:ال)?مرتجع\s+"
+        r"(?:بتاع\s+|على\s+|ل)?(?:ال)?فاتوره\s+(?:رقم\s+)?"
+        + _NUMBER_TOKEN + _DATE_QUAL + _TAIL,
+        re.IGNORECASE,
+    ),
+)
+_CREDIT_NOTE = (
+    re.compile(
+        r"(?:please\s+)?issue\s+(?:a\s+)?credit\s+note\s+(?:for|on)\s+"
+        r"(?:the\s+)?(?:return\s+(?:for|on)\s+)?(?:invoice\s+)?"
+        r"(?:number\s+|#\s*)?" + _NUMBER_TOKEN + _DATE_QUAL + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:اصدر|طلع)\s+اشعار\s+دائن\s+(?:ل|على|بتاع)?\s*"
+        r"(?:مرتجع\s+)?(?:ال)?فاتوره\s+(?:رقم\s+)?"
+        + _NUMBER_TOKEN + _DATE_QUAL + _TAIL,
+        re.IGNORECASE,
+    ),
+)
+_RECURRING = (
+    re.compile(
+        r"(?:please\s+)?(?:create|set\s+up)\s+(?:a\s+)?recurring\s+invoice\s+"
+        r"(?:schedule\s+)?for\s+(?P<name>.+?)\s+every\s+(?P<days>\d{1,4})\s+days?"
+        r"(?:\s+starting\s+(?P<date>\d{4}-\d{2}-\d{2}))?" + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:انشئ|اعمل|جهز)\s+(?:فاتوره\s+)?(?:دوريه|متكرره)\s+"
+        r"(?:للعميل\s+|ل)?(?P<name>.+?)\s+كل\s+(?P<days>\d{1,4})\s+"
+        r"(?:يوم|ايام)(?:\s+(?:من|ابتداء\s+من)\s+(?P<date>\d{4}-\d{2}-\d{2}))?"
         + _TAIL,
         re.IGNORECASE,
     ),
@@ -1051,6 +1388,84 @@ _RETURN_SEGMENT = (
     ),
     re.compile(
         r"(?P<qty>\d[\d,]*(?:\.\d+)?)\s*(?:وحده\s+|وحدات\s+)?(?P<name>.+?)",
+        re.IGNORECASE,
+    ),
+)
+_PRICING_RULE = (
+    re.compile(
+        r"(?:please\s+)?(?:create|add)\s+(?:a\s+)?(?P<kind>tax|discount)\s+rule\s+"
+        r"(?:named\s+|called\s+)?(?P<name>.+?)\s+(?:at\s+)?"
+        r"(?P<rate>\d+(?:\.\d+)?)\s*(?:%|percent)" + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:انشئ|اعمل|اضف|ضيف)\s+قاعده\s+(?P<kind>ضريبه|خصم)\s+"
+        r"(?:اسمها\s+|باسم\s+)?(?P<name>.+?)\s+(?P<rate>\d+(?:\.\d+)?)"
+        r"\s*(?:%|في\s+الميه|بالمئه)?" + _TAIL,
+        re.IGNORECASE,
+    ),
+)
+_PAYROLL_CREATE = (
+    re.compile(
+        r"(?:please\s+)?(?:create|prepare|run)\s+(?:the\s+)?payroll\s+for\s+"
+        r"(?P<name>.+?)\s+for\s+" + _PERIOD_ALT + r"(?P<rest>.*?)" + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:انشئ|اعمل|جهز)\s+(?:كشف\s+)?مرتب\s+"
+        r"(?:الموظف\s+|للموظف\s+|ل)?(?P<name>.+?)\s+(?:لشهر|عن\s+شهر|شهر)\s+"
+        + _PERIOD_ALT + r"(?P<rest>.*?)" + _TAIL,
+        re.IGNORECASE,
+    ),
+)
+_PAYROLL_APPROVE = (
+    re.compile(
+        r"(?:please\s+)?approve\s+(?:the\s+)?payroll\s+for\s+"
+        r"(?P<name>.+?)\s+for\s+" + _PERIOD_ALT + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:اعتمد)\s+(?:كشف\s+)?مرتب\s+"
+        r"(?:الموظف\s+|للموظف\s+|ل)?(?P<name>.+?)\s+(?:لشهر|عن\s+شهر|شهر)\s+"
+        + _PERIOD_ALT + _TAIL,
+        re.IGNORECASE,
+    ),
+)
+_PAYROLL_PAY = (
+    re.compile(
+        r"(?:please\s+)?pay\s+(?:the\s+)?payroll\s+for\s+"
+        r"(?P<name>.+?)\s+for\s+" + _PERIOD_ALT + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:ادفع|اصرف)\s+(?:كشف\s+)?مرتب\s+"
+        r"(?:الموظف\s+|للموظف\s+|ل)?(?P<name>.+?)\s+(?:لشهر|عن\s+شهر|شهر)\s+"
+        + _PERIOD_ALT + _TAIL,
+        re.IGNORECASE,
+    ),
+)
+_PAYROLL_UPDATE = (
+    re.compile(
+        r"(?:please\s+)?update\s+(?:the\s+)?payroll\s+for\s+"
+        r"(?P<name>.+?)\s+for\s+" + _PERIOD_ALT + r"(?P<rest>.+?)" + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:عدل|حدث)\s+(?:كشف\s+)?مرتب\s+"
+        r"(?:الموظف\s+|للموظف\s+|ل)?(?P<name>.+?)\s+(?:لشهر|عن\s+شهر|شهر)\s+"
+        + _PERIOD_ALT + r"(?P<rest>.+?)" + _TAIL,
+        re.IGNORECASE,
+    ),
+)
+_NOTIFICATION = (
+    re.compile(
+        r"(?:please\s+)?(?:send|create|post)\s+(?:a\s+)?notification\s*:\s*"
+        r"(?P<title>.+?)\s+(?:—|--|\|)\s+(?P<body>.+?)" + _TAIL,
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"(?:ابعت|انشئ|اعمل)\s+اشعار\s*:\s*"
+        r"(?P<title>.+?)\s+(?:—|--|\|)\s+(?P<body>.+?)" + _TAIL,
         re.IGNORECASE,
     ),
 )
@@ -1925,6 +2340,99 @@ def _extract_invoice_update_draft(
         action="invoice.update_draft",
         payload={"invoice_id": str(invoice.id), "update": update},
     )
+def _order_from_match(
+    session: Session, business_id: UUID, match: re.Match,
+    message: str, index_map: list[int], *, arabic: bool,
+):
+    """Resolve a purchase-order match: (order, None) or (None, result)."""
+    number = _matched_number(match, message, index_map)
+    if number is None:
+        return None, IntentResult(kind="none")
+    order = _find_purchase_order(session, business_id, number)
+    if order is None:
+        return None, IntentResult(
+            kind="honest", answer=_missing_order_answer(arabic=arabic)
+        )
+    return order, None
+
+
+def _return_from_match(
+    session: Session, business_id: UUID, match: re.Match,
+    message: str, index_map: list[int], *, arabic: bool,
+    want_status: str, credit_note: bool = False,
+):
+    """Resolve the sales return a match refers to, through its invoice.
+
+    Candidates are the invoice's returns in ``want_status``; an
+    optional date qualifier in the message narrows them. Returns
+    (row, None) on a unique resolution, else (None, IntentResult)
+    with an honest miss or ONE clarification.
+    """
+    number = _matched_number(match, message, index_map)
+    if number is None:
+        return None, IntentResult(kind="none")
+    invoice = _find_invoice(session, business_id, number)
+    if invoice is None:
+        return None, IntentResult(
+            kind="honest", answer=_missing_invoice_answer(arabic=arabic)
+        )
+    rows = _returns_for_invoice(session, business_id, invoice.id)
+    if not rows:
+        answer = (
+            f"مفيش مرتجع مسجل على الفاتورة {number}."
+            if arabic else
+            f"There is no sales return recorded on invoice {number}."
+        )
+        return None, IntentResult(kind="honest", answer=answer)
+    candidates = [row for row in rows if row.status == want_status]
+    on = match.group("on")
+    if on:
+        candidates = [
+            row for row in candidates
+            if row.created_at is not None
+            and row.created_at.date().isoformat() == on
+        ]
+    if not candidates:
+        if want_status == "draft":
+            answer = (
+                f"مفيش مرتجع مسودة مستني اعتماد على الفاتورة {number}."
+                if arabic else
+                f"There is no draft return awaiting approval on invoice {number}."
+            )
+        else:
+            answer = (
+                f"مفيش مرتجع معتمد على الفاتورة {number} يتصدر له إشعار دائن."
+                if arabic else
+                f"There is no approved return on invoice {number} to credit."
+            )
+        return None, IntentResult(kind="honest", answer=answer)
+    if len(candidates) > 1:
+        return None, _return_clarify(
+            candidates, number, arabic=arabic, credit_note=credit_note
+        )
+    return candidates[0], None
+
+
+def _payroll_target(
+    session: Session, business_id: UUID, match: re.Match,
+    message: str, index_map: list[int], *, arabic: bool,
+):
+    """Resolve (employee, period) from a payroll match.
+
+    Returns (employee, period, None) or (None, None, IntentResult).
+    """
+    name = _matched_name(match, message, index_map)
+    period = _period_of(match)
+    if name is None or period is None:
+        return None, None, IntentResult(kind="none")
+    status, rows = _resolve_employee(session, business_id, name)
+    if status == "many":
+        return None, None, _employee_clarify(rows, name, arabic=arabic)
+    if status == "none":
+        return None, None, IntentResult(
+            kind="honest", answer=_missing_employee_answer(arabic=arabic)
+        )
+    return rows[0], period, None
 
 
 def extract_deterministic_intent(
@@ -2205,5 +2713,489 @@ def extract_deterministic_intent(
                         "quantity_delta": qty * sign,
                     },
                 )
+
+    # --- ق-3: issue an invoice -------------------------------------------
+    match = _first_match(_INVOICE_ISSUE, folded)
+    if match is not None:
+        number = _matched_number(match, message, index_map)
+        if number is not None:
+            invoice = _find_invoice(session, business_id, number)
+            if invoice is None:
+                return IntentResult(
+                    kind="honest",
+                    answer=_missing_invoice_answer(arabic=arabic),
+                )
+            if invoice.status != "draft":
+                answer = (
+                    f"الفاتورة {number} مش مسودة (حالتها: {invoice.status}) — "
+                    "الإصدار للمسودات بس."
+                    if arabic else
+                    f"Invoice {number} isn't a draft (status: {invoice.status}) — "
+                    "only draft invoices can be issued."
+                )
+                return IntentResult(kind="honest", answer=answer)
+            if invoice.customer_id is None:
+                answer = (
+                    f"الفاتورة {number} من غير عميل — حدد العميل قبل الإصدار."
+                    if arabic else
+                    f"Invoice {number} has no customer — set a customer before issuing."
+                )
+                return IntentResult(kind="honest", answer=answer)
+            return IntentResult(
+                kind="proposal",
+                action="invoice.issue",
+                payload={"invoice_id": str(invoice.id)},
+            )
+
+    # --- ق-3: void an invoice ---------------------------------------------
+    match = _first_match(_INVOICE_VOID, folded)
+    if match is not None:
+        number = _matched_number(match, message, index_map)
+        if number is not None:
+            invoice = _find_invoice(session, business_id, number)
+            if invoice is None:
+                return IntentResult(
+                    kind="honest",
+                    answer=_missing_invoice_answer(arabic=arabic),
+                )
+            if invoice.status == "void":
+                answer = (
+                    f"الفاتورة {number} مبطلة أصلًا."
+                    if arabic else
+                    f"Invoice {number} is already void."
+                )
+                return IntentResult(kind="honest", answer=answer)
+            if invoice.status == "issued" and _allocated_total(
+                session, business_id, invoice.id
+            ) > 0:
+                answer = (
+                    f"الفاتورة {number} عليها دفعات مخصصة — سجّل استرداد أو "
+                    "إشعار دائن قبل الإبطال."
+                    if arabic else
+                    f"Invoice {number} has allocated payments — record a refund "
+                    "or a credit note before voiding it."
+                )
+                return IntentResult(kind="honest", answer=answer)
+            payload: dict = {"invoice_id": str(invoice.id)}
+            reason = None
+            if match.group("reason") is not None:
+                start, end = match.span("reason")
+                reason = _raw_slice(message, index_map, start, end).strip()
+                reason = re.sub(r"[.,!؟،;:]+$", "", reason).strip() or None
+            if reason is not None and len(reason) > 500:
+                answer = (
+                    "سبب الإبطال أطول من ٥٠٠ حرف — اختصره وحاول تاني."
+                    if arabic else
+                    "The void reason is longer than 500 characters — shorten it and try again."
+                )
+                return IntentResult(kind="clarify", answer=answer)
+            if reason is not None:
+                payload["reason"] = reason
+            return IntentResult(
+                kind="proposal",
+                action="invoice.void",
+                payload=payload,
+            )
+
+    # --- ق-3: purchase-order approve / receive / cancel -------------------
+    match = _first_match(_PO_APPROVE, folded)
+    if match is not None:
+        order, failure = _order_from_match(
+            session, business_id, match, message, index_map, arabic=arabic
+        )
+        if failure is not None:
+            if failure.kind != "none":
+                return failure
+        elif order.status != "draft":
+            answer = (
+                f"أمر الشراء {order.order_number} مش مسودة (حالته: {order.status}) — "
+                "الاعتماد للمسودات بس."
+                if arabic else
+                f"Purchase order {order.order_number} isn't a draft "
+                f"(status: {order.status}) — only drafts can be approved."
+            )
+            return IntentResult(kind="honest", answer=answer)
+        else:
+            return IntentResult(
+                kind="proposal",
+                action="purchase_order.approve",
+                payload={"order_id": str(order.id)},
+            )
+
+    match = _first_match(_PO_RECEIVE, folded)
+    if match is not None:
+        order, failure = _order_from_match(
+            session, business_id, match, message, index_map, arabic=arabic
+        )
+        if failure is not None:
+            if failure.kind != "none":
+                return failure
+        elif order.status not in ("approved", "partially_received"):
+            answer = (
+                f"أمر الشراء {order.order_number} مش جاهز للاستلام "
+                f"(حالته: {order.status}) — لازم يتعمد الأول."
+                if arabic else
+                f"Purchase order {order.order_number} can't be received "
+                f"(status: {order.status}) — it must be approved first."
+            )
+            return IntentResult(kind="honest", answer=answer)
+        else:
+            lines = session.scalars(
+                select(PurchaseOrderLine).where(
+                    PurchaseOrderLine.business_id == business_id,
+                    PurchaseOrderLine.purchase_order_id == order.id,
+                ).order_by(PurchaseOrderLine.id.asc())
+            ).all()
+            remaining = [
+                {
+                    "line_id": str(line.id),
+                    "quantity": line.quantity - line.received_quantity,
+                }
+                for line in lines
+                if line.quantity - line.received_quantity > 0
+            ]
+            if not remaining:
+                answer = (
+                    f"أمر الشراء {order.order_number} مستلم بالكامل أصلًا."
+                    if arabic else
+                    f"Purchase order {order.order_number} is already fully received."
+                )
+                return IntentResult(kind="honest", answer=answer)
+            return IntentResult(
+                kind="proposal",
+                action="purchase_order.receive",
+                payload={
+                    "order_id": str(order.id),
+                    "receive": {"lines": remaining},
+                    "idempotency_key": str(uuid4()),
+                },
+            )
+
+    match = _first_match(_PO_CANCEL, folded)
+    if match is not None:
+        order, failure = _order_from_match(
+            session, business_id, match, message, index_map, arabic=arabic
+        )
+        if failure is not None:
+            if failure.kind != "none":
+                return failure
+        elif order.status != "draft":
+            answer = (
+                f"أمر الشراء {order.order_number} مش مسودة (حالته: {order.status}) — "
+                "الإلغاء للمسودات بس."
+                if arabic else
+                f"Purchase order {order.order_number} isn't a draft "
+                f"(status: {order.status}) — only drafts can be cancelled."
+            )
+            return IntentResult(kind="honest", answer=answer)
+        else:
+            return IntentResult(
+                kind="proposal",
+                action="purchase_order.cancel",
+                payload={"order_id": str(order.id)},
+            )
+
+    # --- ق-3: approve a sales return (named through its invoice) ----------
+    match = _first_match(_RETURN_APPROVE, folded)
+    if match is not None:
+        row, failure = _return_from_match(
+            session, business_id, match, message, index_map,
+            arabic=arabic, want_status="draft",
+        )
+        if failure is not None:
+            if failure.kind != "none":
+                return failure
+        elif not (row.reason or "").strip():
+            answer = (
+                "المرتجع ده من غير سبب مسجل — الاعتماد محتاج سبب، "
+                "سجّله من التطبيق الأول."
+                if arabic else
+                "That return has no recorded reason — approval needs one; "
+                "add it in the app first."
+            )
+            return IntentResult(kind="honest", answer=answer)
+        else:
+            return IntentResult(
+                kind="proposal",
+                action="sales_return.approve",
+                payload={"return_id": str(row.id)},
+            )
+
+    # --- ق-3: issue a credit note (for an approved return) -----------------
+    match = _first_match(_CREDIT_NOTE, folded)
+    if match is not None:
+        row, failure = _return_from_match(
+            session, business_id, match, message, index_map,
+            arabic=arabic, want_status="approved", credit_note=True,
+        )
+        if failure is not None:
+            if failure.kind != "none":
+                return failure
+        elif not (row.reason or "").strip():
+            answer = (
+                "المرتجع ده من غير سبب مسجل — إصدار الإشعار الدائن محتاج سبب."
+                if arabic else
+                "That return has no recorded reason — a credit note needs one."
+            )
+            return IntentResult(kind="honest", answer=answer)
+        else:
+            existing = session.scalars(
+                select(CreditNote).where(
+                    CreditNote.business_id == business_id,
+                    CreditNote.sales_return_id == row.id,
+                )
+            ).first()
+            if existing is not None:
+                answer = (
+                    "المرتجع ده صدر له إشعار دائن أصلًا."
+                    if arabic else
+                    "That return already has a credit note."
+                )
+                return IntentResult(kind="honest", answer=answer)
+            return IntentResult(
+                kind="proposal",
+                action="credit_note.issue",
+                payload={"return_id": str(row.id)},
+            )
+
+    # --- ق-3: create a recurring-invoice schedule ---------------------------
+    match = _first_match(_RECURRING, folded)
+    if match is not None:
+        name = _matched_name(match, message, index_map)
+        days = int(match.group("days"))
+        if name is not None and 1 <= days <= 3650:
+            status, rows = _resolve_customer(session, business_id, name)
+            if status == "many":
+                return _customer_clarify(
+                    session, business_id, name, rows, arabic=arabic
+                )
+            if status == "none":
+                return IntentResult(
+                    kind="honest",
+                    answer=_missing_customer_answer(arabic=arabic),
+                )
+            next_run = None
+            if match.group("date"):
+                try:
+                    next_run = datetime.strptime(
+                        match.group("date"), "%Y-%m-%d"
+                    ).replace(tzinfo=UTC)
+                except ValueError:
+                    next_run = None
+            if match.group("date") and next_run is None:
+                answer = (
+                    "تاريخ البداية مش مفهوم — اكتبه بصيغة 2026-12-01."
+                    if arabic else
+                    "I couldn't read the start date — write it as 2026-12-01."
+                )
+                return IntentResult(kind="clarify", answer=answer)
+            if next_run is None:
+                next_run = datetime.now(UTC) + timedelta(days=days)
+            return IntentResult(
+                kind="proposal",
+                action="recurring_invoice.create",
+                payload={
+                    "customer_id": str(rows[0].id),
+                    "interval_days": days,
+                    "timezone": "UTC",
+                    "next_run_at": next_run,
+                },
+            )
+
+    # --- ق-3: create a pricing rule -----------------------------------------
+    match = _first_match(_PRICING_RULE, folded)
+    if match is not None:
+        name = _matched_name(match, message, index_map)
+        rate = _parse_decimal(match.group("rate"))
+        kind_word = (match.group("kind") or "").casefold()
+        rule_type = (
+            "tax" if kind_word in ("tax", "ضريبه") else "discount"
+        )
+        if (
+            name is not None and rate is not None
+            and Decimal(0) <= rate <= Decimal(100)
+            and -rate.as_tuple().exponent <= 4
+            and len(name) <= 120
+        ):
+            return IntentResult(
+                kind="proposal",
+                action="pricing_rule.create",
+                payload={
+                    "name": name,
+                    "rule_type": rule_type,
+                    "rate": rate,
+                },
+            )
+
+    # --- ق-3: payroll create --------------------------------------------------
+    match = _first_match(_PAYROLL_CREATE, folded)
+    if match is not None:
+        employee, period, failure = _payroll_target(
+            session, business_id, match, message, index_map, arabic=arabic
+        )
+        if failure is not None:
+            if failure.kind != "none":
+                return failure
+        else:
+            components, malformed = _payroll_components(match.group("rest") or "")
+            if malformed:
+                answer = (
+                    "فيه مكوّن مرتب بمبلغ مش مفهوم — اكتب البدلات والمكافآت "
+                    "والخصومات بأرقام واضحة (لحد منزلتين عشريتين)."
+                    if arabic else
+                    "A payroll component has an amount I can't read — state "
+                    "allowances, bonuses and deductions as plain numbers "
+                    "(at most 2 decimals)."
+                )
+                return IntentResult(kind="clarify", answer=answer)
+            if _find_payroll(session, business_id, employee.id, period) is not None:
+                answer = (
+                    f"فيه مرتب مسجل لـ{employee.name} لشهر {period} أصلًا."
+                    if arabic else
+                    f"A payroll record for {employee.name} for {period} already exists."
+                )
+                return IntentResult(kind="honest", answer=answer)
+            return IntentResult(
+                kind="proposal",
+                action="payroll.create",
+                payload={
+                    "employee_id": str(employee.id),
+                    "payroll": {
+                        "period": period,
+                        "allowances": components.get("allowances", Decimal(0)),
+                        "bonuses": components.get("bonuses", Decimal(0)),
+                        "deductions": components.get("deductions", Decimal(0)),
+                    },
+                },
+            )
+
+    # --- ق-3: payroll approve / pay --------------------------------------------
+    for patterns, action, want_status in (
+        (_PAYROLL_APPROVE, "payroll.approve", "draft"),
+        (_PAYROLL_PAY, "payroll.pay", "approved"),
+    ):
+        match = _first_match(patterns, folded)
+        if match is None:
+            continue
+        employee, period, failure = _payroll_target(
+            session, business_id, match, message, index_map, arabic=arabic
+        )
+        if failure is not None:
+            if failure.kind != "none":
+                return failure
+            continue
+        record = _find_payroll(session, business_id, employee.id, period)
+        if record is None:
+            answer = (
+                f"مفيش مرتب مسجل لـ{employee.name} لشهر {period}."
+                if arabic else
+                f"There is no payroll record for {employee.name} for {period}."
+            )
+            return IntentResult(kind="honest", answer=answer)
+        if record.status != want_status:
+            needed = "مسودة" if want_status == "draft" else "معتمد"
+            answer = (
+                f"مرتب {employee.name} لشهر {period} حالته {record.status} — "
+                f"الإجراء ده محتاج مرتب {needed}."
+                if arabic else
+                f"The payroll for {employee.name} for {period} is "
+                f"{record.status} — this action needs "
+                f"{'an' if want_status == 'approved' else 'a'} {want_status} record."
+            )
+            return IntentResult(kind="honest", answer=answer)
+        return IntentResult(
+            kind="proposal",
+            action=action,
+            payload={"payroll_id": str(record.id)},
+        )
+
+    # --- ق-3: payroll update ------------------------------------------------------
+    match = _first_match(_PAYROLL_UPDATE, folded)
+    if match is not None:
+        employee, period, failure = _payroll_target(
+            session, business_id, match, message, index_map, arabic=arabic
+        )
+        if failure is not None:
+            if failure.kind != "none":
+                return failure
+        else:
+            record = _find_payroll(session, business_id, employee.id, period)
+            if record is None:
+                answer = (
+                    f"مفيش مرتب مسجل لـ{employee.name} لشهر {period}."
+                    if arabic else
+                    f"There is no payroll record for {employee.name} for {period}."
+                )
+                return IntentResult(kind="honest", answer=answer)
+            if record.status == "paid":
+                answer = (
+                    f"مرتب {employee.name} لشهر {period} اتصرف أصلًا — "
+                    "المرتبات المصروفة ما بتتعدلش."
+                    if arabic else
+                    f"The payroll for {employee.name} for {period} is already "
+                    "paid — paid payroll can't be updated."
+                )
+                return IntentResult(kind="honest", answer=answer)
+            components, malformed = _payroll_components(match.group("rest") or "")
+            if malformed:
+                answer = (
+                    "فيه مكوّن مرتب بمبلغ مش مفهوم — اكتب البدلات والمكافآت "
+                    "والخصومات بأرقام واضحة (لحد منزلتين عشريتين)."
+                    if arabic else
+                    "A payroll component has an amount I can't read — state "
+                    "allowances, bonuses and deductions as plain numbers "
+                    "(at most 2 decimals)."
+                )
+                return IntentResult(kind="clarify", answer=answer)
+            if not components:
+                answer = (
+                    "ايه اللي يتعدل في المرتب؟ حدد البدلات أو المكافآت أو "
+                    "الخصومات وقيمتها."
+                    if arabic else
+                    "What should change in the payroll? Name allowances, "
+                    "bonuses or deductions with the new amount."
+                )
+                return IntentResult(kind="clarify", answer=answer)
+            # The effective update carries ALL THREE components: stated
+            # ones from the message, unstated ones at the record's current
+            # values (the ق-2 update_draft precedent — the confirmation
+            # card shows the complete update). A partial payload would
+            # canonicalize with explicit nulls, which update_payroll
+            # rejects at dispatch (422), so a partial proposal could
+            # never execute.
+            update = {
+                "allowances": components.get("allowances", record.allowances),
+                "bonuses": components.get("bonuses", record.bonuses),
+                "deductions": components.get("deductions", record.deductions),
+            }
+            return IntentResult(
+                kind="proposal",
+                action="payroll.update",
+                payload={
+                    "payroll_id": str(record.id),
+                    "update": update,
+                },
+            )
+
+    # --- ق-3: create a notification ------------------------------------------------
+    match = _first_match(_NOTIFICATION, folded)
+    if match is not None:
+        start, end = match.span("title")
+        title = _raw_slice(message, index_map, start, end).strip().strip("\"'«»").strip()
+        start, end = match.span("body")
+        body_text = _raw_slice(message, index_map, start, end).strip().strip("\"'«»").strip()
+        body_text = re.sub(r"[.!؟]+$", "", body_text).strip()
+        if title and body_text and len(title) <= 160 and len(body_text) <= 1000:
+            return IntentResult(
+                kind="proposal",
+                action="notification.create",
+                payload={
+                    "kind": "assistant",
+                    "title": title,
+                    "body": body_text,
+                    "deduplication_key": f"assistant-{uuid4()}",
+                    "scheduled_at": None,
+                },
+            )
 
     return IntentResult(kind="none")
