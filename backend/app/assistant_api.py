@@ -23,6 +23,7 @@ from sqlalchemy.orm import Session
 from app import assistant_brief as brief
 from app import assistant_execution as execution
 from app import assistant_persistence as persistence
+from app import assistant_reads as reads
 from app import assistant_write_policy as policy
 from app.assistant_intent import (
     draft_answer,
@@ -160,6 +161,29 @@ def _is_question(text: str) -> bool:
         return True
     stripped = _POLITENESS_PREFIX.sub("", text)
     return _LEADING_QUESTION.search(stripped) is not None
+
+
+# Phase ق-1 (assistant_reads): the §٩ read/report tools run on the
+# question path. _is_question's guards cover MSA interrogatives but
+# not the Egyptian question words the dialect setting defaults to,
+# nor report requests phrased as a bare statement ending in ؟ — the
+# plan's canonical example «مين عليه فلوس متأخرة؟» matches none of
+# the guards. These extra shapes are unambiguously questions (an
+# action request never starts with مين/كام or ends in ؟ without
+# having been refused or extracted above this point), so they make
+# a message eligible for the read tools only — nothing else in the
+# pipeline consumes this helper.
+_READ_QUESTION_EXTRA = re.compile(
+    r"^\s*(?:مين|ايه|فين|كام)\b|\bكام\b|^\s*(?:كشف|قايمه|قائمة)\b|؟\s*$"
+)
+
+
+def _read_eligible(message: str) -> bool:
+    """True when a message may be offered to the deterministic reads."""
+    normalized = _normalize_message(message)
+    if _is_question(normalized):
+        return True
+    return _READ_QUESTION_EXTRA.search(normalized) is not None
 
 
 # English: the word after "invoice" must continue the action, otherwise the
@@ -512,6 +536,38 @@ async def _answer_chat(
             "grounding": "business-records",
             "mode": "local-fallback",
         }
+
+    # Phase ق-1: deterministic READ/REPORT tools (FULL-PLAN §٩, the
+    # ⚪ tier). Questions only — Slice 3 above owns non-question
+    # write intents and the refusal above owns action requests, so
+    # anything reaching this point unclaimed is safe to offer to the
+    # reads. A matched read is answered from the business's full
+    # records and NEVER calls the provider; an unmatched question
+    # falls through to the provider/fallback path unchanged.
+    if _read_eligible(body.message):
+        try:
+            read = reads.answer_read_question(
+                session,
+                business_id=business_id,
+                message=body.message,
+                role=membership.role,
+                business_currency=business_currency,
+            )
+        except Exception:  # noqa: BLE001 - a read failure must not 500 the chat
+            logger.exception(
+                "Deterministic read failed for business %s; falling through",
+                business_id,
+            )
+            read = None
+        if read is not None:
+            return {
+                "answer": read.answer,
+                "sources": read.sources,
+                "model": "local-fallback",
+                "grounding": "business-records",
+                "mode": "local-fallback",
+                "suggestions": [],
+            }
 
     api_key = os.getenv("OPENAI_API_KEY", "").strip()
 
