@@ -1,3 +1,10 @@
+## Phase-1 fix batch (SHRUNK per manager decision 2026-11-26): UI repair (#482) + version line (#485) on release/phase-1 — 2026-11-26 (branch `aiba/phase1-fix-batch`, PR #491)
+
+- **Why + scope decision:** production lives on the frozen `release/phase-1` (`162f7ab`, 1.17.0). Manager decision (documented on PR #491, 2026-11-26 ~07:18 EET, option ب): shrink the batch to the UI repair only — #482 is a live defect (freeze-rule fix exception); B7 (3A-725) and C2 (3A-726) are Phase-2 features, deferred to the Phase-2 freeze. The version line from #485 is cherry-picked in (QA decision 2) so a publish from this branch passes the owner's version-line gate.
+- **Contents:** #482 `976939a`+`1e6569d` → `09166f8`+`9d99a07` (hotfix + CSS-delivery repair, 375px fixes); #485 `203aaab` → `77d7254` (`releaseLineLabel` + i18n key `ui.m_c8v101`, splash + sidebar + mobile More menu). No migrations. No B7/C2 — nothing else from Phase 2.
+- **Merge = deploy for the web** (verified live 2026-11-26 07:02–07:05 EET: the web project has NO Ignored Build Step gate; Production tracks `release/phase-1`) — so this PR merges only after QA's quick review of the new head, and live verification follows the merge immediately.
+- **Local evidence (code head `fcb8959`):** frontend **810/810** (phase-1's 809 + the global-css-delivery regression spec); production build succeeds (exit 0, pre-existing NG8107 warnings only). No backend changes, no migrations — backend suite not applicable. NOT RUN: live deploy verification (follows the merge).
+
 ## Phase 1 closure complete — U12–U23 execution merged (2026-11-24 ~10:25 EET; paperwork PR pending QA review)
 
 - QA (independent review line) merged the full closure stack in order, each verified MERGED with its mergeCommit before closing anything: **PR #466 → `4189fc6`** (batch 1, 3A-698, U21+U22, 1.15.0), **PR #467 → `24779e7`** (batch 2, 3A-699, U12+U16+U14, 1.16.0), **PR #468 → `6b9a696`** (batch 3, 3A-700, U13+U15+U17+U20+U18+U19+U23, 1.17.0). Main head = `6b9a696`. Frontend tests 809/809 at the head; production build succeeds (689.97 kB).
