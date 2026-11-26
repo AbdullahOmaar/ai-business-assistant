@@ -595,3 +595,17 @@ def test_proposal_persists_with_hash_binding(intent_client, business):
         ).one()
         assert row.payload_hash == proposal["payload_hash"]
         assert row.status == "proposed"
+
+
+def test_fold_light_normalizes_taa_digits_and_alef():
+    """Regression (voice gate finding, 2026-11-26): _fold_light must
+    actually fold — ة->ه, alef forms -> ا, Arabic-Indic digits ->
+    Western. The str.maketrans tables are keyed by ordinal, so a
+    .get(char) lookup silently folded NOTHING and natural ة-spelled
+    or Arabic-digit messages extracted no intent at all."""
+    from app.assistant_intent import _fold_light
+
+    folded, index_map = _fold_light("فاتورة ١٠٥ أ")
+    assert folded == "فاتوره 105 ا"
+    # Every fold here is 1:1, so the index map stays the identity.
+    assert index_map == list(range(len("فاتورة ١٠٥ أ")))

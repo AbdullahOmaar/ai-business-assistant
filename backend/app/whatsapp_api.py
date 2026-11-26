@@ -18,6 +18,15 @@ Two surfaces, per WHATSAPP-CHANNEL-DESIGN.md §7:
   the policy gate directly: proposals and executions flow through
   the same Slice 1/3 paths the app uses.
 
+Voice (phase ص, docs/VOICE_TRANSCRIPTION.md): an audio message from
+a linked number is transcribed ONLY when both seams below are
+satisfied — media bytes are resolvable AND an STT provider is
+explicitly configured. Neither holds in this build by default (no
+real WhatsApp provider exists to download media, and no STT
+provider is implemented), so the shipped behavior for audio is
+exactly the polite text-only reply; the structure is live and
+tested through the Fake STT provider.
+
 The provider comes from ``whatsapp_transport.create_provider`` —
 the factory fails closed for unimplemented providers, and a
 provider without a configured webhook secret serves nothing (503).
@@ -26,6 +35,7 @@ from __future__ import annotations
 
 import json
 import logging
+from typing import Callable
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -33,6 +43,7 @@ from sqlalchemy.orm import Session
 
 from app import assistant_api
 from app import assistant_persistence as persistence
+from app import voice_transcription as voice
 from app import whatsapp_linking as linking
 from app.dependencies import get_principal, get_session
 from app.models import Business, MembershipRole
@@ -75,7 +86,19 @@ _USER_HAS_OTHER = (
     "فكّ الربط من جوه التطبيق الأول، وبعدين اربط الرقم ده."
 )
 _TEXT_ONLY = "لسه بفهم النصوص المكتوبة بس — اكتبلي طلبك."
+_VOICE_NOT_UNDERSTOOD = "مسمعتش الصوت كويس — ممكن تكتبهولي؟"
 _PIPELINE_ERROR = "حصلت مشكلة مؤقتة عندي — حاول تاني بعد شوية."
+
+# Voice seams (phase ص). Media bytes for an inbound audio message
+# are resolved through ``media_bytes_resolver``; the STT provider
+# comes from ``stt_provider_factory`` when a test (or a future real
+# transport) installs one, else from the environment via
+# app.voice_transcription. Both default to None/unconfigured: no
+# real provider exists in this build to download media (W2
+# territory), so an audio message gets exactly the pre-voice
+# text-only reply until a real transport lands.
+media_bytes_resolver: Callable[[InboundMessage], bytes | None] | None = None
+stt_provider_factory: Callable[[], voice.STTProvider | None] | None = None
 
 
 def _member(session: Session, principal: AuthenticatedPrincipal, business_id: UUID):
@@ -193,12 +216,22 @@ async def _run_pipeline(
     business_id: UUID,
     link_subject: str,
     message: InboundMessage,
+    transcript: str | None = None,
 ) -> None:
-    """Run one linked text message through the existing chat
-    pipeline with the linked user's identity, persist the turn via
-    Slice 4 persistence, and reply with the pipeline's answer."""
+    """Run one linked message through the existing chat pipeline
+    with the linked user's identity, persist the turn via Slice 4
+    persistence, and reply with the pipeline's answer.
+
+    With ``transcript`` set (a voice message, phase ص) the
+    transcript IS the user's message, and the reply is prefixed
+    «فهمت: «النص»» — the user always sees what was understood
+    BEFORE the answer or any proposal derived from it. The
+    persisted turn records the transcript and the exact sent body,
+    so the app history shows precisely what the user saw."""
+    understood = (transcript or "").strip()
+    effective_text = understood or (message.text or "")
     principal = AuthenticatedPrincipal(subject=link_subject)
-    body = assistant_api.ChatInput(message=message.text or "")
+    body = assistant_api.ChatInput(message=effective_text)
     try:
         result = await assistant_api._answer_chat(business_id, body, session, principal)
     except HTTPException as exc:
@@ -225,6 +258,10 @@ async def _run_pipeline(
         return
 
     answer = result.get("answer", "") if isinstance(result, dict) else ""
+    sent_body = answer
+    if understood:
+        prefix = f"فهمت: «{understood}»"
+        sent_body = f"{prefix}\n{answer}" if answer else prefix
     proposal_id = None
     proposal = result.get("proposal") if isinstance(result, dict) else None
     if isinstance(proposal, dict) and proposal.get("id"):
@@ -241,8 +278,8 @@ async def _run_pipeline(
             conversation_id=linking.last_conversation_id(
                 session, business_id=business_id, wa_id=message.wa_id
             ),
-            user_message=message.text or "",
-            assistant_answer=answer,
+            user_message=effective_text,
+            assistant_answer=sent_body,
             proposal_id=proposal_id,
         )
         conversation_id = conversation.id
@@ -251,11 +288,73 @@ async def _run_pipeline(
             "WhatsApp turn persistence failed for business %s; replying unpersisted",
             business_id,
         )
-    if answer:
+    if sent_body:
         _send_text(
             session, provider, business_id=business_id, to_wa_id=message.wa_id,
-            body=answer, conversation_id=conversation_id, proposal_id=proposal_id,
+            body=sent_body, conversation_id=conversation_id, proposal_id=proposal_id,
         )
+
+
+async def _run_voice_pipeline(
+    session: Session,
+    provider: WhatsAppProvider,
+    *,
+    business_id: UUID,
+    link_subject: str,
+    message: InboundMessage,
+) -> bool:
+    """Try the voice path for one linked audio message (phase ص).
+
+    Returns True when the message was handled — transcribed and run
+    through the pipeline, or answered with the polite ask-to-type
+    fallback. Returns False when voice is not available for this
+    message (no media bytes resolvable, or no STT provider
+    configured): the caller then sends the standard text-only
+    reply, exactly the pre-voice behavior. Voice never guesses:
+    a failed or low-confidence transcription is the fallback
+    reply, never a proposal."""
+    if media_bytes_resolver is None:
+        return False
+    try:
+        audio = media_bytes_resolver(message)
+    except Exception:  # noqa: BLE001 - a media failure must not fail the webhook
+        logger.exception("WhatsApp media resolution failed for business %s", business_id)
+        return False
+    if not audio:
+        return False
+    if stt_provider_factory is not None:
+        stt = stt_provider_factory()
+    else:
+        try:
+            stt = voice.configured_stt_provider()
+        except voice.VoiceProviderUnavailable:
+            # Fail closed and loud: an explicitly configured but
+            # unimplemented STT provider must never silently
+            # activate — the channel keeps the text-only behavior.
+            logger.warning(
+                "Configured STT provider is not implemented in this build; "
+                "voice stays text-only for business %s",
+                business_id,
+            )
+            return False
+    if stt is None:
+        return False
+    mime_type = "audio/ogg"
+    raw_audio = message.raw.get("audio") if isinstance(message.raw, dict) else None
+    if isinstance(raw_audio, dict) and isinstance(raw_audio.get("mime_type"), str):
+        mime_type = raw_audio["mime_type"]
+    outcome = voice.transcribe_voice(
+        provider=stt, audio=audio, mime_type=mime_type
+    )
+    if not outcome.understood or not outcome.text:
+        _send_text(session, provider, business_id=business_id,
+                   to_wa_id=message.wa_id, body=_VOICE_NOT_UNDERSTOOD)
+        return True
+    await _run_pipeline(
+        session, provider, business_id=business_id,
+        link_subject=link_subject, message=message, transcript=outcome.text,
+    )
+    return True
 
 
 async def _process_message(
@@ -322,10 +421,19 @@ async def _process_message(
             _send_text(session, provider, business_id=business_id,
                        to_wa_id=message.wa_id, body=_INTRO.format(name=name), kind="intro")
         return "processed"
+    if message.kind == "audio":
+        # Voice (phase ص): transcribed only when media bytes AND a
+        # configured STT provider both exist; otherwise the
+        # text-only reply below, unchanged from the pre-voice build.
+        if await _run_voice_pipeline(
+            session, provider, business_id=business_id,
+            link_subject=link.user_subject, message=message,
+        ):
+            return "processed"
     if message.kind != "text" or not (message.text or "").strip():
-        # Voice/images/files (design §4): server-side transcription
-        # and document reading are not built — a polite text-only
-        # answer, never a silent drop and never a guess.
+        # Images/files (design §4): document reading is not built —
+        # a polite text-only answer, never a silent drop and never
+        # a guess.
         _send_text(session, provider, business_id=business_id,
                    to_wa_id=message.wa_id, body=_TEXT_ONLY)
         return "processed"
