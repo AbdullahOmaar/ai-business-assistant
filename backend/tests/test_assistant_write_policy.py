@@ -96,6 +96,7 @@ _BRIEF_ROUTES = {
 _WHATSAPP_ROUTES = {
     ("POST", "/api/v1/businesses/{business_id}/assistant/whatsapp/link-codes"),
     ("GET", "/api/v1/businesses/{business_id}/assistant/whatsapp/links"),
+    ("GET", "/api/v1/businesses/{business_id}/assistant/whatsapp/status"),
     ("DELETE", "/api/v1/businesses/{business_id}/assistant/whatsapp/links/{link_id}"),
 }
 

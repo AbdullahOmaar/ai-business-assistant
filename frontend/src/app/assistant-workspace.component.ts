@@ -181,12 +181,16 @@ interface SpeechRecognitionLike {
                 }
               </ul>
             }
-            <div>
-              <button type="button" class="chat-new-button" (click)="createWhatsappLinkCode()" [disabled]="whatsappBusy">{{ t('ui.assistantWhatsapp.linkButton') }}</button>
-            </div>
-            @if (whatsappCode) {
-              <p class="assistant-whatsapp-code">{{ whatsappCode }}</p>
-              <small class="assistant-setting-hint">{{ t('ui.assistantWhatsapp.codeHint') }}</small>
+            @if (whatsappChannelEnabled) {
+              <div>
+                <button type="button" class="chat-new-button" (click)="createWhatsappLinkCode()" [disabled]="whatsappBusy">{{ t('ui.assistantWhatsapp.linkButton') }}</button>
+              </div>
+              @if (whatsappCode) {
+                <p class="assistant-whatsapp-code">{{ whatsappCode }}</p>
+                <small class="assistant-setting-hint">{{ t('ui.assistantWhatsapp.codeHint') }}</small>
+              }
+            } @else {
+              <small class="assistant-setting-hint">{{ t('ui.assistantWhatsapp.comingSoon') }}</small>
             }
             <small class="assistant-setting-hint">{{ t('ui.assistantWhatsapp.hint') }}</small>
           </div>
@@ -524,6 +528,7 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
   // W-foundation — WhatsApp linking block (settings panel): the
   // caller's links (masked), the one-time code after generation.
   whatsappLinks: AssistantWhatsappLink[] = [];
+  whatsappChannelEnabled = false;
   whatsappCode = '';
   whatsappBusy = false;
   brief: AssistantBrief | null = null;
@@ -625,6 +630,7 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
     this.briefEnabled = true;
     this.optOuts = [];
     this.whatsappLinks = [];
+    this.whatsappChannelEnabled = false;
     this.whatsappCode = '';
     this.whatsappBusy = false;
     this.brief = null;
@@ -808,14 +814,16 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
         settings: await this.api.listSettings(requestContext.workspaceId),
         optOuts: await this.api.listOptOuts(requestContext.workspaceId),
         whatsappLinks: await this.api.listWhatsappLinks(requestContext.workspaceId),
+        whatsappStatus: await this.api.getWhatsappStatus(requestContext.workspaceId),
       }),
       {
-        onSuccess: ({ settings, optOuts, whatsappLinks }) => {
+        onSuccess: ({ settings, optOuts, whatsappLinks, whatsappStatus }) => {
           const dialect = settingsValue(settings, DIALECT_SETTING_KEY, 'egyptian');
           this.dialect = isAssistantDialect(dialect) ? dialect : 'egyptian';
           this.briefEnabled = settingsValue(settings, MORNING_BRIEF_SETTING_KEY, 'true').trim().toLowerCase() !== 'false';
           this.optOuts = optOuts;
           this.whatsappLinks = whatsappLinks;
+          this.whatsappChannelEnabled = whatsappStatus.channel_enabled;
         },
         onError: error => { this.settingsError = this.message(error); },
         onFinally: () => { this.settingsLoading = false; },
@@ -875,7 +883,11 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
   // W-foundation — WhatsApp linking. Any member manages their OWN
   // link from here (the app is the only link-management surface);
   // the code is shown once and completes only when it arrives from
-  // the number being linked.
+  // the number being linked. While the per-business channel switch
+  // is off (the default), the block renders the designed dormant
+  // state instead of the link action (owner rule 2026-11-26: an
+  // unlaunched feature never presents a live-looking flow or a raw
+  // error); existing links stay listed and revocable.
   async createWhatsappLinkCode(): Promise<void> {
     const requestContext = this.chatRequestContext();
     if (!requestContext.signedIn || !requestContext.workspaceId || this.whatsappBusy) return;
@@ -1497,6 +1509,8 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
       this.lastErrorMessage = translated;
       return translated;
     }
+    if (/WhatsApp link not found/i.test(message)) return this.t('ui.assistantWhatsapp.linkNotFound');
+    if (/may revoke it/i.test(message)) return this.t('ui.assistantWhatsapp.revokeForbidden');
     if (/AI chat is not configured/i.test(message)) return this.t('ui.m_1kpvtc1');
     if (/timed out/i.test(message)) return this.t('ui.m_1wa8x7o');
     if (message.startsWith('API_CONNECTION_FAILED:')) return this.t('ui.m_1qj0ayu');

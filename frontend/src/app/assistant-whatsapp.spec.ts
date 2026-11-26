@@ -58,12 +58,29 @@ test('ApiService exposes the three linking endpoints', () => {
   assert.ok(!apiService.includes('phone_e164'));
 });
 
+test('channel off renders the designed dormant state, not the link action', () => {
+  // Owner rule 2026-11-26: an unlaunched feature shows a designed
+  // dormant state — the settings load carries the channel flag, the
+  // link action renders only when the channel is enabled, and the
+  // raw backend revoke errors are mapped to handled local messages.
+  assert.ok(component.includes('whatsappStatus: await this.api.getWhatsappStatus(requestContext.workspaceId)'));
+  assert.ok(component.includes('this.whatsappChannelEnabled = whatsappStatus.channel_enabled'));
+  assert.ok(component.includes('@if (whatsappChannelEnabled)'));
+  assert.ok(component.includes("t('ui.assistantWhatsapp.comingSoon')"));
+  assert.ok(component.includes("t('ui.assistantWhatsapp.linkNotFound')"));
+  assert.ok(component.includes("t('ui.assistantWhatsapp.revokeForbidden')"));
+  assert.ok(apiService.includes('}/whatsapp/status`)'));
+  assert.ok(apiService.includes('interface AssistantWhatsappStatus'));
+  assert.ok(apiService.includes('channel_enabled: boolean'));
+});
+
 test('assistantWhatsapp i18n keys are in exact ar/en parity', () => {
   const arKeys = Object.keys(arabic.ui.assistantWhatsapp).sort();
   const enKeys = Object.keys(english.ui.assistantWhatsapp).sort();
   assert.deepEqual(arKeys, enKeys);
   assert.deepEqual(arKeys, [
-    'codeHint', 'hint', 'linkButton', 'linked', 'none', 'revoked', 'title',
+    'codeHint', 'comingSoon', 'hint', 'linkButton', 'linkNotFound', 'linked',
+    'none', 'revokeForbidden', 'revoked', 'title',
   ]);
   for (const key of arKeys) {
     assert.ok(String(arabic.ui.assistantWhatsapp[key]).length > 0, `empty ar value: ${key}`);

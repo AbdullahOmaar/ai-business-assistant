@@ -261,6 +261,21 @@ def test_link_endpoints_require_membership(wa, business):
     subject["value"] = OUTSIDER
     assert client.post(f"/api/v1/businesses/{business}/assistant/whatsapp/link-codes").status_code == 403
     assert client.get(f"/api/v1/businesses/{business}/assistant/whatsapp/links").status_code == 403
+    assert client.get(f"/api/v1/businesses/{business}/assistant/whatsapp/status").status_code == 403
+
+
+def test_channel_status_defaults_off_and_reflects_the_kill_switch(wa, business):
+    # Owner rule 2026-11-26: the settings surface reads this flag to
+    # render the designed dormant state while the channel is off.
+    client, subject, _fake = wa
+    subject["value"] = OWNER
+    response = client.get(f"/api/v1/businesses/{business}/assistant/whatsapp/status")
+    assert response.status_code == 200, response.text
+    assert response.json() == {"channel_enabled": False}
+    configure_channel(business)
+    response = client.get(f"/api/v1/businesses/{business}/assistant/whatsapp/status")
+    assert response.status_code == 200, response.text
+    assert response.json() == {"channel_enabled": True}
 
 
 def test_expired_code_does_not_link(wa, business):

@@ -1279,7 +1279,10 @@
       "linked": "Linked",
       "revoked": "Unlinked",
       "linkButton": "Create a link code",
-      "codeHint": "Send this code to Hasso's WhatsApp number from the number you want to link — the code is valid for 10 minutes and works once."
+      "codeHint": "Send this code to Hasso's WhatsApp number from the number you want to link — the code is valid for 10 minutes and works once.",
+      "comingSoon": "The WhatsApp channel isn't active yet — linking is coming soon, as soon as the channel is activated.",
+      "linkNotFound": "This link no longer exists — refresh the page and try again.",
+      "revokeForbidden": "You can't unlink this number — only the number's owner or a business owner can."
     },
     "assistantBrief": {
       "title": "Morning brief",
