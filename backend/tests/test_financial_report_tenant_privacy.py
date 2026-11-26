@@ -224,10 +224,19 @@ def test_payroll_expense_visibility_is_scoped_to_its_business_across_reports_and
     # identity, amount, record ID, linked expense ID and payroll reference remain private.
 
     def snapshot():
-        """Capture every persisted row in the isolated database in stable PK order."""
+        """Capture every persisted row in the isolated database in stable PK order.
+
+        Slice 4: the assistant chat persists its own thread (one
+        conversation + its two turn messages) — that is the endpoint's
+        documented behavior, not a business-data side effect — so the
+        two persistence tables are excluded here. The chat-persistence
+        shape is asserted explicitly below instead.
+        """
         with app.state.session_factory() as session:
             state = {}
             for table in Base.metadata.sorted_tables:
+                if table.name in ("assistant_conversations", "assistant_messages"):
+                    continue
                 statement = select(table)
                 if table.primary_key.columns:
                     statement = statement.order_by(*table.primary_key.columns)
@@ -375,6 +384,15 @@ def test_payroll_expense_visibility_is_scoped_to_its_business_across_reports_and
     assert "Business B ordinary supplies" in outbound
     for token in sensitive_tokens:
         assert token not in outbound, token
+
+    # Slice 4: the two successful chats above persisted exactly their
+    # own threads — one conversation + two turn messages each — and
+    # nothing else (the snapshot above proves the "nothing else").
+    history = client.get(f"{base_b}/assistant/conversations")
+    assert history.status_code == 200, history.text
+    threads = history.json()
+    assert len(threads) == 2
+    assert all(thread["message_count"] == 2 for thread in threads)
 
     # The OWNER of B retains access to the linked expense and report totals.
     env["subject"]["value"] = OWNER

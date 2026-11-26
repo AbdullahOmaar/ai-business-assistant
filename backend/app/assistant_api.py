@@ -15,12 +15,14 @@ from typing import Literal
 from uuid import UUID
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app import assistant_brief as brief
 from app import assistant_execution as execution
+from app import assistant_persistence as persistence
 from app import assistant_write_policy as policy
 from app.assistant_intent import (
     draft_answer,
@@ -288,6 +290,12 @@ class ChatMessage(BaseModel):
 class ChatInput(BaseModel):
     message: str = Field(min_length=1, max_length=2000)
     history: list[ChatMessage] = Field(default_factory=list, max_length=8)
+    # Slice 4: the conversation this turn belongs to. Absent on the
+    # first turn — the endpoint creates the conversation and returns
+    # its id, and the client sends it back on later turns. Unknown to
+    # older deploys it is ignored (Pydantic drops extra fields), so a
+    # stale API answers without persisting instead of failing.
+    conversation_id: UUID | None = None
 
 
 def _decimal(value) -> str:
@@ -317,6 +325,50 @@ async def chat(
     body: ChatInput,
     session: Session = Depends(get_session),
     principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Answer + persist the turn (Slice 4). The answer itself is
+    computed by ``_answer_chat`` (unchanged); this wrapper then
+    records the user message and the reply in one atomic transaction
+    and returns the conversation id so the client can keep the thread
+    going. A persistence failure is logged and the answer is still
+    returned WITHOUT a conversation id — the client then treats the
+    thread as in-memory only instead of believing it was saved."""
+    result = await _answer_chat(business_id, body, session, principal)
+    proposal_id = None
+    proposal = result.get("proposal") if isinstance(result, dict) else None
+    if isinstance(proposal, dict) and proposal.get("id"):
+        try:
+            proposal_id = UUID(str(proposal["id"]))
+        except ValueError:
+            proposal_id = None
+    try:
+        conversation = persistence.record_turn(
+            session,
+            business_id=business_id,
+            user_subject=principal.subject,
+            conversation_id=body.conversation_id,
+            user_message=body.message,
+            assistant_answer=result.get("answer", "") if isinstance(result, dict) else "",
+            proposal_id=proposal_id,
+        )
+    except persistence.ConversationNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception:  # noqa: BLE001 - persistence must not lose the answer
+        logger.exception(
+            "Assistant turn persistence failed for business %s; returning the answer unpersisted",
+            business_id,
+        )
+        return result
+    return {**result, "conversation_id": str(conversation.id)}
+
+
+async def _answer_chat(
+    business_id: UUID,
+    body: ChatInput,
+    session: Session,
+    principal: AuthenticatedPrincipal,
 ):
     try:
         membership = authorize_membership(session, principal=principal, business_id=business_id)
@@ -927,3 +979,133 @@ def list_opt_outs_endpoint(
         )
     except Exception as exc:
         _raise_mapped(exc)
+
+
+# ---------------------------------------------------------------------------
+# Persistence + morning brief (Slice 4).
+#
+# These routes write NO business data — they bookkeep the chat itself
+# (conversations/messages) and read real business records for the
+# brief — so they do not go through the assistant-write policy gate.
+# The tripwire test allows them as the named ``persistence`` /
+# ``brief`` sets; every handler delegates to app.assistant_persistence
+# or app.assistant_brief, and tenant scoping stays in
+# authorize_membership.
+# ---------------------------------------------------------------------------
+
+
+class _ConversationCreateRequest(BaseModel):
+    title: str | None = Field(default=None, max_length=160)
+
+
+class _MessageAppendRequest(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=10000)
+    proposal_id: UUID | None = None
+
+
+def _member(session: Session, principal: AuthenticatedPrincipal, business_id: UUID):
+    """Any member of the business may read/resume conversations and the
+    brief; the 403 shape matches the chat endpoint."""
+    try:
+        return authorize_membership(session, principal=principal, business_id=business_id)
+    except AuthorizationError as exc:
+        raise HTTPException(status_code=403, detail="No access to this business workspace.") from exc
+
+
+@router.get("/brief")
+def get_brief_endpoint(
+    business_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """The morning brief, from real business data only (see
+    app.assistant_brief). Returns ``enabled: false`` with empty
+    sections when the owner switched the brief off."""
+    _member(session, principal, business_id)
+    return brief.build_brief(session, business_id=business_id)
+
+
+@router.get("/conversations")
+def list_conversations_endpoint(
+    business_id: UUID,
+    limit: int = Query(default=20, ge=1, le=50),
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """History list: most recently active conversations first, with
+    message counts. Business-scoped — any member sees every thread in
+    the business, so an owner can open a staff requester's thread to
+    approve its proposal card."""
+    _member(session, principal, business_id)
+    return persistence.list_conversation_views(session, business_id=business_id, limit=limit)
+
+
+@router.post("/conversations", status_code=201, dependencies=[_EXECUTION_LIMIT])
+def create_conversation_endpoint(
+    business_id: UUID,
+    body: _ConversationCreateRequest,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Start an empty conversation (the chat endpoint creates one
+    implicitly on the first turn; this is the explicit form)."""
+    _member(session, principal, business_id)
+    try:
+        conversation = persistence.create_conversation(
+            session, business_id=business_id, user_subject=principal.subject,
+            title=body.title,
+        )
+        session.commit()
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return persistence.conversation_view(conversation, message_count=0)
+
+
+@router.get("/conversations/{conversation_id}")
+def get_conversation_endpoint(
+    business_id: UUID,
+    conversation_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Resume a conversation: its messages in order, each with the
+    CURRENT proposal state for its attached proposal (a proposal whose
+    5 minutes elapsed reads ``expired``)."""
+    _member(session, principal, business_id)
+    try:
+        conversation = persistence.get_conversation(
+            session, business_id=business_id, conversation_id=conversation_id,
+        )
+    except persistence.ConversationNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return persistence.conversation_detail_view(session, conversation)
+
+
+@router.post("/conversations/{conversation_id}/messages", status_code=201, dependencies=[_EXECUTION_LIMIT])
+def append_message_endpoint(
+    business_id: UUID,
+    conversation_id: UUID,
+    body: _MessageAppendRequest,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """Append one message to a conversation (the persistence primitive;
+    the chat endpoint persists its turns through ``record_turn``).
+    The message may carry a proposal id; the proposal itself is
+    re-read on GET, never copied here."""
+    _member(session, principal, business_id)
+    try:
+        conversation = persistence.get_conversation(
+            session, business_id=business_id, conversation_id=conversation_id,
+        )
+        message = persistence.append_message(
+            session, conversation=conversation, role=body.role,
+            content=body.content, proposal_id=body.proposal_id,
+        )
+        session.commit()
+    except persistence.ConversationNotFound as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return persistence.message_view(session, message)

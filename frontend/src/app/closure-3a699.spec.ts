@@ -71,7 +71,10 @@ test('U16: the filter offers every mapped action and target, using the audit lab
 test('U14/G4: while a reply is on its way, the chat log itself shows a skeleton message', () => {
   assert.ok(assistantSource.includes('AbaSkeletonComponent'), 'the assistant imports the shared skeleton');
   const sendingIdx = assistantSource.indexOf('@if (chatSending) {');
-  const skeletonIdx = assistantSource.indexOf('<aba-skeleton variant="list-row" />');
+  // Slice 4: the history/settings/brief panels above the log reuse the
+  // same skeleton variant while loading, so search for the skeleton
+  // from the sending block, not from the top of the file.
+  const skeletonIdx = assistantSource.indexOf('<aba-skeleton variant="list-row" />', sendingIdx);
   assert.ok(sendingIdx >= 0 && skeletonIdx > sendingIdx, 'the skeleton bubble renders inside the log while sending');
   assert.ok(assistantSource.includes('class="chat-message chat-message--pending"'), 'the pending bubble takes the message shape');
   assert.ok(!assistantSource.includes('kind="loading"'), 'the under-log loading message is replaced by the in-log skeleton');

@@ -71,26 +71,47 @@ _EXECUTION_ROUTES = {
     ("GET", "/api/v1/businesses/{business_id}/assistant/confirmation-opt-outs"),
 }
 
+# Slice 4 persistence routes — the complete set. These write NO
+# business data (they bookkeep the chat itself: conversations and
+# their messages), so they do not go through the policy gate; each
+# handler must delegate to app.assistant_persistence instead, and a
+# handler that writes business data directly still fails this test.
+_PERSISTENCE_ROUTES = {
+    ("GET", "/api/v1/businesses/{business_id}/assistant/conversations"),
+    ("POST", "/api/v1/businesses/{business_id}/assistant/conversations"),
+    ("GET", "/api/v1/businesses/{business_id}/assistant/conversations/{conversation_id}"),
+    ("POST", "/api/v1/businesses/{business_id}/assistant/conversations/{conversation_id}/messages"),
+}
+
+# Slice 4 morning brief — read-only, from real business records.
+_BRIEF_ROUTES = {
+    ("GET", "/api/v1/businesses/{business_id}/assistant/brief"),
+}
+
 
 def test_assistant_router_exposes_only_policy_gated_execution_routes() -> None:
     """Tripwire: the assistant router may expose write routes only
     through the policy gate. Every non-chat route must delegate to
     app.assistant_execution — the module that calls verdict() — so a
-    handler that writes directly fails this test."""
+    handler that writes directly fails this test. The Slice 4
+    persistence/brief routes are the named exception: they write no
+    business data, and each must delegate to app.assistant_persistence
+    or app.assistant_brief instead."""
     seen: set[tuple[str, str]] = set()
     for route in assistant_router.routes:
         for method in getattr(route, "methods", set()):
             seen.add((method, route.path))
-    assert seen == {_CHAT_ROUTE} | _EXECUTION_ROUTES, (
+    assert seen == {_CHAT_ROUTE} | _EXECUTION_ROUTES | _PERSISTENCE_ROUTES | _BRIEF_ROUTES, (
         f"unexpected assistant route set: {sorted(seen)}"
     )
     for route in assistant_router.routes:
         if route.path.endswith("/chat"):
             continue
         endpoint = route.endpoint
-        assert "execution" in endpoint.__code__.co_names, (
-            f"{route.path} does not delegate to app.assistant_execution — "
-            "assistant writes must go through the policy gate"
+        assert {"execution", "persistence", "brief"} & set(endpoint.__code__.co_names), (
+            f"{route.path} does not delegate to app.assistant_execution, "
+            "app.assistant_persistence or app.assistant_brief — assistant "
+            "writes must go through the policy gate"
         )
 
 

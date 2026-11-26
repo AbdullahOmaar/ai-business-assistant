@@ -12,7 +12,14 @@
 import { Component, ElementRef, inject, input, OnChanges, OnDestroy, output, SimpleChanges, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ApiRequestError, ApiService, type AssistantProposalView, type ChatReply, type SettingSuggestion } from './api.service';
+import { ApiRequestError, ApiService, type AssistantBrief, type AssistantConversationSummary, type AssistantOptOut, type AssistantProposalSummary, type AssistantProposalView, type ChatReply, type SettingSuggestion } from './api.service';
+import {
+  ASSISTANT_DIALECTS, DIALECT_SETTING_KEY, MORNING_BRIEF_SETTING_KEY,
+  briefHasAttention, conversationTitleOrFallback, dialectLabelKey,
+  formatConversationDate, formatGrowth, isAssistantDialect, proposalStateKey,
+  settingsValue, toChatMessages,
+  type AssistantChatMessage, type AssistantDialect,
+} from './assistant-persistence';
 import { LocalizationService } from './localization.service';
 import { WorkspaceLoadGuard, runTenantScopedRequest, type TenantRequestContext } from './workspace-load-guard';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
@@ -72,6 +79,7 @@ interface ChatMessage {
   sources?: ChatReply['sources'];
   mode?: string;
   attachments?: ChatAttachment[];
+  proposal?: AssistantProposalSummary | null;
 }
 // Minimal structural type for the Web Speech API (no lib.dom dependency on
 // the prefixed constructor).
@@ -96,9 +104,121 @@ interface SpeechRecognitionLike {
     <aba-section-header [title]=" t('ui.m_1ajyrpz') " [description]=" t('ui.m_1yriqyt') ">
       <div class="chat-header-actions">
         <span class="count">{{ t('ui.m_1bvwx8l') }}</span>
+        <button type="button" class="chat-new-button" (click)="toggleHistory()" [disabled]="chatSending" [attr.aria-expanded]="historyOpen ? 'true' : 'false'">{{ t('ui.assistantHistory.open') }}</button>
+        <button type="button" class="chat-new-button" (click)="toggleSettings()" [disabled]="chatSending" [attr.aria-expanded]="settingsOpen ? 'true' : 'false'">{{ t('ui.assistantSettings.open') }}</button>
         <button type="button" class="chat-new-button" (click)="startNewChat()" [disabled]="chatSending || (!chatMessages.length && !chatDraft.trim())">{{ t('ui.m_gz9o3g') }}</button>
       </div>
     </aba-section-header>
+    @if (historyOpen) {
+      <div class="assistant-history" role="region" [attr.aria-label]="t('ui.assistantHistory.title')">
+        <div class="assistant-panel-head">
+          <strong>{{ t('ui.assistantHistory.title') }}</strong>
+          <button type="button" class="chat-new-button" (click)="toggleHistory()">{{ t('ui.assistantHistory.close') }}</button>
+        </div>
+        @if (historyLoading) { <aba-skeleton variant="list-row" /> }
+        @else if (historyError) { <aba-state-message kind="error" [description]="historyError" /> }
+        @else if (!historyItems.length) { <aba-state-message kind="empty" [description]="t('ui.assistantHistory.empty')" /> }
+        @else {
+          <ul class="assistant-history-list">
+            @for (item of historyItems; track item.id) {
+              <li>
+                <button type="button" class="assistant-history-item" [class.active]="item.id === currentConversationId" (click)="resumeConversation(item.id)" [disabled]="chatSending">
+                  <span class="assistant-history-item-title">{{ conversationTitle(item) }}</span>
+                  <small>{{ t('ui.assistantHistory.itemMeta', { count: item.message_count ?? 0, date: historyDate(item.updated_at) }) }}</small>
+                </button>
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    }
+    @if (settingsOpen) {
+      <div class="assistant-settings" role="region" [attr.aria-label]="t('ui.assistantSettings.title')">
+        <div class="assistant-panel-head">
+          <strong>{{ t('ui.assistantSettings.title') }}</strong>
+          <button type="button" class="chat-new-button" (click)="toggleSettings()">{{ t('ui.assistantHistory.close') }}</button>
+        </div>
+        @if (settingsLoading) { <aba-skeleton variant="list-row" /> }
+        @else if (settingsError) { <aba-state-message kind="error" [description]="settingsError" /> }
+        @else {
+          <label class="assistant-setting-row">
+            <span>{{ t('ui.assistantSettings.dialect') }}</span>
+            <select [value]="dialect" (change)="changeDialect($any($event.target).value)" [disabled]="!isOwner">
+              @for (option of dialectOptions; track option) { <option [value]="option">{{ t(dialectLabel(option)) }}</option> }
+            </select>
+          </label>
+          <small class="assistant-setting-hint">{{ t('ui.assistantSettings.dialectHint') }}</small>
+          <label class="assistant-setting-row">
+            <span>{{ t('ui.assistantSettings.morningBrief') }}</span>
+            <input type="checkbox" [checked]="briefEnabled" (change)="toggleMorningBrief($any($event.target).checked)" [disabled]="!isOwner" />
+          </label>
+          <small class="assistant-setting-hint">{{ t('ui.assistantSettings.morningBriefHint') }}</small>
+          @if (!isOwner) { <small class="assistant-setting-hint">{{ t('ui.assistantSettings.ownerOnly') }}</small> }
+          <div class="assistant-optouts">
+            <strong>{{ t('ui.assistantSettings.optOuts') }}</strong>
+            @if (!optOuts.length) { <small>{{ t('ui.assistantSettings.optOutsEmpty') }}</small> }
+            @else {
+              <ul>
+                @for (optOut of optOuts; track optOut.id) {
+                  <li>
+                    <span>{{ optOut.action }}</span>
+                    @if (isOwner) { <button type="button" class="chat-new-button" (click)="revokeOptOut(optOut.action)">{{ t('ui.assistantSettings.revoke') }}</button> }
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+          @if (settingsSaved) { <small class="assistant-setting-saved">{{ t('ui.assistantSettings.saved') }}</small> }
+        }
+      </div>
+    }
+    @if (briefLoading) { <aba-skeleton variant="list-row" /> }
+    @else if (briefError) { <aba-state-message kind="error" [description]="briefError" /> }
+    @else if (brief && brief.enabled && !briefDismissed) {
+      <div class="assistant-brief" role="region" [attr.aria-label]="t('ui.assistantBrief.title')">
+        <div class="assistant-panel-head">
+          <strong>{{ t('ui.assistantBrief.title') }}</strong>
+          <span class="assistant-brief-actions">
+            <button type="button" class="chat-new-button" (click)="refreshBrief()">{{ t('ui.assistantBrief.refresh') }}</button>
+            <button type="button" class="chat-new-button" (click)="briefDismissed = true">{{ t('ui.assistantBrief.dismiss') }}</button>
+          </span>
+        </div>
+        @if (brief.summary) { <p class="assistant-brief-summary">{{ brief.summary }}</p> }
+        @if (!briefNeedsAttention(brief)) { <small>{{ t('ui.assistantBrief.nothingToDo') }}</small> }
+        @if (brief.overdue_invoices.length) {
+          <strong class="assistant-brief-section">{{ t('ui.assistantBrief.overdue', { count: brief.overdue_invoices.length }) }}</strong>
+          <ul class="assistant-brief-list">
+            @for (item of brief.overdue_invoices; track item.invoice_id) {
+              <li>{{ t('ui.assistantBrief.overdueItem', { invoiceNumber: item.invoice_number, outstanding: item.outstanding, currency: item.currency_code, days: item.days_overdue }) }}</li>
+            }
+          </ul>
+        }
+        @if (brief.low_stock.length) {
+          <strong class="assistant-brief-section">{{ t('ui.assistantBrief.lowStock', { count: brief.low_stock.length }) }}</strong>
+          <ul class="assistant-brief-list">
+            @for (item of brief.low_stock; track item.product_id) {
+              <li>{{ item.state === 'out_of_stock' ? t('ui.assistantBrief.lowStockOutItem', { name: item.name }) : t('ui.assistantBrief.lowStockItem', { name: item.name, quantity: item.stock_quantity }) }}</li>
+            }
+          </ul>
+        }
+        @if (brief.recurring_due_tomorrow.length) {
+          <strong class="assistant-brief-section">{{ t('ui.assistantBrief.recurringDue', { count: brief.recurring_due_tomorrow.length }) }}</strong>
+          <ul class="assistant-brief-list">
+            @for (item of brief.recurring_due_tomorrow; track item.schedule_id) {
+              <li>@if (item.customer_name) { <span>{{ item.customer_name }} — </span> }{{ t('ui.assistantBrief.recurringItem', { days: item.interval_days }) }}</li>
+            }
+          </ul>
+        }
+        @if (brief.sales_growth.length) {
+          <strong class="assistant-brief-section">{{ t('ui.assistantBrief.salesGrowth') }}</strong>
+          <ul class="assistant-brief-list">
+            @for (item of brief.sales_growth; track item.currency_code) {
+              <li>{{ t('ui.assistantBrief.growthItem', { currency: item.currency_code, current: item.current_total, previous: item.previous_total }) }} · {{ growthLabel(item.change_pct) }}</li>
+            }
+          </ul>
+        }
+      </div>
+    }
     <div #chatLog class="chat-log" role="log" tabindex="0" aria-live="polite" aria-relevant="additions" aria-atomic="false" [attr.aria-busy]="chatSending ? 'true' : null" [attr.aria-label]="t('ui.m_180k0we')">
       @if (!chatMessages.length) { <aba-state-message kind="empty" [description]="t('ui.m_1dsxkpa')" /> }
       @for (message of chatMessages; track $index; let messageIndex = $index) {
@@ -113,6 +233,7 @@ interface SpeechRecognitionLike {
           </div>
           @if (message.mode === 'local-fallback') { <small class="source-list">{{ t('ui.m_1raguvh') }}</small> }
           @if (message.content) { <p>{{ message.content }}</p> }
+          @if (message.proposal) { <small class="proposal-state">{{ t('ui.assistantPersistence.proposalLabel') }}: {{ t(proposalStateLabel(message.proposal.status)) }}</small> }
           @if (message.sources?.length) { <small class="source-list">{{ t('ui.m_1uui693') }} @for (source of message.sources; track source.id) { <span>{{ source.type === 'invoice' ? t('ui.m_1nfhuv2') : (source.type === 'expense' ? t('ui.m_q7obp1') : source.type) }} · {{ source.invoice_number || (source.type === 'expense' && source.category ? expenseCategoryLabel(source.category) : (source.category || source.id)) }}</span> }</small> }
           @for (attachment of message.attachments ?? []; track $index) {
             @if (attachment.kind === 'proposal') {
@@ -145,13 +266,13 @@ interface SpeechRecognitionLike {
                 } @else {
                   @if (attachment.card.proposal.requires_second_approval && attachment.card.proposal.status === 'proposed') {
                     <p class="proposal-countdown">{{ t('ui.assistantExecution.approvalCountdown', {time: proposalCountdownText(attachment.card)}) }}</p>
-                    @if (isOwner()) { <label class="proposal-opt-out"><input type="checkbox" [(ngModel)]="attachment.card.optOutChecked" [ngModelOptions]="{standalone: true}" [disabled]="attachment.card.busy !== null"> {{ t('ui.assistantExecution.optOutLabel') }}</label> }
+                    @if (isOwner) { <label class="proposal-opt-out"><input type="checkbox" [(ngModel)]="attachment.card.optOutChecked" [ngModelOptions]="{standalone: true}" [disabled]="attachment.card.busy !== null"> {{ t('ui.assistantExecution.optOutLabel') }}</label> }
                     <div class="proposal-actions">
                       <button type="button" class="proposal-action-button primary" (click)="approveProposal(attachment.card)" [disabled]="attachment.card.busy !== null || !canApprove(attachment.card)">{{ t('ui.assistantExecution.proposalApprove') }}</button>
                     </div>
                     @if (!canApprove(attachment.card)) {
                       @if (attachment.card.proposal.requester_subject === userId()) { <p class="proposal-sub">{{ t('ui.assistantExecution.cannotApproveOwn') }}</p> }
-                      @else if (!isOwner()) { <p class="proposal-sub">{{ t('ui.assistantExecution.staffCannotApprove') }}</p> }
+                      @else if (!isOwner) { <p class="proposal-sub">{{ t('ui.assistantExecution.staffCannotApprove') }}</p> }
                       @else { <p class="proposal-sub">{{ t('ui.assistantExecution.proposalWaitingOwner') }}</p> }
                     }
                   }
@@ -186,7 +307,7 @@ interface SpeechRecognitionLike {
                 @if (attachment.card.suggestion.is_financial) { <p class="proposal-note">{{ t('ui.assistantExecution.suggestionConfirmFinancial') }}</p> }
                 @if (attachment.card.state === 'applied') { <p class="proposal-success">{{ t('ui.assistantExecution.suggestionApplied') }}</p> }
                 @else if (attachment.card.state === 'rolled-back') { <p class="proposal-success">{{ t('ui.assistantExecution.suggestionRolledBack') }}</p> }
-                @if (isOwner() && attachment.card.state !== 'applied') {
+                @if (isOwner && attachment.card.state !== 'applied') {
                   <div class="proposal-actions">
                     @if (attachment.card.state === 'confirming') {
                       <button type="button" class="proposal-action-button primary" (click)="confirmApplySuggestion(attachment.card)" [disabled]="attachment.card.busy">{{ t('ui.assistantExecution.suggestionConfirmApply') }}</button>
@@ -196,7 +317,7 @@ interface SpeechRecognitionLike {
                     }
                   </div>
                 }
-                @if (isOwner() && attachment.card.state === 'applied') {
+                @if (isOwner && attachment.card.state === 'applied') {
                   <div class="proposal-actions">
                     <button type="button" class="proposal-action-button" (click)="rollbackSuggestion(attachment.card)" [disabled]="attachment.card.busy">{{ t('ui.assistantExecution.suggestionRollback') }}</button>
                   </div>
@@ -311,6 +432,32 @@ interface SpeechRecognitionLike {
 .refusal-card strong,.stopped-card strong{font-size:13px}
 .refusal-card p,.stopped-card p{font-size:12px;line-height:1.65;margin:6px 0 0}
 @media(max-width:480px){.proposal-card,.suggestion-proposal-card,.refusal-card,.stopped-card{padding:10px}.proposal-row{font-size:12px}.proposal-action-button{min-height:40px}}
+.assistant-history,.assistant-settings,.assistant-brief{margin:12px 0 0;padding:12px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:11px;background:var(--aba-color-surface-subtle,#f8fafc)}
+.assistant-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px}
+.assistant-panel-head strong{font-size:12px}
+.assistant-brief-actions{display:flex;gap:6px;flex-wrap:wrap}
+.assistant-history-list,.assistant-brief-list{list-style:none;margin:8px 0 0;padding:0}
+.assistant-history-item{display:grid;gap:2px;width:100%;text-align:start;padding:9px 10px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:9px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#1f2937);cursor:pointer}
+.assistant-history-item:hover:not(:disabled){border-color:var(--aba-color-primary,#0f766e)}
+.assistant-history-item.active{border-color:var(--aba-color-primary,#0f766e);background:#eff6ff}
+.assistant-history-item:disabled{opacity:.55;cursor:not-allowed}
+.assistant-history-item-title{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.assistant-history-item small,.assistant-setting-hint{font-size:10px;color:var(--aba-color-text-secondary,#64748b)}
+.assistant-history-list li{margin-top:6px}
+.assistant-setting-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;font-size:12px;font-weight:700}
+.assistant-setting-row select{min-height:36px;border:1px solid var(--aba-color-border,#d1d5db);border-radius:8px;background:var(--aba-color-surface,#fff);font-size:12px}
+.assistant-setting-row input[type="checkbox"]{width:20px;height:20px;accent-color:var(--aba-color-primary,#0f766e)}
+.assistant-setting-hint{display:block;margin-top:4px}
+.assistant-optouts{display:grid;gap:6px;margin-top:12px}
+.assistant-optouts strong{font-size:12px}
+.assistant-optouts ul{list-style:none;margin:0;padding:0}
+.assistant-optouts li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--aba-color-border-subtle,#e2e8f0);font-size:12px}
+.assistant-setting-saved{color:var(--aba-color-primary,#0f766e);font-weight:700}
+.assistant-brief-summary{font-size:12px;line-height:1.65;white-space:pre-wrap;margin:0 0 8px}
+.assistant-brief-section{display:block;font-size:11px;margin-top:10px}
+.assistant-brief-list li{font-size:12px;line-height:1.6;padding:3px 0}
+.proposal-state{display:block;margin-top:6px;font-size:10px;font-weight:700;color:var(--aba-color-text-secondary,#64748b)}
+@media(max-width:480px){.assistant-history,.assistant-settings,.assistant-brief{padding:10px}.assistant-setting-row{font-size:13px}}
   `],
 })
 export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
@@ -331,6 +478,26 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
   chatError = '';
   chatConfigurationMissing = false;
   chatCopyStatus: { index: number; success: boolean } | null = null;
+  // Slice 4 — persistence + morning brief + conversation settings.
+  // The conversation id is the thread the turns belong to: created by
+  // the API on the first turn, sent back on later turns, cleared by
+  // "new chat" and by a business change.
+  currentConversationId: string | null = null;
+  historyOpen = false;
+  historyLoading = false;
+  historyError = '';
+  historyItems: AssistantConversationSummary[] = [];
+  settingsOpen = false;
+  settingsLoading = false;
+  settingsError = '';
+  settingsSaved = false;
+  dialect: AssistantDialect = 'egyptian';
+  briefEnabled = true;
+  optOuts: AssistantOptOut[] = [];
+  brief: AssistantBrief | null = null;
+  briefLoading = false;
+  briefError = '';
+  briefDismissed = false;
   @ViewChild('chatLog') private chatLog?: ElementRef<HTMLElement>;
 
   // Slice 2: the 5-minute countdown ticks from this clock (1s interval).
@@ -345,6 +512,14 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
   private micRecognition: SpeechRecognitionLike | null = null;
 
   private readonly chatRequestGuard = new WorkspaceLoadGuard();
+  // One guard per Slice 4 load family (history / brief / settings):
+  // the families run concurrently and must not invalidate each other
+  // (a newer generation skips the older one's callbacks, which would
+  // leave its loading flag stuck), and none of them may cancel an
+  // in-flight chat send.
+  private readonly historyGuard = new WorkspaceLoadGuard();
+  private readonly briefGuard = new WorkspaceLoadGuard();
+  private readonly settingsGuard = new WorkspaceLoadGuard();
 
   ngOnChanges(changes: SimpleChanges): void {
     // 3A-435 / T40: a question handed over from another workspace (e.g. the
@@ -358,15 +533,31 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
     }
     // 3A-351: a business change clears the conversation, exactly as the shell
     // used to reset the chat fields on a business switch.
-    if (!changes['businessId'] || changes['businessId'].firstChange) return;
-    this.chatRequestGuard.invalidate();
-    this.chatSending = false;
-    this.chatMessages = [];
-    this.chatDraft = '';
-    this.chatError = '';
-    this.chatConfigurationMissing = false;
-    this.chatCopyStatus = null;
-    this.resetExecutionState();
+    if (changes['businessId']) {
+      if (!changes['businessId'].firstChange) {
+        this.chatRequestGuard.invalidate();
+        this.chatSending = false;
+        this.chatMessages = [];
+        this.chatDraft = '';
+        this.chatError = '';
+        this.chatConfigurationMissing = false;
+        this.chatCopyStatus = null;
+        this.resetExecutionState();
+      }
+      // Slice 4: a business change also clears the persisted thread and
+      // reloads the new business's brief + settings.
+      this.historyGuard.invalidate();
+      this.briefGuard.invalidate();
+      this.settingsGuard.invalidate();
+      this.resetSlice4State();
+      this.slice4LoadedFor = null;
+      void this.ensureSlice4Loaded();
+    }
+    // If the component mounted before sign-in resolved, the loads above
+    // skipped themselves — retry once auth lands.
+    if (changes['signedIn']?.currentValue === true) {
+      void this.ensureSlice4Loaded();
+    }
   }
 
   ngOnDestroy(): void {
@@ -378,17 +569,67 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
     this.micRecognition = null;
   }
 
+  private slice4LoadedFor: string | null = null;
+
+  private async ensureSlice4Loaded(): Promise<void> {
+    const businessId = this.businessId();
+    if (!businessId || !this.signedIn() || this.slice4LoadedFor === businessId) return;
+    this.slice4LoadedFor = businessId;
+    await this.loadBrief();
+    await this.loadSettings();
+  }
+
+  private resetSlice4State(): void {
+    this.currentConversationId = null;
+    this.historyOpen = false;
+    this.historyLoading = false;
+    this.historyError = '';
+    this.historyItems = [];
+    this.settingsOpen = false;
+    this.settingsLoading = false;
+    this.settingsError = '';
+    this.settingsSaved = false;
+    this.dialect = 'egyptian';
+    this.briefEnabled = true;
+    this.optOuts = [];
+    this.brief = null;
+    this.briefLoading = false;
+    this.briefError = '';
+    this.briefDismissed = false;
+  }
+
+  get isOwner(): boolean {
+    return this.role() === 'owner';
+  }
+
+  readonly dialectOptions: AssistantDialect[] = [...ASSISTANT_DIALECTS];
+
+  /** Template wrappers for the Slice 4 pure helpers. */
+  dialectLabel(option: AssistantDialect): string {
+    return dialectLabelKey(option);
+  }
+
+  proposalStateLabel(status: string): string {
+    return proposalStateKey(status);
+  }
+
+  conversationTitle(item: AssistantConversationSummary): string {
+    return conversationTitleOrFallback(item.title, this.t('ui.assistantHistory.untitled'));
+  }
+
+  historyDate(iso: string | null | undefined): string {
+    return formatConversationDate(iso, this.language());
+  }
+
+  briefNeedsAttention(brief: AssistantBrief): boolean {
+    return briefHasAttention(brief);
+  }
+
+  growthLabel(changePct: number | null): string {
+    return formatGrowth(changePct) ?? this.t('ui.assistantBrief.growthNew');
+  }
+
   private resetExecutionState(): void {
-    if (this.countdownTimer !== null) {
-      clearInterval(this.countdownTimer);
-      this.countdownTimer = null;
-    }
-    this.executingProposalId = null;
-    this.stopRequested = false;
-    this.micListening = false;
-    this.micError = '';
-    this.micRecognition?.stop();
-    this.micRecognition = null;
   }
 
   private chatRequestContext(): TenantRequestContext {
@@ -434,6 +675,164 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
     this.chatConfigurationMissing = false;
     this.chatCopyStatus = null;
     this.resetExecutionState();
+    // Slice 4: a new chat starts a new persisted thread on the next send.
+    this.currentConversationId = null;
+  }
+
+  // Slice 4 — history, brief and settings. Loads run through the
+  // tenant-scoped guard on their own generation so a business switch
+  // discards late responses instead of showing another workspace's data.
+  toggleHistory(): void {
+    this.historyOpen = !this.historyOpen;
+    if (this.historyOpen) void this.loadHistory();
+  }
+
+  toggleSettings(): void {
+    this.settingsOpen = !this.settingsOpen;
+    if (this.settingsOpen) void this.loadSettings();
+  }
+
+  async loadHistory(): Promise<void> {
+    const requestContext = this.chatRequestContext();
+    if (!requestContext.signedIn || !requestContext.workspaceId) return;
+    this.historyLoading = true;
+    this.historyError = '';
+    await runTenantScopedRequest(
+      this.historyGuard,
+      requestContext,
+      () => this.chatRequestContext(),
+      () => this.api.listConversations(requestContext.workspaceId),
+      {
+        onSuccess: items => { this.historyItems = items; },
+        onError: error => { this.historyError = this.message(error); },
+        onFinally: () => { this.historyLoading = false; },
+      },
+    );
+  }
+
+  async resumeConversation(conversationId: string): Promise<void> {
+    const requestContext = this.chatRequestContext();
+    if (!requestContext.signedIn || !requestContext.workspaceId || this.chatSending) return;
+    this.historyError = '';
+    await runTenantScopedRequest(
+      this.historyGuard,
+      requestContext,
+      () => this.chatRequestContext(),
+      () => this.api.getConversation(requestContext.workspaceId, conversationId),
+      {
+        onSuccess: detail => {
+          // Restored messages keep their attached proposal's CURRENT
+          // state (a proposal whose 5 minutes elapsed reads expired).
+          this.chatMessages = toChatMessages(detail);
+          this.currentConversationId = detail.id;
+          this.historyOpen = false;
+          this.chatError = '';
+          this.chatCopyStatus = null;
+          this.scrollChatToLatest(true);
+        },
+        onError: error => { this.historyError = this.message(error); },
+        onFinally: () => {},
+      },
+    );
+  }
+
+  async loadBrief(): Promise<void> {
+    const requestContext = this.chatRequestContext();
+    if (!requestContext.signedIn || !requestContext.workspaceId) return;
+    this.briefLoading = true;
+    this.briefError = '';
+    await runTenantScopedRequest(
+      this.briefGuard,
+      requestContext,
+      () => this.chatRequestContext(),
+      () => this.api.getBrief(requestContext.workspaceId),
+      {
+        onSuccess: brief => { this.brief = brief; this.briefEnabled = brief.enabled; },
+        onError: error => { this.briefError = this.message(error); },
+        onFinally: () => { this.briefLoading = false; },
+      },
+    );
+  }
+
+  async refreshBrief(): Promise<void> {
+    this.briefDismissed = false;
+    await this.loadBrief();
+  }
+
+  async loadSettings(): Promise<void> {
+    const requestContext = this.chatRequestContext();
+    if (!requestContext.signedIn || !requestContext.workspaceId) return;
+    this.settingsLoading = true;
+    this.settingsError = '';
+    this.settingsSaved = false;
+    await runTenantScopedRequest(
+      this.settingsGuard,
+      requestContext,
+      () => this.chatRequestContext(),
+      async () => ({
+        settings: await this.api.listSettings(requestContext.workspaceId),
+        optOuts: await this.api.listOptOuts(requestContext.workspaceId),
+      }),
+      {
+        onSuccess: ({ settings, optOuts }) => {
+          const dialect = settingsValue(settings, DIALECT_SETTING_KEY, 'egyptian');
+          this.dialect = isAssistantDialect(dialect) ? dialect : 'egyptian';
+          this.briefEnabled = settingsValue(settings, MORNING_BRIEF_SETTING_KEY, 'true').trim().toLowerCase() !== 'false';
+          this.optOuts = optOuts;
+        },
+        onError: error => { this.settingsError = this.message(error); },
+        onFinally: () => { this.settingsLoading = false; },
+      },
+    );
+  }
+
+  async changeDialect(value: string): Promise<void> {
+    if (!this.isOwner || !isAssistantDialect(value) || value === this.dialect) return;
+    const requestContext = this.chatRequestContext();
+    if (!requestContext.signedIn || !requestContext.workspaceId) return;
+    try {
+      await this.api.updateSetting(requestContext.workspaceId, DIALECT_SETTING_KEY, value);
+      this.dialect = value;
+      this.settingsSaved = true;
+      this.settingsError = '';
+      // The greeting dialect lives in the brief — reload it so the
+      // new dialect shows at once.
+      await this.loadBrief();
+    } catch (error) {
+      this.settingsError = this.message(error);
+    }
+  }
+
+  async toggleMorningBrief(checked: boolean): Promise<void> {
+    if (!this.isOwner) return;
+    const requestContext = this.chatRequestContext();
+    if (!requestContext.signedIn || !requestContext.workspaceId) return;
+    try {
+      await this.api.updateSetting(
+        requestContext.workspaceId, MORNING_BRIEF_SETTING_KEY, checked ? 'true' : 'false',
+      );
+      this.briefEnabled = checked;
+      this.settingsSaved = true;
+      this.settingsError = '';
+      if (checked) await this.loadBrief();
+      else this.brief = null;
+    } catch (error) {
+      this.settingsError = this.message(error);
+    }
+  }
+
+  async revokeOptOut(action: string): Promise<void> {
+    if (!this.isOwner) return;
+    const requestContext = this.chatRequestContext();
+    if (!requestContext.signedIn || !requestContext.workspaceId) return;
+    try {
+      await this.api.deleteOptOut(requestContext.workspaceId, action);
+      this.optOuts = this.optOuts.filter(optOut => optOut.action !== action);
+      this.settingsSaved = true;
+      this.settingsError = '';
+    } catch (error) {
+      this.settingsError = this.message(error);
+    }
   }
 
   async copyAssistantMessage(content: string, index: number): Promise<void> {
@@ -504,7 +903,9 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
       this.stopAssistantWork();
       return;
     }
-    const history = this.chatMessages.slice(-8);
+    // Only the text turns travel as history — a resumed proposal card
+    // is server state, not model context.
+    const history = this.chatMessages.slice(-8).map(message => ({ role: message.role, content: message.content }));
     const shouldFollowLatest = this.isChatLogNearBottom();
     this.chatMessages = [...this.chatMessages, { role: 'user', content: question }];
     this.chatDraft = '';
@@ -517,10 +918,18 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
       this.chatRequestGuard,
       requestContext,
       () => this.chatRequestContext(),
-      () => this.api.chat(requestContext.workspaceId, question, history),
+      () => this.api.chat(requestContext.workspaceId, question, history, this.currentConversationId ?? undefined),
       {
         onSuccess: (reply: ChatReply) => {
           const shouldFollowLatest = this.isChatLogNearBottom();
+          // Slice 4: the API returns the persisted thread id (created
+          // on the first turn); later turns rejoin the same thread,
+          // and the history list picks it up.
+          if (reply.conversation_id) {
+            this.currentConversationId = reply.conversation_id;
+            if (this.historyOpen) void this.loadHistory();
+          }
+          this.chatMessages = [...this.chatMessages, { role: 'assistant', content: reply.answer, sources: reply.sources, mode: reply.mode }];
           const attachments: ChatAttachment[] = [];
           for (const suggestion of reply.suggestions ?? []) {
             attachments.push({ kind: 'suggestion', card: { suggestion, state: 'pending', busy: false, error: '' } });
@@ -550,16 +959,13 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
           this.chatError = '';
           this.chatConfigurationMissing = false;
           this.chatCopyStatus = null;
+          this.currentConversationId = null;
         },
       },
     );
   }
 
   // ---- Slice 2: assistant execution UI ----
-
-  isOwner(): boolean {
-    return this.role() === 'owner';
-  }
 
   private newProposalCard(proposal: AssistantProposalView): ProposalCardState {
     return { proposal, busy: null, error: '', editing: false, editDraft: null, editInputs: {}, optOutChecked: false };
@@ -607,7 +1013,7 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
 
   canApprove(card: ProposalCardState): boolean {
     const proposal = card.proposal;
-    return this.isOwner()
+    return this.isOwner
       && proposal.status === 'proposed'
       && proposal.requires_second_approval
       && proposal.requester_subject !== this.userId()

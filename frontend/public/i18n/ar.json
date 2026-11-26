@@ -1242,6 +1242,63 @@
       "micListening": "بيسمع…",
       "micError": "مقدرتش أشغّل الميكروفون — اتأكد من الإذن وحاول تاني",
       "editInvalidValue": "قيمة غير صالحة — راجع الحقل"
+    },
+    "assistantHistory": {
+      "title": "سجل المحادثات",
+      "open": "السجل",
+      "close": "إغلاق",
+      "empty": "لسه مفيش محادثات محفوظة — ابعت أول رسالة والمساعد هيحفظها هنا.",
+      "loading": "بيحمّل السجل…",
+      "error": "تعذّر تحميل السجل. حاول تاني.",
+      "resume": "استئناف",
+      "itemMeta": "{{count}} رسائل · {{date}}",
+      "untitled": "محادثة بدون عنوان"
+    },
+    "assistantSettings": {
+      "title": "إعدادات المساعد",
+      "open": "الإعدادات",
+      "dialect": "لهجة المساعد",
+      "dialectHint": "اللهجة المختارة بتتطبق على ملخص الصباح.",
+      "dialectEgyptian": "مصري ودود",
+      "dialectFormal": "عربية فصحى",
+      "dialectEnglish": "English",
+      "morningBrief": "ملخص الصباح",
+      "morningBriefHint": "ملخص يومي من بيانات شغلك الحقيقية: الفواتير المتأخرة والمخزون الناقص والفواتير المتكررة.",
+      "optOuts": "إجراءات بدون سؤال تاني",
+      "optOutsEmpty": "مفيش إجراءات متجاوزة — الموافقة التانية مطلوبة لكل الإجراءات الحساسة.",
+      "revoke": "إلغاء",
+      "ownerOnly": "للمالك بس",
+      "saved": "اتحفظت",
+      "loadError": "تعذّر تحميل الإعدادات.",
+      "saveError": "تعذّر الحفظ. حاول تاني."
+    },
+    "assistantBrief": {
+      "title": "ملخص الصباح",
+      "dismiss": "إخفاء",
+      "refresh": "تحديث",
+      "loading": "بيحضّر ملخص الصباح…",
+      "error": "تعذّر تحميل ملخص الصباح.",
+      "overdue": "{{count}} فواتير متأخرة",
+      "overdueItem": "{{invoiceNumber}} — {{outstanding}} {{currency}} (متأخرة {{days}} يوم)",
+      "lowStock": "{{count}} أصناف قربت تخلص",
+      "lowStockItem": "{{name}} — فاضل {{quantity}}",
+      "lowStockOutItem": "{{name}} — خلص",
+      "recurringDue": "{{count}} فواتير متكررة مستحقة بكره",
+      "recurringItem": "فاتورة متكررة كل {{days}} يوم",
+      "salesGrowth": "نمو المبيعات",
+      "growthItem": "{{currency}}: {{current}} (كان {{previous}})",
+      "growthNew": "أول أسبوع",
+      "nothingToDo": "مفيش حاجة مستعجلة النهاردة"
+    },
+    "assistantPersistence": {
+      "proposalLabel": "المقترح",
+      "proposalProposed": "معروض",
+      "proposalApproved": "تمت الموافقة",
+      "proposalExecuting": "بيتنفذ…",
+      "proposalExecuted": "اتنفذ",
+      "proposalExpired": "منتهي الصلاحية",
+      "proposalRejected": "ملغي",
+      "proposalUnknown": "حالة غير معروفة"
     }
   },
   "common": {

@@ -101,6 +101,9 @@ MATRIX = [
     ("GET", "/api/v1/businesses/{business_id}/notifications", "allow"),
     ("PUT", "/api/v1/businesses/{business_id}/settings/{setting_key}", "deny"),
     ("DELETE", "/api/v1/businesses/{business_id}/settings/{setting_key}", "deny"),
+    # Slice 4: the settings list is a read (any member) — writes stay
+    # owner-only above.
+    ("GET", "/api/v1/businesses/{business_id}/settings", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/reports/summary", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/reports/tax-summary", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/reports/receivables-aging", "allow"),
@@ -135,6 +138,15 @@ MATRIX = [
     ("POST", "/api/v1/businesses/{business_id}/assistant/confirmation-opt-outs", "deny"),
     ("GET", "/api/v1/businesses/{business_id}/assistant/confirmation-opt-outs", "allow"),
     ("DELETE", "/api/v1/businesses/{business_id}/assistant/confirmation-opt-outs/{action}", "deny"),
+    # Slice 4 (assistant persistence + morning brief): conversations
+    # are business-visible bookkeeping (any member lists/resumes, so
+    # an owner can open a staff requester's thread); the brief is a
+    # read-only report from real records.
+    ("GET", "/api/v1/businesses/{business_id}/assistant/brief", "allow"),
+    ("GET", "/api/v1/businesses/{business_id}/assistant/conversations", "allow"),
+    ("POST", "/api/v1/businesses/{business_id}/assistant/conversations", "allow"),
+    ("GET", "/api/v1/businesses/{business_id}/assistant/conversations/{conversation_id}", "allow"),
+    ("POST", "/api/v1/businesses/{business_id}/assistant/conversations/{conversation_id}/messages", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/customers/{customer_id}/statement", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/audit-events", "deny"),
     ("GET", "/api/v1/businesses/{business_id}/operations/health", "deny"),
@@ -366,6 +378,15 @@ def test_full_route_role_tenant_denial_matrix():
         )
         assert opt_out_response.status_code == 201, opt_out_response.text
 
+        # Slice 4: one persisted conversation, so the conversation-id
+        # routes have a real row in the denial/positive passes.
+        conversation_response = client.post(
+            f"/api/v1/businesses/{a_id}/assistant/conversations",
+            json={"title": "Matrix conversation"},
+        )
+        assert conversation_response.status_code == 201, conversation_response.text
+        conversation_id = conversation_response.json()["id"]
+
         # --- Business B: the cross-tenant actor's own workspace ------------
         as_user("matrix-owner-b")
         business_b = client.post(
@@ -393,6 +414,7 @@ def test_full_route_role_tenant_denial_matrix():
             "setting_key": "matrix_key",
             "user_uid": "some-uid",
             "proposal_id": p1["id"],
+            "conversation_id": conversation_id,
             "action": "payment.record",
         }
         bodies = {
@@ -494,6 +516,8 @@ def test_full_route_role_tenant_denial_matrix():
             ("PATCH", "/api/v1/businesses/{business_id}/customers/{customer_id}"): {"name": "Probe 2"},
             ("PATCH", "/api/v1/businesses/{business_id}/products/{product_id}"): {"unit_price": "2.00"},
             ("POST", "/api/v1/businesses/{business_id}/assistant/chat"): {"message": "hi"},
+            ("POST", "/api/v1/businesses/{business_id}/assistant/conversations"): {"title": "Matrix probe"},
+            ("POST", "/api/v1/businesses/{business_id}/assistant/conversations/{conversation_id}/messages"): {"role": "user", "content": "matrix hello"},
             ("POST", "/api/v1/businesses/{business_id}/employees"): {"name": "Probe", "monthly_salary": "1000"},
             ("PATCH", "/api/v1/businesses/{business_id}/employees/{employee_id}"): {"name": "Probe 2"},
             ("POST", "/api/v1/businesses/{business_id}/employees/{employee_id}/payroll"): {"period": "2026-02"},
@@ -797,6 +821,15 @@ def test_owner_positive_matrix():
         )
         assert opt_out_response.status_code == 201, opt_out_response.text
 
+        # Slice 4: one persisted conversation, so the conversation-id
+        # routes have a real row in the positive pass.
+        conversation_response = client.post(
+            f"{base}/assistant/conversations",
+            json={"title": "Matrix conversation"},
+        )
+        assert conversation_response.status_code == 201, conversation_response.text
+        conversation_id = conversation_response.json()["id"]
+
         ids = {
             "business_id": a_id,
             "customer_id": customer_id,
@@ -815,6 +848,7 @@ def test_owner_positive_matrix():
             "setting_key": "matrix_key",
             "user_uid": "some-uid",
             "proposal_id": p1["id"],
+            "conversation_id": conversation_id,
             "action": "payment.record",
         }
         bodies = {
@@ -906,6 +940,8 @@ def test_owner_positive_matrix():
             ("PATCH", "/api/v1/businesses/{business_id}/customers/{customer_id}"): {"name": "Probe 2"},
             ("PATCH", "/api/v1/businesses/{business_id}/products/{product_id}"): {"unit_price": "2.00"},
             ("POST", "/api/v1/businesses/{business_id}/assistant/chat"): {"message": "hi"},
+            ("POST", "/api/v1/businesses/{business_id}/assistant/conversations"): {"title": "Matrix probe"},
+            ("POST", "/api/v1/businesses/{business_id}/assistant/conversations/{conversation_id}/messages"): {"role": "user", "content": "matrix hello"},
             ("POST", "/api/v1/businesses/{business_id}/assistant/proposals"): {
                 "action": "customer.create",
                 "payload": {"name": "Matrix Proposal Customer"},

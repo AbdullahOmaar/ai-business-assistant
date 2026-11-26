@@ -193,7 +193,8 @@ export interface Dashboard {
   outstanding_balances: MoneyTotal[];
 }
 // `mode` is returned by the API so the UI can disclose the free, non-generative fallback.
-export interface ChatReply { answer: string; sources: Array<{ type: string; id: string; date: string | null; invoice_number?: string; category?: string }>; model?: string; grounding?: string; mode?: 'local-fallback' | 'generative'; suggestions?: SettingSuggestion[]; proposal?: AssistantProposalView; }
+export interface ChatReply { answer: string; sources: Array<{ type: string; id: string; date: string | null; invoice_number?: string; category?: string }>; model?: string; grounding?: string; mode?: 'local-fallback' | 'generative'; suggestions?: SettingSuggestion[]; proposal?: AssistantProposalView; conversation_id?: string; }
+
 
 // Assistant execution (Slice 1 API, Slice 2 UI): one proposal binds a
 // closed-list action to its exact payload; sensitive actions need a second
@@ -212,6 +213,25 @@ export interface SettingSuggestion {
   setting_key: string; current_value: string | null; proposed_value: string;
   is_financial: boolean; requires_confirmation: boolean; reason: string;
 }
+
+// Slice 4 — assistant persistence, morning brief and conversation settings.
+// client can keep the thread going across turns and resume it from history.
+export interface ChatReply { answer: string; sources: Array<{ type: string; id: string; date: string | null; invoice_number?: string; category?: string }>; model?: string; grounding?: string; mode?: 'local-fallback' | 'generative'; conversation_id?: string; }
+
+// Slice 4 — assistant persistence, morning brief and conversation settings.
+// deleteSetting and the opt-out/proposal client methods to this file on its
+export interface BusinessSettingItem { id: string; setting_key: string; setting_value: string; updated_at: string | null; }
+// The resumed-card state chip needs only the proposal's identity, action
+// and CURRENT status — the full proposal card is Slice 2's UI.
+export interface AssistantProposalSummary { id: string; action: string; effective_action: string; status: string; expires_at: string | null; }
+export interface AssistantConversationMessage { id: string; conversation_id: string; role: 'user' | 'assistant'; content: string; proposal_id: string | null; proposal: AssistantProposalSummary | null; created_at: string | null; }
+export interface AssistantConversationSummary { id: string; business_id: string; user_subject: string; title: string | null; created_at: string | null; updated_at: string | null; message_count?: number; }
+export interface AssistantConversationDetail extends AssistantConversationSummary { messages: AssistantConversationMessage[]; }
+export interface AssistantBriefOverdue { invoice_id: string; invoice_number: string; customer_name: string | null; currency_code: string; total: string; outstanding: string; days_overdue: number; due_date: string; }
+export interface AssistantBriefLowStock { product_id: string; name: string; stock_quantity: string; state: 'out_of_stock' | 'running_low'; }
+export interface AssistantBriefRecurring { schedule_id: string; customer_name: string | null; next_run_at: string | null; interval_days: number; }
+export interface AssistantBriefGrowth { currency_code: string; current_total: string; previous_total: string; change_pct: number | null; current_window: { start_date: string; end_date: string }; previous_window: { start_date: string; end_date: string }; }
+export interface AssistantBrief { generated_at: string; business_timezone: string; date: string; enabled: boolean; dialect: string; summary: string | null; overdue_invoices: AssistantBriefOverdue[]; low_stock: AssistantBriefLowStock[]; recurring_due_tomorrow: AssistantBriefRecurring[]; sales_growth: AssistantBriefGrowth[]; low_stock_threshold: number; limitations: string[]; }
 export interface AssistantOptOut { id: string; business_id: string; user_subject: string; action: string; created_at: string | null; }
 
 export class ApiRequestError extends Error {
@@ -962,12 +982,39 @@ export class ApiService {
       '/api/v1/businesses/' + encodeURIComponent(businessId) + '/reports/data-integrity?' + params.toString()
     );
   }
-  chat(businessId: string, message: string, history: Array<{ role: 'user' | 'assistant'; content: string }>): Promise<ChatReply> {
+  chat(businessId: string, message: string, history: Array<{ role: 'user' | 'assistant'; content: string }>, conversationId?: string): Promise<ChatReply> {
+    const body: { message: string; history: Array<{ role: 'user' | 'assistant'; content: string }>; conversation_id?: string } = { message, history };
+    if (conversationId) body.conversation_id = conversationId;
     return this.request<ChatReply>(
-      `/api/v1/businesses/${encodeURIComponent(businessId)}/assistant/chat`, 'POST', { message, history }
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/assistant/chat`, 'POST', body
     );
   }
-
+  // Slice 4 — assistant persistence, morning brief, conversation settings.
+  getBrief(businessId: string): Promise<AssistantBrief> {
+    return this.request<AssistantBrief>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/assistant/brief`
+    );
+  }
+  listConversations(businessId: string): Promise<AssistantConversationSummary[]> {
+    return this.request<AssistantConversationSummary[]>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/assistant/conversations`
+    );
+  }
+  createConversation(businessId: string, title?: string): Promise<AssistantConversationSummary> {
+    return this.request<AssistantConversationSummary>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/assistant/conversations`, 'POST', { title: title ?? null }
+    );
+  }
+  getConversation(businessId: string, conversationId: string): Promise<AssistantConversationDetail> {
+    return this.request<AssistantConversationDetail>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/assistant/conversations/${encodeURIComponent(conversationId)}`
+    );
+  }
+  listSettings(businessId: string): Promise<BusinessSettingItem[]> {
+    return this.request<BusinessSettingItem[]>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/settings`
+    );
+  }
   // Assistant execution (Slice 2): proposals, approvals, opt-outs.
   private assistantBase(businessId: string): string {
     return `/api/v1/businesses/${encodeURIComponent(businessId)}/assistant`;
