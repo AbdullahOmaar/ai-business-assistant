@@ -17,6 +17,15 @@ export const ASSISTANT_DIALECTS = ['egyptian', 'formal', 'english'] as const;
 export type AssistantDialect = (typeof ASSISTANT_DIALECTS)[number];
 export const DIALECT_SETTING_KEY = 'assistant.dialect';
 export const MORNING_BRIEF_SETTING_KEY = 'assistant.morning_brief.enabled';
+// 3A-920 (transport/delivery foundation): the per-business master
+// switch + transport unit name. Same BusinessSetting rows the
+// backend reads in app.transport_settings — DEFAULT OFF. The display
+// default for the unit name lives in the i18n catalog
+// (ui.assistantSettings.transport.defaultUnitName) — no user-visible
+// copy may live in source (localization guard).
+export const TRANSPORT_ENABLED_SETTING_KEY = 'transport.enabled';
+export const TRANSPORT_UNIT_NAME_SETTING_KEY = 'transport.unit_name';
+export const MAX_TRANSPORT_UNIT_NAME_LENGTH = 40;
 
 /** One chat log entry, extended with the resumed proposal state. */
 export interface AssistantChatMessage {
