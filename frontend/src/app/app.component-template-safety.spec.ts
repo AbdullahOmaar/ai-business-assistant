@@ -13,6 +13,8 @@ const source = expandTranslationCalls(
 const auditWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./audit-events-workspace.component.ts', import.meta.url), 'utf8'));
 const inventoryApiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const invoiceEditorSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8'));
+// 3A-921 F1b: the detail drawer was extracted verbatim into its own component.
+const drawerSource = expandTranslationCalls(readFileSync(new URL('./invoice-detail-drawer.component.ts', import.meta.url), 'utf8'));
 const invoiceDraftSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8'));
 const releaseGuideSource = expandTranslationCalls(readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8'));
 const platformAdminSource = expandTranslationCalls(readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8'));
@@ -1831,16 +1833,17 @@ test('inventory movement API uses authenticated tenant-scoped GET with bounded r
 
 
 test('invoice detail drawer traps Tab navigation, closes on Escape and restores its opener focus', () => {
-  const drawerStart = source.indexOf('<aside #invoiceDetailDrawer class="invoice-detail-drawer"');
-  const drawerEnd = source.indexOf('</aside>', drawerStart);
-  const drawer = source.slice(drawerStart, drawerEnd);
+  // 3A-921 F1b: the drawer markup and the Tab trap live in the drawer component.
+  const drawerStart = drawerSource.indexOf('<aside #invoiceDetailDrawer class="invoice-detail-drawer"');
+  const drawerEnd = drawerSource.indexOf('</aside>', drawerStart);
+  const drawer = drawerSource.slice(drawerStart, drawerEnd);
   assert.ok(drawerStart >= 0 && drawerEnd > drawerStart);
   assert.match(drawer, /role="dialog" aria-modal="true" tabindex="-1"/);
   assert.match(drawer, /\(keydown\)="handleInvoiceDetailKeydown\(\$event\)"/);
 
-  const trapStart = source.indexOf('handleInvoiceDetailKeydown(event: KeyboardEvent): void');
-  const trapEnd = source.indexOf('closeInvoiceDetails(restoreFocus = true): void', trapStart);
-  const trap = source.slice(trapStart, trapEnd);
+  const trapStart = drawerSource.indexOf('handleInvoiceDetailKeydown(event: KeyboardEvent): void');
+  const trapEnd = drawerSource.indexOf('formatRecordDate(', trapStart);
+  const trap = drawerSource.slice(trapStart, trapEnd);
   assert.match(trap, /event\.key !== 'Tab'/);
   assert.match(trap, /querySelectorAll<HTMLElement>/);
   assert.match(trap, /event\.shiftKey \? last : first/);

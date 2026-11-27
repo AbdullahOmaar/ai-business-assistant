@@ -20,6 +20,8 @@ import type {
 const appDirectory = dirname(fileURLToPath(import.meta.url));
 const editor = readFileSync(resolve(appDirectory, 'invoice-draft-editor.component.ts'), 'utf8');
 const shell = readFileSync(resolve(appDirectory, 'app.component.ts'), 'utf8');
+// 3A-921 F1b: the detail drawer lives in its own component now.
+const drawer = readFileSync(resolve(appDirectory, 'invoice-detail-drawer.component.ts'), 'utf8');
 const payroll = readFileSync(resolve(appDirectory, 'employee-payroll.component.ts'), 'utf8');
 const apiService = readFileSync(resolve(appDirectory, 'api.service.ts'), 'utf8');
 const backendPayroll = readFileSync(resolve(appDirectory, '../../../backend/app/employee_payroll_api.py'), 'utf8');
@@ -108,8 +110,8 @@ test('shell feeds drivers + initials to the editor and shows the block in the dr
   assert.ok(shell.includes('[transportUnitName]="transportUnitName"'));
   assert.ok(shell.includes('employee.is_driver && employee.is_active'));
   assert.ok(shell.includes('setInvoiceDraftTransport(detail);'));
-  assert.ok(shell.includes('@if (detail.driver_employee_id) {'));
-  assert.ok(shell.includes('transportStatusLabel(detail.transport_entitlement_status)'));
+  assert.ok(drawer.includes('@if (detail.driver_employee_id) {'));
+  assert.ok(drawer.includes('transportStatusLabel(detail.transport_entitlement_status)'));
   // The wage reaches the client only through the owner-only detail fields.
   assert.ok(apiService.includes('transport_trip_wage?: string | null; transport_entitlement_amount?: string | null;'));
 });

@@ -28,6 +28,7 @@ import { SuppliersWorkspaceComponent } from './suppliers-workspace.component';
 import { RecurringWorkspaceComponent } from './recurring-workspace.component';
 import { IntegrityWorkspaceComponent } from './integrity-workspace.component';
 import { TaxesWorkspaceComponent } from './taxes-workspace.component';
+import { InvoiceDetailDrawerComponent } from './invoice-detail-drawer.component';
 import { NotificationsWorkspaceComponent } from './notifications-workspace.component';
 import { transportEnabledFromSettings, transportUnitNameFromSettings } from './transport-settings';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
@@ -65,7 +66,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, SuppliersWorkspaceComponent, RecurringWorkspaceComponent, IntegrityWorkspaceComponent, TaxesWorkspaceComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, SuppliersWorkspaceComponent, RecurringWorkspaceComponent, IntegrityWorkspaceComponent, TaxesWorkspaceComponent, InvoiceDetailDrawerComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -798,81 +799,25 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <p class="footnote">{{ t('ui.m_lpprue') }}</p>
               </section>
               @if (selectedInvoiceForDetails) {
-                <div class="invoice-detail-backdrop" role="presentation" (click)="closeInvoiceDetails()"></div>
-                <aside #invoiceDetailDrawer class="invoice-detail-drawer" role="dialog" aria-modal="true" tabindex="-1"
-                  aria-labelledby="invoice-detail-heading" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'"
-                  (keydown)="handleInvoiceDetailKeydown($event)">
-                  <header class="invoice-detail-header">
-                    <div><span class="invoice-detail-eyebrow">{{ t('app.invoiceList.detailTitle') }}</span>
-                      <h2 id="invoice-detail-heading"><bdi dir="ltr">{{ selectedInvoiceDetail?.invoice_number || selectedInvoiceForDetails.invoice_number }}</bdi></h2></div>
-                    <button #invoiceDetailClose class="icon-button invoice-detail-close" type="button"
-                      [attr.aria-label]="t('app.invoiceList.close')" [attr.title]="t('app.invoiceList.close')"
-                      (click)="closeInvoiceDetails()">×</button>
-                  </header>
-                  @if (invoiceDetailLoading) {
-                    <aba-state-message kind="loading" [description]="t('app.invoiceList.loadingDetails')" />
-                  } @else if (invoiceDetailError) {
-                    <aba-state-message kind="error" [description]="invoiceDetailError" />
-                  } @else if (selectedInvoiceDetail; as detail) {
-                    <div class="invoice-detail-meta">
-                      <div><span>{{ t('app.invoiceList.customer') }}</span><strong>{{ customerNameForInvoice(detail.customer_id) }}</strong></div>
-                      <div><span>{{ t('app.invoiceList.date') }}</span><strong><bdi dir="ltr">{{ detail.issue_date ? formatRecordDate(detail.issue_date, 'date') : (detail.created_at ? formatRecordDate(detail.created_at, 'date') : '—') }}</bdi></strong></div>
-                      <div><span>{{ t('app.invoiceList.status') }}</span><strong class="invoice-status-badge"
-                        [class.status-draft]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'draft'"
-                        [class.status-issued]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'issued'"
-                        [class.status-void]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'void'"
-                        [class.status-paid]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'paid'"
-                        [class.status-partial]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'partial'"
-                        [class.status-unpaid]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'unpaid'">{{ invoiceCardStatusLabel(selectedInvoiceForDetails!) }}</strong></div>
-                    </div>
-                    <div class="invoice-detail-lines-wrap">
-                      <table class="invoice-detail-lines" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
-                        <thead><tr><th scope="col">{{ t('app.invoiceList.lineItem') }}</th><th scope="col">{{ t('app.invoiceList.quantity') }}</th><th scope="col">{{ t('app.invoiceList.unitPrice') }}</th><th scope="col">{{ t('app.invoiceList.lineTotal') }}</th></tr></thead>
-                        <tbody>@for (line of detail.lines; track line.id) {
-                          <tr><td>{{ line.description }}</td><td [attr.data-label]="t('app.invoiceList.quantity')"><bdi dir="ltr">{{ formatNumber(line.quantity) }}@if (line.sold_unit) { {{ line.sold_unit }} }</bdi></td>
-                            <td [attr.data-label]="t('app.invoiceList.unitPrice')"><bdi dir="ltr">{{ formatNumber(line.unit_price) }} {{ detail.currency_code }}</bdi></td>
-                            <td [attr.data-label]="t('app.invoiceList.lineTotal')"><bdi dir="ltr">{{ formatNumber(line.line_total) }} {{ detail.currency_code }}</bdi></td></tr>
-                        }</tbody>
-                      </table>
-                    </div>
-                    <dl class="invoice-detail-totals">
-                      <div><dt>{{ t('app.invoiceList.subtotal') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.subtotal ?? '0') }} {{ detail.currency_code }}</bdi></dd></div>
-                      <div><dt>{{ t('app.invoiceList.discount') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.discount_total ?? '0') }} {{ detail.currency_code }}</bdi></dd></div>
-                      <div><dt>{{ t('app.invoiceList.tax') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.tax_total ?? '0') }} {{ detail.currency_code }}</bdi></dd></div>
-                      <div class="invoice-detail-grand-total"><dt>{{ t('app.invoiceList.total') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.total) }} {{ detail.currency_code }}</bdi></dd></div>
-                    </dl>
-                    @if (detail.driver_employee_id) {
-                      <section class="invoice-detail-notes">
-                        <h3>{{ t('ui.invoices.transport.title') }}</h3>
-                        <p>{{ t('ui.invoices.transport.driver') }}: {{ detail.driver_name || '—' }}</p>
-                        <p>{{ t('ui.invoices.transport.trips', { unit: transportUnitName }) }}: <bdi dir="ltr">{{ detail.transport_trips ?? '—' }}</bdi></p>
-                        @if (detail.transport_from) { <p>{{ t('ui.invoices.transport.from') }}: {{ detail.transport_from }}</p> }
-                        @if (detail.transport_to) { <p>{{ t('ui.invoices.transport.to') }}: {{ detail.transport_to }}</p> }
-                        @if (detail.transport_entitlement_status) {
-                          <p>{{ t('ui.invoices.transport.entitlementStatus') }}: {{ transportStatusLabel(detail.transport_entitlement_status) }}@if (detail.transport_entitlement_amount) { — <bdi dir="ltr">{{ formatNumber(detail.transport_entitlement_amount) }} {{ detail.currency_code }}</bdi> }</p>
-                        }
-                      </section>
-                    }
-                    @if (detail.notes) { <section class="invoice-detail-notes"><h3>{{ t('app.invoiceList.notes') }}</h3><p>{{ detail.notes }}</p></section> }
-                    <footer class="invoice-detail-actions">
-                      @if (detail.status === 'draft') {
-                        <button class="primary" type="button" (click)="editInvoiceFromDetails()">{{ t('ui.m_s21yyp') }}</button>
-                        @if (business?.role === 'owner') {
-                          <button class="secondary" type="button" (click)="issueInvoiceFromDetails()">{{ t('ui.m_ninief') }}</button>
-                          <button class="secondary danger" type="button" (click)="voidInvoiceFromDetails($event)">{{ t('ui.m_lnwycg') }}</button>
-                        }
-                      } @else if (detail.status === 'issued') {
-                        @if (business?.role === 'owner' && hasOutstandingBalance(selectedInvoiceForDetails!)) {
-                          <button class="primary" type="button" (click)="payInvoiceFromDetails()">{{ t('ui.m_1r6bzbj') }}</button>
-                        }
-                        <button class="secondary" type="button" (click)="printInvoiceFromDetails()">{{ t('ui.m_qskvru') }}</button>
-                        @if (business?.role === 'owner') { <button class="secondary danger" type="button" (click)="voidInvoiceFromDetails($event)">{{ t('ui.m_lnwycg') }}</button> }
-                      }
-                      <button class="secondary" type="button" (click)="duplicateInvoiceFromDetails()">{{ t('app.invoiceList.duplicateInvoice') }}</button>
-                      <button class="secondary" type="button" (click)="closeInvoiceDetails()">{{ t('app.invoiceList.close') }}</button>
-                    </footer>
-                  }
-                </aside>
+                <aba-invoice-detail-drawer
+                  [invoice]="selectedInvoiceForDetails"
+                  [detail]="selectedInvoiceDetail"
+                  [loading]="invoiceDetailLoading"
+                  [error]="invoiceDetailError"
+                  [language]="language"
+                  [role]="business?.role"
+                  [customerName]="selectedInvoiceDetail ? customerNameForInvoice(selectedInvoiceDetail.customer_id) : ''"
+                  [statusTone]="invoiceCardStatusTone(selectedInvoiceForDetails)"
+                  [statusLabel]="invoiceCardStatusLabel(selectedInvoiceForDetails)"
+                  [hasOutstanding]="hasOutstandingBalance(selectedInvoiceForDetails)"
+                  [transportUnitName]="transportUnitName"
+                  (close)="closeInvoiceDetails()"
+                  (edit)="editInvoiceFromDetails()"
+                  (issue)="issueInvoiceFromDetails()"
+                  (pay)="payInvoiceFromDetails()"
+                  (print)="printInvoiceFromDetails()"
+                  (duplicate)="duplicateInvoiceFromDetails()"
+                  (voidRequest)="voidInvoiceFromDetails($event)" />
               }
             }
 
@@ -1297,8 +1242,7 @@ export class AppComponent implements OnInit, OnDestroy {
   mobileMoreOpen = false;
   @ViewChild('mobileMoreTrigger') private mobileMoreTrigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('mobileMoreMenu') private mobileMoreMenu?: ElementRef<HTMLElement>;
-  @ViewChild('invoiceDetailClose') private invoiceDetailCloseButton?: ElementRef<HTMLButtonElement>;
-  @ViewChild('invoiceDetailDrawer') invoiceDetailDrawer?: ElementRef<HTMLElement>;
+  @ViewChild(InvoiceDetailDrawerComponent) private invoiceDetailDrawerComponent?: InvoiceDetailDrawerComponent;
   isInstalled = false;
   installHelp = false;
   appUpdateAvailable = false;
@@ -1535,7 +1479,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.selectedInvoiceDetail = null;
     this.invoiceDetailError = '';
     this.invoiceDetailLoading = true;
-    setTimeout(() => this.invoiceDetailCloseButton?.nativeElement.focus(), 0);
+    setTimeout(() => this.invoiceDetailDrawerComponent?.focusClose(), 0);
     try {
       const detail = await this.api.invoiceDetail(businessId, invoice.id);
       if (requestVersion !== this.invoiceDetailRequestVersion || this.business?.id !== businessId
@@ -1547,33 +1491,6 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     } finally {
       if (requestVersion === this.invoiceDetailRequestVersion) this.invoiceDetailLoading = false;
-    }
-  }
-
-  handleInvoiceDetailKeydown(event: KeyboardEvent): void {
-    if (!this.selectedInvoiceForDetails || event.key !== 'Tab') return;
-    const drawer = this.invoiceDetailDrawer?.nativeElement;
-    if (!drawer) return;
-    const focusable: HTMLElement[] = Array.from(drawer.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    )).filter((element: HTMLElement) => element.getAttribute('aria-hidden') !== 'true' && element.getClientRects().length > 0);
-    if (!focusable.length) {
-      event.preventDefault();
-      drawer.focus();
-      return;
-    }
-    const first: HTMLElement = focusable[0];
-    const last: HTMLElement = focusable[focusable.length - 1];
-    const active = document.activeElement;
-    if (!drawer.contains(active)) {
-      event.preventDefault();
-      (event.shiftKey ? last : first).focus();
-    } else if (event.shiftKey && (active === first || active === drawer)) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && active === last) {
-      event.preventDefault();
-      first.focus();
     }
   }
 
@@ -3591,16 +3508,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.setTab('invoices');
   }
 
-  /** 3A-920 step 4: the proposed-entitlement lifecycle label for the drawer. */
-  transportStatusLabel(status: string | null | undefined): string {
-    switch (status) {
-      case 'proposed': return this.t('ui.invoices.transport.statusProposed');
-      case 'confirmed': return this.t('ui.invoices.transport.statusConfirmed');
-      case 'dismissed': return this.t('ui.invoices.transport.statusDismissed');
-      case 'cancelled': return this.t('ui.invoices.transport.statusCancelled');
-      default: return status ?? '';
-    }
-  }
+
 
   /** 3A-920 step 4: seed (or clear) the editor's transport block from a detail. */
   private setInvoiceDraftTransport(detail: InvoiceDetail | null): void {

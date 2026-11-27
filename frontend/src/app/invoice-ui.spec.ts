@@ -9,6 +9,8 @@ const appSource = expandTranslationCalls(
   + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8')
 );
 const editorSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8'));
+// 3A-921 F1b: the detail drawer was extracted verbatim into its own component.
+const drawerSource = expandTranslationCalls(readFileSync(new URL('./invoice-detail-drawer.component.ts', import.meta.url), 'utf8'));
 const searchFieldSource = readFileSync(new URL('./shared/ui/aba-search-field.component.ts', import.meta.url), 'utf8');
 const designSystemSource = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 
@@ -168,13 +170,13 @@ test('invoice detail is a tenant-guarded read-only slide-over using persisted li
   assert.match(appSource, /openInvoiceDetails\(invoice: Invoice, event\?: Event\)/);
   assert.match(appSource, /this\.api\.invoiceDetail\(businessId, invoice\.id\)/);
   assert.match(appSource, /this\.business\?\.id !== businessId/);
-  assert.match(appSource, /role="dialog" aria-modal="true"/);
-  assert.match(appSource, /class="invoice-detail-lines"/);
-  assert.match(appSource, /detail\.lines/);
-  assert.match(appSource, /detail\.subtotal/);
-  assert.match(appSource, /detail\.discount_total/);
-  assert.match(appSource, /detail\.tax_total/);
-  assert.match(appSource, /detail\.total/);
+  assert.match(drawerSource, /role="dialog" aria-modal="true"/);
+  assert.match(drawerSource, /class="invoice-detail-lines"/);
+  assert.match(drawerSource, /detail\.lines/);
+  assert.match(drawerSource, /detail\.subtotal/);
+  assert.match(drawerSource, /detail\.discount_total/);
+  assert.match(drawerSource, /detail\.tax_total/);
+  assert.match(drawerSource, /detail\.total/);
   assert.match(appSource, /editInvoiceFromDetails\(\)/);
   assert.match(appSource, /issueInvoiceFromDetails\(\)/);
   assert.match(appSource, /payInvoiceFromDetails\(\)/);
@@ -190,9 +192,9 @@ test('invoice list uses the existing authenticated limit/offset endpoint without
 
 test('invoice tables and slide-over preserve explicit RTL/LTR direction and accessible dialog semantics', () => {
   assert.match(appSource, /<table class="invoice-table" \[attr\.dir\]="language === 'ar' \? 'rtl' : 'ltr'"/);
-  assert.match(appSource, /class="invoice-detail-drawer" role="dialog" aria-modal="true"/);
-  assert.match(appSource, /aria-labelledby="invoice-detail-heading"/);
-  assert.match(appSource, /invoiceDetailCloseButton/);
+  assert.match(drawerSource, /class="invoice-detail-drawer" role="dialog" aria-modal="true"/);
+  assert.match(drawerSource, /aria-labelledby="invoice-detail-heading"/);
+  assert.match(drawerSource, /invoiceDetailCloseButton/);
 });
 
 // T18 Slice U04 (2026-11-21): the invoice list and drawer stay readable at
@@ -229,22 +231,22 @@ test('invoice card customer name wraps on words with a stacked header below 380p
 });
 
 test('invoice detail lines stack with labels below 480px and totals stay intact', () => {
-  assert.match(appSource, /\[attr\.data-label\]="t\('[^']*', 'Quantity'\)"/);
-  assert.match(appSource, /\[attr\.data-label\]="t\('[^']*', 'Unit price'\)"/);
-  assert.match(appSource, /\[attr\.data-label\]="t\('[^']*', 'Line total'\)"/);
-  assert.match(appSource, /\.invoice-detail-totals dd\{[^}]*white-space:nowrap/);
-  assert.match(appSource, /\.invoice-detail-meta strong bdi\{white-space:nowrap\}/);
-  assert.match(appSource, /@media\(max-width:480px\)\{[\s\S]*?\.invoice-detail-lines-wrap\{overflow-x:visible\}/);
-  assert.match(appSource, /@media\(max-width:480px\)\{[\s\S]*?\.invoice-detail-lines thead\{position:absolute/);
-  assert.match(appSource, /@media\(max-width:480px\)\{[\s\S]*?\.invoice-detail-lines tbody tr\{display:grid/);
-  assert.match(appSource, /@media\(max-width:480px\)\{[\s\S]*?\.invoice-detail-lines td\[data-label\]::before\{content:attr\(data-label\)/);
-  assert.match(appSource, /@media\(max-width:380px\)\{[\s\S]*?\.invoice-detail-meta\{grid-template-columns:minmax\(0,1fr\)\}/);
-  assert.match(appSource, /@media\(max-width:380px\)\{[\s\S]*?\.invoice-detail-totals>div\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
+  assert.match(drawerSource, /\[attr\.data-label\]="t\('[^']*', 'Quantity'\)"/);
+  assert.match(drawerSource, /\[attr\.data-label\]="t\('[^']*', 'Unit price'\)"/);
+  assert.match(drawerSource, /\[attr\.data-label\]="t\('[^']*', 'Line total'\)"/);
+  assert.match(drawerSource, /\.invoice-detail-totals dd\{[^}]*white-space:nowrap/);
+  assert.match(drawerSource, /\.invoice-detail-meta strong bdi\{white-space:nowrap\}/);
+  assert.match(drawerSource, /@media\(max-width:480px\)\{[\s\S]*?\.invoice-detail-lines-wrap\{overflow-x:visible\}/);
+  assert.match(drawerSource, /@media\(max-width:480px\)\{[\s\S]*?\.invoice-detail-lines thead\{position:absolute/);
+  assert.match(drawerSource, /@media\(max-width:480px\)\{[\s\S]*?\.invoice-detail-lines tbody tr\{display:grid/);
+  assert.match(drawerSource, /@media\(max-width:480px\)\{[\s\S]*?\.invoice-detail-lines td\[data-label\]::before\{content:attr\(data-label\)/);
+  assert.match(drawerSource, /@media\(max-width:380px\)\{[\s\S]*?\.invoice-detail-meta\{grid-template-columns:minmax\(0,1fr\)\}/);
+  assert.match(drawerSource, /@media\(max-width:380px\)\{[\s\S]*?\.invoice-detail-totals>div\{display:grid;grid-template-columns:minmax\(0,1fr\)/);
   // The pre-existing <=760px block re-asserts the 2-column drawer meta;
   // same-specificity rules later in the file win, so the narrow rule must
   // come after it or the meta stays 2-up and overflows at 195px.
-  const metaNarrow = appSource.indexOf('.invoice-detail-meta{grid-template-columns:minmax(0,1fr)}');
-  const metaWide = appSource.indexOf('.invoice-detail-meta{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}');
+  const metaNarrow = drawerSource.indexOf('.invoice-detail-meta{grid-template-columns:minmax(0,1fr)}');
+  const metaWide = drawerSource.indexOf('.invoice-detail-meta{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}');
   assert.ok(metaNarrow > metaWide, 'narrow meta rule must come after the 2-column rule');
 });
 
