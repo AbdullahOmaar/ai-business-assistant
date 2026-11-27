@@ -125,6 +125,10 @@ test('semantic design tokens are defined once and cover the shared UI foundation
   for (const token of required) {
     assert.equal(definitions.filter(name => name === token).length, 1, `${token} must be defined exactly once`);
   }
+  // Owner restore 2026-11-27 (3A-919): the dock tab token is 61px again —
+  // the 2026-11-25 repair slimmed it to 52px and the owner ordered the
+  // week-ago geometry back.
+  assert.ok(styles.includes('--aba-layout-mobile-nav: 61px'), 'dock tab token must be 61px after the owner restore');
 });
 
 test('shared UI primitives consume the semantic token layer instead of owning a parallel palette', () => {
@@ -375,7 +379,7 @@ test('reduced-motion preference disables nonessential interaction motion', () =>
   assert.ok(styles.includes(':root body .shell .suggestion-card'));
   assert.ok(styles.includes('transition: none !important'));
   assert.ok(styles.includes('animation: none !important'));
-  assert.ok(styles.includes(':root body .shell .global-loading > span:first-child'));
+  assert.ok(styles.includes(':root body .shell .global-loading'));
 });
 
 

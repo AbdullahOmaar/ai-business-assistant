@@ -178,17 +178,23 @@
   line-height: var(--aiba-leading-relaxed);
 }
 
-/* Navigation: deep navy frame with a restrained teal active state. */
-:root body .shell .sidebar {
-  background: linear-gradient(180deg, var(--aiba-nav) 0%, #0b1422 100%);
-  border-inline-start: 1px solid rgb(148 163 184 / 12%);
-}
+/* Navigation: deep navy frame with a restrained teal active state. Desktop
+ * only (owner order 2026-11-27, 3A-919): the mobile dock owns its geometry
+ * in the T18 block of app.component.css — this 44px min-height used to beat
+ * the dock's 61px token and 56px narrow tab at every width, so the token
+ * never rendered. */
+@media (min-width: 761px) {
+  :root body .shell .sidebar {
+    background: linear-gradient(180deg, var(--aiba-nav) 0%, #0b1422 100%);
+    border-inline-start: 1px solid rgb(148 163 184 / 12%);
+  }
 
-:root body .shell .nav-item {
-  min-height: 44px;
-  margin-block: 2px;
-  border-radius: 11px;
-  transition: background var(--aiba-motion), color var(--aiba-motion), transform var(--aiba-motion);
+  :root body .shell .nav-item {
+    min-height: 44px;
+    margin-block: 2px;
+    border-radius: 11px;
+    transition: background var(--aiba-motion), color var(--aiba-motion), transform var(--aiba-motion);
+  }
 }
 
 :root body .shell .nav-item:hover:not(.active) {
@@ -2389,7 +2395,11 @@
     font-size: 16px;
   }
 
-  :root body .shell :is(button, .primary, .secondary, .aba-record-table__sort-button) {
+  /* Owner order 2026-11-27 (3A-919): the dock tabs are buttons, so this
+   * 44px floor used to beat the T18 61px token and the 56px narrow tab —
+   * the dock owns taller targets of its own, so .nav-item is excluded here
+   * (same exclusion the control-height button rule already carries). */
+  :root body .shell :is(button:not(.nav-item), .primary, .secondary, .aba-record-table__sort-button) {
     min-height: 44px;
   }
 
@@ -2449,10 +2459,12 @@
 :root body .shell .record-tools-row>button{flex:0 0 auto;min-height:46px}
 :root body .shell .record-tools-row .aba-record-create__body,:root body .shell .record-tools-row .aba-record-secondary__body{position:absolute;top:calc(100% + 6px);inset-inline:0;z-index:35;background:var(--aiba-surface,#fff);border:1px solid var(--aiba-line,#e2e8f0);border-radius:14px;box-shadow:0 18px 44px #0f172a26;padding:14px;max-height:min(62vh,520px);overflow-y:auto}
 @media (max-width: 760px) {
-  :root body .shell{--aba-dock-offset:84px}
+  /* Owner order 2026-11-27 (3A-919): dock offset tracks the restored dock —
+   * 78px dock (61px tab + 7px padding top + 8px padding bottom + 2px border)
+   * + 8px lift + 8px gap = 94px. The 2026-11-25 repair overrides that pinned
+   * the slimmed dock (5px padding, 52px tab) are removed with it. */
+  :root body .shell{--aba-dock-offset:94px}
   :root body .shell.keyboard-open{--aba-dock-offset:8px}
-  :root body .shell .sidebar{padding:5px;padding-block-end:calc(5px + env(safe-area-inset-bottom,0px))}
-  :root body .shell .sidebar .nav-item{min-height:52px}
   :root body .shell aba-search-field .aba-search-field input:placeholder-shown{padding-inline-end:14px !important}
   :root body .shell aba-search-field .aba-search-field input::placeholder{font-size:12.5px}
 }
