@@ -1,7 +1,8 @@
 // 3A-920 step 2 — the wage basis (monthly / daily / per-trip) on the
 // employee card + the trips / work-days units in the payroll form.
 // The net formula never changes and the base is always server-computed
-// (monthly = salary; daily = salary / 30 x days; per-trip = trip wage
+// (monthly = salary; daily = salary / company divisor (default 30)
+// x days; per-trip = trip wage
 // x trips). The per-trip option exists only while the transport switch
 // is on; a stored trip wage stays stored (hidden, never deleted) when
 // the basis is monthly or daily. The backend math + gates are covered
@@ -58,9 +59,13 @@ test('payroll form asks for trips or work days only for the matching basis', () 
   assert.ok(component.includes('[(ngModel)]="payrollWorkDays"'));
   assert.ok(component.includes('name="payrollWorkDays" type="number"'));
   assert.ok(component.includes('max="31"'));
-  // The rate hints show what the base is computed from.
+  // The rate hints show what the base is computed from — the daily
+  // hint divides by the company's own divisor setting (default 30,
+  // manager ruling 2026-11-27), loaded with the rest of the settings.
   assert.ok(component.includes('dailyWageOf(selectedPayrollEmployee!)'));
-  assert.ok(component.includes('return (Number(employee.monthly_salary) / 30).toFixed(2);'));
+  assert.ok(component.includes('return (Number(employee.monthly_salary) / this.dailyDivisor).toFixed(2);'));
+  assert.ok(component.includes('this.dailyDivisor = dailyDivisorFromSettings(settings);'));
+  assert.ok(component.includes('dailyDivisor = DEFAULT_DAILY_DIVISOR;'));
   // The units are creation-time facts: they ride createPayroll only,
   // never updatePayroll — a closed period can never be recomputed.
   assert.ok(component.includes("...(basis === 'per_trip' ? {trips} : {}),"));

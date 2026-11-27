@@ -28,7 +28,11 @@ from app.security import (
     AuthorizationError,
     authorize_membership,
 )
-from app.transport_settings import transport_enabled
+from app.transport_settings import (
+    DEFAULT_DAILY_DIVISOR,
+    daily_divisor,
+    transport_enabled,
+)
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["employees and payroll"])
 CENT = Decimal("0.01")
@@ -186,10 +190,14 @@ def _money(value: Decimal) -> Decimal:
     return value.quantize(CENT, rounding=ROUND_HALF_UP)
 
 
-def _compute_payroll_base(employee: Employee, body: "PayrollCreate") -> Decimal:
+def _compute_payroll_base(
+    employee: Employee, body: "PayrollCreate", *, daily_divisor: int = DEFAULT_DAILY_DIVISOR
+) -> Decimal:
     """Server-computed payroll base for one employee + period (3A-920
     step 2). The units must match the basis — anything else is a 422,
-    so a record can never be ambiguous about how its base was built."""
+    so a record can never be ambiguous about how its base was built.
+    The daily divisor is the company's own setting (default 30 —
+    manager ruling 2026-11-27), read at creation time only."""
     basis = employee.wage_basis
     if basis == "per_trip":
         if body.trips is None:
@@ -204,7 +212,7 @@ def _compute_payroll_base(employee: Employee, body: "PayrollCreate") -> Decimal:
             raise HTTPException(status_code=422, detail="Work days are required for daily pay.")
         if body.trips is not None:
             raise HTTPException(status_code=422, detail="Trip count does not apply to daily pay.")
-        return _money(employee.monthly_salary / Decimal(30) * body.work_days)
+        return _money(employee.monthly_salary / Decimal(daily_divisor) * body.work_days)
     if body.trips is not None or body.work_days is not None:
         raise HTTPException(status_code=422, detail="Trip count and work days do not apply to monthly pay.")
     return _money(employee.monthly_salary)
@@ -453,13 +461,16 @@ def create_payroll(
         # the net formula never changes (base + allowances + bonuses -
         # deductions), and the base is always server-computed. Monthly is
         # today's behavior, unchanged. Daily derives from the monthly
-        # salary (/ 30); per-trip multiplies the trip wage by the trip
-        # count (manual entry now; step 4 derives it from invoices).
+        # salary (/ the company's daily divisor, default 30 — manager
+        # ruling 2026-11-27); per-trip multiplies the trip wage by the
+        # trip count (manual entry now; step 4 derives it from invoices).
         # Payroll for an already per-trip employee keeps working while
         # the switch is off — the basis is stored data, and blocking pay
         # would strand the employee; the gate governs NEW transport
         # enrolments (flag / per-trip basis), not the pay that follows.
-        base_salary = _compute_payroll_base(employee, body)
+        base_salary = _compute_payroll_base(
+            employee, body, daily_divisor=daily_divisor(session, business_id=business_id)
+        )
         net_pay = _money(base_salary + body.allowances + body.bonuses - body.deductions)
         if net_pay <= 0:
             raise HTTPException(status_code=422, detail="Deductions must be lower than total earnings.")

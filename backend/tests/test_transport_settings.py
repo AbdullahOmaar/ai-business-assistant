@@ -33,9 +33,12 @@ from app.models import (
 )
 from app.security import AuthenticatedPrincipal
 from app.transport_settings import (
+    DAILY_DIVISOR_KEY,
+    DEFAULT_DAILY_DIVISOR,
     DEFAULT_TRANSPORT_UNIT_NAME,
     TRANSPORT_ENABLED_KEY,
     TRANSPORT_UNIT_NAME_KEY,
+    daily_divisor,
     transport_enabled,
     transport_settings,
     transport_unit_name,
@@ -203,3 +206,37 @@ def test_non_owner_cannot_write_the_switch(harness, business):
     assert response.status_code == 403, response.text
     with _session() as session:
         assert transport_enabled(session, business_id=UUID(business)) is False
+
+
+def test_daily_divisor_defaults_to_30(business):
+    # Manager ruling 2026-11-27: daily = monthly / 30 by default.
+    with _session() as session:
+        assert daily_divisor(session, business_id=UUID(business)) == DEFAULT_DAILY_DIVISOR == 30
+
+
+@pytest.mark.parametrize("stored,expected", [
+    ("26", 26), (" 26 ", 26), ("1", 1), ("31", 31),
+    ("0", 30), ("32", 30), ("-5", 30), ("abc", 30), ("30.5", 30), ("", 30),
+])
+def test_daily_divisor_parsing_and_fallback(business, stored, expected):
+    with _session() as session:
+        session.add(BusinessSetting(
+            business_id=UUID(business), setting_key=DAILY_DIVISOR_KEY, setting_value=stored,
+        ))
+        session.commit()
+    with _session() as session:
+        assert daily_divisor(session, business_id=UUID(business)) == expected
+
+
+def test_daily_divisor_round_trips_and_is_tenant_isolated(harness, business):
+    client, subject = harness
+    assert _put_setting(client, business, subject, DAILY_DIVISOR_KEY, "26").status_code == 200
+    with _session() as session:
+        assert daily_divisor(session, business_id=UUID(business)) == 26
+    # Another business still reads the default — rows never leak.
+    subject["value"] = OWNER
+    other = client.post(
+        "/api/v1/businesses", json={"name": "Other Shop", "currency_code": "EGP"}
+    ).json()["id"]
+    with _session() as session:
+        assert daily_divisor(session, business_id=UUID(other)) == 30

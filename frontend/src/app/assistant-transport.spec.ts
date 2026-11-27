@@ -84,6 +84,29 @@ test('frontend and backend agree on the transport keys and defaults', () => {
   assert.ok(backend.includes('MAX_TRANSPORT_UNIT_NAME_LENGTH = 40'));
 });
 
+test('settings panel carries the daily-wage divisor (company setting, default 30)', () => {
+  // Manager ruling 2026-11-27: daily = monthly / divisor, and the
+  // divisor itself is editable company data — shown always (daily
+  // payroll works while the transport switch is off), owner-only.
+  assert.ok(component.includes("t('ui.assistantSettings.transport.dailyDivisor')"));
+  assert.ok(component.includes("t('ui.assistantSettings.transport.dailyDivisorHint')"));
+  assert.ok(component.includes('(change)="changeDailyDivisor($any($event.target).value)" [disabled]="!isOwner"'));
+  assert.ok(component.includes('type="number" min="1" max="31" step="1" [value]="dailyDivisor"'));
+  assert.ok(component.includes('this.dailyDivisor = dailyDivisorFromSettings(settings);'));
+  // Choosing the default deletes the stored row; other values write.
+  assert.ok(component.includes('this.api.deleteSetting(requestContext.workspaceId, DAILY_DIVISOR_SETTING_KEY)'));
+  assert.ok(component.includes('DAILY_DIVISOR_SETTING_KEY, String(parsed)'));
+  // Frontend and backend agree on the key, the default and the range.
+  assert.ok(transportSettings.includes("DAILY_DIVISOR_SETTING_KEY = 'payroll.daily_divisor'"));
+  assert.ok(backend.includes('DAILY_DIVISOR_KEY = "payroll.daily_divisor"'));
+  assert.ok(transportSettings.includes('DEFAULT_DAILY_DIVISOR = 30'));
+  assert.ok(backend.includes('DEFAULT_DAILY_DIVISOR = 30'));
+  assert.ok(transportSettings.includes('MIN_DAILY_DIVISOR = 1'));
+  assert.ok(transportSettings.includes('MAX_DAILY_DIVISOR = 31'));
+  assert.ok(backend.includes('MIN_DAILY_DIVISOR = 1'));
+  assert.ok(backend.includes('MAX_DAILY_DIVISOR = 31'));
+});
+
 test('assistantSettings.transport i18n keys are in exact ar/en parity', () => {
   const arKeys = Object.keys(arabic.ui.assistantSettings.transport).sort();
   const enKeys = Object.keys(english.ui.assistantSettings.transport).sort();

@@ -21,8 +21,10 @@ import {
   type AssistantChatMessage, type AssistantDialect,
 } from './assistant-persistence';
 import {
-  MAX_TRANSPORT_UNIT_NAME_LENGTH, TRANSPORT_ENABLED_SETTING_KEY,
-  TRANSPORT_UNIT_NAME_SETTING_KEY, transportEnabledFromSettings,
+  DAILY_DIVISOR_SETTING_KEY, DEFAULT_DAILY_DIVISOR,
+  MAX_DAILY_DIVISOR, MAX_TRANSPORT_UNIT_NAME_LENGTH, MIN_DAILY_DIVISOR,
+  TRANSPORT_ENABLED_SETTING_KEY, TRANSPORT_UNIT_NAME_SETTING_KEY,
+  dailyDivisorFromSettings, transportEnabledFromSettings,
   transportUnitNameFromSettings,
 } from './transport-settings';
 import { LocalizationService } from './localization.service';
@@ -206,6 +208,11 @@ interface SpeechRecognitionLike {
               <input type="checkbox" [checked]="transportEnabled" (change)="toggleTransport($any($event.target).checked)" [disabled]="!isOwner" />
             </label>
             <small class="assistant-setting-hint">{{ t('ui.assistantSettings.transport.enableHint') }}</small>
+            <label class="assistant-setting-row">
+              <span>{{ t('ui.assistantSettings.transport.dailyDivisor') }}</span>
+              <input type="number" min="1" max="31" step="1" [value]="dailyDivisor" (change)="changeDailyDivisor($any($event.target).value)" [disabled]="!isOwner" />
+            </label>
+            <small class="assistant-setting-hint">{{ t('ui.assistantSettings.transport.dailyDivisorHint') }}</small>
             @if (transportEnabled) {
               <label class="assistant-setting-row">
                 <span>{{ t('ui.assistantSettings.transport.unitName') }}</span>
@@ -492,7 +499,7 @@ interface SpeechRecognitionLike {
 .assistant-history-list li{margin-top:6px}
 .assistant-setting-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;font-size:12px;font-weight:700}
 .assistant-setting-row select{min-height:36px;border:1px solid var(--aba-color-border,#d1d5db);border-radius:8px;background:var(--aba-color-surface,#fff);font-size:12px}
-.assistant-setting-row input[type="text"]{min-height:36px;max-width:160px;padding:0 8px;border:1px solid var(--aba-color-border,#d1d5db);border-radius:8px;background:var(--aba-color-surface,#fff);font-size:12px}
+.assistant-setting-row input[type="text"],.assistant-setting-row input[type="number"]{min-height:36px;max-width:160px;padding:0 8px;border:1px solid var(--aba-color-border,#d1d5db);border-radius:8px;background:var(--aba-color-surface,#fff);font-size:12px}
 .assistant-setting-row input[type="checkbox"]{width:20px;height:20px;accent-color:var(--aba-color-primary,#0f766e)}
 .assistant-setting-hint{display:block;margin-top:4px}
 .assistant-optouts{display:grid;gap:6px;margin-top:12px}
@@ -560,6 +567,7 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
   // all, not a "coming soon" state).
   transportEnabled = false;
   transportUnitName = '';
+  dailyDivisor = DEFAULT_DAILY_DIVISOR;
   brief: AssistantBrief | null = null;
   briefLoading = false;
   briefError = '';
@@ -664,6 +672,7 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
     this.whatsappBusy = false;
     this.transportEnabled = false;
     this.transportUnitName = '';
+    this.dailyDivisor = DEFAULT_DAILY_DIVISOR;
     this.brief = null;
     this.briefLoading = false;
     this.briefError = '';
@@ -856,6 +865,7 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
           // company's own unit name (catalog default when never set).
           this.transportEnabled = transportEnabledFromSettings(settings);
           this.transportUnitName = transportUnitNameFromSettings(settings, this.t('ui.assistantSettings.transport.defaultUnitName'));
+          this.dailyDivisor = dailyDivisorFromSettings(settings);
           this.optOuts = optOuts;
           this.whatsappLinks = whatsappLinks;
           this.whatsappChannelEnabled = whatsappStatus.channel_enabled;
@@ -940,6 +950,33 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
       } else {
         return;
       }
+      this.settingsSaved = true;
+      this.settingsError = '';
+    } catch (error) {
+      this.settingsError = this.message(error);
+    }
+  }
+
+  // 3A-920 — daily-wage divisor (manager ruling 2026-11-27): daily
+  // pay = monthly salary / this count, a company setting with the
+  // default 30. Owner-only. Choosing the default deletes the stored
+  // row so the read falls back cleanly; an out-of-range value is
+  // ignored here and falls back on the backend read as well. Only
+  // payroll creation reads it — stored records never change.
+  async changeDailyDivisor(value: string): Promise<void> {
+    if (!this.isOwner) return;
+    const requestContext = this.chatRequestContext();
+    if (!requestContext.signedIn || !requestContext.workspaceId) return;
+    const parsed = Number.parseInt((value ?? '').trim(), 10);
+    if (!Number.isInteger(parsed) || parsed < MIN_DAILY_DIVISOR || parsed > MAX_DAILY_DIVISOR) return;
+    if (parsed === this.dailyDivisor) return;
+    try {
+      if (parsed === DEFAULT_DAILY_DIVISOR) {
+        await this.api.deleteSetting(requestContext.workspaceId, DAILY_DIVISOR_SETTING_KEY);
+      } else {
+        await this.api.updateSetting(requestContext.workspaceId, DAILY_DIVISOR_SETTING_KEY, String(parsed));
+      }
+      this.dailyDivisor = parsed;
       this.settingsSaved = true;
       this.settingsError = '';
     } catch (error) {

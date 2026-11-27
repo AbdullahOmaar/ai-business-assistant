@@ -6,7 +6,7 @@ import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecord
 import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';
 import { AbaSearchFieldComponent } from './shared/ui/aba-search-field.component';
 import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service';
-import { transportEnabledFromSettings } from './transport-settings';
+import { DEFAULT_DAILY_DIVISOR, dailyDivisorFromSettings, transportEnabledFromSettings } from './transport-settings';
 
 @Component({
   selector: 'aba-employee-payroll',
@@ -310,6 +310,10 @@ export class EmployeePayrollComponent implements OnChanges {
   // 3A-920 step 1: the driver tag + list filter render only while the
   // transport switch is on (DEFAULT OFF — no tag, no chip, no column).
   transportEnabled = false;
+  // 3A-920 (manager ruling 2026-11-27): the daily-wage divisor is a
+  // company setting (default 30) — the hint divides by the company's
+  // own count, mirroring the backend read at payroll creation.
+  dailyDivisor = DEFAULT_DAILY_DIVISOR;
   driversOnly = false;
   mobileSection: 'employees' | 'prepare' | 'history' = 'employees';
   employeeFormOpen = false;
@@ -352,6 +356,7 @@ export class EmployeePayrollComponent implements OnChanges {
       this.employeeSearch = '';
       this.driversOnly = false;
       this.transportEnabled = false;
+      this.dailyDivisor = DEFAULT_DAILY_DIVISOR;
       this.mobileSection = 'employees';
       this.employeeFormOpen = false;
       this.payrollEmployeeId = '';
@@ -401,7 +406,7 @@ export class EmployeePayrollComponent implements OnChanges {
   }
 
   dailyWageOf(employee: EmployeeRecord): string {
-    return (Number(employee.monthly_salary) / 30).toFixed(2);
+    return (Number(employee.monthly_salary) / this.dailyDivisor).toFixed(2);
   }
 
   get filteredEmployees(): EmployeeRecord[] {
@@ -523,6 +528,7 @@ export class EmployeePayrollComponent implements OnChanges {
       // 3A-920: the transport switch rides the same load — one extra
       // read, no new endpoint.
       this.transportEnabled = transportEnabledFromSettings(settings);
+      this.dailyDivisor = dailyDivisorFromSettings(settings);
       if (!this.employees.some(item => item.id === this.payrollEmployeeId && item.is_active)) {
         this.payrollEmployeeId = this.employees.find(item => item.is_active)?.id || '';
       }

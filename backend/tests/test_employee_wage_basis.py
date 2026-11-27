@@ -2,7 +2,8 @@
 
 The net formula never changes (base + allowances + bonuses -
 deductions) and the base is always server-computed. Monthly is
-today's behavior; daily derives from the monthly salary (/ 30);
+today's behavior; daily derives from the monthly salary (/ the
+company's daily divisor, default 30 — manager ruling 2026-11-27);
 per-trip multiplies the trip wage by the trip count. Closed
 (approved/paid) periods never change: only drafts are editable and
 the base is never recomputed on update.
@@ -196,6 +197,31 @@ def test_daily_payroll_math(wage_basis_environment):
     assert body["trips"] is None
     assert _create_payroll(env, employee["id"], period="2026-10").status_code == 422  # days required
     assert _create_payroll(env, employee["id"], period="2026-09", work_days=10, trips=3).status_code == 422
+
+
+def test_daily_payroll_uses_company_divisor(wage_basis_environment):
+    env = wage_basis_environment
+    # Manager ruling 2026-11-27: the divisor is a company setting
+    # (default 30), read at creation time only.
+    response = env["client"].put(
+        f"/api/v1/businesses/{env['business_id']}/settings/payroll.daily_divisor",
+        json={"setting_value": "26"},
+    )
+    assert response.status_code == 200, response.text
+    employee = _create_employee(env, salary="6000.00", wage_basis="daily").json()
+    record = _create_payroll(env, employee["id"], work_days=13)
+    assert record.status_code == 201, record.text
+    assert record.json()["base_salary"] == "3000.00"  # 6000 / 26 x 13 days
+    # Changing the divisor afterwards never rewrites the stored record:
+    # a new period computes with the new divisor, the old one stands.
+    env["client"].put(
+        f"/api/v1/businesses/{env['business_id']}/settings/payroll.daily_divisor",
+        json={"setting_value": "30"},
+    )
+    later = _create_payroll(env, employee["id"], period="2026-10", work_days=13)
+    assert later.json()["base_salary"] == "2600.00"  # 6000 / 30 x 13 days
+    listing = env["client"].get(f"/api/v1/businesses/{env['business_id']}/payroll?period=2026-11")
+    assert listing.json()[0]["base_salary"] == "3000.00"
 
 
 def test_monthly_payroll_unchanged_and_rejects_units(wage_basis_environment):

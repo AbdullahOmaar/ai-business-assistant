@@ -1277,7 +1277,9 @@
         "enableHint": "While off, nothing transport-related appears in invoices, employees or payroll — as if it did not exist. Recorded data stays stored and reappears when it is turned back on.",
         "unitName": "Transport unit name",
         "unitNameHint": "The name shown on the invoice, the product and the payroll — e.g. a trip or a delivery.",
-        "defaultUnitName": "delivery"
+        "defaultUnitName": "delivery",
+        "dailyDivisor": "Days per month for daily pay",
+        "dailyDivisorHint": "Daily pay = monthly salary ÷ this number — default 30. Applies to new payroll only; recorded payroll never changes."
       }
     },
     "assistantWhatsapp": {
