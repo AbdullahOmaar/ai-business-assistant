@@ -9,6 +9,8 @@ const notificationsSource = readFileSync(new URL('./notifications-workspace.comp
 const suppliersSource = readFileSync(new URL('./suppliers-workspace.component.ts', import.meta.url), 'utf8');
 const recurringSource = readFileSync(new URL('./recurring-workspace.component.ts', import.meta.url), 'utf8');
 const integritySource = readFileSync(new URL('./integrity-workspace.component.ts', import.meta.url), 'utf8');
+// 3A-921 F1: the tax summary moved into the taxes workspace.
+const taxesSource = readFileSync(new URL('./taxes-workspace.component.ts', import.meta.url), 'utf8');
 
 test('workspace bootstrap fetches payment records only for roles authorized to open Payments', () => {
   const start = source.indexOf('async loadWorkspaceData(): Promise<void>');
@@ -41,7 +43,8 @@ test('denied direct tab navigation returns before changing the selected tab or l
   // behind @defer after setTab passes the guard, so the same ordering holds.
   // 3A-376: the integrity tab self-loads inside its workspace now; the
   // shell route loads that remain are pinned here.
-  const routeLoads = ['loadTaxSummary()', 'loadAuditEvents(0)', 'loadOperationalHealth()'];
+  // 3A-921 F1: the taxes tab self-loads inside its workspace too.
+  const routeLoads = ['loadAuditEvents(0)', 'loadOperationalHealth()'];
   for (const load of routeLoads) {
     assert.ok(method.indexOf(load) > selectedTabMutation, `${load} must run only after the access guard`);
   }
@@ -68,18 +71,19 @@ test('payroll post-payment refresh discards responses after owner role, identity
 });
 
 test('owner-only tax summary discards stale responses and invalidates pending ranges', () => {
-  const start = source.indexOf('async loadTaxSummary(): Promise<void>');
-  const end = source.indexOf('\n  async loadOperationalHealth()', start);
+  // 3A-921 F1: loadTaxSummary lives in the taxes workspace now, with the
+  // same owner gate and tenant-scoped guard; a business change inside
+  // the workspace invalidates pending responses (ngOnChanges).
+  const start = taxesSource.indexOf('async loadTaxSummary(): Promise<void>');
+  const end = taxesSource.indexOf('\n  private message(', start);
   assert.ok(start >= 0 && end > start);
-  const method = source.slice(start, end);
+  const method = taxesSource.slice(start, end);
   assert.match(method, /requestContext\.role !== 'owner'/);
   assert.match(method, /runTenantScopedRequest\(\s*this\.taxSummaryLoadGuard/);
   assert.match(method, /this\.taxSummaryLoadGuard\.invalidate\(\)/,
     'invalid date ranges must invalidate older pending report responses');
-
-  const clearStart = source.indexOf('private clearWorkspaceData(): void');
-  const clearEnd = source.indexOf('\n  }', clearStart);
-  assert.ok(source.slice(clearStart, clearEnd).includes('this.taxSummaryLoadGuard.invalidate()'));
+  assert.ok(taxesSource.includes('this.taxSummaryLoadGuard.invalidate()'),
+    'workspace changes must invalidate pending tax responses');
 });
 
 test('owner-only integrity and health loads discard late responses after role or identity changes', () => {

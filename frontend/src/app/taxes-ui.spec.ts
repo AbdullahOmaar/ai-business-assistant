@@ -5,6 +5,11 @@ import { expandTranslationCalls } from './localization-test-helpers.ts';
 
 const appSourceRaw = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 const appSource = expandTranslationCalls(appSourceRaw);
+// 3A-921 F1 (Clean Code program): the taxes tab was extracted verbatim
+// into taxes-workspace.component.ts; the source assertions below read
+// the workspace, and a wiring test pins the shell side.
+const taxesSourceRaw = readFileSync(new URL('./taxes-workspace.component.ts', import.meta.url), 'utf8');
+const taxesSource = expandTranslationCalls(taxesSourceRaw);
 const english = JSON.parse(readFileSync(new URL('../../public/i18n/en.json', import.meta.url), 'utf8')) as Record<string, Record<string, string>>;
 const arabic = JSON.parse(readFileSync(new URL('../../public/i18n/ar.json', import.meta.url), 'utf8')) as Record<string, Record<string, string>>;
 
@@ -21,15 +26,15 @@ const arabic = JSON.parse(readFileSync(new URL('../../public/i18n/ar.json', impo
 // --- Per-currency rendering: no mixed-currency total ---
 
 test('tax figures are grouped per currency with no mixed-currency total', () => {
-  assert.match(appSource, /get taxTableRows\(\): readonly AbaRecordTableRow\[\] \{ return \(this\.taxSummaryReport\?\.currencies\|\|\[\]\)\.map\(row=>\(\{id:row\.currency_code/);
-  assert.match(appSource, /get taxTableColumns\(\): readonly AbaRecordTableColumn\[\] \{ return \[/);
-  assert.ok(appSourceRaw.includes("{key:'currency',label:this.t('ui.m_1jd5ck6'),primary:true}"),
+  assert.match(taxesSource, /get taxTableRows\(\): readonly AbaRecordTableRow\[\] \{ return \(this\.taxSummaryReport\?\.currencies\|\|\[\]\)\.map\(row=>\(\{id:row\.currency_code/);
+  assert.match(taxesSource, /get taxTableColumns\(\): readonly AbaRecordTableColumn\[\] \{ return \[/);
+  assert.ok(taxesSourceRaw.includes("{key:'currency',label:this.t('ui.m_1jd5ck6'),primary:true}"),
     'the tax table has one row per currency code');
-  assert.ok(appSourceRaw.includes("{key:'tax',label:this.t('ui.m_129leiq'),kind:'numeric'}"),
+  assert.ok(taxesSourceRaw.includes("{key:'tax',label:this.t('ui.m_129leiq'),kind:'numeric'}"),
     'the tax figure is a numeric column per currency row');
-  assert.ok(appSourceRaw.includes("{key:'count',label:this.t('ui.m_1dnybga'),kind:'numeric'}"),
+  assert.ok(taxesSourceRaw.includes("{key:'count',label:this.t('ui.m_1dnybga'),kind:'numeric'}"),
     'the invoice count is a numeric column per currency row');
-  assert.doesNotMatch(appSource, /taxSummaryReport\?\.total|taxSummaryReport\.total/,
+  assert.doesNotMatch(taxesSource, /taxSummaryReport\?\.total|taxSummaryReport\.total/,
     'no tax total across currencies exists to render');
   assert.equal(english.ui.m_1dw63nh,
     'Shows saved tax totals on issued invoices, separated by currency.');
@@ -59,22 +64,22 @@ test('the operational character of taxes is visible in both languages', () => {
     'This is an operational summary, not a jurisdiction-specific tax filing.');
   assert.equal(arabic.app.reportLimitation['6'],
     'هذا ملخص تشغيلي وليس إقرارًا ضريبيًا رسميًا خاصًا بجهة ضريبية.');
-  assert.ok(appSourceRaw.includes("@for (limitation of taxSummaryReport.limitations; track limitation) { <p class=\"muted\">• {{ reportLimitationLabel(limitation) }}</p> }"),
+  assert.ok(taxesSourceRaw.includes("@for (limitation of taxSummaryReport.limitations; track limitation) { <p class=\"muted\">• {{ reportLimitationLabel(limitation) }}</p> }"),
     'the tax limitations render under the table in both languages');
 });
 
 // --- Stored values only: no tax/discount semantic change ---
 
 test('tax totals are stored values, never recalculated in the shell', () => {
-  assert.ok(appSourceRaw.includes('tax:`${row.tax_total} ${row.currency_code}`'),
+  assert.ok(taxesSourceRaw.includes('tax:`${row.tax_total} ${row.currency_code}`'),
     'the tax cell renders the stored total with its currency code');
-  assert.ok(appSourceRaw.includes('count:String(row.invoice_count)'),
+  assert.ok(taxesSourceRaw.includes('count:String(row.invoice_count)'),
     'the count cell renders the stored invoice count');
-  const getterStart = appSourceRaw.indexOf('get taxTableRows()');
+  const getterStart = taxesSourceRaw.indexOf('get taxTableRows()');
   assert.ok(getterStart >= 0, 'missing taxTableRows getter');
-  const getter = appSourceRaw.slice(getterStart, appSourceRaw.indexOf('get integrityInvoiceColumns', getterStart));
+  const getter = taxesSourceRaw.slice(getterStart, taxesSourceRaw.indexOf('reportLimitationLabel', getterStart));
   assert.doesNotMatch(getter, /tax_total\s*[*+\-/]/,
-    'no arithmetic on the stored tax total — the shell never recalculates it');
+    'no arithmetic on the stored tax total — the workspace never recalculates it');
   assert.doesNotMatch(getter, /tax_total\s*\+/,
     'no string or numeric addition on the stored tax total either');
 });
@@ -82,9 +87,9 @@ test('tax totals are stored values, never recalculated in the shell', () => {
 // --- Tax form: date range + submit only, no presets (§7.4 default) ---
 
 test('the tax form is the shared date range plus submit, with no presets', () => {
-  const formStart = appSourceRaw.indexOf('(ngSubmit)="loadTaxSummary()"');
+  const formStart = taxesSourceRaw.indexOf('(ngSubmit)="loadTaxSummary()"');
   assert.ok(formStart >= 0, 'missing tax form');
-  const form = appSourceRaw.slice(formStart, appSourceRaw.indexOf('</form>', formStart));
+  const form = taxesSourceRaw.slice(formStart, taxesSourceRaw.indexOf('</form>', formStart));
   assert.ok(form.includes('<aba-date-range'), 'tax dates use the shared date-range component');
   assert.ok(form.includes('name="taxStartDate"'), 'tax start input is kept');
   assert.ok(form.includes('name="taxEndDate"'), 'tax end input is kept');
@@ -92,4 +97,15 @@ test('the tax form is the shared date range plus submit, with no presets', () =>
     'the form submits through the Run report button');
   assert.ok(!form.includes('preset'),
     'no date presets in the tax form — §7.4 default is two inputs + clear only');
+});
+
+// --- Shell wiring after the extraction (3A-921 F1) ---
+
+test('the shell hosts the taxes workspace behind the owner gate and no longer loads the summary itself', () => {
+  assert.ok(appSourceRaw.includes('<aba-taxes-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" />'),
+    'the shell renders the taxes workspace with the standard inputs');
+  assert.ok(appSourceRaw.includes("@if (tab === 'taxes' && business.role === 'owner')"),
+    'the taxes tab stays owner-gated in the shell');
+  assert.doesNotMatch(appSourceRaw, /async loadTaxSummary/, 'the shell no longer defines the tax load');
+  assert.doesNotMatch(appSourceRaw, /taxSummaryLoadGuard/, 'the shell no longer owns the tax guard');
 });

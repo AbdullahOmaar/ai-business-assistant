@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { LocalizationService } from './localization.service';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, ApiRequestError, AuditEvent, Business, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, InvoiceDetail, Payment, Product, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
+import { ApiService, ApiRequestError, AuditEvent, Business, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, InvoiceDetail, Payment, Product, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
 import { createServiceWorkerUpdateHandler } from './service-worker-update';
 import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
@@ -27,8 +27,8 @@ import { ExpensesWorkspaceComponent } from './expenses-workspace.component';
 import { SuppliersWorkspaceComponent } from './suppliers-workspace.component';
 import { RecurringWorkspaceComponent } from './recurring-workspace.component';
 import { IntegrityWorkspaceComponent } from './integrity-workspace.component';
+import { TaxesWorkspaceComponent } from './taxes-workspace.component';
 import { NotificationsWorkspaceComponent } from './notifications-workspace.component';
-import { reportLimitationKey } from './report-labels';
 import { transportEnabledFromSettings, transportUnitNameFromSettings } from './transport-settings';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
@@ -65,7 +65,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, SuppliersWorkspaceComponent, RecurringWorkspaceComponent, IntegrityWorkspaceComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, SuppliersWorkspaceComponent, RecurringWorkspaceComponent, IntegrityWorkspaceComponent, TaxesWorkspaceComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -905,22 +905,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
             }
 
             @if (tab === 'taxes' && business.role === 'owner') {
-              <section abaCard class="panel">
-                <aba-section-header [title]="t('ui.m_nxo405')" [description]="t('ui.m_1dw63nh')" />
-                <form class="inline-form tax-form" (ngSubmit)="loadTaxSummary()">
-                  <aba-date-range [showClear]="true" [hasValue]="taxStartDate !== '' || taxEndDate !== ''" [clearLabel]="t('ui.m_1np7zc4')" (clear)="taxStartDate = ''; taxEndDate = ''">
-                  <label>{{ t('ui.m_10pndrs') }}<input name="taxStartDate" type="date" [(ngModel)]="taxStartDate"></label>
-                  <label>{{ t('ui.m_aulmks') }}<input name="taxEndDate" type="date" [(ngModel)]="taxEndDate"></label>
-                  </aba-date-range>
-                  <button class="primary" type="submit" [disabled]="taxLoading">{{ taxLoading ? t('ui.m_1k98007') : t('ui.m_10jsbot') }}</button>
-                </form>
-                <p class="footnote">{{ t('ui.taxOperationalNote') }}</p>
-                @if (taxError) { <aba-state-message kind="error" [description]="taxError" /> }
-                @if (taxSummaryReport) {
-                  <aba-record-table [ariaLabel]="t('ui.m_1ciqipn')" [columns]="taxTableColumns" [rows]="taxTableRows" [loading]="taxLoading" [loadingDescription]="t('ui.m_1oo6dkn')" [emptyTitle]="t('ui.m_1xb2mzp')" [emptyDescription]="t('ui.m_j6qlz4')" />
-                  @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ reportLimitationLabel(limitation) }}</p> }
-                }
-              </section>
+              <aba-taxes-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" />
             }
 
             @if (tab === 'invoices' && business) {
@@ -1166,11 +1151,6 @@ export class AppComponent implements OnInit, OnDestroy {
   business: Business | null = null;
   selectedBusinessId = '';
   dashboard: Dashboard | null = null;
-  taxSummaryReport: TaxSummaryReport | null = null;
-  taxLoading = false;
-  taxError = '';
-  taxStartDate = '';
-  taxEndDate = '';
   customers: Customer[] = [];
   customerStatement: CustomerStatement | null = null;
   statementLoading = false;
@@ -1733,14 +1713,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }})); }
 
 
-  get taxTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'currency',label:this.t('ui.m_1jd5ck6'),primary:true},
-    {key:'tax',label:this.t('ui.m_129leiq'),kind:'numeric'},
-    {key:'count',label:this.t('ui.m_1dnybga'),kind:'numeric'},
-  ]; }
-  get taxTableRows(): readonly AbaRecordTableRow[] { return (this.taxSummaryReport?.currencies||[]).map(row=>({id:row.currency_code,cells:{
-    currency:row.currency_code,tax:`${row.tax_total} ${row.currency_code}`,count:String(row.invoice_count),
-  }})); }
   exportCurrentList(): void {
     if (!this.business || this.business.role !== 'owner') return;
     let filename = '';
@@ -2080,7 +2052,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.confirmationReturnFocus = null;
     this.payrollRefreshGuard.invalidate();
     this.operationalHealthLoadGuard.invalidate();
-    this.taxSummaryLoadGuard.invalidate();
     // Invalidate the top-level workspace load too; otherwise an old load's finally
     // block can still mutate loading state while a new identity is being resolved.
     this.workspaceLoadGuard.invalidate();
@@ -2102,9 +2073,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.statementOffset = 0;
     this.dashboard = null;
     this.homeDashboardError = '';
-    this.taxSummaryReport = null;
-    this.taxError = '';
-    this.taxLoading = false;
     // Never carry an OWNER-only opening-stock value into another workspace or role.
     this.productOpeningQuantity = '0';
     // Import previews are workspace-scoped; never carry a pending CSV into another business.
@@ -2242,7 +2210,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly paymentListLoadGuard = new WorkspaceLoadGuard();
   private readonly payrollRefreshGuard = new WorkspaceLoadGuard();
   private readonly operationalHealthLoadGuard = new WorkspaceLoadGuard();
-  private readonly taxSummaryLoadGuard = new WorkspaceLoadGuard();
   private readonly invoiceSaveGuard = new WorkspaceLoadGuard();
   private readonly invoiceEditRequestGuard = new WorkspaceLoadGuard();
   private readonly invoiceMutationGuard = new WorkspaceLoadGuard();
@@ -2691,11 +2658,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
 
-  reportLimitationLabel(value: string): string {
-    // Shared with the reports workspace: the key map lives in report-labels.ts.
-    const key = reportLimitationKey(value);
-    return key ? this.t(key) : value;
-  }
+
 
 
   operationalHealthStatusLabel(status: string): string {
@@ -2748,38 +2711,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
 
-
-
-  async loadTaxSummary(): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
-    const requestContext = this.currentChatRequestContext();
-    if (!requestContext.signedIn || !requestContext.userId ||
-        requestContext.role !== 'owner' || !requestContext.workspaceId) return;
-    if (this.taxStartDate && this.taxEndDate && this.taxStartDate > this.taxEndDate) {
-      this.taxSummaryLoadGuard.invalidate();
-      this.taxSummaryReport = null;
-      this.taxLoading = false;
-      this.taxError = this.t('ui.m_mbbjx0');
-      return;
-    }
-    this.taxLoading = true;
-    this.taxError = '';
-    await runTenantScopedRequest(
-      this.taxSummaryLoadGuard,
-      requestContext,
-      () => this.currentChatRequestContext(),
-      () => this.api.taxSummary(requestContext.workspaceId, this.taxStartDate || undefined, this.taxEndDate || undefined),
-      {
-        onSuccess: report => { this.taxSummaryReport = report; },
-        onError: error => {
-          this.taxSummaryReport = null;
-          this.taxError = this.message(error);
-        },
-        onFinally: () => { this.taxLoading = false; },
-        onStale: () => { this.taxLoading = false; },
-      },
-    );
-  }
 
 
   async loadOperationalHealth(): Promise<void> {
@@ -3135,7 +3066,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.syncWorkspaceUrl(tab);
     this.error = tab === 'overview' && this.homeDashboardError ? this.homeDashboardError : '';
     this.mobileMoreOpen = false;
-    if (tab === 'taxes' && this.business?.role === 'owner') void this.loadTaxSummary();
     if (tab === 'audit') void this.loadAuditEvents(0);
     if (tab === 'purchases') { void this.loadSuppliers(); void this.loadPurchaseOrders(); }
     if (tab === 'health' && this.business?.role === 'owner') void this.loadOperationalHealth();

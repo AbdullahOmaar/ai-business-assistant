@@ -6,6 +6,8 @@ const componentSource = readFileSync(new URL('./shared/ui/aba-date-range.compone
 const appSourceRaw = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
 // 3A-351: the P&L date range moved with the reports workspace.
 const reportsSourceRaw = readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8');
+// 3A-921 F1: the Taxes date range moved with the taxes workspace.
+const taxesSourceRaw = readFileSync(new URL('./taxes-workspace.component.ts', import.meta.url), 'utf8');
 const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const designSystem = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const english = JSON.parse(readFileSync(new URL('../../public/i18n/en.json', import.meta.url), 'utf8')) as Record<string, Record<string, string>>;
@@ -88,8 +90,11 @@ test('clear label reuses the existing translated "Clear filters" key', () => {
 
 // --- Shell migration: exactly 3 date ranges in app.component.ts ---
 
-test('the shell uses aba-date-range exactly 2 times: statement and taxes (P&L moved to the reports workspace)', () => {
-  assert.equal((appSourceRaw.match(/<aba-date-range/g) ?? []).length, 2,
+test('the shell uses aba-date-range exactly 1 time: statement (P&L in the reports workspace, taxes in the taxes workspace)', () => {
+  // 3A-921 F1: the taxes range moved out with the taxes tab.
+  assert.equal((taxesSourceRaw.match(/<aba-date-range/g) ?? []).length, 1,
+    'the taxes workspace keeps its single date range');
+  assert.equal((appSourceRaw.match(/<aba-date-range/g) ?? []).length, 1,
     'exactly 2 date ranges in the shell (statement, taxes); the P&L range lives in the deferred reports workspace and the ageing single date is not one');
   assert.equal((reportsSourceRaw.match(/<aba-date-range/g) ?? []).length, 1,
     'the reports workspace keeps the one P&L date range');
@@ -131,9 +136,10 @@ test('Customers statement pair keeps its names, grouping div and own Apply/Clear
 });
 
 test('Taxes pair keeps its names and form submit, and gains the component clear', () => {
-  const taxStart = appSourceRaw.indexOf("(ngSubmit)=\"loadTaxSummary()\"");
+  // 3A-921 F1: the tax form lives in the taxes workspace now.
+  const taxStart = taxesSourceRaw.indexOf("(ngSubmit)=\"loadTaxSummary()\"");
   assert.ok(taxStart >= 0, 'missing tax form');
-  const tax = appSourceRaw.slice(taxStart, appSourceRaw.indexOf('</form>', taxStart));
+  const tax = taxesSourceRaw.slice(taxStart, taxesSourceRaw.indexOf('</form>', taxStart));
   assert.ok(tax.includes('<aba-date-range [showClear]="true" [hasValue]="taxStartDate !== \'\' || taxEndDate !== \'\'" [clearLabel]="t(\'ui.m_1np7zc4\')" (clear)="taxStartDate = \'\'; taxEndDate = \'\'">'),
     'tax dates sit inside the shared component with its clear wired to reset both fields');
   assert.match(tax, /name="taxStartDate" type="date"/);

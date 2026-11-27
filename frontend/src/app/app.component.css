@@ -461,6 +461,3 @@ footer span{color:var(--aba-color-nav-muted,#9ca3af)}
 /* 3A-371: skeleton placeholder for deferred workspace sections (G4). */
 .defer-skeleton{display:grid;gap:10px}
 
-/* 3A-371 (U10): the tax period range stops stretching across wide screens, like the ageing form (3A-354). */
-@media(min-width:761px){.tax-form aba-date-range{max-width:540px}}
-

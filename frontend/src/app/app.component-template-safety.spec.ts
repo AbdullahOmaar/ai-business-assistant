@@ -28,6 +28,8 @@ const purchasingWorkspaceSource = expandTranslationCalls(readFileSync(new URL('.
 const customerEditorSource = expandTranslationCalls(readFileSync(new URL('./customer-editor.component.ts', import.meta.url), 'utf8'));
 const auditLabelsSource = expandTranslationCalls(readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8'));
 const reportsWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8'));
+// 3A-921 F1: the tax limitation labels render in the taxes workspace now.
+const taxesWorkspaceSource = readFileSync(new URL('./taxes-workspace.component.ts', import.meta.url), 'utf8');
 // 3A-351: the Home (overview) tab lives in the deferred overview workspace.
 const overviewWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./overview-workspace.component.ts', import.meta.url), 'utf8'));
 // 3A-351: the AI assistant tab moved into its own deferred workspace component.
@@ -190,7 +192,8 @@ test('financial and integrity report basis labels are localized', () => {
   assert.match(reportsWorkspaceSource, /Gross issued invoice total/);
   // 3A-376: the integrity warning label renders in the integrity workspace now.
   assert.match(integrityWorkspaceSource, /integrityWarningLabel\(dataIntegrityReport\.warning\)/);
-  assert.match(source, /reportLimitationLabel\(limitation\)/);
+  // 3A-921 F1: the limitation labels render in the taxes workspace now.
+  assert.match(taxesWorkspaceSource, /reportLimitationLabel\(limitation\)/);
 });
 
 const apiSource = expandTranslationCalls(readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8'));
