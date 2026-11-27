@@ -5,6 +5,12 @@
 - **Program status:** the three registered file splits are complete — F1 (app.component.ts, PR #501 merged), B1 (extended_api.py, PR #502 in QA), B2 (this PR). Remaining program work is the standing rule only: Clean Code principles on all new code.
 
 
+
+## Clean Code program (3A-921) — B1c: catalog + reports extracted — B1 COMPLETE, extended_api.py is a pure aggregator — 2026-11-27 (branch aiba/clean-code-b1 from main)
+
+- **B1c (DONE):** the last two verbatim extractions: `extended_catalog_api.py` (customers, products, payments list, expenses list, invoices) and `extended_reports_api.py` (receivables/payables aging, assistant insights, customer statement, audit events, data integrity). `extended_api.py` is now a **187-line pure aggregator**: docstring + the domain-module imports + an explicit `__all__` re-export surface (79 names) — no endpoints, no helpers of its own.
+- **B1 COMPLETE:** `extended_api.py` went 2,787 → 187 lines across B1a–B1c; the endpoints now live in `extended_common.py` (shared router/helpers/models) + seven domain modules (cashbox, purchasing, returns, engagement, import/export, catalog, reports), every move verbatim.
+- **Validation:** route set identical (49 routes: method + path + handler name, diffed empty at every step; B1a's order was byte-identical, B1b/B1c carry the documented method-only overlap note); full backend suite **939 passed / 14 skipped** at every step (the pre-split baseline); Ruff clean on all nine touched files and the whole-tree count unchanged at the 105 report-only baseline. Next stage: B2 (models.py → models package).
 ## Clean Code program (3A-921) — B1b: returns + engagement + import/export modules extracted — 2026-11-27 (IN PROGRESS, branch aiba/clean-code-b1 from main; PR at stage end)
 
 - **B1b (DONE):** three more verbatim extractions from `extended_api.py` on the B1a pattern: `extended_returns_api.py` (sales returns + credit notes), `extended_engagement_api.py` (recurring invoices, pricing rules, notifications, settings), `extended_import_export_api.py` (summary report, CSV exports, CSV imports). Same shared-router registration + `__all__` re-export surface (now 61 names). `extended_api.py`: ~1,950 → ~1,220 lines; only the catalog + reports endpoints remain in it.
