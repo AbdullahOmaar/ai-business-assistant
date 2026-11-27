@@ -104,7 +104,7 @@
   /* Layout and layering. Breakpoint values remain explicit in media queries. */
   --aba-layout-sidebar: 245px;
   --aba-layout-content-max: 1550px;
-  --aba-layout-mobile-nav: 52px; /* UI repair round 2026-11-25: slimmed mobile dock (owner: dock too tall) — tab 61->52px, still above the 48px touch minimum */
+  --aba-layout-mobile-nav: 61px; /* Owner order 2026-11-27 (3A-919): dock restored to the pre-repair week-ago geometry — tab 61px (reverts the 2026-11-25 slimming to 52px) */
   --aba-z-index-sticky: 20;
   --aba-z-index-dropdown: 40;
   --aba-z-index-toast: 1000;
@@ -621,9 +621,11 @@ aba-metric-card small {
     transition: none !important;
   }
 
-  :root body .shell .global-loading > span:first-child {
-    animation: none !important;
-    width: 100%;
+  :root body .shell .global-loading {
+    /* Owner order 2026-11-27 (3A-919): the loading overlay is a centered
+     * full-screen frame, not a sweep bar — no blur under reduced motion.
+     * The character's own bob is already disabled by its component rule. */
+    backdrop-filter: none;
   }
 }
 

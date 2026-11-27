@@ -70,7 +70,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
         <a class="skip-link" href="#main-content">{{ t('ui.m_1561v1f') }}</a>
       }
-      @if (loading && initialized) { <div class="global-loading" role="status" aria-live="polite"><aba-loading-logo [compact]="true" [announce]="false" /><span class="loading-label">{{ t('ui.m_1rza5t5') }}</span></div> }
+      @if (loading && initialized) { <div class="global-loading" role="status" aria-live="polite"><aba-loading-logo [announce]="false" /><span class="loading-label">{{ t('ui.m_1rza5t5') }}</span></div> }
       @if (appUpdateAvailable && !appUpdateDismissed) {
         <aside class="app-update-notice" role="status" aria-live="polite">
           <span>{{ t('ui.m_4cplhg') }}</span>
@@ -79,13 +79,15 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
         </aside>
       }
       @if (!initialized) {
-        <main class="auth-card" role="status" aria-live="polite">
-          <aba-loading-logo [announce]="false" />
-          <h1>{{ t('common.app_title') }}</h1>
-          <p class="muted">{{ t('ui.m_1uzdlys') }}</p>
-          <div class="splash-release-meta">
-            <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
-            <p class="release-line splash-release-line">{{ releaseLineLabel }}</p>
+        <main class="splash-overlay" role="status" aria-live="polite">
+          <div class="auth-card">
+            <aba-loading-logo [announce]="false" />
+            <h1>{{ t('common.app_title') }}</h1>
+            <div class="splash-release-meta">
+              <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
+              <p class="release-line splash-release-line">{{ releaseLineLabel }}</p>
+            </div>
+            <p class="muted">{{ t('ui.m_1uzdlys') }}</p>
           </div>
         </main>
       } @else if (startupFailed) {

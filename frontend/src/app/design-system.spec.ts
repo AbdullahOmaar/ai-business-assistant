@@ -109,6 +109,22 @@ test('public authentication screens fit the visible viewport without redundant v
   assert.ok(app.includes('.shell.auth-shell>.auth-card,.shell.auth-shell>.setup-card{margin:0 auto}'));
 });
 
+test('splash opens as one fixed overlay step without repositioning (owner order 2026-11-27, 3A-919)', () => {
+  // The splash is a fixed overlay that never participates in layout, so the
+  // sign-in form appears at its final centered position instead of the card
+  // sliding from the middle to the top when the form replaces it.
+  assert.ok(app.includes('<main class="splash-overlay" role="status" aria-live="polite">'));
+  assert.ok(app.includes('.splash-overlay{position:fixed;inset:0;'));
+  assert.ok(app.includes('.splash-overlay .auth-card{margin:0 auto}'));
+  // Content order inside the splash card: logo, app name, release meta, then
+  // the loading line — the version line is prominent, the transient text last.
+  const splashStart = app.indexOf('<main class="splash-overlay"');
+  const splashEnd = app.indexOf('</main>', splashStart);
+  const splash = app.slice(splashStart, splashEnd);
+  assert.ok(splash.indexOf('aba-loading-logo') < splash.indexOf('splash-release-meta'));
+  assert.ok(splash.indexOf('splash-release-meta') < splash.indexOf('class="muted"'));
+});
+
 test('topbar and mobile headings stay complete: long titles wrap, never truncate (owner correction 2026-11-21)', () => {
   // Slice A forced long titles onto one line; the owner requires the opposite:
   // a long title wraps and stays complete, with no ellipsis and no nowrap.

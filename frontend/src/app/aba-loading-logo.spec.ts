@@ -215,13 +215,15 @@ test('loader is standalone and OnPush, and a parent can silence its announcement
 
 // --- Where the loader appears ---
 
-test('global loading bar is the logo mark now, under the same template condition', () => {
+test('global loading is a centered overlay with the full-size logo mark, under the same template condition', () => {
   assert.match(appSource, /@if \(loading && initialized\) \{ <div class="global-loading"/);
-  assert.match(appSource, /<aba-loading-logo \[compact\]="true" \[announce\]="false" \/>/);
+  assert.match(appSource, /<div class="global-loading"[^>]*><aba-loading-logo \[announce\]="false" \/>/);
   assert.match(appSource, /AbaLoadingLogoComponent/);
   assert.ok(appStyles.includes('.global-loading{'), 'global-loading rules must exist');
-  assert.ok(appStyles.includes('.loading-label{'), 'the visible loading label pill stays next to the mark');
+  assert.ok(appStyles.includes('.loading-label{'), 'the visible loading label pill stays below the mark');
   assert.equal(appStyles.includes('loading-sweep'), false, 'the sweep bar is replaced by the logo mark');
+  assert.ok(appStyles.includes('.global-loading{position:fixed;inset:0;'), 'the overlay covers the whole viewport, centered');
+  assert.equal(appStyles.includes('inset:0 0 auto'), false, 'the top strip is replaced by the centered overlay');
 });
 
 test('deferred placeholders use the compact logo mark, not the border spinner', () => {

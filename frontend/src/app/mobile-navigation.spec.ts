@@ -28,14 +28,16 @@ test('mobile bottom navigation keeps four slots and places platform admin in Mor
   assert.doesNotMatch(source, /\.sidebar\{position:fixed;inset:auto 0 0;width:100%/);
   // Safe-area insets carry a 0px fallback so the dock and the More menu keep their
   // offsets where env() is unsupported; the menu bottom derives from the dock height
-  // (68px dock after the 2026-11-25 slimming + 8px lift + 5px gap = 81px at both widths).
-  assert.match(source, /bottom:calc\(81px \+ env\(safe-area-inset-bottom,0px\)\)/);
-  assert.match(source, /\.mobile-more-menu\{bottom:calc\(81px \+ env\(safe-area-inset-bottom,0px\)\)\}/);
-  // Narrow dock: 52px tab (T18 Slice K), still a comfortable touch target.
-  assert.match(source, /\.nav-item\{min-height:52px;font-size:9px\}/);
-  // Active tab uses the brand teal gradient with an amber ring (T18 Slice K).
+  // (78px dock after the 2026-11-27 owner restore (3A-919) + 8px lift + 8px gap =
+  // 94px; narrow dock 71px + 8 + 6 = 85px).
+  assert.match(source, /bottom:calc\(94px \+ env\(safe-area-inset-bottom,0px\)\)/);
+  assert.match(source, /\.mobile-more-menu\{bottom:calc\(85px \+ env\(safe-area-inset-bottom,0px\)\)\}/);
+  // Narrow dock: 56px tab (owner restore 3A-919), still a comfortable touch target.
+  assert.match(source, /\.nav-item\{min-height:56px;font-size:9px\}/);
+  // Active tab uses the brand teal gradient with a teal ring (owner restore
+  // 3A-919 — the amber ring from the T18 UI batch is gone).
   assert.match(source, /linear-gradient\(145deg,var\(--aiba-brand-teal-deep,#093A44\),var\(--aiba-brand-strong,#115e59\)\)/);
-  assert.match(source, /color-mix\(in srgb,var\(--aiba-brand-amber,#F5A623\) 45%,transparent\)/);
+  assert.match(source, /inset 0 0 0 1px #5eead455/);
   assert.match(source, /class="mobile-dock-items"/);
   assert.match(source, /\.mobile-dock-items\{display:contents\}/);
   assert.match(source, /\.desktop-sidebar-groups\{display:none\}/);
