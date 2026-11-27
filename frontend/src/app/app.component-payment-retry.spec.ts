@@ -4,6 +4,8 @@ import test from 'node:test';
 import { expandTranslationCalls } from './localization-test-helpers.ts';
 
 const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+// 3A-921 F1c: the payment form markup lives in the payments workspace now.
+const paymentsSource = expandTranslationCalls(readFileSync(new URL('./payments-workspace.component.ts', import.meta.url), 'utf8'));
 const snapshotSource = readFileSync(new URL('./payment-retry-snapshot.ts', import.meta.url), 'utf8');
 
 function methodBetween(startMarker: string, endMarker: string): string {
@@ -31,16 +33,16 @@ test('payment retry uses the same immutable snapshot and idempotency key after u
 
 test('retry state is restored only for the same authenticated user and workspace', () => {
   assert.match(source, /this\.paymentRetryVault\.get\(this\.currentAuthUid, id\)/);
-  assert.match(source, /paymentRetryPending \|\| paymentForm\.valid/);
-  assert.match(source, /paymentRetryPending\) \{ <p class="footnote"/);
+  assert.match(paymentsSource, /paymentRetryPending \|\| paymentForm\.valid/);
+  assert.match(paymentsSource, /paymentRetryPending\) \{ <p class="footnote"/);
   const switchMethod = methodBetween('async switchBusiness(id: string)', 'private readonly workspaceLoadGuard');
   assert.match(switchMethod, /this\.paymentRetryPending/);
 });
 
 test('payment form details are locked while an uncertain request is pending', () => {
-  assert.match(source, /\[disabled\]="paymentRetryPending"/);
-  assert.match(source, /paymentLoading \? t\('جارٍ التسجيل…'/);
-  assert.match(source, /paymentRetryPending \? t\('إعادة المحاولة بنفس الدفعة'/);
+  assert.match(paymentsSource, /\[disabled\]="paymentRetryPending"/);
+  assert.match(paymentsSource, /paymentLoading \? t\('جارٍ التسجيل…'/);
+  assert.match(paymentsSource, /paymentRetryPending \? t\('إعادة المحاولة بنفس الدفعة'/);
 });
 
 test('numeric payment form values are normalized before creating the retry snapshot', () => {
@@ -54,33 +56,35 @@ test('numeric payment form values are normalized before creating the retry snaps
 test('add-payment form opens on demand next to export and is hidden by default', () => {
   // The form starts closed; it only renders on demand (or while a retry is pending).
   assert.match(source, /showPaymentForm = false;/);
-  assert.match(source, /@if \(showPaymentForm \|\| paymentRetryPending\) \{\s*<form #paymentForm="ngForm"/);
+  assert.match(paymentsSource, /@if \(showPaymentForm \|\| paymentRetryPending\) \{\s*<form #paymentForm="ngForm"/);
   // The toggle lives in the payments section actions, next to the Export CSV button.
-  const sectionStart = source.indexOf("@if (tab === 'payments' && business.role === 'owner')");
-  const actionsStart = source.indexOf('<div class="section-actions">', sectionStart);
-  const actionsEnd = source.indexOf('</div>', actionsStart);
+  // 3A-921 F1c: the section lives in the payments workspace now.
+  const sectionStart = paymentsSource.indexOf("@if (role !== 'owner')");
+  const actionsStart = paymentsSource.indexOf('<div class="section-actions">', sectionStart);
+  const actionsEnd = paymentsSource.indexOf('</div>', actionsStart);
   assert.ok(sectionStart >= 0 && actionsStart > sectionStart && actionsEnd > actionsStart);
-  const actions = source.slice(actionsStart, actionsEnd);
+  const actions = paymentsSource.slice(actionsStart, actionsEnd);
   assert.ok(actions.includes('(click)="exportPaymentsCsv()"'));
-  assert.ok(actions.includes('(click)="showPaymentForm = !showPaymentForm"'));
+  // 3A-921 F1c: the toggle flips the shell field through the two-way binding.
+  assert.ok(actions.includes('(click)="showPaymentFormChange.emit(!showPaymentForm)"'));
   assert.ok(actions.includes('[disabled]="paymentRetryPending"'));
   // Toggle label: "Record payment" when closed, "Cancel" when open (bilingual expansion).
   assert.match(actions, /showPaymentForm \? t\('[^']*', 'Cancel'\) : t\('[^']*', 'Record payment'\)/);
 });
 
 test('payment customer field comes before the amount field', () => {
-  const formStart = source.indexOf('<form #paymentForm="ngForm"');
-  const formEnd = source.indexOf('</form>', formStart);
-  const form = source.slice(formStart, formEnd);
+  const formStart = paymentsSource.indexOf('<form #paymentForm="ngForm"');
+  const formEnd = paymentsSource.indexOf('</form>', formStart);
+  const form = paymentsSource.slice(formStart, formEnd);
   const customer = form.indexOf('name="paymentCustomer"');
   const amount = form.indexOf('name="paymentAmount"');
   assert.ok(customer >= 0 && amount > customer, 'customer select must precede the amount input');
 });
 
 test('payment form invents no payment-date field', () => {
-  const formStart = source.indexOf('<form #paymentForm="ngForm"');
-  const formEnd = source.indexOf('</form>', formStart);
-  const form = source.slice(formStart, formEnd);
+  const formStart = paymentsSource.indexOf('<form #paymentForm="ngForm"');
+  const formEnd = paymentsSource.indexOf('</form>', formStart);
+  const form = paymentsSource.slice(formStart, formEnd);
   assert.equal(form.includes('type="date"'), false);
   assert.equal(form.includes('paymentDate'), false);
 });

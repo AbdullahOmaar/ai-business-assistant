@@ -4,6 +4,8 @@ import test from 'node:test';
 import { expandTranslationCalls } from './localization-test-helpers.ts';
 
 const source = expandTranslationCalls(readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8'));
+// 3A-921 F1c: the payments section markup lives in the payments workspace now.
+const paymentsSource = expandTranslationCalls(readFileSync(new URL('./payments-workspace.component.ts', import.meta.url), 'utf8'));
 
 test('workspace navigation shows UI/API versions and build time in the workspace card', () => {
   assert.match(source, /class="workspace-release-meta workspace-release-meta-inline"/);
@@ -14,10 +16,12 @@ test('workspace navigation shows UI/API versions and build time in the workspace
 });
 
 test('payment controls are only exposed to workspace owners', () => {
-  assert.match(source, /@if \(tab === 'payments' && business\.role === 'owner'\)/);
-  assert.match(source, /tab === 'payments' && business\?\.role !== 'owner'/);
-  assert.match(source, /tab === 'payments' && business\.role === 'owner'/);
-  assert.match(source, /Recording payments is restricted to workspace owners/);
+  // 3A-921 F1c: the shell hosts the workspace behind the tab gate and
+  // passes the role in; the owner branch renders inside the component.
+  assert.match(source, /@if \(tab === 'payments'\)/);
+  assert.match(source, /\[role\]="business\.role"/);
+  assert.match(paymentsSource, /@if \(role !== 'owner'\)/);
+  assert.match(paymentsSource, /Recording payments is restricted to workspace owners/);
 });
 
 test('payment retries preserve the idempotency key after an uncertain result', () => {
@@ -35,13 +39,13 @@ test('payment retries preserve the idempotency key after an uncertain result', (
   assert.match(handler, /if \(error instanceof ApiRequestError && error\.definitiveNoWrite\)/);
   assert.match(handler, /this\.paymentRetryVault\.delete\(authUid, businessId\)/);
   assert.match(handler, /finally \{\s*if \(isCurrent\(\)\) this\.paymentLoading = false;/);
-  assert.match(source, /name="paymentAmount"[^>]*\[disabled\]="paymentRetryPending"/);
-  assert.match(source, /name="paymentCustomer"[^>]*\[disabled\]="paymentRetryPending"/);
-  assert.match(source, /<button class="primary" type="submit" \[disabled\]="paymentLoading"/);
+  assert.match(paymentsSource, /name="paymentAmount"[^>]*\[disabled\]="paymentRetryPending"/);
+  assert.match(paymentsSource, /name="paymentCustomer"[^>]*\[disabled\]="paymentRetryPending"/);
+  assert.match(paymentsSource, /<button class="primary" type="submit" \[disabled\]="paymentLoading"/);
 });
 
 test('payment API failures render a visible accessible alert in the payment panel', () => {
-  assert.match(source, /@if \(paymentMessage\) \{ <aba-state-message \[kind\]="paymentMessageKind" \[description\]="paymentMessage" \/> \}/);
+  assert.match(paymentsSource, /@if \(paymentMessage\) \{ <aba-state-message \[kind\]="paymentMessageKind" \[description\]="paymentMessage" \/> \}/);
   assert.match(source, /this\.paymentMessage = this\.message\(error\)/);
   assert.match(source, /this\.paymentMessageKind = 'error'/);
 });

@@ -10,6 +10,8 @@ const appSource = expandTranslationCalls(
   + '\n'
   + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8')
 );
+// 3A-921 F1d: the install-help rules live in the auth screen component now.
+const authScreenSource = readFileSync(new URL('./auth-screen.component.ts', import.meta.url), 'utf8');
 const apiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 
 test('mobile app header is an isolated standalone presentation component with explicit workspace and navigation contracts', () => {
@@ -76,7 +78,7 @@ test('mobile header has compact responsive RTL-safe layout and accessible tap ta
   assert.ok(appSource.includes('env(safe-area-inset-top'));
   assert.match(appSource, /class="mobile-install-card"/);
   assert.match(appSource, /class="install-help install-help-inline"/);
-  assert.ok(appSource.includes('.install-help-inline{position:static;'), 'install help is in normal document flow');
+  assert.ok(authScreenSource.includes('.install-help-inline{position:static;'), 'install help is in normal document flow');
   assert.doesNotMatch(appSource, /install-cta-visible|install-help-open|install-floating|install-help-floating/);
   assert.match(source, /aria-live="polite" aria-atomic="true"/);
   assert.doesNotMatch(styles, /:host-context\(\.shell\.install-(?:cta-visible|help-open)\)/);

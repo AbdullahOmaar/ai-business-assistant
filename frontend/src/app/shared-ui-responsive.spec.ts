@@ -8,6 +8,8 @@ const appTemplate = readFileSync(new URL('./app.component.ts', import.meta.url),
   + '\n'
   + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
 const employeePayroll = readFileSync(new URL('./employee-payroll.component.ts', import.meta.url), 'utf8');
+// 3A-921 F1c: the payments operational search lives in the payments workspace now.
+const paymentsWorkspace = readFileSync(new URL('./payments-workspace.component.ts', import.meta.url), 'utf8');
 const platformAdmin = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
 const stateMessage = readFileSync(new URL('./shared/ui/aba-state-message.component.ts', import.meta.url), 'utf8');
 const sectionHeader = readFileSync(new URL('./shared/ui/aba-section-header.component.ts', import.meta.url), 'utf8');
@@ -138,8 +140,11 @@ test('Platform Admin mobile controls remain touch-friendly and readable', () => 
 });
 
 test('real workspace filter groups reflow to one column and preserve 44px mobile controls', () => {
-  assert.match(appTemplate, /class="list-tools(?:\s+[^"]*)?"/, 'Customer/product search must use the shared list filter');
-  assert.match(appTemplate, /class="list-tools operations-search(?:\s+[^"]*)?"/, 'Operational searches must use the shared search filter');
+  // 3A-921 F1c: the last .list-tools instance (payments) moved into its
+  // workspace; the class no longer appears in the shell template at all.
+  assert.match(paymentsWorkspace, /class="list-tools(?:\s+[^"]*)?"/, 'Customer/product search must use the shared list filter');
+  // 3A-921 F1c: the payments operational search renders inside its workspace.
+  assert.match(paymentsWorkspace, /class="list-tools operations-search(?:\s+[^"]*)?"/, 'Operational searches must use the shared search filter');
   assert.ok(appTemplate.includes('class="invoice-controls"'), 'Invoice search/status filters must use the shared invoice filter');
   assert.ok(appTemplate.includes('class="inline-form statement-filters"'), 'Customer statements must use the shared statement filter');
   assert.ok(platformAdmin.includes('class="filters audit-filters"'), 'Platform Admin audit form must use its responsive audit filter');

@@ -2,14 +2,14 @@ import { CommonModule } from '@angular/common';
 import { LocalizationService } from './localization.service';
 import { Component, ElementRef, HostListener, OnDestroy, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ApiService, ApiRequestError, AuditEvent, Business, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, InvoiceDetail, Payment, Product, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier, TaxSummaryReport } from './api.service';
+import { ApiService, ApiRequestError, AuditEvent, Business, Customer, CustomerStatement, Dashboard, DataIntegrityReport, Expense, Invoice, InvoiceDetail, Payment, Product, NotificationRecord, OperationalHealth, PurchaseOrder, RecurringInvoiceSchedule, Supplier } from './api.service';
 import { AuthService, type AuthUserSnapshot } from './auth.service';
 import { createServiceWorkerUpdateHandler } from './service-worker-update';
 import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, runTenantScopedRequest } from './workspace-load-guard';
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { auditActionLabel as formatAuditActionLabel, auditTargetLabel as formatAuditTargetLabel } from './audit-labels';
-import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, firstRecordPage, mergeRecordPage } from './record-filters';
+import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterProducts, filterPurchaseOrders, filterRecurringSchedules, firstRecordPage, mergeRecordPage } from './record-filters';
 import { countInvoiceStatuses, paginateInvoiceRecords, sortInvoiceRecords, type InvoiceSortDirection, type InvoiceSortKey, type InvoiceStatusCounts } from './invoice-list';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
@@ -27,8 +27,11 @@ import { ExpensesWorkspaceComponent } from './expenses-workspace.component';
 import { SuppliersWorkspaceComponent } from './suppliers-workspace.component';
 import { RecurringWorkspaceComponent } from './recurring-workspace.component';
 import { IntegrityWorkspaceComponent } from './integrity-workspace.component';
+import { TaxesWorkspaceComponent } from './taxes-workspace.component';
+import { InvoiceDetailDrawerComponent } from './invoice-detail-drawer.component';
+import { PaymentsWorkspaceComponent } from './payments-workspace.component';
+import { AuthScreenComponent } from './auth-screen.component';
 import { NotificationsWorkspaceComponent } from './notifications-workspace.component';
-import { reportLimitationKey } from './report-labels';
 import { transportEnabledFromSettings, transportUnitNameFromSettings } from './transport-settings';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
@@ -65,7 +68,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, SuppliersWorkspaceComponent, RecurringWorkspaceComponent, IntegrityWorkspaceComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, SuppliersWorkspaceComponent, RecurringWorkspaceComponent, IntegrityWorkspaceComponent, TaxesWorkspaceComponent, InvoiceDetailDrawerComponent, PaymentsWorkspaceComponent, AuthScreenComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -79,93 +82,30 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           <button class="secondary" type="button" (click)="dismissAppUpdate()">{{ t('ui.m_1gc2kb4') }}</button>
         </aside>
       }
-      @if (!initialized) {
-        <main class="splash-overlay" role="status" aria-live="polite">
-          <div class="auth-card">
-            <aba-loading-logo [announce]="false" />
-            <h1>{{ t('common.app_title') }}</h1>
-            <div class="splash-release-meta">
-              <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
-              <p class="release-line splash-release-line">{{ releaseLineLabel }}</p>
-            </div>
-            <p class="muted">{{ t('ui.m_1uzdlys') }}</p>
-          </div>
-        </main>
-      } @else if (startupFailed) {
-        <main class="auth-card">
-          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
-          <div class="brand-mark">A</div>
-          <h1>{{ t('ui.m_tee7tu') }}</h1>
-          <aba-state-message kind="error" [description]="error" />
-          <button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t('ui.m_1dc4cbo') : t('ui.m_lr6ezy') }}</button>
-        </main>
-      } @else if (setupNeeded) {
-        <main class="setup-card">
-          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
-          <div class="brand-mark">A</div>
-          <p class="eyebrow">{{ t('ui.m_1yxyqru') }}</p>
-          <h1>{{ t('ui.m_11t8fki') }}</h1>
-          <p>{{ t('ui.m_1pg99q7') }}</p>
-          <div class="setup-steps">
-            <p><strong>1.</strong> {{ t('ui.m_1ltjr2f') }} <code>frontend/public/runtime-config.json</code> {{ t('ui.m_11mqt0a') }}</p>
-            <p><strong>2.</strong> {{ t('ui.m_1lj5n4d') }} <code>apiBaseUrl</code> {{ t('ui.m_1aj80o5') }}</p>
-            <p><strong>3.</strong> {{ t('ui.m_15vm5ge') }} <code>apiKey</code>, <code>authDomain</code>, <code>projectId</code>, {{ t('ui.m_57gsye') }} <code>appId</code>.</p>
-            <p><strong>4.</strong> {{ t('ui.m_1rirx3l') }}</p>
-          </div>
-          <p class="footnote">{{ t('ui.m_1uk988r') }}</p>
-        </main>
-      } @else if (!signedIn) {
-        <main class="auth-card">
-          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
-          <div class="auth-identity">
-            <img class="auth-character" src="identity/loader-character.png" alt="" aria-hidden="true">
-            <span class="auth-app-name">{{ t('common.app_title') }}</span>
-          </div>
-          <p class="eyebrow">{{ t('ui.m_ll4uy7') }}</p>
-          <h1 id="auth-form-heading">{{ signingUp ? t('ui.m_1cuf5gq') : t('ui.m_cfel9w') }}</h1>
-          <p class="muted">{{ t('ui.m_1euk0tm') }}</p>
-          <form #authForm="ngForm" aria-labelledby="auth-form-heading" (ngSubmit)="authForm.valid && submitAuth()" class="stack">
-            <label>{{ t('ui.m_1jc8kzg') }}<input #emailModel="ngModel" name="email" type="email" autocomplete="email" required [(ngModel)]="email" [attr.aria-invalid]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'auth-email-error' : null">
-              @if (emailModel.invalid && (emailModel.touched || authForm.submitted)) {
-                <small id="auth-email-error" class="field-error" aria-live="polite">{{ emailModel.errors?.['required'] ? t('ui.m_gxa0df') : t('ui.m_1afx9c8') }}</small>
-              }
-            </label>
-            <label>{{ t('ui.m_eklfkj') }}<input #passwordModel="ngModel" name="password" type="password" [attr.autocomplete]="signingUp ? 'new-password' : 'current-password'" minlength="6" required [(ngModel)]="password" [attr.aria-invalid]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'auth-password-error' : null">
-              @if (passwordModel.invalid && (passwordModel.touched || authForm.submitted)) {
-                <small id="auth-password-error" class="field-error" aria-live="polite">{{ passwordModel.errors?.['required'] ? t('ui.m_pfxpuv') : t('ui.m_1vnk3nk') }}</small>
-              }
-            </label>
-            <button class="primary" type="submit" [disabled]="loading">{{ loading ? t('ui.m_jxz3f3') : (signingUp ? t('ui.m_1hggna5') : t('ui.m_h8edye')) }}</button>
-          </form>
-          @if (error) { <aba-state-message kind="error" [description]="error" /> }
-          @if (!signingUp) {
-            <button class="demo-login-button" type="button" (click)="submitDemoLogin()" [disabled]="loading">
-              <span class="demo-login-icon" aria-hidden="true">✦</span>
-              <span>{{ loading ? t('demo.login.loading') : t('demo.login.button') }}</span>
-              <span class="demo-login-arrow" aria-hidden="true">←</span>
-            </button>
-            <p class="demo-login-note">{{ t('demo.login.note') }}</p>
-          }
-          <button class="text-button" type="button" (click)="toggleAuthMode()">{{ signingUp ? t('ui.m_1uh3cl9') : t('ui.m_1fdki9f') }}</button>
-          @if (!isInstalled) {
-            <section class="mobile-install-card auth-mobile-install" [attr.aria-label]="t('ui.m_1ig5s72')">
-              <div class="mobile-install-copy">
-                <span class="mobile-install-icon" aria-hidden="true">⇧</span>
-                <div>
-                  <strong>{{ t('ui.m_1i6f7xh') }}</strong>
-                  <small>{{ t('ui.m_1ggnkh3') }}</small>
-                </div>
-              </div>
-              <button class="secondary install-button mobile-install-button" type="button" (click)="installApp()">{{ t('ui.m_76lwbh') }}</button>
-            </section>
-          }
-          @if (installHelp && !isInstalled) {
-            <div class="install-help install-help-inline" role="status">
-              {{ t('ui.m_14cdic2') }}
-              <button type="button" class="secondary" (click)="installHelp = false">{{ t('ui.m_1av23fu') }}</button>
-            </div>
-          }
-        </main>
+      @if (!initialized || startupFailed || setupNeeded || !signedIn) {
+        <aba-auth-screen
+          [initialized]="initialized"
+          [startupFailed]="startupFailed"
+          [setupNeeded]="setupNeeded"
+          [signingUp]="signingUp" (signingUpChange)="toggleAuthMode()"
+          [loading]="loading"
+          [error]="error"
+          [language]="language"
+          [isInstalled]="isInstalled"
+          [(installHelp)]="installHelp"
+          [(email)]="email"
+          [(password)]="password"
+          [appVersion]="appVersion"
+          [apiVersionLabel]="apiVersionLabel"
+          [uiCommitLabel]="uiCommitLabel"
+          [apiCommitLabel]="apiCommitLabel"
+          [buildTimeLabel]="buildTimeLabel"
+          [releaseLineLabel]="releaseLineLabel"
+          (submitAuthRequest)="submitAuth()"
+          (demoLoginRequest)="submitDemoLogin()"
+          (retryInitializeRequest)="initializeApp()"
+          (toggleLanguageRequest)="toggleLanguage()"
+          (installRequest)="installApp()" />
       } @else {
         <aside class="sidebar" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2')">
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>{{ t('common.app_title') }}</span></a>
@@ -798,129 +738,59 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 <p class="footnote">{{ t('ui.m_lpprue') }}</p>
               </section>
               @if (selectedInvoiceForDetails) {
-                <div class="invoice-detail-backdrop" role="presentation" (click)="closeInvoiceDetails()"></div>
-                <aside #invoiceDetailDrawer class="invoice-detail-drawer" role="dialog" aria-modal="true" tabindex="-1"
-                  aria-labelledby="invoice-detail-heading" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'"
-                  (keydown)="handleInvoiceDetailKeydown($event)">
-                  <header class="invoice-detail-header">
-                    <div><span class="invoice-detail-eyebrow">{{ t('app.invoiceList.detailTitle') }}</span>
-                      <h2 id="invoice-detail-heading"><bdi dir="ltr">{{ selectedInvoiceDetail?.invoice_number || selectedInvoiceForDetails.invoice_number }}</bdi></h2></div>
-                    <button #invoiceDetailClose class="icon-button invoice-detail-close" type="button"
-                      [attr.aria-label]="t('app.invoiceList.close')" [attr.title]="t('app.invoiceList.close')"
-                      (click)="closeInvoiceDetails()">×</button>
-                  </header>
-                  @if (invoiceDetailLoading) {
-                    <aba-state-message kind="loading" [description]="t('app.invoiceList.loadingDetails')" />
-                  } @else if (invoiceDetailError) {
-                    <aba-state-message kind="error" [description]="invoiceDetailError" />
-                  } @else if (selectedInvoiceDetail; as detail) {
-                    <div class="invoice-detail-meta">
-                      <div><span>{{ t('app.invoiceList.customer') }}</span><strong>{{ customerNameForInvoice(detail.customer_id) }}</strong></div>
-                      <div><span>{{ t('app.invoiceList.date') }}</span><strong><bdi dir="ltr">{{ detail.issue_date ? formatRecordDate(detail.issue_date, 'date') : (detail.created_at ? formatRecordDate(detail.created_at, 'date') : '—') }}</bdi></strong></div>
-                      <div><span>{{ t('app.invoiceList.status') }}</span><strong class="invoice-status-badge"
-                        [class.status-draft]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'draft'"
-                        [class.status-issued]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'issued'"
-                        [class.status-void]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'void'"
-                        [class.status-paid]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'paid'"
-                        [class.status-partial]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'partial'"
-                        [class.status-unpaid]="invoiceCardStatusTone(selectedInvoiceForDetails!) === 'unpaid'">{{ invoiceCardStatusLabel(selectedInvoiceForDetails!) }}</strong></div>
-                    </div>
-                    <div class="invoice-detail-lines-wrap">
-                      <table class="invoice-detail-lines" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
-                        <thead><tr><th scope="col">{{ t('app.invoiceList.lineItem') }}</th><th scope="col">{{ t('app.invoiceList.quantity') }}</th><th scope="col">{{ t('app.invoiceList.unitPrice') }}</th><th scope="col">{{ t('app.invoiceList.lineTotal') }}</th></tr></thead>
-                        <tbody>@for (line of detail.lines; track line.id) {
-                          <tr><td>{{ line.description }}</td><td [attr.data-label]="t('app.invoiceList.quantity')"><bdi dir="ltr">{{ formatNumber(line.quantity) }}@if (line.sold_unit) { {{ line.sold_unit }} }</bdi></td>
-                            <td [attr.data-label]="t('app.invoiceList.unitPrice')"><bdi dir="ltr">{{ formatNumber(line.unit_price) }} {{ detail.currency_code }}</bdi></td>
-                            <td [attr.data-label]="t('app.invoiceList.lineTotal')"><bdi dir="ltr">{{ formatNumber(line.line_total) }} {{ detail.currency_code }}</bdi></td></tr>
-                        }</tbody>
-                      </table>
-                    </div>
-                    <dl class="invoice-detail-totals">
-                      <div><dt>{{ t('app.invoiceList.subtotal') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.subtotal ?? '0') }} {{ detail.currency_code }}</bdi></dd></div>
-                      <div><dt>{{ t('app.invoiceList.discount') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.discount_total ?? '0') }} {{ detail.currency_code }}</bdi></dd></div>
-                      <div><dt>{{ t('app.invoiceList.tax') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.tax_total ?? '0') }} {{ detail.currency_code }}</bdi></dd></div>
-                      <div class="invoice-detail-grand-total"><dt>{{ t('app.invoiceList.total') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.total) }} {{ detail.currency_code }}</bdi></dd></div>
-                    </dl>
-                    @if (detail.driver_employee_id) {
-                      <section class="invoice-detail-notes">
-                        <h3>{{ t('ui.invoices.transport.title') }}</h3>
-                        <p>{{ t('ui.invoices.transport.driver') }}: {{ detail.driver_name || '—' }}</p>
-                        <p>{{ t('ui.invoices.transport.trips', { unit: transportUnitName }) }}: <bdi dir="ltr">{{ detail.transport_trips ?? '—' }}</bdi></p>
-                        @if (detail.transport_from) { <p>{{ t('ui.invoices.transport.from') }}: {{ detail.transport_from }}</p> }
-                        @if (detail.transport_to) { <p>{{ t('ui.invoices.transport.to') }}: {{ detail.transport_to }}</p> }
-                        @if (detail.transport_entitlement_status) {
-                          <p>{{ t('ui.invoices.transport.entitlementStatus') }}: {{ transportStatusLabel(detail.transport_entitlement_status) }}@if (detail.transport_entitlement_amount) { — <bdi dir="ltr">{{ formatNumber(detail.transport_entitlement_amount) }} {{ detail.currency_code }}</bdi> }</p>
-                        }
-                      </section>
-                    }
-                    @if (detail.notes) { <section class="invoice-detail-notes"><h3>{{ t('app.invoiceList.notes') }}</h3><p>{{ detail.notes }}</p></section> }
-                    <footer class="invoice-detail-actions">
-                      @if (detail.status === 'draft') {
-                        <button class="primary" type="button" (click)="editInvoiceFromDetails()">{{ t('ui.m_s21yyp') }}</button>
-                        @if (business?.role === 'owner') {
-                          <button class="secondary" type="button" (click)="issueInvoiceFromDetails()">{{ t('ui.m_ninief') }}</button>
-                          <button class="secondary danger" type="button" (click)="voidInvoiceFromDetails($event)">{{ t('ui.m_lnwycg') }}</button>
-                        }
-                      } @else if (detail.status === 'issued') {
-                        @if (business?.role === 'owner' && hasOutstandingBalance(selectedInvoiceForDetails!)) {
-                          <button class="primary" type="button" (click)="payInvoiceFromDetails()">{{ t('ui.m_1r6bzbj') }}</button>
-                        }
-                        <button class="secondary" type="button" (click)="printInvoiceFromDetails()">{{ t('ui.m_qskvru') }}</button>
-                        @if (business?.role === 'owner') { <button class="secondary danger" type="button" (click)="voidInvoiceFromDetails($event)">{{ t('ui.m_lnwycg') }}</button> }
-                      }
-                      <button class="secondary" type="button" (click)="duplicateInvoiceFromDetails()">{{ t('app.invoiceList.duplicateInvoice') }}</button>
-                      <button class="secondary" type="button" (click)="closeInvoiceDetails()">{{ t('app.invoiceList.close') }}</button>
-                    </footer>
-                  }
-                </aside>
+                <aba-invoice-detail-drawer
+                  [invoice]="selectedInvoiceForDetails"
+                  [detail]="selectedInvoiceDetail"
+                  [loading]="invoiceDetailLoading"
+                  [error]="invoiceDetailError"
+                  [language]="language"
+                  [role]="business?.role"
+                  [customerName]="selectedInvoiceDetail ? customerNameForInvoice(selectedInvoiceDetail.customer_id) : ''"
+                  [statusTone]="invoiceCardStatusTone(selectedInvoiceForDetails)"
+                  [statusLabel]="invoiceCardStatusLabel(selectedInvoiceForDetails)"
+                  [hasOutstanding]="hasOutstandingBalance(selectedInvoiceForDetails)"
+                  [transportUnitName]="transportUnitName"
+                  (close)="closeInvoiceDetails()"
+                  (edit)="editInvoiceFromDetails()"
+                  (issue)="issueInvoiceFromDetails()"
+                  (pay)="payInvoiceFromDetails()"
+                  (print)="printInvoiceFromDetails()"
+                  (duplicate)="duplicateInvoiceFromDetails()"
+                  (voidRequest)="voidInvoiceFromDetails($event)" />
               }
             }
 
-            @if (tab === 'payments' && business?.role !== 'owner') {
-              <section abaCard class="panel"><aba-state-message kind="error" [description]="t('ui.m_1ju8ouz')" /></section>
-            }
-            @if (tab === 'payments' && business.role === 'owner') {
-              <section abaCard class="panel"><aba-section-header [title]="t('ui.m_3k0fux')" [description]="t('ui.m_cj3m99')">
-                  <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t('ui.m_1ouah2m') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length"><aba-icon name="export" />{{ t('ui.m_nbsw3y') }}</button><button class="secondary" type="button" (click)="showPaymentForm = !showPaymentForm" [disabled]="paymentRetryPending">{{ showPaymentForm ? t('ui.m_pw64as') : t('ui.m_3k0fux') }}</button></div>
-                </aba-section-header>
-                @if (showPaymentForm || paymentRetryPending) {
-                <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="(paymentRetryPending || paymentForm.valid) && createPayment()">
-                  <select #paymentCustomerModel="ngModel" [attr.aria-label]="t('ui.m_edaho8')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'payment-customer-error' : null"><option value="" disabled>{{ t('ui.m_p0vza7') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>@if (paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted)) { <small id="payment-customer-error" class="field-error" aria-live="polite">{{ t('ui.m_5b5dll') }}</small> }
-                  <input #paymentAmountModel="ngModel" [attr.aria-label]="t('ui.m_q9mxbb')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_1smcjxm')" required [(ngModel)]="paymentAmount" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('ui.m_me0lkl') }}</small> }
-                  <select [attr.aria-label]="t('ui.m_h7ngs9')" name="paymentMethod" [(ngModel)]="paymentMethod" [disabled]="paymentRetryPending"><option value="cash">{{ t('ui.m_1xk4i7j') }}</option><option value="bank_transfer">{{ t('ui.m_bof380') }}</option><option value="card">{{ t('ui.m_tq9n36') }}</option><option value="wallet">{{ t('ui.m_1bho9og') }}</option><option value="other">{{ t('ui.m_47rh1w') }}</option></select>
-                  <select [attr.aria-label]="t('ui.m_vkei9c')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" [disabled]="paymentRetryPending" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t('ui.m_1xrgrqj') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
-                  @if (invoicesHasMore) { <button type="button" class="secondary" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore || paymentRetryPending">{{ invoicesLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_14d2jh7') }}</button> }
-                  @if (paymentInvoiceId) { <input [attr.aria-label]="t('ui.m_lc0rf5')" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_1okokqi')" [(ngModel)]="paymentAllocationAmount" [disabled]="paymentRetryPending"> }
-                  <input [attr.aria-label]="t('ui.m_15jj1na')" name="paymentReference" maxlength="128" [placeholder]="t('ui.m_v160u1')" [(ngModel)]="paymentReference" [disabled]="paymentRetryPending">
-                  <button class="primary" type="submit" [disabled]="paymentLoading">{{ paymentLoading ? t('ui.m_1ty0fxd') : paymentRetryPending ? t('ui.m_1pvlpdc') : t('ui.m_3k0fux') }}</button>
-                </form>
-                }
-                @if (paymentRetryPending) { <p class="footnote" role="status">{{ t('ui.m_1yhgb5f') }}</p> }
-                @if (paymentMessage) { <aba-state-message [kind]="paymentMessageKind" [description]="paymentMessage" /> }
-                <p class="footnote">{{ t('ui.m_1c93fyv') }} {{ business.currency_code }} {{ t('ui.m_1sweklr') }}</p>
-                <div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="paymentSearch" [hasActiveFilter]="paymentSearch.trim() !== ''" (clear)="paymentSearch = ''"><aba-search-field name="paymentSearch" [ariaLabel]="t('ui.m_nmj0be')" [placeholder]="t('ui.m_hoei9y')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="paymentSearch" /></aba-filter-bar></div>
-                <aba-record-table [ariaLabel]="t('ui.m_mxsp4b')" [columns]="paymentTableColumns" [rows]="paymentTableRows" [loading]="paymentLoading && !payments.length" [loadingDescription]="t('ui.m_1kn1f7h')" [emptyTitle]="t('ui.m_1c2srea')" [emptyDescription]="paymentSearch.trim() ? t('ui.m_1igz78g') : t('ui.m_1nttjd')" />
-                @if (paymentsHasMore) { <button class="secondary" type="button" (click)="loadMorePayments()" [disabled]="paymentsLoadingMore">{{ paymentsLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_1olqej1') }}</button> }
-              </section>
+            @if (tab === 'payments') {
+              <aba-payments-workspace
+                [role]="business.role"
+                [currencyCode]="business.currency_code"
+                [customers]="customers"
+                [invoices]="invoices"
+                [invoicesHasMore]="invoicesHasMore"
+                [invoicesLoadingMore]="invoicesLoadingMore"
+                [payments]="payments"
+                [paymentsHasMore]="paymentsHasMore"
+                [paymentsLoadingMore]="paymentsLoadingMore"
+                [paymentLoading]="paymentLoading"
+                [paymentRetryPending]="paymentRetryPending"
+                [paymentMessage]="paymentMessage"
+                [paymentMessageKind]="paymentMessageKind"
+                [(showPaymentForm)]="showPaymentForm"
+                [(paymentCustomerId)]="paymentCustomerId"
+                [(paymentAmount)]="paymentAmount"
+                [(paymentAllocationAmount)]="paymentAllocationAmount"
+                [(paymentInvoiceId)]="paymentInvoiceId"
+                [(paymentMethod)]="paymentMethod"
+                [(paymentReference)]="paymentReference"
+                [(paymentSearch)]="paymentSearch"
+                (invoiceSelectionChange)="syncPaymentCustomer()"
+                (createRequest)="createPayment()"
+                (loadMorePaymentsRequest)="loadMorePayments()"
+                (loadMoreInvoicesRequest)="loadMoreInvoices()" />
             }
 
             @if (tab === 'taxes' && business.role === 'owner') {
-              <section abaCard class="panel">
-                <aba-section-header [title]="t('ui.m_nxo405')" [description]="t('ui.m_1dw63nh')" />
-                <form class="inline-form tax-form" (ngSubmit)="loadTaxSummary()">
-                  <aba-date-range [showClear]="true" [hasValue]="taxStartDate !== '' || taxEndDate !== ''" [clearLabel]="t('ui.m_1np7zc4')" (clear)="taxStartDate = ''; taxEndDate = ''">
-                  <label>{{ t('ui.m_10pndrs') }}<input name="taxStartDate" type="date" [(ngModel)]="taxStartDate"></label>
-                  <label>{{ t('ui.m_aulmks') }}<input name="taxEndDate" type="date" [(ngModel)]="taxEndDate"></label>
-                  </aba-date-range>
-                  <button class="primary" type="submit" [disabled]="taxLoading">{{ taxLoading ? t('ui.m_1k98007') : t('ui.m_10jsbot') }}</button>
-                </form>
-                <p class="footnote">{{ t('ui.taxOperationalNote') }}</p>
-                @if (taxError) { <aba-state-message kind="error" [description]="taxError" /> }
-                @if (taxSummaryReport) {
-                  <aba-record-table [ariaLabel]="t('ui.m_1ciqipn')" [columns]="taxTableColumns" [rows]="taxTableRows" [loading]="taxLoading" [loadingDescription]="t('ui.m_1oo6dkn')" [emptyTitle]="t('ui.m_1xb2mzp')" [emptyDescription]="t('ui.m_j6qlz4')" />
-                  @for (limitation of taxSummaryReport.limitations; track limitation) { <p class="muted">• {{ reportLimitationLabel(limitation) }}</p> }
-                }
-              </section>
+              <aba-taxes-workspace [businessId]="business.id" [userId]="workspaceUserId" [role]="business.role" [signedIn]="signedIn" />
             }
 
             @if (tab === 'invoices' && business) {
@@ -1166,11 +1036,6 @@ export class AppComponent implements OnInit, OnDestroy {
   business: Business | null = null;
   selectedBusinessId = '';
   dashboard: Dashboard | null = null;
-  taxSummaryReport: TaxSummaryReport | null = null;
-  taxLoading = false;
-  taxError = '';
-  taxStartDate = '';
-  taxEndDate = '';
   customers: Customer[] = [];
   customerStatement: CustomerStatement | null = null;
   statementLoading = false;
@@ -1317,8 +1182,7 @@ export class AppComponent implements OnInit, OnDestroy {
   mobileMoreOpen = false;
   @ViewChild('mobileMoreTrigger') private mobileMoreTrigger?: ElementRef<HTMLButtonElement>;
   @ViewChild('mobileMoreMenu') private mobileMoreMenu?: ElementRef<HTMLElement>;
-  @ViewChild('invoiceDetailClose') private invoiceDetailCloseButton?: ElementRef<HTMLButtonElement>;
-  @ViewChild('invoiceDetailDrawer') invoiceDetailDrawer?: ElementRef<HTMLElement>;
+  @ViewChild(InvoiceDetailDrawerComponent) private invoiceDetailDrawerComponent?: InvoiceDetailDrawerComponent;
   isInstalled = false;
   installHelp = false;
   appUpdateAvailable = false;
@@ -1555,7 +1419,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.selectedInvoiceDetail = null;
     this.invoiceDetailError = '';
     this.invoiceDetailLoading = true;
-    setTimeout(() => this.invoiceDetailCloseButton?.nativeElement.focus(), 0);
+    setTimeout(() => this.invoiceDetailDrawerComponent?.focusClose(), 0);
     try {
       const detail = await this.api.invoiceDetail(businessId, invoice.id);
       if (requestVersion !== this.invoiceDetailRequestVersion || this.business?.id !== businessId
@@ -1567,33 +1431,6 @@ export class AppComponent implements OnInit, OnDestroy {
       }
     } finally {
       if (requestVersion === this.invoiceDetailRequestVersion) this.invoiceDetailLoading = false;
-    }
-  }
-
-  handleInvoiceDetailKeydown(event: KeyboardEvent): void {
-    if (!this.selectedInvoiceForDetails || event.key !== 'Tab') return;
-    const drawer = this.invoiceDetailDrawer?.nativeElement;
-    if (!drawer) return;
-    const focusable: HTMLElement[] = Array.from(drawer.querySelectorAll<HTMLElement>(
-      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-    )).filter((element: HTMLElement) => element.getAttribute('aria-hidden') !== 'true' && element.getClientRects().length > 0);
-    if (!focusable.length) {
-      event.preventDefault();
-      drawer.focus();
-      return;
-    }
-    const first: HTMLElement = focusable[0];
-    const last: HTMLElement = focusable[focusable.length - 1];
-    const active = document.activeElement;
-    if (!drawer.contains(active)) {
-      event.preventDefault();
-      (event.shiftKey ? last : first).focus();
-    } else if (event.shiftKey && (active === first || active === drawer)) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && active === last) {
-      event.preventDefault();
-      first.focus();
     }
   }
 
@@ -1695,31 +1532,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
 
-  get filteredPayments(): Payment[] {
-    return filterPayments(
-      this.payments,
-      this.paymentSearch,
-      id => this.customerNameForInvoice(id),
-      method => this.paymentMethodLabel(method),
-      allocated => this.t(allocated ? 'app.paymentAllocation.allocated' : 'app.paymentAllocation.unallocated'),
-      this.localization.locale,
-    );
-  }
-
-
-  get paymentTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'customer',label:this.t('ui.m_ubgrc2'),primary:true},
-    {key:'amount',label:this.t('ui.m_i3lh6b'),kind:'numeric'},
-    {key:'received',label:this.t('ui.m_10i3wh4')},
-    {key:'method',label:this.t('ui.m_nic0dr')},
-    {key:'reference',label:this.t('ui.m_eimrhe')},
-    {key:'allocation',label:this.t('ui.m_1s2dqci'),kind:'status'},
-  ]; }
-  get paymentTableRows(): readonly AbaRecordTableRow[] { return this.filteredPayments.map(item=>({id:item.id,cells:{
-    customer:this.customerNameForInvoice(item.customer_id),amount:`${item.amount} ${item.currency_code}`,
-    received:this.formatRecordDate(item.received_at),method:item.method?this.paymentMethodLabel(item.method):this.t('ui.m_1q43mlw'),
-    reference:item.reference||'—',allocation:item.allocations.length?`${item.allocations.length} ${this.t('ui.m_3fih4j')}`:this.t('ui.m_lcn3j8'),
-  }})); }
   get auditTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'date',label:this.t('ui.m_1fcm91o')},
     {key:'action',label:this.t('ui.m_bnvfl5'),primary:true},
@@ -1733,14 +1545,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }})); }
 
 
-  get taxTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'currency',label:this.t('ui.m_1jd5ck6'),primary:true},
-    {key:'tax',label:this.t('ui.m_129leiq'),kind:'numeric'},
-    {key:'count',label:this.t('ui.m_1dnybga'),kind:'numeric'},
-  ]; }
-  get taxTableRows(): readonly AbaRecordTableRow[] { return (this.taxSummaryReport?.currencies||[]).map(row=>({id:row.currency_code,cells:{
-    currency:row.currency_code,tax:`${row.tax_total} ${row.currency_code}`,count:String(row.invoice_count),
-  }})); }
   exportCurrentList(): void {
     if (!this.business || this.business.role !== 'owner') return;
     let filename = '';
@@ -2080,7 +1884,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.confirmationReturnFocus = null;
     this.payrollRefreshGuard.invalidate();
     this.operationalHealthLoadGuard.invalidate();
-    this.taxSummaryLoadGuard.invalidate();
     // Invalidate the top-level workspace load too; otherwise an old load's finally
     // block can still mutate loading state while a new identity is being resolved.
     this.workspaceLoadGuard.invalidate();
@@ -2102,9 +1905,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.statementOffset = 0;
     this.dashboard = null;
     this.homeDashboardError = '';
-    this.taxSummaryReport = null;
-    this.taxError = '';
-    this.taxLoading = false;
     // Never carry an OWNER-only opening-stock value into another workspace or role.
     this.productOpeningQuantity = '0';
     // Import previews are workspace-scoped; never carry a pending CSV into another business.
@@ -2242,7 +2042,6 @@ export class AppComponent implements OnInit, OnDestroy {
   private readonly paymentListLoadGuard = new WorkspaceLoadGuard();
   private readonly payrollRefreshGuard = new WorkspaceLoadGuard();
   private readonly operationalHealthLoadGuard = new WorkspaceLoadGuard();
-  private readonly taxSummaryLoadGuard = new WorkspaceLoadGuard();
   private readonly invoiceSaveGuard = new WorkspaceLoadGuard();
   private readonly invoiceEditRequestGuard = new WorkspaceLoadGuard();
   private readonly invoiceMutationGuard = new WorkspaceLoadGuard();
@@ -2648,14 +2447,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
 
-  paymentMethodLabel(method: string): string {
-    const keys: Record<string, string> = {
-      cash: 'app.paymentMethod.cash', bank_transfer: 'app.paymentMethod.bank_transfer',
-      card: 'app.paymentMethod.card', wallet: 'app.paymentMethod.wallet', other: 'app.paymentMethod.other',
-    };
-    return keys[method] ? this.t(keys[method]) : method;
-  }
-
   currencyName(code: string): string {
     const normalized = code.toUpperCase();
     const keys: Record<string, string> = {
@@ -2691,11 +2482,7 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
 
-  reportLimitationLabel(value: string): string {
-    // Shared with the reports workspace: the key map lives in report-labels.ts.
-    const key = reportLimitationKey(value);
-    return key ? this.t(key) : value;
-  }
+
 
 
   operationalHealthStatusLabel(status: string): string {
@@ -2748,38 +2535,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
 
-
-
-  async loadTaxSummary(): Promise<void> {
-    if (!this.business || this.business.role !== 'owner') return;
-    const requestContext = this.currentChatRequestContext();
-    if (!requestContext.signedIn || !requestContext.userId ||
-        requestContext.role !== 'owner' || !requestContext.workspaceId) return;
-    if (this.taxStartDate && this.taxEndDate && this.taxStartDate > this.taxEndDate) {
-      this.taxSummaryLoadGuard.invalidate();
-      this.taxSummaryReport = null;
-      this.taxLoading = false;
-      this.taxError = this.t('ui.m_mbbjx0');
-      return;
-    }
-    this.taxLoading = true;
-    this.taxError = '';
-    await runTenantScopedRequest(
-      this.taxSummaryLoadGuard,
-      requestContext,
-      () => this.currentChatRequestContext(),
-      () => this.api.taxSummary(requestContext.workspaceId, this.taxStartDate || undefined, this.taxEndDate || undefined),
-      {
-        onSuccess: report => { this.taxSummaryReport = report; },
-        onError: error => {
-          this.taxSummaryReport = null;
-          this.taxError = this.message(error);
-        },
-        onFinally: () => { this.taxLoading = false; },
-        onStale: () => { this.taxLoading = false; },
-      },
-    );
-  }
 
 
   async loadOperationalHealth(): Promise<void> {
@@ -3135,7 +2890,6 @@ export class AppComponent implements OnInit, OnDestroy {
     this.syncWorkspaceUrl(tab);
     this.error = tab === 'overview' && this.homeDashboardError ? this.homeDashboardError : '';
     this.mobileMoreOpen = false;
-    if (tab === 'taxes' && this.business?.role === 'owner') void this.loadTaxSummary();
     if (tab === 'audit') void this.loadAuditEvents(0);
     if (tab === 'purchases') { void this.loadSuppliers(); void this.loadPurchaseOrders(); }
     if (tab === 'health' && this.business?.role === 'owner') void this.loadOperationalHealth();
@@ -3661,16 +3415,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.setTab('invoices');
   }
 
-  /** 3A-920 step 4: the proposed-entitlement lifecycle label for the drawer. */
-  transportStatusLabel(status: string | null | undefined): string {
-    switch (status) {
-      case 'proposed': return this.t('ui.invoices.transport.statusProposed');
-      case 'confirmed': return this.t('ui.invoices.transport.statusConfirmed');
-      case 'dismissed': return this.t('ui.invoices.transport.statusDismissed');
-      case 'cancelled': return this.t('ui.invoices.transport.statusCancelled');
-      default: return status ?? '';
-    }
-  }
+
 
   /** 3A-920 step 4: seed (or clear) the editor's transport block from a detail. */
   private setInvoiceDraftTransport(detail: InvoiceDetail | null): void {
@@ -4122,27 +3867,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
 
-
-  exportPaymentsCsv(): void {
-    if (!this.business || this.business.role !== 'owner' || !this.payments.length) return;
-    const headers = ['received_at', 'amount', 'currency_code', 'method', 'reference', 'allocation_count'];
-    const rows = this.payments.map(payment => [
-      payment.received_at,
-      payment.amount,
-      payment.currency_code,
-      payment.method || '',
-      payment.reference || '',
-      payment.allocations.length,
-    ]);
-    const csv = buildCsv(headers, rows);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'payments-' + new Date().toISOString().slice(0, 10) + '.csv';
-    link.click();
-    URL.revokeObjectURL(url);
-  }
 
   async createPayment(): Promise<void> {
     const businessSnapshot = this.business;

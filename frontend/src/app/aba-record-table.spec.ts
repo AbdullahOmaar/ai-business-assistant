@@ -19,6 +19,8 @@ const notificationsWorkspace=expandTranslationCalls(readFileSync(new URL('./noti
 // 3A-376: the suppliers table call site moved with the suppliers workspace.
 const suppliersWorkspace=expandTranslationCalls(readFileSync(new URL('./suppliers-workspace.component.ts',import.meta.url),'utf8'));
 const recurringWorkspace=expandTranslationCalls(readFileSync(new URL('./recurring-workspace.component.ts',import.meta.url),'utf8'));
+// 3A-921 F1c: the payment received date formats inside the payments workspace now.
+const paymentsWorkspace=expandTranslationCalls(readFileSync(new URL('./payments-workspace.component.ts',import.meta.url),'utf8'));
 test('shared record table exposes semantic columns and stable row actions',()=>{
   assert.match(component,/<table>/);assert.match(component,/<caption class="aba-record-table__visually-hidden">/);
   assert.match(component,/<th scope="col" \[attr\.aria-sort\]="sortAria\(column\.key\)"/);assert.match(component,/<th scope="row"/);
@@ -72,7 +74,7 @@ test('record table labels and loading states follow the selected app locale',()=
 
 test('record dates remain localized after moving legacy lists into tables', () => {
   for (const fragment of [
-    'formatRecordDate(item.received_at)',
+
     "formatRecordDate(item.created_at,'short')",
     'map((event,index)=>({',
     'event.source_id',
@@ -82,7 +84,10 @@ test('record dates remain localized after moving legacy lists into tables', () =
   // 3A-351: the ageing due date formats inside the reports workspace now.
   assert.ok(reportsWorkspace.includes("formatRecordDate(invoice.due_date,'date')"),
     'missing localized date or stable key: formatRecordDate(invoice.due_date,\'date\')');
-  // 3A-351: the expense incurred date and the notification scheduled date
+
+  // 3A-921 F1c: the payment received date formats inside the payments workspace now.
+  assert.ok(paymentsWorkspace.includes('formatRecordDate(item.received_at)'),
+    'missing localized date or stable key: formatRecordDate(item.received_at)');  // 3A-351: the expense incurred date and the notification scheduled date
   // format inside their own workspaces now.
   assert.ok(expensesWorkspace.includes('formatRecordDate(item.incurred_at)'),
     'missing localized date or stable key: formatRecordDate(item.incurred_at)');
@@ -101,7 +106,8 @@ test('customer directory exposes only supported customer details and existing na
   assert.match(customerDirectory, /customer\.phone/);
   assert.match(customerDirectory, /emitAction\(customer\.id, 'invoices'/);
   assert.match(customerDirectory, /emitAction\(customer\.id, 'statement'/);
-  assert.match(app, /item\.allocations\.length/);
+  // 3A-921 F1c: the allocation count renders in the payments workspace rows now.
+  assert.match(paymentsWorkspace, /item\.allocations\.length/);
 });
 
 

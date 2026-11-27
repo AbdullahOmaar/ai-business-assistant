@@ -7,6 +7,8 @@ import test from 'node:test';
 // Source-assertion style, following the aba-filter-bar.spec.ts pattern.
 
 const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-921 F1c: the payments export action lives in the payments workspace now.
+const paymentsSource = readFileSync(new URL('./payments-workspace.component.ts', import.meta.url), 'utf8');
 const designSystem = readFileSync(new URL('../design-system.css', import.meta.url), 'utf8');
 const reportsSource = readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8');
 const platformAdminSource = readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8');
@@ -38,7 +40,7 @@ test('G5: invoice card amounts are glued to their currency, like the drawer and 
 });
 
 test('G2: the remaining text-only export actions carry the shared export icon', () => {
-  assert.ok(appSource.includes('(click)="exportPaymentsCsv()" [disabled]="!payments.length"><aba-icon name="export" />'),
+  assert.ok(paymentsSource.includes('(click)="exportPaymentsCsv()" [disabled]="!payments.length"><aba-icon name="export" />'),
     'payments export has the export icon');
   assert.ok(reportsSource.includes('(click)="exportReceivablesAgingCsv()" [disabled]="!agingReport.invoices.length"><aba-icon name="export" />'),
     'reports aging export has the export icon');

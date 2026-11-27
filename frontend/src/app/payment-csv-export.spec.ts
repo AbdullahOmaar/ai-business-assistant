@@ -3,19 +3,27 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-921 F1c: the payments region was extracted into its own component;
+// the export handler lives there now (the shell keeps createPayment).
+const paymentsSource = readFileSync(new URL('./payments-workspace.component.ts', import.meta.url), 'utf8');
 const csvHelper = readFileSync(new URL('./csv-export.ts', import.meta.url), 'utf8');
 
 function paymentExportHandler(): string {
-  const start = source.indexOf('exportPaymentsCsv(): void');
-  const end = source.indexOf('\n  async createPayment(): Promise<void>', start);
+  const start = paymentsSource.indexOf('exportPaymentsCsv(): void');
+  const end = paymentsSource.indexOf('\n  // Public: the template calls t(', start);
   assert.ok(start >= 0 && end > start, 'payment CSV export handler is missing');
-  return source.slice(start, end);
+  return paymentsSource.slice(start, end);
 }
 
 test('payment CSV export is owner-only and disabled when there are no payments', () => {
-  assert.match(source, /@if \(tab === 'payments' && business\.role === 'owner'\)/);
-  assert.match(source, /\(click\)="exportPaymentsCsv\(\)" \[disabled\]="!payments\.length"/);
-  assert.match(paymentExportHandler(), /if \(!this\.business \|\| this\.business\.role !== 'owner' \|\| !this\.payments\.length\) return;/);
+  // 3A-921 F1c: the shell hosts the payments workspace behind the tab gate
+  // and passes the role in; the section itself renders for owners only.
+  assert.match(source, /@if \(tab === 'payments'\)/);
+  assert.match(source, /<aba-payments-workspace/);
+  assert.match(source, /\[role\]="business\.role"/);
+  assert.match(paymentsSource, /@if \(role !== 'owner'\)/);
+  assert.match(paymentsSource, /\(click\)="exportPaymentsCsv\(\)" \[disabled\]="!payments\.length"/);
+  assert.match(paymentExportHandler(), /if \(this\.role !== 'owner' \|\| !this\.payments\.length\) return;/);
 });
 
 test('payment CSV export includes the full ledger fields and uses the shared safe serializer', () => {

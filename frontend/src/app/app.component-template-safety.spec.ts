@@ -13,6 +13,12 @@ const source = expandTranslationCalls(
 const auditWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./audit-events-workspace.component.ts', import.meta.url), 'utf8'));
 const inventoryApiSource = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 const invoiceEditorSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8'));
+// 3A-921 F1b: the detail drawer was extracted verbatim into its own component.
+const drawerSource = expandTranslationCalls(readFileSync(new URL('./invoice-detail-drawer.component.ts', import.meta.url), 'utf8'));
+// 3A-921 F1c: the payments section lives in the payments workspace now.
+const paymentsSource = expandTranslationCalls(readFileSync(new URL('./payments-workspace.component.ts', import.meta.url), 'utf8'));
+// 3A-921 F1d: the signed-out region lives in the auth screen component now.
+const authScreenSource = expandTranslationCalls(readFileSync(new URL('./auth-screen.component.ts', import.meta.url), 'utf8'));
 const invoiceDraftSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8'));
 const releaseGuideSource = expandTranslationCalls(readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8'));
 const platformAdminSource = expandTranslationCalls(readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8'));
@@ -28,6 +34,8 @@ const purchasingWorkspaceSource = expandTranslationCalls(readFileSync(new URL('.
 const customerEditorSource = expandTranslationCalls(readFileSync(new URL('./customer-editor.component.ts', import.meta.url), 'utf8'));
 const auditLabelsSource = expandTranslationCalls(readFileSync(new URL('./audit-labels.ts', import.meta.url), 'utf8'));
 const reportsWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8'));
+// 3A-921 F1: the tax limitation labels render in the taxes workspace now.
+const taxesWorkspaceSource = readFileSync(new URL('./taxes-workspace.component.ts', import.meta.url), 'utf8');
 // 3A-351: the Home (overview) tab lives in the deferred overview workspace.
 const overviewWorkspaceSource = expandTranslationCalls(readFileSync(new URL('./overview-workspace.component.ts', import.meta.url), 'utf8'));
 // 3A-351: the AI assistant tab moved into its own deferred workspace component.
@@ -69,7 +77,7 @@ test('startup config fetch has a bounded wait and allows retry after failure', (
   assert.match(authSource, /new AbortController\(\)/);
   assert.match(authSource, /10_000/);
   assert.match(authSource, /this\.configPromise = undefined/);
-  assert.match(source, /Retry startup/);
+  assert.match(authScreenSource, /Retry startup/);
 });
 
 test('workspace version and build time live inside the current-business card', () => {
@@ -190,7 +198,8 @@ test('financial and integrity report basis labels are localized', () => {
   assert.match(reportsWorkspaceSource, /Gross issued invoice total/);
   // 3A-376: the integrity warning label renders in the integrity workspace now.
   assert.match(integrityWorkspaceSource, /integrityWarningLabel\(dataIntegrityReport\.warning\)/);
-  assert.match(source, /reportLimitationLabel\(limitation\)/);
+  // 3A-921 F1: the limitation labels render in the taxes workspace now.
+  assert.match(taxesWorkspaceSource, /reportLimitationLabel\(limitation\)/);
 });
 
 const apiSource = expandTranslationCalls(readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8'));
@@ -454,7 +463,7 @@ test('owner-only destinations remain in the shared role-filtered desktop and mob
 });
 
 test('payment feedback uses the shared state component and distinguishes each outcome', () => {
-  assert.match(source, /<aba-state-message \[kind\]="paymentMessageKind" \[description\]="paymentMessage" \/>/);
+  assert.match(paymentsSource, /<aba-state-message \[kind\]="paymentMessageKind" \[description\]="paymentMessage" \/>/);
   assert.equal(source.includes('paymentError'), false);
   assert.match(source, /paymentMessageKind: 'info' \| 'success' \| 'warning' \| 'error' = 'info'/);
 
@@ -573,11 +582,13 @@ test('mobile module directory and Home shortcuts use adaptive balanced grids', (
 
 
 test('authentication failures keep the user on the sign-in form instead of retrying app startup', () => {
-  const authStart = source.indexOf('} @else if (!signedIn) {');
-  const authEnd = source.indexOf('} @else {', authStart);
-  const authTemplate = source.slice(authStart, authEnd);
-  assert.ok(authStart >= 0 && authEnd > authStart, 'sign-in view must exist');
-  assert.match(authTemplate, /<form #authForm="ngForm"(?=[^>]*\(ngSubmit\)="authForm\.valid && submitAuth\(\)")(?=[^>]*class="stack")/);
+  // 3A-921 F1d: the sign-in card is the auth screen component's last branch;
+  // its submit emits to the shell, which runs submitAuth itself.
+  const authStart = authScreenSource.lastIndexOf('<main class="auth-card">');
+  const authTemplate = authScreenSource.slice(authStart);
+  assert.ok(authStart >= 0, 'sign-in view must exist');
+  assert.match(source, /\(submitAuthRequest\)="submitAuth\(\)"/);
+  assert.match(authTemplate, /<form #authForm="ngForm"(?=[^>]*\(ngSubmit\)="authForm\.valid && submitAuthRequest\.emit\(\)")(?=[^>]*class="stack")/);
   assert.match(authTemplate, /\[\(ngModel\)\]="email"/);
   assert.match(authTemplate, /\[\(ngModel\)\]="password"/);
   assert.match(authTemplate, /@if \(error\) \{ <aba-state-message kind="error" \[description\]="error" \/> \}/);
@@ -633,9 +644,9 @@ test('membership and platform-role refreshes also fail closed on an inaccessible
 
 
 test('sign-in and first-workspace forms expose localized inline errors to assistive technology', () => {
-  const authStart = source.indexOf('<form #authForm="ngForm"');
-  const authEnd = source.indexOf('</form>', authStart);
-  const authForm = source.slice(authStart, authEnd);
+  const authStart = authScreenSource.indexOf('<form #authForm="ngForm"');
+  const authEnd = authScreenSource.indexOf('</form>', authStart);
+  const authForm = authScreenSource.slice(authStart, authEnd);
   assert.ok(authStart >= 0 && authEnd > authStart);
   assert.match(authForm, /#emailModel="ngModel"/);
   assert.match(authForm, /#passwordModel="ngModel"/);
@@ -771,7 +782,7 @@ test('payment completion cannot clear the loading state of a newly selected work
 });
 
 test('invalid authentication, workspace, customer, invoice, payment and expense forms cannot invoke mutations', () => {
-  assert.match(source, /<form #authForm="ngForm"/);
+  assert.match(authScreenSource, /<form #authForm="ngForm"/);
   assert.match(source, /<form #workspaceForm="ngForm"/);
   assert.match(source, /<aba-customer-workspace/);
   assert.match(customerWorkspaceSource, /<form class="customer-workspace__search"[^>]*\(submit\)="submitSearch\(\$event\)"/);
@@ -779,11 +790,12 @@ test('invalid authentication, workspace, customer, invoice, payment and expense 
   assert.match(customerEditorSource, /if \(!name \|\| this\.emailInvalid\(\) \|\| this\.busy\(\)\) return/);
   // 3A-351: the expense form lives in the expenses workspace now.
   assert.match(expensesWorkspaceSource, /<form #expenseForm="ngForm"/);
-  const paymentStart = source.indexOf('<form #paymentForm="ngForm"');
-  const paymentEnd = source.indexOf('</form>', paymentStart);
-  const paymentForm = source.slice(paymentStart, paymentEnd);
+  const paymentStart = paymentsSource.indexOf('<form #paymentForm="ngForm"');
+  const paymentEnd = paymentsSource.indexOf('</form>', paymentStart);
+  const paymentForm = paymentsSource.slice(paymentStart, paymentEnd);
   assert.ok(paymentStart >= 0 && paymentEnd > paymentStart);
-  assert.ok(paymentForm.includes('(paymentRetryPending || paymentForm.valid) && createPayment()'));
+  // 3A-921 F1c: the form emits createRequest; the shell runs createPayment.
+  assert.ok(paymentForm.includes('(paymentRetryPending || paymentForm.valid) && createRequest.emit()'));
   assert.match(invoiceEditorSource, /toInvoiceDraftPayload/);
   assert.match(invoiceEditorSource, /if \(this\.saving \|\| this\.blocked\) return;/);
   assert.match(invoiceEditorSource, /this\.saveDraft\.emit\(payload\)/);
@@ -1101,9 +1113,9 @@ test('expense categories are localized in the list and available to local search
 });
 
 test('payment methods are localized in the list and available to local search', () => {
-  assert.match(source, /method:item\.method\?this\.paymentMethodLabel\(item\.method\)/);
-  assert.match(source, /method => this\.paymentMethodLabel\(method\)/);
-  assert.match(source, /bank_transfer: 'app\.paymentMethod\.bank_transfer'/);
+  assert.match(paymentsSource, /method:item\.method\?this\.paymentMethodLabel\(item\.method\)/);
+  assert.match(paymentsSource, /method => this\.paymentMethodLabel\(method\)/);
+  assert.match(paymentsSource, /bank_transfer: 'app\.paymentMethod\.bank_transfer'/);
 });
 
 test('notification status labels are localized in the list and available to local search', () => {
@@ -1159,9 +1171,10 @@ test('local CSV exports follow the backend owner-only export permission', () => 
   assert.match(listExport, /headers = \['customer_name', 'invoice_number', 'issue_date', 'created_at', 'status', 'total', 'currency', 'remaining_balance'\]/);
   assert.match(listExport, /this\.customerNameForInvoice\(item\.customer_id\)/);
   assert.match(listExport, /item\.status === 'issued' \? item\.outstanding_amount/);
-  const paymentExportStart = source.indexOf('exportPaymentsCsv(): void');
-  const paymentExportEnd = source.indexOf('async createPayment(): Promise<void>', paymentExportStart);
-  assert.match(source.slice(paymentExportStart, paymentExportEnd), /if \(!this\.business \|\| this\.business\.role !== 'owner' \|\| !this\.payments\.length\) return;/);
+  const paymentExportStart = paymentsSource.indexOf('exportPaymentsCsv(): void');
+  const paymentExportEnd = paymentsSource.indexOf('// Public: the template calls t(', paymentExportStart);
+  // 3A-921 F1c: inside the workspace the owner gate is the role input.
+  assert.match(paymentsSource.slice(paymentExportStart, paymentExportEnd), /if \(this\.role !== 'owner' \|\| !this\.payments\.length\) return;/);
 });
 
 test('workspace switcher announces the current business context accessibly', () => {
@@ -1382,11 +1395,11 @@ test('invoice customer and dynamic line fields expose accessible localized valid
 });
 
 test('payment submit remains available to reveal required-field validation', () => {
-  const start = source.indexOf('<form #paymentForm="ngForm"');
-  const end = source.indexOf('</form>', start);
-  const form = source.slice(start, end);
+  const start = paymentsSource.indexOf('<form #paymentForm="ngForm"');
+  const end = paymentsSource.indexOf('</form>', start);
+  const form = paymentsSource.slice(start, end);
   assert.ok(start >= 0 && end > start);
-  assert.ok(form.includes('(paymentRetryPending || paymentForm.valid) && createPayment()'));
+  assert.ok(form.includes('(paymentRetryPending || paymentForm.valid) && createRequest.emit()'));
   assert.match(form, /name="paymentAmount" type="number" min="0\.01" step="0\.01"[^>]*required/);
   assert.ok(form.includes('paymentAmountModel.invalid'));
   assert.ok(form.includes('payment-customer-error'));
@@ -1456,11 +1469,17 @@ test('OWNER payroll view is loaded only after selecting Employees', () => {
 
 test('workspace-owned views rely on the non-null business context after the empty-workspace guard', () => {
   assert.match(source, /@if \(!business\) \{/);
-  assert.match(source, /@if \(tab === 'payments' && business\.role === 'owner'\) \{/);
+  // 3A-921 F1c: payments renders through its workspace; the shell gate is the tab alone
+  // and the role arrives as an input (the workspace keeps the owner branch inside).
+  assert.match(source, /@if \(tab === 'payments'\) \{/);
+  assert.match(source, /<aba-payments-workspace/);
+  assert.match(source, /\[role\]="business\.role"/);
   assert.match(source, /@if \(tab === 'taxes' && business\.role === 'owner'\) \{/);
   assert.match(source, /@if \(tab === 'employees' && business\.role === 'owner'\) \{/);
   assert.match(source, /@defer \(when tab === 'employees' && business\.role === 'owner'\)/);
-  assert.match(source, /\{\{ business\.currency_code \}\}/);
+  // 3A-921 F1c: the currency reaches the payments footnote through the input.
+  assert.match(source, /\[currencyCode\]="business\.currency_code"/);
+  assert.match(paymentsSource, /\{\{ currencyCode \}\}/);
   assert.match(source, /@if \(tab === 'integrity' && business\.role === 'owner'\) \{/);
   assert.doesNotMatch(source, /tab === 'payments' && business\?\.role === 'owner'/);
   assert.doesNotMatch(source, /tab === 'taxes' && business\?\.role === 'owner'/);
@@ -1547,17 +1566,17 @@ test('customer section markup does not render stray closing-tag text', () => {
 
 
 test('payment and expense lists expose local search and distinguish no-match from no-record states', () => {
-  assert.match(source, /get filteredPayments\(\): Payment\[\]/);
+  assert.match(paymentsSource, /get filteredPayments\(\): Payment\[\]/);
   // 3A-351: the expenses filter lives in the expenses workspace now.
   assert.match(expensesWorkspaceSource, /get filteredExpenses\(\): Expense\[\]/);
-  assert.match(source, /filterPayments\(\s*this\.payments,\s*this\.paymentSearch/);
+  assert.match(paymentsSource, /filterPayments\(\s*this\.payments,\s*this\.paymentSearch/);
   assert.match(expensesWorkspaceSource, /filterExpenses\(this\.expenses, this\.expenseSearch, category => this\.expenseCategoryLabel\(category\), this\.localization\.locale\)/);
-  assert.match(source, /paymentSearch\.trim\(\) \? t\(/);
+  assert.match(paymentsSource, /paymentSearch\.trim\(\) \? t\(/);
   assert.match(expensesWorkspaceSource, /expenseSearch\.trim\(\) \? t\(/);
   // T18 Slice E (2026-11-21): the payment/expense searches are aba-search-field
   // components now; the type="search" input lives inside the component, and the
   // shell keeps the same name and [(ngModel)] binding on the component element.
-  assert.match(source, /<aba-search-field name="paymentSearch"/);
+  assert.match(paymentsSource, /<aba-search-field name="paymentSearch"/);
   assert.match(expensesWorkspaceSource, /<aba-search-field name="expenseSearch"/);
 });
 
@@ -1770,12 +1789,14 @@ test('an already-controlled page announces its next service-worker replacement',
 });
 
 test('public sign-in shell keeps the PWA install action and fallback available before authentication', () => {
-  const authStart = source.indexOf('} @else if (!signedIn) {');
-  const authEnd = source.indexOf('} @else {', authStart);
-  const auth = source.slice(authStart, authEnd);
+  // 3A-921 F1d: the sign-in card is the auth screen component's last branch.
+  const authStart = authScreenSource.lastIndexOf('<main class="auth-card">');
+  const auth = authScreenSource.slice(authStart);
   assert.ok(auth.includes('auth-mobile-install'));
   assert.ok(auth.includes('@if (!isInstalled)'));
-  assert.ok(auth.includes('(click)="installApp()"'));
+  // 3A-921 F1d: the install button emits; the shell runs installApp itself.
+  assert.ok(auth.includes('(click)="installRequest.emit()"'));
+  assert.match(source, /\(installRequest\)="installApp\(\)"/);
   assert.ok(auth.includes('installHelp && !isInstalled'));
   assert.ok(auth.includes('If no install prompt appears'));
 });
@@ -1828,16 +1849,17 @@ test('inventory movement API uses authenticated tenant-scoped GET with bounded r
 
 
 test('invoice detail drawer traps Tab navigation, closes on Escape and restores its opener focus', () => {
-  const drawerStart = source.indexOf('<aside #invoiceDetailDrawer class="invoice-detail-drawer"');
-  const drawerEnd = source.indexOf('</aside>', drawerStart);
-  const drawer = source.slice(drawerStart, drawerEnd);
+  // 3A-921 F1b: the drawer markup and the Tab trap live in the drawer component.
+  const drawerStart = drawerSource.indexOf('<aside #invoiceDetailDrawer class="invoice-detail-drawer"');
+  const drawerEnd = drawerSource.indexOf('</aside>', drawerStart);
+  const drawer = drawerSource.slice(drawerStart, drawerEnd);
   assert.ok(drawerStart >= 0 && drawerEnd > drawerStart);
   assert.match(drawer, /role="dialog" aria-modal="true" tabindex="-1"/);
   assert.match(drawer, /\(keydown\)="handleInvoiceDetailKeydown\(\$event\)"/);
 
-  const trapStart = source.indexOf('handleInvoiceDetailKeydown(event: KeyboardEvent): void');
-  const trapEnd = source.indexOf('closeInvoiceDetails(restoreFocus = true): void', trapStart);
-  const trap = source.slice(trapStart, trapEnd);
+  const trapStart = drawerSource.indexOf('handleInvoiceDetailKeydown(event: KeyboardEvent): void');
+  const trapEnd = drawerSource.indexOf('formatRecordDate(', trapStart);
+  const trap = drawerSource.slice(trapStart, trapEnd);
   assert.match(trap, /event\.key !== 'Tab'/);
   assert.match(trap, /querySelectorAll<HTMLElement>/);
   assert.match(trap, /event\.shiftKey \? last : first/);

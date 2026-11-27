@@ -26,6 +26,8 @@ import type {
 const appDirectory = dirname(fileURLToPath(import.meta.url));
 const editor = readFileSync(resolve(appDirectory, 'invoice-draft-editor.component.ts'), 'utf8');
 const shell = readFileSync(resolve(appDirectory, 'app.component.ts'), 'utf8');
+// 3A-921 F1b: the detail drawer lives in its own component now.
+const drawer = readFileSync(resolve(appDirectory, 'invoice-detail-drawer.component.ts'), 'utf8');
 const apiService = readFileSync(resolve(appDirectory, 'api.service.ts'), 'utf8');
 const publicDirectory = resolve(appDirectory, '../../public/i18n');
 const arabic = JSON.parse(readFileSync(resolve(publicDirectory, 'ar.json'), 'utf8'));
@@ -108,7 +110,7 @@ test('shell loads the transport flag and passes it to the editor; detail shows t
   assert.ok(shell.includes('this.api.listSettings(id).catch(() => []),'));
   assert.ok(shell.includes('this.transportEnabled = transportEnabledFromSettings(settings);'));
   assert.ok(shell.includes('[transportEnabled]="transportEnabled"'));
-  assert.ok(shell.includes('@if (line.sold_unit) { {{ line.sold_unit }} }'));
+  assert.ok(drawer.includes('@if (line.sold_unit) { {{ line.sold_unit }} }'));
   assert.ok(apiService.includes('sold_unit?: string | null; conversion_factor?: string | null;'));
   assert.ok(apiService.includes('unit?: string }'));
 });

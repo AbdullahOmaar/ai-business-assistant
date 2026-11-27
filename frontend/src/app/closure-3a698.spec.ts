@@ -7,12 +7,15 @@ import test from 'node:test';
 // Source-assertion style, following the closure-3a696.spec.ts pattern.
 
 const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-921 F1d: the signed-out auth card lives in the auth screen component now.
+const authScreenSource = readFileSync(new URL('./auth-screen.component.ts', import.meta.url), 'utf8');
 const appCss = readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
 
-const authStart = appSource.indexOf('} @else if (!signedIn) {');
-const authEnd = appSource.indexOf('class="mobile-install-card auth-mobile-install"');
+// 3A-921 F1d: the auth card is the auth screen component's last branch.
+const authStart = authScreenSource.lastIndexOf('<main class="auth-card">');
+const authEnd = authScreenSource.indexOf('class="mobile-install-card auth-mobile-install"');
 assert.ok(authStart >= 0 && authEnd > authStart, 'the signed-out auth card slice must be locatable');
-const authCard = appSource.slice(authStart, authEnd);
+const authCard = authScreenSource.slice(authStart, authEnd);
 
 test('U21: the auth card carries the app identity — the approved character and the app name, like the U24 boot card', () => {
   assert.ok(authCard.includes('class="auth-identity"'), 'auth card has an identity block');
@@ -22,7 +25,8 @@ test('U21: the auth card carries the app identity — the approved character and
 });
 
 test('U21: the demo entry is a clear secondary action — outline treatment, no gradient competing with the primary submit', () => {
-  const rule = appCss.match(/\.demo-login-button\{[^}]*\}/);
+  // 3A-921 F1d: the demo button rule lives in the auth screen component styles now.
+  const rule = authScreenSource.match(/\.demo-login-button\{[^}]*\}/);
   assert.ok(rule, 'demo-login-button rule must exist');
   assert.ok(!rule[0].includes('linear-gradient'), 'demo button carries no gradient fill');
   assert.ok(rule[0].includes('background:var(--aba-color-surface,#fff)'), 'demo button sits on the plain surface');
@@ -37,7 +41,10 @@ test('U21: an auth failure appears right after the form, before the demo entry a
 });
 
 test('U22: switching modes keeps the same card and clears a stale failure from the other mode', () => {
-  assert.ok(authCard.includes('(click)="toggleAuthMode()"'), 'the mode switch goes through toggleAuthMode');
+  // 3A-921 F1d: the card's switch emits signingUpChange; the shell binds it
+  // to toggleAuthMode, so the switch still goes through toggleAuthMode.
+  assert.ok(authCard.includes('(click)="signingUpChange.emit(!signingUp)"'), 'the mode switch emits the mode change');
+  assert.ok(appSource.includes('(signingUpChange)="toggleAuthMode()"'), 'the mode switch goes through toggleAuthMode');
   const method = appSource.match(/toggleAuthMode\(\): void \{([\s\S]*?)\n  \}/);
   assert.ok(method, 'toggleAuthMode must exist');
   assert.ok(method[1].includes('this.signingUp = !this.signingUp;'), 'it flips the mode');
