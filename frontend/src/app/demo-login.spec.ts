@@ -3,15 +3,17 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const app = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-921 F1d: the sign-in card lives in the auth screen component now.
+const authScreen = readFileSync(new URL('./auth-screen.component.ts', import.meta.url), 'utf8');
 const auth = readFileSync(new URL('./auth.service.ts', import.meta.url), 'utf8');
 const api = readFileSync(new URL('./api.service.ts', import.meta.url), 'utf8');
 
 test('login offers a localized public demo action only outside sign-up mode', () => {
-  assert.match(app, /@if \(!signingUp\)/);
-  assert.match(app, /class="demo-login-button"/);
+  assert.match(authScreen, /@if \(!signingUp\)/);
+  assert.match(authScreen, /class="demo-login-button"/);
   assert.match(app, /submitDemoLogin\(\)/);
-  assert.match(app, /demo\.login\.button/);
-  assert.match(app, /demo\.login\.note/);
+  assert.match(authScreen, /demo\.login\.button/);
+  assert.match(authScreen, /demo\.login\.note/);
 });
 
 test('demo login uses a server-minted Firebase custom token', () => {

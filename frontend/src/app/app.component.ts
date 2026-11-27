@@ -30,6 +30,7 @@ import { IntegrityWorkspaceComponent } from './integrity-workspace.component';
 import { TaxesWorkspaceComponent } from './taxes-workspace.component';
 import { InvoiceDetailDrawerComponent } from './invoice-detail-drawer.component';
 import { PaymentsWorkspaceComponent } from './payments-workspace.component';
+import { AuthScreenComponent } from './auth-screen.component';
 import { NotificationsWorkspaceComponent } from './notifications-workspace.component';
 import { transportEnabledFromSettings, transportUnitNameFromSettings } from './transport-settings';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
@@ -67,7 +68,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, SuppliersWorkspaceComponent, RecurringWorkspaceComponent, IntegrityWorkspaceComponent, TaxesWorkspaceComponent, InvoiceDetailDrawerComponent, PaymentsWorkspaceComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, SuppliersWorkspaceComponent, RecurringWorkspaceComponent, IntegrityWorkspaceComponent, TaxesWorkspaceComponent, InvoiceDetailDrawerComponent, PaymentsWorkspaceComponent, AuthScreenComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -81,93 +82,30 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
           <button class="secondary" type="button" (click)="dismissAppUpdate()">{{ t('ui.m_1gc2kb4') }}</button>
         </aside>
       }
-      @if (!initialized) {
-        <main class="splash-overlay" role="status" aria-live="polite">
-          <div class="auth-card">
-            <aba-loading-logo [announce]="false" />
-            <h1>{{ t('common.app_title') }}</h1>
-            <div class="splash-release-meta">
-              <span class="version-pill splash-version" [attr.title]="t('ui.m_g3351m') + ' · UI commit ' + uiCommitLabel + ' · API commit ' + apiCommitLabel + ' · Build time (Cairo): ' + buildTimeLabel">UI v{{ appVersion }} · API {{ apiVersionLabel }}</span>
-              <p class="release-line splash-release-line">{{ releaseLineLabel }}</p>
-            </div>
-            <p class="muted">{{ t('ui.m_1uzdlys') }}</p>
-          </div>
-        </main>
-      } @else if (startupFailed) {
-        <main class="auth-card">
-          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
-          <div class="brand-mark">A</div>
-          <h1>{{ t('ui.m_tee7tu') }}</h1>
-          <aba-state-message kind="error" [description]="error" />
-          <button class="secondary auth-retry" type="button" (click)="initializeApp()" [disabled]="loading">{{ loading ? t('ui.m_1dc4cbo') : t('ui.m_lr6ezy') }}</button>
-        </main>
-      } @else if (setupNeeded) {
-        <main class="setup-card">
-          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
-          <div class="brand-mark">A</div>
-          <p class="eyebrow">{{ t('ui.m_1yxyqru') }}</p>
-          <h1>{{ t('ui.m_11t8fki') }}</h1>
-          <p>{{ t('ui.m_1pg99q7') }}</p>
-          <div class="setup-steps">
-            <p><strong>1.</strong> {{ t('ui.m_1ltjr2f') }} <code>frontend/public/runtime-config.json</code> {{ t('ui.m_11mqt0a') }}</p>
-            <p><strong>2.</strong> {{ t('ui.m_1lj5n4d') }} <code>apiBaseUrl</code> {{ t('ui.m_1aj80o5') }}</p>
-            <p><strong>3.</strong> {{ t('ui.m_15vm5ge') }} <code>apiKey</code>, <code>authDomain</code>, <code>projectId</code>, {{ t('ui.m_57gsye') }} <code>appId</code>.</p>
-            <p><strong>4.</strong> {{ t('ui.m_1rirx3l') }}</p>
-          </div>
-          <p class="footnote">{{ t('ui.m_1uk988r') }}</p>
-        </main>
-      } @else if (!signedIn) {
-        <main class="auth-card">
-          <div class="language-row"><button class="secondary language-toggle" type="button" (click)="toggleLanguage()">{{ language === 'ar' ? t('common.languages.english') : t('common.languages.arabic') }}</button></div>
-          <div class="auth-identity">
-            <img class="auth-character" src="identity/loader-character.png" alt="" aria-hidden="true">
-            <span class="auth-app-name">{{ t('common.app_title') }}</span>
-          </div>
-          <p class="eyebrow">{{ t('ui.m_ll4uy7') }}</p>
-          <h1 id="auth-form-heading">{{ signingUp ? t('ui.m_1cuf5gq') : t('ui.m_cfel9w') }}</h1>
-          <p class="muted">{{ t('ui.m_1euk0tm') }}</p>
-          <form #authForm="ngForm" aria-labelledby="auth-form-heading" (ngSubmit)="authForm.valid && submitAuth()" class="stack">
-            <label>{{ t('ui.m_1jc8kzg') }}<input #emailModel="ngModel" name="email" type="email" autocomplete="email" required [(ngModel)]="email" [attr.aria-invalid]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="emailModel.invalid && (emailModel.touched || authForm.submitted) ? 'auth-email-error' : null">
-              @if (emailModel.invalid && (emailModel.touched || authForm.submitted)) {
-                <small id="auth-email-error" class="field-error" aria-live="polite">{{ emailModel.errors?.['required'] ? t('ui.m_gxa0df') : t('ui.m_1afx9c8') }}</small>
-              }
-            </label>
-            <label>{{ t('ui.m_eklfkj') }}<input #passwordModel="ngModel" name="password" type="password" [attr.autocomplete]="signingUp ? 'new-password' : 'current-password'" minlength="6" required [(ngModel)]="password" [attr.aria-invalid]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'true' : null" [attr.aria-describedby]="passwordModel.invalid && (passwordModel.touched || authForm.submitted) ? 'auth-password-error' : null">
-              @if (passwordModel.invalid && (passwordModel.touched || authForm.submitted)) {
-                <small id="auth-password-error" class="field-error" aria-live="polite">{{ passwordModel.errors?.['required'] ? t('ui.m_pfxpuv') : t('ui.m_1vnk3nk') }}</small>
-              }
-            </label>
-            <button class="primary" type="submit" [disabled]="loading">{{ loading ? t('ui.m_jxz3f3') : (signingUp ? t('ui.m_1hggna5') : t('ui.m_h8edye')) }}</button>
-          </form>
-          @if (error) { <aba-state-message kind="error" [description]="error" /> }
-          @if (!signingUp) {
-            <button class="demo-login-button" type="button" (click)="submitDemoLogin()" [disabled]="loading">
-              <span class="demo-login-icon" aria-hidden="true">✦</span>
-              <span>{{ loading ? t('demo.login.loading') : t('demo.login.button') }}</span>
-              <span class="demo-login-arrow" aria-hidden="true">←</span>
-            </button>
-            <p class="demo-login-note">{{ t('demo.login.note') }}</p>
-          }
-          <button class="text-button" type="button" (click)="toggleAuthMode()">{{ signingUp ? t('ui.m_1uh3cl9') : t('ui.m_1fdki9f') }}</button>
-          @if (!isInstalled) {
-            <section class="mobile-install-card auth-mobile-install" [attr.aria-label]="t('ui.m_1ig5s72')">
-              <div class="mobile-install-copy">
-                <span class="mobile-install-icon" aria-hidden="true">⇧</span>
-                <div>
-                  <strong>{{ t('ui.m_1i6f7xh') }}</strong>
-                  <small>{{ t('ui.m_1ggnkh3') }}</small>
-                </div>
-              </div>
-              <button class="secondary install-button mobile-install-button" type="button" (click)="installApp()">{{ t('ui.m_76lwbh') }}</button>
-            </section>
-          }
-          @if (installHelp && !isInstalled) {
-            <div class="install-help install-help-inline" role="status">
-              {{ t('ui.m_14cdic2') }}
-              <button type="button" class="secondary" (click)="installHelp = false">{{ t('ui.m_1av23fu') }}</button>
-            </div>
-          }
-        </main>
+      @if (!initialized || startupFailed || setupNeeded || !signedIn) {
+        <aba-auth-screen
+          [initialized]="initialized"
+          [startupFailed]="startupFailed"
+          [setupNeeded]="setupNeeded"
+          [signingUp]="signingUp" (signingUpChange)="toggleAuthMode()"
+          [loading]="loading"
+          [error]="error"
+          [language]="language"
+          [isInstalled]="isInstalled"
+          [(installHelp)]="installHelp"
+          [(email)]="email"
+          [(password)]="password"
+          [appVersion]="appVersion"
+          [apiVersionLabel]="apiVersionLabel"
+          [uiCommitLabel]="uiCommitLabel"
+          [apiCommitLabel]="apiCommitLabel"
+          [buildTimeLabel]="buildTimeLabel"
+          [releaseLineLabel]="releaseLineLabel"
+          (submitAuthRequest)="submitAuth()"
+          (demoLoginRequest)="submitDemoLogin()"
+          (retryInitializeRequest)="initializeApp()"
+          (toggleLanguageRequest)="toggleLanguage()"
+          (installRequest)="installApp()" />
       } @else {
         <aside class="sidebar" role="navigation" [attr.aria-label]="t('ui.m_9jbcg2')">
           <a class="brand" href="#" (click)="$event.preventDefault(); setTab('overview')"><span class="brand-mark small">A</span><span>{{ t('common.app_title') }}</span></a>

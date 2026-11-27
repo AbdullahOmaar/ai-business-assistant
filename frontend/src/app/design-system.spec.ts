@@ -10,6 +10,8 @@ const app = expandTranslationCalls(
   + '\n'
   + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8')
 );
+// 3A-921 F1d: the signed-out region lives in the auth screen component now.
+const authSource = expandTranslationCalls(readFileSync(new URL('./auth-screen.component.ts', import.meta.url), 'utf8'));
 // 3A-351: the Home tab lives in the deferred overview workspace now.
 const overviewSource = expandTranslationCalls(readFileSync(new URL('./overview-workspace.component.ts', import.meta.url), 'utf8'));
 const localization = readFileSync(new URL('./localization.service.ts', import.meta.url), 'utf8');
@@ -106,21 +108,23 @@ test('KPI card surface is drawn once by the inner component, not the Angular hos
 test('public authentication screens fit the visible viewport without redundant vertical overflow', () => {
   assert.ok(app.includes('class="shell" [class.auth-shell]="!signedIn"'));
   assert.ok(app.includes('.shell.auth-shell{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;padding-block:24px}'));
-  assert.ok(app.includes('.shell.auth-shell>.auth-card,.shell.auth-shell>.setup-card{margin:0 auto}'));
+  // 3A-921 F1d: the cards live inside the auth screen component, which
+  // carries the same zero-margin rule scoped to its own cards.
+  assert.ok(authSource.includes('.auth-card,.setup-card{margin:0 auto}'));
 });
 
 test('splash opens as one fixed overlay step without repositioning (owner order 2026-11-27, 3A-919)', () => {
   // The splash is a fixed overlay that never participates in layout, so the
   // sign-in form appears at its final centered position instead of the card
   // sliding from the middle to the top when the form replaces it.
-  assert.ok(app.includes('<main class="splash-overlay" role="status" aria-live="polite">'));
-  assert.ok(app.includes('.splash-overlay{position:fixed;inset:0;'));
-  assert.ok(app.includes('.splash-overlay .auth-card{margin:0 auto}'));
+  assert.ok(authSource.includes('<main class="splash-overlay" role="status" aria-live="polite">'));
+  assert.ok(authSource.includes('.splash-overlay{position:fixed;inset:0;'));
+  assert.ok(authSource.includes('.splash-overlay .auth-card{margin:0 auto}'));
   // Content order inside the splash card: logo, app name, release meta, then
   // the loading line — the version line is prominent, the transient text last.
-  const splashStart = app.indexOf('<main class="splash-overlay"');
-  const splashEnd = app.indexOf('</main>', splashStart);
-  const splash = app.slice(splashStart, splashEnd);
+  const splashStart = authSource.indexOf('<main class="splash-overlay"');
+  const splashEnd = authSource.indexOf('</main>', splashStart);
+  const splash = authSource.slice(splashStart, splashEnd);
   assert.ok(splash.indexOf('aba-loading-logo') < splash.indexOf('splash-release-meta'));
   assert.ok(splash.indexOf('splash-release-meta') < splash.indexOf('class="muted"'));
 });
@@ -150,21 +154,22 @@ test('topbar and mobile headings stay complete: long titles wrap, never truncate
   // minimum 17px fits the longest word ("workspace", 150.88px at 28px ->
   // 91.6px at 17px; the startup-failed heading's "configuration", 191.11px
   // at 28px -> 115.8px at 17px) inside the 119px box at 195px.
-  const setupH1Rule = app.match(/\.setup-card h1,\.auth-card h1\{([^}]*)\}/)?.[1] ?? '';
+  // 3A-921 F1d: the setup/auth card rules live in the auth screen component.
+  const setupH1Rule = authSource.match(/\.setup-card h1,\.auth-card h1\{([^}]*)\}/)?.[1] ?? '';
   assert.match(setupH1Rule, /font-size:clamp\(17px,8vw,28px\)/);
   assert.match(setupH1Rule, /overflow-wrap:normal/);
   assert.doesNotMatch(setupH1Rule, /overflow-wrap:anywhere/);
 });
 
 test('the authentication form is named by its visible localized heading', () => {
-  assert.ok(app.includes('<h1 id="auth-form-heading">{{ signingUp ?'));
-  assert.ok(app.includes('<form #authForm="ngForm" aria-labelledby="auth-form-heading"'));
+  assert.ok(authSource.includes('<h1 id="auth-form-heading">{{ signingUp ?'));
+  assert.ok(authSource.includes('<form #authForm="ngForm" aria-labelledby="auth-form-heading"'));
 });
 
 test('bootstrap and global body styles allow auth reflow below the legacy 320px floor', () => {
   assert.ok(!globalStyles.includes('min-width: 320px'));
   assert.ok(!indexHtml.includes('min-width:320px'));
-  assert.ok(app.includes('.setup-card,.auth-card{width:min(540px,calc(100% - 30px))'));
+  assert.ok(authSource.includes('.setup-card,.auth-card{width:min(540px,calc(100% - 30px))'));
 });
 
 test('browser title and root language metadata follow the persisted locale and language toggle', () => {

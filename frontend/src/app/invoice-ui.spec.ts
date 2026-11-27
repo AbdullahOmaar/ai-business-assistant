@@ -9,6 +9,8 @@ const appSource = expandTranslationCalls(
   + readFileSync(new URL('./app.component.css', import.meta.url), 'utf8')
 );
 const editorSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft-editor.component.ts', import.meta.url), 'utf8'));
+// 3A-921 F1d: the splash lives in the auth screen component now.
+const authScreenSource = expandTranslationCalls(readFileSync(new URL('./auth-screen.component.ts', import.meta.url), 'utf8'));
 // 3A-921 F1b: the detail drawer was extracted verbatim into its own component.
 const drawerSource = expandTranslationCalls(readFileSync(new URL('./invoice-detail-drawer.component.ts', import.meta.url), 'utf8'));
 const searchFieldSource = readFileSync(new URL('./shared/ui/aba-search-field.component.ts', import.meta.url), 'utf8');
@@ -80,13 +82,13 @@ test('Product and Service use a segmented toggle with no reorder controls or lar
 // time]» is prominent on the splash AND inside the app shell (sidebar +
 // mobile More menu), built from the build metadata (APP_BUILD_INFO).
 test('startup screen and shell show the release line beneath release versions', () => {
-  assert.match(appSource, /class="splash-release-meta"[\s\S]*?class="version-pill splash-version"[\s\S]*?class="release-line splash-release-line"/);
+  assert.match(authScreenSource, /class="splash-release-meta"[\s\S]*?class="version-pill splash-version"[\s\S]*?class="release-line splash-release-line"/);
   assert.match(appSource, /class="release-line sidebar-release-line"/);
   assert.match(appSource, /class="release-line mobile-more-release"/);
   assert.match(appSource, /get releaseLineLabel\(\): string/);
   assert.match(appSource, /— Published \{\{publishedAt\}\}/);
   assert.match(appSource, /@if \(loading && initialized\) \{ <div class="global-loading"/);
-  assert.match(appSource, /\.splash-release-meta\{display:grid;justify-items:center/);
+  assert.match(authScreenSource, /\.splash-release-meta\{display:grid;justify-items:center/);
   assert.match(appSource, /get buildTimeLabel\(\): string/);
   assert.match(appSource, /timeZone: 'Africa\/Cairo'/);
 });

@@ -17,6 +17,8 @@ const invoiceEditorSource = expandTranslationCalls(readFileSync(new URL('./invoi
 const drawerSource = expandTranslationCalls(readFileSync(new URL('./invoice-detail-drawer.component.ts', import.meta.url), 'utf8'));
 // 3A-921 F1c: the payments section lives in the payments workspace now.
 const paymentsSource = expandTranslationCalls(readFileSync(new URL('./payments-workspace.component.ts', import.meta.url), 'utf8'));
+// 3A-921 F1d: the signed-out region lives in the auth screen component now.
+const authScreenSource = expandTranslationCalls(readFileSync(new URL('./auth-screen.component.ts', import.meta.url), 'utf8'));
 const invoiceDraftSource = expandTranslationCalls(readFileSync(new URL('./invoice-draft.ts', import.meta.url), 'utf8'));
 const releaseGuideSource = expandTranslationCalls(readFileSync(new URL('./release-guide.component.ts', import.meta.url), 'utf8'));
 const platformAdminSource = expandTranslationCalls(readFileSync(new URL('./platform-admin.component.ts', import.meta.url), 'utf8'));
@@ -75,7 +77,7 @@ test('startup config fetch has a bounded wait and allows retry after failure', (
   assert.match(authSource, /new AbortController\(\)/);
   assert.match(authSource, /10_000/);
   assert.match(authSource, /this\.configPromise = undefined/);
-  assert.match(source, /Retry startup/);
+  assert.match(authScreenSource, /Retry startup/);
 });
 
 test('workspace version and build time live inside the current-business card', () => {
@@ -580,11 +582,13 @@ test('mobile module directory and Home shortcuts use adaptive balanced grids', (
 
 
 test('authentication failures keep the user on the sign-in form instead of retrying app startup', () => {
-  const authStart = source.indexOf('} @else if (!signedIn) {');
-  const authEnd = source.indexOf('} @else {', authStart);
-  const authTemplate = source.slice(authStart, authEnd);
-  assert.ok(authStart >= 0 && authEnd > authStart, 'sign-in view must exist');
-  assert.match(authTemplate, /<form #authForm="ngForm"(?=[^>]*\(ngSubmit\)="authForm\.valid && submitAuth\(\)")(?=[^>]*class="stack")/);
+  // 3A-921 F1d: the sign-in card is the auth screen component's last branch;
+  // its submit emits to the shell, which runs submitAuth itself.
+  const authStart = authScreenSource.lastIndexOf('<main class="auth-card">');
+  const authTemplate = authScreenSource.slice(authStart);
+  assert.ok(authStart >= 0, 'sign-in view must exist');
+  assert.match(source, /\(submitAuthRequest\)="submitAuth\(\)"/);
+  assert.match(authTemplate, /<form #authForm="ngForm"(?=[^>]*\(ngSubmit\)="authForm\.valid && submitAuthRequest\.emit\(\)")(?=[^>]*class="stack")/);
   assert.match(authTemplate, /\[\(ngModel\)\]="email"/);
   assert.match(authTemplate, /\[\(ngModel\)\]="password"/);
   assert.match(authTemplate, /@if \(error\) \{ <aba-state-message kind="error" \[description\]="error" \/> \}/);
@@ -640,9 +644,9 @@ test('membership and platform-role refreshes also fail closed on an inaccessible
 
 
 test('sign-in and first-workspace forms expose localized inline errors to assistive technology', () => {
-  const authStart = source.indexOf('<form #authForm="ngForm"');
-  const authEnd = source.indexOf('</form>', authStart);
-  const authForm = source.slice(authStart, authEnd);
+  const authStart = authScreenSource.indexOf('<form #authForm="ngForm"');
+  const authEnd = authScreenSource.indexOf('</form>', authStart);
+  const authForm = authScreenSource.slice(authStart, authEnd);
   assert.ok(authStart >= 0 && authEnd > authStart);
   assert.match(authForm, /#emailModel="ngModel"/);
   assert.match(authForm, /#passwordModel="ngModel"/);
@@ -778,7 +782,7 @@ test('payment completion cannot clear the loading state of a newly selected work
 });
 
 test('invalid authentication, workspace, customer, invoice, payment and expense forms cannot invoke mutations', () => {
-  assert.match(source, /<form #authForm="ngForm"/);
+  assert.match(authScreenSource, /<form #authForm="ngForm"/);
   assert.match(source, /<form #workspaceForm="ngForm"/);
   assert.match(source, /<aba-customer-workspace/);
   assert.match(customerWorkspaceSource, /<form class="customer-workspace__search"[^>]*\(submit\)="submitSearch\(\$event\)"/);
@@ -1785,12 +1789,14 @@ test('an already-controlled page announces its next service-worker replacement',
 });
 
 test('public sign-in shell keeps the PWA install action and fallback available before authentication', () => {
-  const authStart = source.indexOf('} @else if (!signedIn) {');
-  const authEnd = source.indexOf('} @else {', authStart);
-  const auth = source.slice(authStart, authEnd);
+  // 3A-921 F1d: the sign-in card is the auth screen component's last branch.
+  const authStart = authScreenSource.lastIndexOf('<main class="auth-card">');
+  const auth = authScreenSource.slice(authStart);
   assert.ok(auth.includes('auth-mobile-install'));
   assert.ok(auth.includes('@if (!isInstalled)'));
-  assert.ok(auth.includes('(click)="installApp()"'));
+  // 3A-921 F1d: the install button emits; the shell runs installApp itself.
+  assert.ok(auth.includes('(click)="installRequest.emit()"'));
+  assert.match(source, /\(installRequest\)="installApp\(\)"/);
   assert.ok(auth.includes('installHelp && !isInstalled'));
   assert.ok(auth.includes('If no install prompt appears'));
 });

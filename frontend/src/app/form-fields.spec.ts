@@ -25,6 +25,8 @@ const designSystem = readFileSync(new URL('../design-system.css', import.meta.ur
 const styles = readFileSync(new URL('../styles.css', import.meta.url), 'utf8');
 const appCss = readFileSync(new URL('./app.component.css', import.meta.url), 'utf8');
 const appSource = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-921 F1d: the auth field errors live in the auth screen component now.
+const authScreenSource = readFileSync(new URL('./auth-screen.component.ts', import.meta.url), 'utf8');
 // 3A-351: the three reports field errors moved with the reports workspace.
 const reportsSource = readFileSync(new URL('./reports-workspace.component.ts', import.meta.url), 'utf8');
 
@@ -116,7 +118,7 @@ test('field errors that sit next to their field live inside the field label', ()
   // slice, not Slice I. Each of those controls already links to its error
   // via aria-describedby.
   for (const [id, home] of [
-    ['auth-email-error', appSource], ['auth-password-error', appSource], ['workspace-name-error', appSource],
+    ['auth-email-error', authScreenSource], ['auth-password-error', authScreenSource], ['workspace-name-error', appSource],
     ['profit-loss-start-error', reportsSource], ['profit-loss-end-error', reportsSource], ['aging-as-of-error', reportsSource],
     ['product-name-error', appSource], ['product-price-error', appSource], ['product-opening-quantity-error', appSource],
   ]) {

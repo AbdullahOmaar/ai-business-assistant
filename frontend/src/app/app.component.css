@@ -27,15 +27,12 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .divider{height:1px;background:#e5e7eb;margin:22px 0}
 .shell{min-height:100vh}
 .shell.auth-shell{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;padding-block:24px}
-.shell.auth-shell>.auth-card,.shell.auth-shell>.setup-card{margin:0 auto}
 /* Owner order 2026-11-27 (3A-919): the splash is one fixed full-screen step —
  * a fixed overlay that never participates in layout, so the opening cannot
  * jump or reposition when the taller sign-in form takes over (the old splash
  * was a centered card that slid from the middle to the top as soon as the
  * form replaced it). The overlay shares the shell background, so the boot
  * frame and the splash look like one continuous frame. */
-.splash-overlay{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:#f6f8fb}
-.splash-overlay .auth-card{margin:0 auto}
 /* Owner order 2026-11-27 (3A-919): in-app loading is a centered full-screen
  * overlay, like Mister's MascotSplash — the full-size character with the label
  * below it, centered on the screen, never a strip above the app bar. */
@@ -44,8 +41,6 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .install-button{display:none}
 .mobile-install-card{display:none}
 .mobile-more,.mobile-more-menu,.mobile-more-overlay{display:none}
-.language-row{display:flex;justify-content:flex-end;margin-bottom:8px}
-.language-toggle{min-height:38px}
 .sidebar{position:fixed;inset-block:0;inset-inline-end:0;width:var(--aba-layout-sidebar,245px);background:var(--aba-color-nav-surface,#111827);color:var(--aba-color-text-inverse,#e5e7eb);padding:26px 17px;display:flex;flex-direction:column;z-index:2}
 .brand{display:flex;align-items:center;gap:10px;color:var(--aba-color-text-inverse,#fff);text-decoration:none;font-size:16px;font-weight:800;padding:0 7px 38px}
 .brand-mark{display:grid;place-items:center;width:48px;height:48px;border-radius:15px;background:#a7f3d0;color:#064e3b;font-size:21px;font-weight:900;margin-bottom:20px}
@@ -111,27 +106,7 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .source-list{display:block;color:var(--aba-color-primary,#0f766e);font-size:10px;line-height:1.7;margin-top:8px}
 .source-list span{display:inline-block;margin-inline-end:9px}
 @media(max-width:480px){.source-list{font-size:11px}}
-.install-help{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;padding:12px 14px;background:#ecfdf5;border:1px solid #99f6e4;border-radius:12px;color:#065f46;font-size:12px;line-height:1.6}
-.install-help-inline{position:static;z-index:auto;width:min(520px,100%);max-width:100%;margin:0 0 14px auto;box-shadow:none}
-.setup-card,.auth-card{width:min(540px,calc(100% - 30px));margin:8vh auto;background:var(--aba-color-surface,#fff);border:1px solid #e5e7eb;border-radius:20px;padding:clamp(22px,5vw,42px);box-shadow:0 20px 70px #0f172a0b}
-.setup-card h1,.auth-card h1{font-size:clamp(17px,8vw,28px);letter-spacing:-.8px;margin:8px 0;overflow-wrap:normal}
-.setup-card>p:not(.eyebrow),.auth-card>p{font-size:12px;color:var(--aba-color-text-tertiary,#6b7280);line-height:1.7}
-.setup-steps{background:var(--aba-color-surface-subtle,#f8fafc);border-radius:12px;padding:14px;margin-top:20px}
-.setup-steps p{font-size:11px;line-height:1.7;color:#374151;margin:9px 0}
-.setup-steps code{font-size:10px;overflow-wrap:anywhere}
 .text-button{border:0;background:transparent;color:var(--aba-color-primary,#0f766e);font-size:11px;font-weight:700;padding:15px 0 0}
-.auth-card .primary{margin-top:3px}
-.auth-identity{display:flex;align-items:center;gap:12px;margin-bottom:18px}
-.auth-character{width:52px;height:52px;object-fit:contain;flex:none}
-.auth-app-name{font-size:19px;font-weight:800;letter-spacing:-.3px}
-.demo-login-button{width:100%;min-height:54px;margin-top:16px;padding:0 16px;display:flex;align-items:center;justify-content:center;gap:10px;border:1.5px solid #0f766e;border-radius:14px;background:var(--aba-color-surface,#fff);color:#0f766e;font:inherit;font-size:14px;font-weight:800;transition:background .18s ease,opacity .18s ease}
-.demo-login-button:hover:not(:disabled){background:#f0fdfa}
-.demo-login-button:focus-visible{outline:3px solid #0f766e;outline-offset:3px}
-.demo-login-button:disabled{opacity:.65;cursor:wait}
-.demo-login-icon{font-size:19px}
-.demo-login-arrow{margin-inline-start:auto;font-size:18px}
-.demo-login-note{margin:7px 0 0!important;text-align:center;font-size:10px!important;color:var(--aba-color-text-tertiary,#64748b)!important}
-.splash-release-line{display:block;margin:-8px 0 18px;color:var(--aba-color-text-primary,#0f172a);font-size:13.5px;font-weight:600;line-height:1.6;text-align:center}
 footer{display:flex;justify-content:space-between;gap:12px;margin-top:26px;padding-top:15px;border-top:1px solid #e5e7eb;color:var(--aba-color-text-tertiary,#6b7280);font-size:10px}
 footer span{color:var(--aba-color-nav-muted,#9ca3af)}
 .section-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -414,7 +389,6 @@ footer span{color:var(--aba-color-nav-muted,#9ca3af)}
  * U04 block on purpose so it wins at equal specificity. */
 @media(max-width:220px){.invoice-card-customer-copy>*{min-width:0}}
 /* Opening-card release metadata stays grouped, centered and direction-safe. */
-.splash-release-meta{display:grid;justify-items:center;gap:7px;width:100%;min-width:0;margin:0 0 18px;direction:inherit;text-align:center}
 .splash-version{justify-self:center;max-width:100%;white-space:normal;line-height:1.45;text-align:center;overflow-wrap:anywhere}
 .splash-release-line{display:block;max-width:100%;margin:0;color:var(--aba-color-text-primary,#0f172a);font-size:13.5px;font-weight:600;line-height:1.55;text-align:center;overflow-wrap:anywhere;unicode-bidi:plaintext}
 .sidebar-release-line{display:block;margin-top:5px;font-size:12px;font-weight:600;line-height:1.5;overflow-wrap:anywhere;unicode-bidi:plaintext}
