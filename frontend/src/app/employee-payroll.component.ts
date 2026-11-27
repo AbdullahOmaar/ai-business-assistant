@@ -5,7 +5,7 @@ import { LocalizationService } from './localization.service';
 import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecordTableColumn, type AbaRecordTableRow } from './shared/ui/aba-record-table.component';
 import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';
 import { AbaSearchFieldComponent } from './shared/ui/aba-search-field.component';
-import { ApiService, EmployeePayrollRecord, EmployeeRecord, TransportEntitlement } from './api.service';
+import { ApiService, DriverTripRow, EmployeePayrollRecord, EmployeeRecord, TransportEntitlement } from './api.service';
 import { DEFAULT_DAILY_DIVISOR, dailyDivisorFromSettings, transportEnabledFromSettings } from './transport-settings';
 
 @Component({
@@ -88,6 +88,40 @@ import { DEFAULT_DAILY_DIVISOR, dailyDivisorFromSettings, transportEnabledFromSe
         </div>
           </form>
         </div>
+
+      @if (transportEnabled && driverTripsEmployeeId) {
+      <section class="payroll-section driver-trips">
+        <div class="section-head">
+          <div>
+            <h3>{{ t('ui.employees.driverTrips.title') }}</h3>
+            <p>{{ t('ui.employees.driverTrips.hint') }}</p>
+          </div>
+          <span class="count">{{ filteredDriverTrips.length }}</span>
+        </div>
+        <div class="trip-filters">
+          <label>{{ t('ui.employees.driverTrips.from') }}
+            <input type="date" name="tripFrom" [disabled]="busy" [(ngModel)]="tripFrom">
+          </label>
+          <label>{{ t('ui.employees.driverTrips.to') }}
+            <input type="date" name="tripTo" [disabled]="busy" [(ngModel)]="tripTo">
+          </label>
+        </div>
+        <div class="entitlement-list">
+          @for (row of filteredDriverTrips; track row.invoice_id) {
+          <article class="entitlement-row trip-row">
+            <div class="entitlement-main">
+              <strong>{{ row.customer_name }}</strong>
+              <span>{{ t('ui.employees.driverTrips.invoice') }} {{ row.invoice_number }} · {{ (row.issue_date ?? '').slice(0, 10) }}</span>
+              <span>{{ row.trips }} {{ row.unit_name }} — {{ t('ui.employees.driverTrips.due') }} {{ row.due }} {{ row.currency_code }} · {{ t('ui.employees.driverTrips.paid') }} {{ row.paid }} · {{ t('ui.employees.driverTrips.remaining') }} {{ row.remaining }}</span>
+            </div>
+            <span class="count">{{ driverTripStatusLabel(row) }}</span>
+          </article>
+          } @empty {
+          <p class="empty">{{ t('ui.employees.driverTrips.empty') }}</p>
+          }
+        </div>
+      </section>
+      }
 
       <div class="employee-tools">
         <aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="employeeSearch" [hasActiveFilter]="employeeSearch.trim() !== ''" (clear)="employeeSearch = ''"><aba-search-field name="employeeSearch" [ariaLabel]="t('ui.m_k10p5m')" [placeholder]="t('ui.m_1s1lu82')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="employeeSearch" /></aba-filter-bar>
@@ -299,6 +333,8 @@ import { DEFAULT_DAILY_DIVISOR, dailyDivisorFromSettings, transportEnabledFromSe
     .entitlement-period{display:grid;gap:4px;font-size:12px;font-weight:700;color:var(--aba-color-text-secondary,#475569)}
     .entitlement-actions{display:flex;gap:8px}
     @media(max-width:600px){.entitlement-row{grid-template-columns:minmax(0,1fr)}.entitlement-actions{flex-wrap:wrap}}
+    .trip-filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+    .trip-filters label{display:grid;gap:5px;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155)}
     .partial-pay-form{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-top:14px}
     .partial-pay-form label{display:grid;gap:5px;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155);min-width:180px;flex:1}
     .partial-pay-form .field-hint{flex-basis:100%;font-size:11px;line-height:1.6;color:var(--aba-color-text-tertiary,#6b7280);margin:0}
@@ -376,6 +412,11 @@ export class EmployeePayrollComponent implements OnChanges {
   // 3A-920 step 5: the partial-payment amount in the payslip view,
   // prefilled with the remainder due.
   partialPayAmount = '';
+  // 3A-920 step 6: the trips table of the driver being edited.
+  driverTrips: DriverTripRow[] = [];
+  driverTripsEmployeeId: string | null = null;
+  tripFrom = '';
+  tripTo = '';
   mobileSection: 'employees' | 'prepare' | 'history' = 'employees';
   employeeFormOpen = false;
   editingEmployeeId: string | null = null;
@@ -660,6 +701,10 @@ export class EmployeePayrollComponent implements OnChanges {
     this.employeeWageBasis = 'monthly';
     this.employeeTripWage = '';
     this.employeeMonthlySalary = '';
+    this.driverTrips = [];
+    this.driverTripsEmployeeId = null;
+    this.tripFrom = '';
+    this.tripTo = '';
   }
 
   editEmployee(employee: EmployeeRecord): void {
@@ -678,6 +723,49 @@ export class EmployeePayrollComponent implements OnChanges {
     this.employeeMonthlySalary = employee.monthly_salary;
     this.message = '';
     this.error = '';
+    // 3A-920 step 6: a driver's profile carries their trips table.
+    this.driverTrips = [];
+    this.driverTripsEmployeeId = null;
+    this.tripFrom = '';
+    this.tripTo = '';
+    if (this.transportEnabled && employee.is_driver) {
+      this.driverTripsEmployeeId = employee.id;
+      void this.loadDriverTrips(employee.id);
+    }
+  }
+
+  async loadDriverTrips(employeeId: string): Promise<void> {
+    const businessId = this.businessId;
+    try {
+      const rows = await this.api.driverTrips(businessId, employeeId);
+      if (this.businessId === businessId && this.driverTripsEmployeeId === employeeId) {
+        this.driverTrips = rows;
+      }
+    } catch {
+      if (this.businessId === businessId && this.driverTripsEmployeeId === employeeId) {
+        this.driverTrips = [];
+      }
+    }
+  }
+
+  get filteredDriverTrips(): DriverTripRow[] {
+    return this.driverTrips.filter((row) => {
+      const day = (row.issue_date ?? '').slice(0, 10);
+      if (this.tripFrom && day < this.tripFrom) return false;
+      if (this.tripTo && day > this.tripTo) return false;
+      return true;
+    });
+  }
+
+  driverTripStatusLabel(row: DriverTripRow): string {
+    if (row.entitlement_status === 'proposed') return this.t('ui.invoices.transport.statusProposed');
+    if (row.entitlement_status === 'dismissed') return this.t('ui.invoices.transport.statusDismissed');
+    if (row.entitlement_status === 'cancelled') return this.t('ui.invoices.transport.statusCancelled');
+    const due = Number(row.due ?? '0');
+    const paid = Number(row.paid ?? '0');
+    if (due > 0 && paid >= due) return this.t('ui.employees.driverTrips.fullyPaid');
+    if (paid > 0) return this.t('ui.employees.driverTrips.partiallyPaid');
+    return this.t('ui.invoices.transport.statusConfirmed');
   }
 
   cancelEmployeeEdit(): void {

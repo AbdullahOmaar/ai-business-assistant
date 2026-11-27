@@ -1354,6 +1354,19 @@
         "hint": "Recorded as a payroll expense; the remainder stays due until it is fully settled.",
         "recorded": "Payment recorded — the remainder is still due",
         "completed": "Salary fully paid"
+      },
+      "driverTrips": {
+        "title": "Driver trips",
+        "hint": "Every issued invoice carrying transport data for this driver — due from the trip wage recorded at issue, paid from payroll.",
+        "from": "From date",
+        "to": "To date",
+        "invoice": "Invoice",
+        "due": "Due",
+        "paid": "Paid",
+        "remaining": "Remaining",
+        "partiallyPaid": "Partially paid",
+        "fullyPaid": "Fully paid",
+        "empty": "No trips recorded in this period"
       }
     },
     "products": {

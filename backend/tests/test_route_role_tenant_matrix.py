@@ -163,6 +163,9 @@ MATRIX = [
     ("GET", "/api/v1/businesses/{business_id}/employees", "deny"),
     ("POST", "/api/v1/businesses/{business_id}/employees", "deny"),
     ("PATCH", "/api/v1/businesses/{business_id}/employees/{employee_id}", "deny"),
+    # 3A-920 step 6: the driver trips table reads payroll-grade data
+    # (wage snapshots) — owner-only like the rest of this surface.
+    ("GET", "/api/v1/businesses/{business_id}/employees/{employee_id}/driver-trips", "deny"),
     ("GET", "/api/v1/businesses/{business_id}/payroll", "deny"),
     ("POST", "/api/v1/businesses/{business_id}/employees/{employee_id}/payroll", "deny"),
     ("PATCH", "/api/v1/businesses/{business_id}/payroll/{payroll_id}", "deny"),

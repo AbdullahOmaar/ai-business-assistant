@@ -21,6 +21,7 @@ from app.dependencies import get_principal, get_session
 from app.models import (
     AuditEvent,
     Business,
+    Customer,
     Employee,
     Expense,
     Invoice,
@@ -951,3 +952,91 @@ def dismiss_transport_entitlement(
         return {"invoice_id": str(invoice.id), "status": "dismissed"}
 
     return _commit(session, operation)
+
+
+# ---------------------------------------------------------------------------
+# 3A-920 step 6 — the driver's trips table inside the employee profile.
+#
+# One row per ISSUED invoice that carried a transport block for this
+# driver: date, customer, trips, and the money trail (due from the
+# issue-time wage snapshot, paid from the confirmed payroll record's
+# payment ledger, remaining). Drafts never appear — a trip exists
+# once its invoice is issued. Like the entitlement queue, this reads
+# stored facts, so it keeps answering while the master switch is off;
+# the UI renders the section only while the switch is on.
+# ---------------------------------------------------------------------------
+
+
+@router.get("/employees/{employee_id}/driver-trips")
+def list_driver_trips(
+    business_id: UUID,
+    employee_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    _owner(session, principal, business_id)
+    employee = session.scalars(select(Employee).where(
+        Employee.id == employee_id, Employee.business_id == business_id
+    )).one_or_none()
+    if employee is None:
+        raise HTTPException(status_code=404, detail="Employee not found")
+    rows = session.execute(
+        select(Invoice, Customer.name)
+        .outerjoin(Customer, (Customer.id == Invoice.customer_id) &
+                   (Customer.business_id == Invoice.business_id))
+        .where(
+            Invoice.business_id == business_id,
+            Invoice.driver_employee_id == employee_id,
+            Invoice.issue_date.is_not(None),
+            Invoice.transport_entitlement_status.is_not(None),
+        )
+        .order_by(Invoice.issue_date.desc(), Invoice.id)
+    ).all()
+    payroll_ids = [
+        invoice.transport_entitlement_payroll_id
+        for invoice, _ in rows
+        if invoice.transport_entitlement_payroll_id is not None
+    ]
+    paid_by_payroll: dict[UUID, Decimal] = {}
+    if payroll_ids:
+        sums = session.execute(
+            select(
+                PayrollPayment.payroll_record_id,
+                func.coalesce(func.sum(PayrollPayment.amount), 0),
+            )
+            .where(
+                PayrollPayment.business_id == business_id,
+                PayrollPayment.payroll_record_id.in_(payroll_ids),
+            )
+            .group_by(PayrollPayment.payroll_record_id)
+        ).all()
+        paid_by_payroll = {record_id: Decimal(total) for record_id, total in sums}
+    business = session.scalars(select(Business).where(Business.id == business_id)).one_or_none()
+    unit_name = transport_unit_name(session, business_id=business_id)
+    result = []
+    for invoice, customer_name in rows:
+        due = None
+        if invoice.transport_trip_wage is not None and invoice.transport_trips is not None:
+            due = _money(invoice.transport_trip_wage * invoice.transport_trips)
+        paid = Decimal(0)
+        if invoice.transport_entitlement_payroll_id is not None:
+            paid = paid_by_payroll.get(invoice.transport_entitlement_payroll_id, Decimal(0))
+        paid = _money(paid)
+        result.append({
+            "invoice_id": str(invoice.id),
+            "invoice_number": invoice.invoice_number,
+            "issue_date": invoice.issue_date.isoformat() if invoice.issue_date else None,
+            "customer_name": customer_name,
+            "trips": invoice.transport_trips,
+            "unit_name": unit_name,
+            "trip_wage": str(invoice.transport_trip_wage)
+            if invoice.transport_trip_wage is not None else None,
+            "due": str(due) if due is not None else None,
+            "paid": str(paid),
+            "remaining": str(_money(due - paid)) if due is not None else None,
+            "entitlement_status": invoice.transport_entitlement_status,
+            "payroll_id": str(invoice.transport_entitlement_payroll_id)
+            if invoice.transport_entitlement_payroll_id else None,
+            "currency_code": business.currency_code if business else invoice.currency_code,
+        })
+    return result

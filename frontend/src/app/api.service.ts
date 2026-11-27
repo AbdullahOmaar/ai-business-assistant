@@ -43,6 +43,14 @@ export interface InvoiceDetail extends Invoice {
   transport_trip_wage?: string | null; transport_entitlement_amount?: string | null; transport_entitlement_payroll_id?: string | null;
   lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; sold_unit?: string | null; conversion_factor?: string | null; unit_price: string; line_total: string }>;
 }
+/** One row of the driver's trips table in the employee profile (3A-920 step 6). */
+export interface DriverTripRow {
+  invoice_id: string; invoice_number: string; issue_date: string | null;
+  customer_name: string | null; trips: number | null; unit_name: string;
+  trip_wage: string | null; due: string | null; paid: string; remaining: string | null;
+  entitlement_status: 'proposed' | 'confirmed' | 'dismissed' | 'cancelled';
+  payroll_id: string | null; currency_code: string;
+}
 /** A proposed driver entitlement waiting in the payroll queue (3A-920 step 4). */
 export interface TransportEntitlement {
   invoice_id: string; invoice_number: string; issue_date: string | null;
@@ -776,6 +784,11 @@ export class ApiService {
     return this.request<EmployeePayrollRecord & { invoice_id: string }>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/transport-entitlements/${encodeURIComponent(invoiceId)}/confirm`,
       'POST', period ? { period } : {}
+    );
+  }
+  driverTrips(businessId: string, employeeId: string): Promise<DriverTripRow[]> {
+    return this.request<DriverTripRow[]>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/employees/${encodeURIComponent(employeeId)}/driver-trips`, 'GET'
     );
   }
   dismissTransportEntitlement(businessId: string, invoiceId: string): Promise<{ invoice_id: string; status: string }> {
