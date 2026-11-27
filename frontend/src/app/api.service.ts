@@ -43,6 +43,27 @@ export interface InvoiceDetail extends Invoice {
   transport_trip_wage?: string | null; transport_entitlement_amount?: string | null; transport_entitlement_payroll_id?: string | null;
   lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; sold_unit?: string | null; conversion_factor?: string | null; unit_price: string; line_total: string }>;
 }
+/** A customer order (3A-923 C4): a pre-invoice document. Never moves
+    stock and never posts financially; conversion creates a draft
+    invoice through the ordinary invoice machinery. */
+export interface CustomerOrderLine {
+  id: string; product_id: string | null; description: string; quantity: string;
+  sold_unit?: string | null; conversion_factor?: string | null;
+  unit_price: string; line_total: string;
+}
+export interface CustomerOrder {
+  id: string; business_id: string; customer_id?: string | null; customer_name?: string | null;
+  order_number: string; status: 'draft' | 'confirmed' | 'fulfilled' | 'cancelled';
+  currency_code: string; discount_rate: string; tax_rate: string;
+  subtotal: string; discount_total: string; tax_total: string; total: string;
+  notes?: string | null;
+  driver_employee_id?: string | null; driver_name?: string | null;
+  transport_trips?: number | null; transport_from?: string | null; transport_to?: string | null;
+  converted_invoice_id?: string | null;
+  invoice_id?: string; invoice_number?: string;
+  created_at?: string | null;
+  lines: CustomerOrderLine[];
+}
 /** One row of the driver's trips table in the employee profile (3A-920 step 6). */
 export interface DriverTripRow {
   invoice_id: string; invoice_number: string; issue_date: string | null;
@@ -896,6 +917,46 @@ export class ApiService {
     return this.request<Invoice>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}/duplicate`,
       'POST', {}
+    );
+  }
+  // 3A-923 C4: customer orders — a pre-invoice document (see the
+  // CustomerOrder interface). The server prices every line from the
+  // catalogue; the client never sends a unit price for product lines.
+  customerOrders(businessId: string, offset = 0, limit = 100): Promise<CustomerOrder[]> {
+    const query = offset > 0 ? `?limit=${limit}&offset=${offset}` : `?limit=${limit}`;
+    return this.request<CustomerOrder[]>(`/api/v1/businesses/${encodeURIComponent(businessId)}/orders${query}`);
+  }
+  createCustomerOrder(businessId: string, body: {
+    order_number: string; currency_code: string; customer_id?: string; lines: InvoiceLineInput[];
+    discount_rate?: number | string; tax_rate?: number | string; notes?: string | null;
+    driver_employee_id?: string | null; transport_trips?: number | null;
+    transport_from?: string | null; transport_to?: string | null;
+  }): Promise<CustomerOrder> {
+    return this.request<CustomerOrder>(`/api/v1/businesses/${encodeURIComponent(businessId)}/orders`, 'POST', body);
+  }
+  updateCustomerOrder(businessId: string, orderId: string, body: {
+    order_number: string; currency_code: string; customer_id?: string; lines: InvoiceLineInput[];
+    discount_rate?: number | string; tax_rate?: number | string; notes?: string | null;
+    driver_employee_id?: string | null; transport_trips?: number | null;
+    transport_from?: string | null; transport_to?: string | null;
+  }): Promise<CustomerOrder> {
+    return this.request<CustomerOrder>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/orders/${encodeURIComponent(orderId)}`, 'PATCH', body
+    );
+  }
+  confirmCustomerOrder(businessId: string, orderId: string): Promise<CustomerOrder> {
+    return this.request<CustomerOrder>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/orders/${encodeURIComponent(orderId)}/confirm`, 'POST', {}
+    );
+  }
+  cancelCustomerOrder(businessId: string, orderId: string): Promise<CustomerOrder> {
+    return this.request<CustomerOrder>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/orders/${encodeURIComponent(orderId)}/cancel`, 'POST', {}
+    );
+  }
+  convertCustomerOrder(businessId: string, orderId: string): Promise<CustomerOrder> {
+    return this.request<CustomerOrder>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/orders/${encodeURIComponent(orderId)}/convert`, 'POST', {}
     );
   }
   auditEvents(businessId: string, filters: { limit?: number; offset?: number; action?: string; target_type?: string }): Promise<AuditEventPage> {
