@@ -89,6 +89,10 @@ export const FEATURE_CATALOG = [
         titleKey: "release.catalog.m_gwuum9",
         detailKey: "release.catalog.m_1pziywl",
       },
+      {
+        titleKey: "release.catalog.m_lxm18n",
+        detailKey: "release.catalog.m_ac72sn",
+      },
     ],
   },
   {
@@ -107,6 +111,10 @@ export const FEATURE_CATALOG = [
       {
         titleKey: "release.catalog.m_3dxmnk",
         detailKey: "release.catalog.m_9zcek8",
+      },
+      {
+        titleKey: "release.catalog.m_jx3v0u",
+        detailKey: "release.catalog.m_bcijx0",
       },
     ],
   },
@@ -130,6 +138,10 @@ export const FEATURE_CATALOG = [
       {
         titleKey: "release.catalog.m_b6anog",
         detailKey: "release.catalog.m_faiuv6",
+      },
+      {
+        titleKey: "release.catalog.m_2mgknk",
+        detailKey: "release.catalog.m_45rsqd",
       },
     ],
   },
@@ -281,6 +293,14 @@ export const FEATURE_CATALOG = [
       {
         titleKey: "release.catalog.m_1clhq8u",
         detailKey: "release.catalog.m_fo2wvl",
+      },
+      {
+        titleKey: "release.catalog.m_5rw0bd",
+        detailKey: "release.catalog.m_ili3u1",
+      },
+      {
+        titleKey: "release.catalog.m_60s80r",
+        detailKey: "release.catalog.m_737in0",
       },
     ],
   },

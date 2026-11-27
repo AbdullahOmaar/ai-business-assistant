@@ -1668,7 +1668,17 @@
       "v1160_title": "Version 1.16.0",
       "v1150_title": "Version 1.15.0",
       "v1140_title": "Version 1.14.0",
-      "v1130_title": "Version 1.13.0"
+      "v1130_title": "Version 1.13.0",
+      "m_2mgknk": "Transaction and payment methods",
+      "m_45rsqd": "Customers can pay in cash, by transfer, card or wallet, or on credit through partial payments against the invoice until it settles; transport costs are recorded as expenses under the transport category.",
+      "m_jx3v0u": "Transport & delivery details",
+      "m_bcijx0": "An optional invoice block (driver/delivery agent, trip count, from/to) shown only when the company enables Transport & delivery in its settings; it raises a proposed driver entitlement in payroll — never posted automatically.",
+      "m_lxm18n": "Second selling unit with a conversion factor",
+      "m_ac72sn": "A product can sell in a second company-named unit (the conversion factor is product data), while stock is deducted in the base unit in the current movements ledger. Appears when Transport & delivery is enabled.",
+      "m_5rw0bd": "Per-trip pay and driver entitlements",
+      "m_ili3u1": "With Transport & delivery enabled: a driver/delivery-agent tag on the employee card, a monthly, daily or per-trip wage basis, proposed entitlements from invoices confirmed manually in payroll, and the driver's trips table inside their profile (due, paid, remaining).",
+      "m_60s80r": "Partial salary payment",
+      "m_737in0": "An approved payroll record can be settled in parts — each payment is recorded as a payroll expense and the remainder stays due until the net is complete."
     }
   },
   "catalog": {
