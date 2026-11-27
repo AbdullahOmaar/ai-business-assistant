@@ -28,6 +28,7 @@ import { SuppliersWorkspaceComponent } from './suppliers-workspace.component';
 import { RecurringWorkspaceComponent } from './recurring-workspace.component';
 import { IntegrityWorkspaceComponent } from './integrity-workspace.component';
 import { TaxesWorkspaceComponent } from './taxes-workspace.component';
+import { CustomerOrdersComponent } from './customer-orders.component';
 import { InvoiceDetailDrawerComponent } from './invoice-detail-drawer.component';
 import { PaymentsWorkspaceComponent } from './payments-workspace.component';
 import { AuthScreenComponent } from './auth-screen.component';
@@ -68,7 +69,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, SuppliersWorkspaceComponent, RecurringWorkspaceComponent, IntegrityWorkspaceComponent, TaxesWorkspaceComponent, InvoiceDetailDrawerComponent, PaymentsWorkspaceComponent, AuthScreenComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, SuppliersWorkspaceComponent, RecurringWorkspaceComponent, IntegrityWorkspaceComponent, TaxesWorkspaceComponent, CustomerOrdersComponent, InvoiceDetailDrawerComponent, PaymentsWorkspaceComponent, AuthScreenComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -808,6 +809,29 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                 }
             }
 
+            @if (tab === 'invoices' && business) {
+              @defer (when tab === 'invoices' && business) {
+                <aba-customer-orders
+                  [businessId]="business.id"
+                  [userId]="workspaceUserId"
+                  [role]="business.role"
+                  [signedIn]="signedIn"
+                  [currencyCode]="business.currency_code"
+                  [products]="products"
+                  [customers]="customers"
+                  [drivers]="invoiceDrivers"
+                  [transportEnabled]="transportEnabled"
+                  [transportUnitName]="transportUnitName"
+                  (openInvoice)="openConvertedInvoice($event)" />
+              } @placeholder {
+                <aba-defer-placeholder [description]="t('ui.m_1oo6dkn')" />
+              } @error {
+                  <section abaCard class="panel narrow">
+                    <aba-state-message kind="error" [description]="t('ui.m_deferr1')" />
+                  </section>
+                }
+            }
+
             @if (tab === 'audit') {
               @defer (when tab === 'audit') {
                 <aba-audit-events-workspace
@@ -1443,6 +1467,18 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoiceDetailError = '';
     this.invoiceDetailTrigger = null;
     if (restoreFocus) queueMicrotask(() => { if (trigger?.isConnected) trigger.focus(); });
+  }
+
+  // 3A-923 C4 step 3: a converted order opens its new invoice draft
+  // in the invoice editor, so the owner keeps working from there.
+  async openConvertedInvoice(invoiceId: string): Promise<void> {
+    if (!this.business || !this.signedIn) return;
+    const existing = this.invoices.find(item => item.id === invoiceId);
+    if (existing) {
+      await this.editInvoice(existing);
+      return;
+    }
+    await this.editInvoice({ id: invoiceId, status: 'draft', invoice_number: '', currency_code: this.business.currency_code, total: '0.00' } as Invoice);
   }
 
   editInvoiceFromDetails(): void {

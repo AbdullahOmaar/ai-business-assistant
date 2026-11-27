@@ -47,6 +47,8 @@ from app.models.people import (
 from app.models.sales import (
     CreditNote,
     Customer,
+    CustomerOrder,
+    CustomerOrderLine,
     Invoice,
     InvoiceLine,
     Payment,
@@ -77,6 +79,8 @@ __all__ = [
     "CashboxEntry",
     "CreditNote",
     "Customer",
+    "CustomerOrder",
+    "CustomerOrderLine",
     "DemoRateLimitCounter",
     "Department",
     "Employee",

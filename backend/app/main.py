@@ -17,6 +17,7 @@ from app.employee_payroll_api import router as employee_payroll_router
 from app.extended_api import router as extended_business_router
 from app.firebase_auth import configure_firebase_auth
 from app.monitoring import configure_sentry
+from app.orders_api import router as orders_router
 from app.org_api import router as org_router
 from app.platform_admin_api import router as platform_admin_router
 from app.purchasing_api import router as purchasing_router
@@ -85,6 +86,7 @@ app.include_router(purchasing_router)
 app.include_router(assistant_router)
 app.include_router(platform_admin_router)
 app.include_router(employee_payroll_router)
+app.include_router(orders_router)
 app.include_router(org_router)
 app.include_router(demo_auth_router)
 app.include_router(bulk_router)

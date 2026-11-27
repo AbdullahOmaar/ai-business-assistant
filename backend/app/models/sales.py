@@ -331,3 +331,122 @@ class CreditNote(Base):
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
 
+
+class CustomerOrder(Base):
+    """Customer order header (3A-923 C4); a pre-invoice document.
+
+    An order never moves stock and never posts financially: on
+    fulfilment it converts one-to-one into a DRAFT invoice through the
+    ordinary invoice service, and stock moves only when that invoice
+    is issued. Totals are stored snapshots calculated by trusted
+    services, exactly like invoices. The optional delivery fields
+    mirror the invoice transport block (3A-920 step 4) and are copied
+    into the converted invoice; they are gated by the same master
+    switch at write time.
+    """
+
+    __tablename__ = "customer_orders"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["customer_id", "business_id"], ["customers.id", "customers.business_id"],
+            name="fk_customer_orders_customer_business", ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["driver_employee_id", "business_id"], ["employees.id", "employees.business_id"],
+            name="fk_customer_orders_driver_business", ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["converted_invoice_id", "business_id"], ["invoices.id", "invoices.business_id"],
+            name="fk_customer_orders_converted_invoice_business", ondelete="RESTRICT",
+        ),
+        UniqueConstraint("business_id", "order_number", name="uq_customer_order_business_number"),
+        UniqueConstraint("id", "business_id", name="uq_customer_orders_id_business"),
+        UniqueConstraint("converted_invoice_id", name="uq_customer_order_converted_invoice"),
+        CheckConstraint(
+            "status IN ('draft', 'confirmed', 'fulfilled', 'cancelled')",
+            name="ck_customer_order_status",
+        ),
+        CheckConstraint(
+            "subtotal >= 0 AND tax_total >= 0 AND discount_total >= 0 AND total >= 0",
+            name="ck_customer_order_nonnegative_totals",
+        ),
+        CheckConstraint(
+            "transport_trips IS NULL OR transport_trips >= 0",
+            name="ck_customer_order_transport_trips_nonnegative",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    customer_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    order_number: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False, default="draft")
+    currency_code: Mapped[str] = mapped_column(String(3), nullable=False)
+    discount_rate: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False, default=Decimal(0))
+    tax_rate: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False, default=Decimal(0))
+    subtotal: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0))
+    tax_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0))
+    discount_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0))
+    total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0))
+    notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    driver_employee_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    transport_trips: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    transport_from: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    transport_to: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    converted_invoice_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+    lines: Mapped[list["CustomerOrderLine"]] = relationship(
+        back_populates="order", cascade="all, delete-orphan"
+    )
+
+
+class CustomerOrderLine(Base):
+    """Customer order line with immutable price/description snapshots.
+
+    Mirrors InvoiceLine: product lines are priced from the catalogue
+    by the server, and the sold unit + conversion factor are
+    snapshotted at write time so the conversion into an invoice stays
+    exact even if the product configuration changes later.
+    """
+
+    __tablename__ = "customer_order_lines"
+    __table_args__ = (
+        UniqueConstraint("id", "business_id", name="uq_customer_order_lines_id_business"),
+        ForeignKeyConstraint(
+            ["order_id", "business_id"],
+            ["customer_orders.id", "customer_orders.business_id"],
+            name="fk_customer_order_lines_order_business",
+            ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["product_id", "business_id"], ["products.id", "products.business_id"],
+            name="fk_customer_order_lines_product_business", ondelete="RESTRICT",
+        ),
+        CheckConstraint("quantity > 0", name="ck_customer_order_line_quantity_positive"),
+        CheckConstraint(
+            "unit_price >= 0 AND line_total >= 0",
+            name="ck_customer_order_line_amounts_nonnegative",
+        ),
+        CheckConstraint(
+            "conversion_factor IS NULL OR conversion_factor > 0",
+            name="ck_customer_order_line_conversion_factor_positive",
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    order_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    product_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    description: Mapped[str] = mapped_column(String(300), nullable=False)
+    quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
+    sold_unit: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    conversion_factor: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    line_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    order: Mapped["CustomerOrder"] = relationship(back_populates="lines")

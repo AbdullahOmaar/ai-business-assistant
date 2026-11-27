@@ -116,6 +116,10 @@ export const FEATURE_CATALOG = [
         titleKey: "release.catalog.m_jx3v0u",
         detailKey: "release.catalog.m_bcijx0",
       },
+      {
+        titleKey: "release.catalog.m_cqt8jk",
+        detailKey: "release.catalog.m_szprfk",
+      },
     ],
   },
   {
