@@ -1,7 +1,10 @@
 """Business-scoped employee directory and payroll workflow.
 
-Payroll totals are always calculated on the server. Payroll records are posted
-as one linked Payroll expense only when an approved record is marked paid.
+Payroll totals are always calculated on the server. Payments against
+an approved record are written as Payroll expenses through the
+payroll_payments ledger (3A-920 step 5): a partial payment keeps the
+remainder due, and the record is marked paid only when its payments
+sum to the net pay.
 """
 import re
 from datetime import UTC, datetime
@@ -10,7 +13,7 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, ConfigDict, Field, field_validator
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -22,6 +25,7 @@ from app.models import (
     Expense,
     Invoice,
     MembershipRole,
+    PayrollPayment,
     PayrollRecord,
 )
 from app.security import (
@@ -240,7 +244,21 @@ def _employee_dict(employee: Employee) -> dict:
     }
 
 
-def _payroll_dict(record: PayrollRecord, employee_name: str) -> dict:
+def _paid_amount(session: Session, *, business_id: UUID, payroll_record_id: UUID) -> Decimal:
+    """3A-920 step 5: the sum of a record's payment events (0 when none)."""
+    total = session.scalar(
+        select(func.coalesce(func.sum(PayrollPayment.amount), 0)).where(
+            PayrollPayment.business_id == business_id,
+            PayrollPayment.payroll_record_id == payroll_record_id,
+        )
+    )
+    return _money(Decimal(total))
+
+
+def _payroll_dict(
+    record: PayrollRecord, employee_name: str, paid_amount: Decimal = Decimal(0)
+) -> dict:
+    paid = _money(paid_amount)
     return {
         "id": str(record.id),
         "business_id": str(record.business_id),
@@ -254,6 +272,11 @@ def _payroll_dict(record: PayrollRecord, employee_name: str) -> dict:
         "bonuses": str(record.bonuses),
         "deductions": str(record.deductions),
         "net_pay": str(record.net_pay),
+        # 3A-920 step 5: partial-payment progress, derived from the
+        # payments ledger — the record's status stays 'approved' until
+        # the remainder reaches zero.
+        "paid_amount": str(paid),
+        "remaining_amount": str(_money(record.net_pay - paid)),
         "status": record.status,
         "expense_id": str(record.expense_id) if record.expense_id else None,
         "approved_by_subject": record.approved_by_subject,
@@ -437,7 +460,26 @@ def list_payroll(
         query.order_by(PayrollRecord.period.desc(), Employee.name, PayrollRecord.id)
         .offset(offset).limit(limit)
     ).all()
-    return [_payroll_dict(record, employee_name) for record, employee_name in rows]
+    # 3A-920 step 5: one grouped sum for the whole page, not one per row.
+    paid_by_record: dict[UUID, Decimal] = {}
+    record_ids = [record.id for record, _ in rows]
+    if record_ids:
+        sums = session.execute(
+            select(
+                PayrollPayment.payroll_record_id,
+                func.coalesce(func.sum(PayrollPayment.amount), 0),
+            )
+            .where(
+                PayrollPayment.business_id == business_id,
+                PayrollPayment.payroll_record_id.in_(record_ids),
+            )
+            .group_by(PayrollPayment.payroll_record_id)
+        ).all()
+        paid_by_record = {record_id: Decimal(total) for record_id, total in sums}
+    return [
+        _payroll_dict(record, employee_name, paid_by_record.get(record.id, Decimal(0)))
+        for record, employee_name in rows
+    ]
 
 
 @router.post("/employees/{employee_id}/payroll", status_code=201)
@@ -580,6 +622,71 @@ def approve_payroll(
     return _payroll_dict(record, employee_name)
 
 
+def _apply_payroll_payment(
+    session: Session,
+    *,
+    business_id: UUID,
+    principal: AuthenticatedPrincipal,
+    record: PayrollRecord,
+    employee_name: str,
+    currency_code: str,
+    amount: Decimal,
+    paid_at: datetime,
+) -> Expense:
+    """Write ONE payment event (3A-920 step 5): a Payroll expense in the
+    exact shape the full-pay path has always written, plus its ledger
+    row. Returns the expense. The caller decides whether this payment
+    completes the record."""
+    expense = Expense(
+        business_id=business_id,
+        category="Payroll",
+        description=f"Payroll payment — {employee_name} — {record.period}",
+        amount=amount,
+        currency_code=currency_code,
+        incurred_at=paid_at,
+        vendor_name=employee_name,
+        reference=f"payroll:{record.id}",
+    )
+    session.add(expense)
+    session.flush()
+    session.add(PayrollPayment(
+        business_id=business_id,
+        payroll_record_id=record.id,
+        expense_id=expense.id,
+        amount=amount,
+        created_by_subject=principal.subject,
+    ))
+    session.flush()
+    return expense
+
+
+def _payable_record(
+    session: Session, *, business_id: UUID, payroll_id: UUID
+) -> tuple[PayrollRecord, Employee, Business]:
+    """The shared guard for both payment paths: an approved record
+    whose employee + business references are still available."""
+    record = session.scalars(
+        select(PayrollRecord).where(
+            PayrollRecord.id == payroll_id, PayrollRecord.business_id == business_id
+        ).with_for_update()
+    ).one_or_none()
+    if record is None:
+        raise HTTPException(status_code=404, detail="Payroll record not found")
+    if record.status != "approved" or record.expense_id is not None:
+        raise HTTPException(status_code=409, detail="Only approved, unpaid payroll can be paid.")
+    employee = session.scalars(select(Employee).where(
+        Employee.id == record.employee_id, Employee.business_id == business_id
+    )).one_or_none()
+    business = session.scalars(select(Business).where(
+        Business.id == business_id, Business.is_active.is_(True)
+    )).one_or_none()
+    if employee is None or business is None:
+        raise HTTPException(status_code=409, detail="Payroll references are no longer available.")
+    if record.net_pay <= 0:
+        raise HTTPException(status_code=422, detail="Payroll net pay must be greater than zero.")
+    return record, employee, business
+
+
 @router.post("/payroll/{payroll_id}/pay")
 def pay_payroll(
     business_id: UUID,
@@ -589,38 +696,20 @@ def pay_payroll(
 ):
     def operation():
         _owner(session, principal, business_id)
-        record = session.scalars(
-            select(PayrollRecord).where(
-                PayrollRecord.id == payroll_id, PayrollRecord.business_id == business_id
-            ).with_for_update()
-        ).one_or_none()
-        if record is None:
-            raise HTTPException(status_code=404, detail="Payroll record not found")
-        if record.status != "approved" or record.expense_id is not None:
-            raise HTTPException(status_code=409, detail="Only approved, unpaid payroll can be paid.")
-        employee = session.scalars(select(Employee).where(
-            Employee.id == record.employee_id, Employee.business_id == business_id
-        )).one_or_none()
-        business = session.scalars(select(Business).where(
-            Business.id == business_id, Business.is_active.is_(True)
-        )).one_or_none()
-        if employee is None or business is None:
-            raise HTTPException(status_code=409, detail="Payroll references are no longer available.")
-        if record.net_pay <= 0:
-            raise HTTPException(status_code=422, detail="Payroll net pay must be greater than zero.")
-        paid_at = datetime.now(UTC)
-        expense = Expense(
-            business_id=business_id,
-            category="Payroll",
-            description=f"Payroll payment — {employee.name} — {record.period}",
-            amount=record.net_pay,
-            currency_code=business.currency_code,
-            incurred_at=paid_at,
-            vendor_name=employee.name,
-            reference=f"payroll:{record.id}",
+        record, employee, business = _payable_record(
+            session, business_id=business_id, payroll_id=payroll_id
         )
-        session.add(expense)
-        session.flush()
+        # 3A-920 step 5: full pay settles the REMAINDER — for a record
+        # with no partial payments that is the full net, exactly as
+        # before; the payment lands in the same ledger either way.
+        already_paid = _paid_amount(session, business_id=business_id, payroll_record_id=record.id)
+        remaining = _money(record.net_pay - already_paid)
+        paid_at = datetime.now(UTC)
+        expense = _apply_payroll_payment(
+            session, business_id=business_id, principal=principal, record=record,
+            employee_name=employee.name, currency_code=business.currency_code,
+            amount=remaining, paid_at=paid_at,
+        )
         record.expense_id = expense.id
         record.status = "paid"
         record.paid_at = paid_at
@@ -628,10 +717,72 @@ def pay_payroll(
         session.flush()
         _audit(session, business_id, principal.subject, "payroll.paid", "payroll", record.id,
                f"Payroll for {record.period} marked paid and linked to one Payroll expense.")
-        return record, employee.name
+        return record, employee.name, record.net_pay
 
-    record, employee_name = _commit(session, operation)
-    return _payroll_dict(record, employee_name)
+    record, employee_name, paid_total = _commit(session, operation)
+    return _payroll_dict(record, employee_name, paid_total)
+
+
+class PayrollPaymentCreate(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    amount: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
+
+
+@router.post("/payroll/{payroll_id}/payments", status_code=201)
+def record_payroll_payment(
+    business_id: UUID,
+    payroll_id: UUID,
+    body: PayrollPaymentCreate,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    """3A-920 step 5 — «دفع جزء»: record one partial payment against an
+    approved record and keep the remainder due. The record flips to
+    'paid' only when the payments sum reaches the net pay."""
+
+    def operation():
+        _owner(session, principal, business_id)
+        record, employee, business = _payable_record(
+            session, business_id=business_id, payroll_id=payroll_id
+        )
+        already_paid = _paid_amount(session, business_id=business_id, payroll_record_id=record.id)
+        amount = _money(body.amount)
+        remaining = _money(record.net_pay - already_paid)
+        if amount > remaining:
+            raise HTTPException(
+                status_code=422, detail="Payment exceeds the remaining amount due."
+            )
+        paid_at = datetime.now(UTC)
+        expense = _apply_payroll_payment(
+            session, business_id=business_id, principal=principal, record=record,
+            employee_name=employee.name, currency_code=business.currency_code,
+            amount=amount, paid_at=paid_at,
+        )
+        new_paid = _money(already_paid + amount)
+        completed = new_paid == record.net_pay
+        if completed:
+            record.expense_id = expense.id
+            record.status = "paid"
+            record.paid_at = paid_at
+            record.paid_by_subject = principal.subject
+        session.flush()
+        if completed:
+            summary = (
+                f"Payroll payment of {amount} for {record.period} completed the "
+                f"payment; the record is now fully paid."
+            )
+        else:
+            summary = (
+                f"Payroll payment of {amount} for {record.period} recorded; "
+                f"{_money(record.net_pay - new_paid)} remains due."
+            )
+        _audit(session, business_id, principal.subject,
+               "payroll.payment_recorded", "payroll", record.id, summary)
+        return record, employee.name, new_paid
+
+    record, employee_name, paid_total = _commit(session, operation)
+    return _payroll_dict(record, employee_name, paid_total)
 
 
 # ---------------------------------------------------------------------------

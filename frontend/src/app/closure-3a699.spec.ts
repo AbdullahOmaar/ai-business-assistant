@@ -36,8 +36,11 @@ test('U12/G1: the payroll period filter folds behind the filter button with a vi
 test('U12: every payroll row offers the payslip, and the payslip is a read-only detail of the record', () => {
   assert.ok(payrollSource.includes("{id:'view',label:this.t('app.payslip.title')}"),
     'the view action leads every payroll row action list');
-  assert.ok(payrollSource.includes("if(action.actionId==='view'){ this.selectedPayroll = payroll; return; }"),
-    'viewing only selects the record');
+  // 3A-920 step 5 (2026-11-27): viewing also prefills the partial-pay
+  // amount with the remainder due — a form field, not a state change;
+  // the payslip itself stays a read-only view of the record.
+  assert.ok(payrollSource.includes("if(action.actionId==='view'){ this.selectedPayroll = payroll; this.partialPayAmount = payroll.remaining_amount ?? payroll.net_pay; return; }"),
+    'viewing selects the record and prefills the partial-pay amount');
   assert.ok(payrollSource.includes('class="payslip-detail"'), 'the payslip detail panel exists');
   assert.ok(payrollSource.includes('{{ selectedPayroll.net_pay }} {{ currencyCode }}'),
     'the payslip net is glued to its currency');

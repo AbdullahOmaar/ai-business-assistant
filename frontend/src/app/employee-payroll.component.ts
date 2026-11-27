@@ -222,9 +222,22 @@ import { DEFAULT_DAILY_DIVISOR, dailyDivisorFromSettings, transportEnabledFromSe
               <div><dt>{{ t('ui.m_s8dmdz') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.allowances }} + {{ selectedPayroll.bonuses }} {{ currencyCode }}</bdi></dd></div>
               <div><dt>{{ t('ui.m_oxttnb') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.deductions }} {{ currencyCode }}</bdi></dd></div>
               <div><dt>{{ t('ui.m_rym52c') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.net_pay }} {{ currencyCode }}</bdi></dd></div>
+              @if (selectedPayroll.paid_amount && selectedPayroll.paid_amount !== '0.00') {
+              <div><dt>{{ t('ui.employees.partialPayment.paidSoFar') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.paid_amount }} {{ currencyCode }}</bdi></dd></div>
+              <div><dt>{{ t('ui.employees.partialPayment.remaining') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.remaining_amount }} {{ currencyCode }}</bdi></dd></div>
+              }
               <div><dt>{{ t('ui.m_jnmvwl') }}</dt><dd>{{ payrollStatusLabel(selectedPayroll.status) }}</dd></div>
               <div><dt>{{ t('ui.m_y96e6r') }}</dt><dd>{{ formatPayrollPayoutDate(selectedPayroll.paid_at) }}</dd></div>
             </dl>
+            @if (selectedPayroll.status === 'approved') {
+            <form class="partial-pay-form" (ngSubmit)="payPart(selectedPayroll)">
+              <label>{{ t('ui.employees.partialPayment.amount') }}
+                <input name="partialPayAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required [disabled]="busy" [(ngModel)]="partialPayAmount">
+              </label>
+              <button class="primary" type="submit" [disabled]="busy || !partialPayAmount">{{ t('ui.employees.partialPayment.payPart') }}</button>
+              <p class="field-hint">{{ t('ui.employees.partialPayment.hint') }}</p>
+            </form>
+            }
           </section>
         }
       </section>
@@ -286,6 +299,9 @@ import { DEFAULT_DAILY_DIVISOR, dailyDivisorFromSettings, transportEnabledFromSe
     .entitlement-period{display:grid;gap:4px;font-size:12px;font-weight:700;color:var(--aba-color-text-secondary,#475569)}
     .entitlement-actions{display:flex;gap:8px}
     @media(max-width:600px){.entitlement-row{grid-template-columns:minmax(0,1fr)}.entitlement-actions{flex-wrap:wrap}}
+    .partial-pay-form{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .partial-pay-form label{display:grid;gap:5px;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155);min-width:180px;flex:1}
+    .partial-pay-form .field-hint{flex-basis:100%;font-size:11px;line-height:1.6;color:var(--aba-color-text-tertiary,#6b7280);margin:0}
     .employee-row,.payroll-row{grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:12px;min-width:0}
     .employee-mark{display:grid;place-items:center;width:36px;height:36px;background:var(--aba-color-info-soft,#e0f2fe);color:var(--aba-color-info-text,#075985);border-radius:11px;font-weight:800}
     .money-mark{background:var(--aba-color-success-soft,#dcfce7);color:var(--aba-color-success-text,#166534)}
@@ -357,6 +373,9 @@ export class EmployeePayrollComponent implements OnChanges {
   // ever posted automatically.
   entitlements: TransportEntitlement[] = [];
   entitlementPeriods: Record<string, string> = {};
+  // 3A-920 step 5: the partial-payment amount in the payslip view,
+  // prefilled with the remainder due.
+  partialPayAmount = '';
   mobileSection: 'employees' | 'prepare' | 'history' = 'employees';
   employeeFormOpen = false;
   editingEmployeeId: string | null = null;
@@ -532,7 +551,7 @@ export class EmployeePayrollComponent implements OnChanges {
     const payroll=this.payrollRecords.find(item=>item.id===action.rowId); if(!payroll)return;
     // 3A-699 (U12): the payslip is a read-only view of the record — it stays
     // available while an operation runs and never mutates payroll state.
-    if(action.actionId==='view'){ this.selectedPayroll = payroll; return; }
+    if(action.actionId==='view'){ this.selectedPayroll = payroll; this.partialPayAmount = payroll.remaining_amount ?? payroll.net_pay; return; }
     if(this.busy||this.operationId)return;
     if(action.actionId==='edit'&&payroll.status==='draft')this.editPayroll(payroll);
     else if(action.actionId==='approve'&&payroll.status==='draft')void this.approvePayroll(payroll);
@@ -856,6 +875,42 @@ export class EmployeePayrollComponent implements OnChanges {
       if (this.businessId === businessId) {
         const failure = this.errorMessage(error);
         // A timeout may occur after the transaction committed; reload to reconcile the visible status.
+        await this.loadEmployeesAndPayroll();
+        if (this.businessId === businessId) this.error = failure;
+      }
+    } finally {
+      if (this.operationId === record.id) this.operationId = '';
+    }
+  }
+
+  // 3A-920 step 5: record one partial payment; the remainder stays
+  // due and the record flips to paid only when the payments sum
+  // reaches the net (decided server-side).
+  async payPart(record: EmployeePayrollRecord): Promise<void> {
+    const businessId = this.businessId;
+    const amount = this.partialPayAmount.trim();
+    if (!amount || this.busy) return;
+    this.operationId = record.id;
+    this.error = '';
+    this.message = '';
+    try {
+      const updated = await this.api.recordPayrollPayment(businessId, record.id, amount);
+      if (this.businessId !== businessId) return;
+      this.message = this.t(
+        updated.status === 'paid'
+          ? 'ui.employees.partialPayment.completed'
+          : 'ui.employees.partialPayment.recorded'
+      );
+      this.payrollPaid.emit();
+      await this.loadEmployeesAndPayroll();
+      if (this.businessId === businessId) {
+        const fresh = this.payrollRecords.find((item) => item.id === record.id) ?? null;
+        this.selectedPayroll = fresh;
+        this.partialPayAmount = fresh ? (fresh.remaining_amount ?? fresh.net_pay) : '';
+      }
+    } catch (error) {
+      if (this.businessId === businessId) {
+        const failure = this.errorMessage(error);
         await this.loadEmployeesAndPayroll();
         if (this.businessId === businessId) this.error = failure;
       }

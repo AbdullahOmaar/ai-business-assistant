@@ -1165,6 +1165,46 @@ class PayrollRecord(Base):
     )
 
 
+class PayrollPayment(Base):
+    """One payment event against a payroll record (3A-920 step 5).
+
+    Partial salary payment: every payment is its own row linked to its
+    own Payroll expense, and the record's paid total is the SUM of its
+    payments. The record flips to 'paid' only when the sum reaches the
+    net pay; until then it stays 'approved' with a remainder due.
+    """
+
+    __tablename__ = "payroll_payments"
+    __table_args__ = (
+        ForeignKeyConstraint(
+            ["payroll_record_id", "business_id"],
+            ["payroll_records.id", "payroll_records.business_id"],
+            name="fk_payroll_payment_record_business",
+            ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["expense_id", "business_id"],
+            ["expenses.id", "expenses.business_id"],
+            name="fk_payroll_payment_expense_business",
+            ondelete="RESTRICT",
+        ),
+        CheckConstraint("amount > 0", name="ck_payroll_payment_amount_positive"),
+        Index("ix_payroll_payments_business_record", "business_id", "payroll_record_id"),
+    )
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    business_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), ForeignKey("businesses.id", ondelete="CASCADE"), nullable=False
+    )
+    payroll_record_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    expense_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    amount: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
+    created_by_subject: Mapped[str] = mapped_column(String(128), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+
 class DemoRateLimitCounter(Base):
     """Shared fixed-window counters for public demo rate limiting."""
 

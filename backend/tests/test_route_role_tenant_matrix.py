@@ -167,6 +167,11 @@ MATRIX = [
     ("POST", "/api/v1/businesses/{business_id}/employees/{employee_id}/payroll", "deny"),
     ("PATCH", "/api/v1/businesses/{business_id}/payroll/{payroll_id}", "deny"),
     ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/approve", "deny"),
+    # 3A-920 step 5: partial salary payments are payroll data too —
+    # owner-only. The row sits between approve and pay on purpose: in
+    # the positive pass it records a 1.00 partial payment against the
+    # freshly approved record, and the pay row then settles the rest.
+    ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/payments", "deny"),
     ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/pay", "deny"),
     # 3A-920 step 4: proposed driver entitlements are payroll data —
     # owner-only like the rest of the payroll surface.
@@ -555,6 +560,7 @@ def test_full_route_role_tenant_denial_matrix():
             ("PATCH", "/api/v1/businesses/{business_id}/employees/{employee_id}"): {"name": "Probe 2"},
             ("POST", "/api/v1/businesses/{business_id}/employees/{employee_id}/payroll"): {"period": "2026-02"},
             ("PATCH", "/api/v1/businesses/{business_id}/payroll/{payroll_id}"): {"allowances": "1.00"},
+            ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/payments"): {"amount": "1.00"},
             ("PATCH", "/api/v1/platform-admin/businesses/{business_id}/status"): {
                 "is_active": False, "reason": "matrix probe",
             },
@@ -1032,6 +1038,7 @@ def test_owner_positive_matrix():
             ("PATCH", "/api/v1/businesses/{business_id}/employees/{employee_id}"): {"name": "Probe 2"},
             ("POST", "/api/v1/businesses/{business_id}/employees/{employee_id}/payroll"): {"period": "2026-02"},
             ("PATCH", "/api/v1/businesses/{business_id}/payroll/{payroll_id}"): {"allowances": "1.00"},
+            ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/payments"): {"amount": "1.00"},
             ("PATCH", "/api/v1/platform-admin/businesses/{business_id}/status"): {
                 "is_active": False, "reason": "matrix probe",
             },

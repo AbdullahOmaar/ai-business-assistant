@@ -1345,6 +1345,15 @@
         "dismiss": "Dismiss",
         "confirmed": "Entitlement confirmed — recorded as a draft payroll record",
         "dismissed": "Proposed entitlement dismissed"
+      },
+      "partialPayment": {
+        "paidSoFar": "Paid so far",
+        "remaining": "Remaining",
+        "amount": "Payment amount",
+        "payPart": "Pay part",
+        "hint": "Recorded as a payroll expense; the remainder stays due until it is fully settled.",
+        "recorded": "Payment recorded — the remainder is still due",
+        "completed": "Salary fully paid"
       }
     },
     "products": {

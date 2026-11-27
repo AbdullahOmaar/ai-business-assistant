@@ -70,6 +70,8 @@ export interface EmployeePayrollRecord {
   id: string; business_id: string; employee_id: string; employee_name: string; period: string;
   trips: number | null; work_days: number | null;
   base_salary: string; allowances: string; bonuses: string; deductions: string; net_pay: string;
+  // 3A-920 step 5: partial-payment progress from the payments ledger.
+  paid_amount?: string; remaining_amount?: string;
   status: 'draft' | 'approved' | 'paid'; expense_id: string | null; approved_by_subject: string | null;
   approved_at: string | null; paid_by_subject: string | null; paid_at: string | null; created_at: string | null;
 }
@@ -757,6 +759,12 @@ export class ApiService {
   payPayroll(businessId: string, payrollId: string): Promise<EmployeePayrollRecord> {
     return this.request<EmployeePayrollRecord>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/payroll/${encodeURIComponent(payrollId)}/pay`, 'POST', {}
+    );
+  }
+  recordPayrollPayment(businessId: string, payrollId: string, amount: string): Promise<EmployeePayrollRecord> {
+    return this.request<EmployeePayrollRecord>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/payroll/${encodeURIComponent(payrollId)}/payments`,
+      'POST', { amount }
     );
   }
   transportEntitlements(businessId: string): Promise<TransportEntitlement[]> {
