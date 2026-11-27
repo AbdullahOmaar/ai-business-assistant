@@ -36,6 +36,7 @@ from app import (
     demo_auth_api,
     employee_payroll_api,
     extended_api,
+    orders_api,
     org_api,
     platform_admin_api,
     purchasing_api,
@@ -125,6 +126,16 @@ MATRIX = [
     ("GET", "/api/v1/businesses/{business_id}/payments", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/invoices", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/invoices/{invoice_id}", "allow"),
+    # 3A-923 C4: customer orders mirror invoices — create / read /
+    # replace / convert are member-level; confirm and cancel are
+    # owner-only (the commercial commitment, like issue / void).
+    ("POST", "/api/v1/businesses/{business_id}/orders", "allow"),
+    ("GET", "/api/v1/businesses/{business_id}/orders", "allow"),
+    ("GET", "/api/v1/businesses/{business_id}/orders/{customer_order_id}", "allow"),
+    ("PATCH", "/api/v1/businesses/{business_id}/orders/{customer_order_id}", "allow"),
+    ("POST", "/api/v1/businesses/{business_id}/orders/{customer_order_id}/confirm", "deny"),
+    ("POST", "/api/v1/businesses/{business_id}/orders/{customer_order_id}/cancel", "deny"),
+    ("POST", "/api/v1/businesses/{business_id}/orders/{customer_order_id}/convert", "allow"),
     ("GET", "/api/v1/businesses/{business_id}/assistant/insights", "allow"),
     ("POST", "/api/v1/businesses/{business_id}/assistant/chat", "allow"),
     # Slice 1 (assistant execution): proposals are creatable/readable by
@@ -244,6 +255,7 @@ def _live_route_table() -> set[tuple[str, str]]:
         purchasing_api.router,
         demo_auth_api.router,
         org_api.router,
+        orders_api.router,
         whatsapp_api.router,
     ):
         for route in router.routes:
@@ -347,6 +359,17 @@ def test_full_route_role_tenant_denial_matrix():
         )
         assert purchase_order.status_code == 201, purchase_order.text
         purchase_order_id = purchase_order.json()["id"]
+        customer_order = client.post(
+            f"/api/v1/businesses/{a_id}/orders",
+            json={
+                "order_number": "ORD-MATRIX",
+                "currency_code": "EGP",
+                "customer_id": customer_id,
+                "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "10.00"}],
+            },
+        )
+        assert customer_order.status_code == 201, customer_order.text
+        customer_order_id = customer_order.json()["id"]
         employee = client.post(
             f"/api/v1/businesses/{a_id}/employees",
             json={"name": "Employee A", "monthly_salary": "1000"},
@@ -443,6 +466,7 @@ def test_full_route_role_tenant_denial_matrix():
             "product_id": product_id,
             "invoice_id": draft_invoice_id,
             "order_id": purchase_order_id,
+            "customer_order_id": customer_order_id,
             "return_id": random_id,
             "employee_id": employee_id,
             "payroll_id": payroll_id,
@@ -478,6 +502,14 @@ def test_full_route_role_tenant_denial_matrix():
             ("POST", "/api/v1/businesses/{business_id}/products"): {"name": "Probe", "unit_price": "1.00"},
             ("POST", "/api/v1/businesses/{business_id}/invoices"): {
                 "invoice_number": "INV-PROBE", "currency_code": "EGP", "customer_id": customer_id,
+                "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "1.00"}],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/orders"): {
+                "order_number": "ORD-PROBE", "currency_code": "EGP", "customer_id": customer_id,
+                "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "1.00"}],
+            },
+            ("PATCH", "/api/v1/businesses/{business_id}/orders/{customer_order_id}"): {
+                "order_number": "ORD-PROBE-EDIT", "currency_code": "EGP", "customer_id": customer_id,
                 "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "1.00"}],
             },
             ("POST", "/api/v1/businesses/{business_id}/invoices/issue"): {
@@ -774,6 +806,22 @@ def test_owner_positive_matrix():
 
         po_a_id = make_purchase_order("PO-A")
         po_b_id = make_purchase_order("PO-B")
+
+        def make_order(number: str) -> str:
+            response = client.post(
+                f"{base}/orders",
+                json={"order_number": number, "currency_code": "EGP",
+                      "customer_id": customer_id,
+                      "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "10.00"}]},
+            )
+            assert response.status_code == 201, response.text
+            return response.json()["id"]
+
+        # 3A-923 C4: two draft customer orders — one feeds the
+        # confirm/cancel rows, one the convert row (each consumes its
+        # own order, and the loop's order is not guaranteed).
+        order_a_id = make_order("ORD-A")
+        order_b_id = make_order("ORD-B")
         # C8 Part 2: dedicated seeds for the bulk rows -- a draft invoice
         # and a draft purchase order nothing else touches, plus a second
         # customer and product: the bulk rows are POSTs, so they fire
@@ -921,6 +969,7 @@ def test_owner_positive_matrix():
             "product_id": product_id,
             "invoice_id": draft_a_id,
             "order_id": po_a_id,
+            "customer_order_id": order_a_id,
             "return_id": str(uuid4()),
             "employee_id": employee_id,
             "payroll_id": payroll_id,
@@ -946,6 +995,14 @@ def test_owner_positive_matrix():
             ("POST", "/api/v1/businesses/{business_id}/products"): {"name": "Probe", "unit_price": "1.00"},
             ("POST", "/api/v1/businesses/{business_id}/invoices"): {
                 "invoice_number": "INV-PROBE", "currency_code": "EGP", "customer_id": customer_id,
+                "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "1.00"}],
+            },
+            ("POST", "/api/v1/businesses/{business_id}/orders"): {
+                "order_number": "ORD-PROBE", "currency_code": "EGP", "customer_id": customer_id,
+                "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "1.00"}],
+            },
+            ("PATCH", "/api/v1/businesses/{business_id}/orders/{customer_order_id}"): {
+                "order_number": "ORD-PROBE-EDIT", "currency_code": "EGP", "customer_id": customer_id,
                 "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "1.00"}],
             },
             ("POST", "/api/v1/businesses/{business_id}/invoices/issue"): {
@@ -1110,6 +1167,8 @@ def test_owner_positive_matrix():
                 ids["invoice_id"] = proposed_confirm_id
             if (method, template) == ("POST", "/api/v1/businesses/{business_id}/transport-entitlements/{invoice_id}/dismiss"):
                 ids["invoice_id"] = proposed_dismiss_id
+            if (method, template) == ("POST", "/api/v1/businesses/{business_id}/orders/{customer_order_id}/convert"):
+                ids["customer_order_id"] = order_b_id
             if (method, template) == ("PUT", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}"):
                 ids["order_id"] = po_b_id
             if (method, template) == ("POST", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}/cancel"):

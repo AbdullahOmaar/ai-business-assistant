@@ -22,6 +22,7 @@ from app.models import (
     AuditEvent,
     BusinessMembership,
     Customer,
+    CustomerOrder,
     Employee,
     Expense,
     Invoice,
@@ -267,12 +268,14 @@ def _prepare_invoice_lines(
 
 
 def _apply_transport_block(
-    session: Session, *, business_id: UUID, invoice: Invoice,
+    session: Session, *, business_id: UUID, invoice: Invoice | CustomerOrder,
     driver_employee_id: UUID | None, transport_trips: int | None,
     transport_from: str | None, transport_to: str | None,
 ) -> None:
     """Validate + store the optional transport/delivery block (3A-920
-    step 4) on a draft invoice.
+    step 4) on a draft invoice — or on a customer order (3A-923 C4,
+    which carries the same four columns). The target is set by
+    attribute only, so one validation path serves both documents.
 
     All-absent clears the block (a full draft replacement that omits
     it means the company removed it). Any value present requires the
