@@ -3,13 +3,11 @@
 No endpoint accepts an identity from request data. All business routes fail closed
 unless the host has configured a trusted principal resolver and database session.
 """
-import csv
-import io
 from datetime import UTC, date, datetime
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from uuid import UUID
 
-from fastapi import Body, Depends, HTTPException, Query, Response
+from fastapi import Depends, HTTPException, Query, Response
 from sqlalchemy import (
     Numeric,
     String,
@@ -24,9 +22,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import Session
 
 from app.core_features_api import _day_bounds
-from app.data_exchange import CsvValidationError, parse_import_csv, spreadsheet_safe
 from app.dependencies import get_principal, get_session
-from app.domain_rules import discounted_return_line_total, money, validate_return_amount
 from app.extended_cashbox_api import (
     _cashbox_balance,
     _cashbox_entries_for,
@@ -66,6 +62,22 @@ from app.extended_common import (
     _validated_setting_key,
     router,
 )
+from app.extended_engagement_api import (
+    delete_setting,
+    list_notifications,
+    list_settings,
+    post_notification,
+    post_pricing_rule,
+    post_recurring_schedule,
+    put_setting,
+)
+from app.extended_import_export_api import (
+    _validate_import_rows,
+    export_csv,
+    import_csv,
+    preview_import_csv,
+    report_summary,
+)
 from app.extended_purchasing_api import (
     approve_purchase_order,
     duplicate_purchase_order,
@@ -77,30 +89,28 @@ from app.extended_purchasing_api import (
     receive_purchase_order,
     report_tax_summary,
 )
+from app.extended_returns_api import (
+    approve_sales_return,
+    issue_credit_note_for_return,
+    list_credit_notes,
+    list_sales_returns,
+    post_sales_return,
+)
 from app.models import (
     AuditEvent,
     Business,
-    BusinessSetting,
-    CreditNote,
     Customer,
     Employee,
     Expense,
-    ImportJob,
     Invoice,
     InvoiceLine,
-    Notification,
     Payment,
     PaymentAllocation,
-    PricingRule,
     Product,
     PurchaseOrder,
-    RecurringInvoiceSchedule,
-    SalesReturn,
-    SalesReturnLine,
     StockMovement,
     Supplier,
 )
-from app.rate_limit import rate_limit
 from app.security import (
     AuthenticatedPrincipal,
     AuthorizationError,
@@ -110,11 +120,6 @@ from app.security import (
 )
 from app.services import WorkflowError
 from app.transport_settings import transport_enabled
-
-# 3A-921 B1: the domain modules register their endpoints on this one
-# shared router (from extended_common) when imported; the imports above
-# run in the original registration order, ahead of the endpoints still
-# defined in this module.
 
 # Re-export surface (3A-921 B1): other modules and tests import these
 # names from app.extended_api; __all__ keeps them importable and tells
@@ -146,841 +151,42 @@ __all__ = [
     "_payable_outstanding",
     "_receivable_aging_bucket",
     "_receivable_outstanding",
+    "_validate_import_rows",
     "_validated_schedule_timezone",
     "_validated_setting_key",
     "approve_purchase_order",
+    "approve_sales_return",
     "cashbox_balance",
     "close_cashbox",
+    "delete_setting",
     "duplicate_purchase_order",
+    "export_csv",
+    "import_csv",
+    "issue_credit_note_for_return",
     "list_cashbox_closings",
     "list_cashbox_entries",
+    "list_credit_notes",
+    "list_notifications",
     "list_purchase_orders",
     "list_recurring_schedules",
+    "list_sales_returns",
+    "list_settings",
     "list_suppliers",
     "operations_health",
     "post_cashbox_entry",
     "post_expense",
+    "post_notification",
+    "post_pricing_rule",
     "post_purchase_order",
+    "post_recurring_schedule",
+    "post_sales_return",
+    "preview_import_csv",
+    "put_setting",
     "receive_purchase_order",
+    "report_summary",
     "report_tax_summary",
     "router",
 ]
-
-@router.get("/sales-returns")
-def list_sales_returns(
-    business_id: UUID,
-    limit: int = Query(default=50, ge=1, le=100),
-    offset: int = Query(default=0, ge=0),
-    status: str | None = Query(default=None, pattern="^(draft|approved|rejected)$"),
-    session: Session = Depends(get_session),
-    principal: AuthenticatedPrincipal = Depends(get_principal),
-):
-    """List business-scoped returns; reads never issue a credit note or refund cash."""
-    try:
-        _authorized(session, principal, business_id)
-    except AuthorizationError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    statement = select(SalesReturn).where(SalesReturn.business_id == business_id)
-    if status is not None:
-        statement = statement.where(SalesReturn.status == status)
-    returns = session.scalars(
-        statement.order_by(SalesReturn.created_at.desc(), SalesReturn.id.desc())
-        .limit(limit).offset(offset)
-    ).all()
-    invoice_currency_by_id = {}
-    if returns:
-        source_invoices = session.scalars(select(Invoice).where(
-            Invoice.id.in_([item.invoice_id for item in returns]),
-            Invoice.business_id == business_id,
-        )).all()
-        invoice_currency_by_id = {
-            str(invoice.id): invoice.currency_code for invoice in source_invoices
-        }
-    return {
-        "items": [
-            {
-                **_dict(item, (
-                    "id", "business_id", "invoice_id", "status", "reason", "total", "created_at",
-                )),
-                "currency_code": invoice_currency_by_id.get(str(item.invoice_id)),
-            }
-            for item in returns
-        ],
-        "limit": limit,
-        "offset": offset,
-    }
-
-
-@router.post("/sales-returns", status_code=201)
-def post_sales_return(business_id: UUID, body: ReturnInput,
-                      session: Session = Depends(get_session),
-                      principal: AuthenticatedPrincipal = Depends(get_principal)):
-    def op():
-        _authorized(session, principal, business_id)
-        invoice = session.scalars(select(Invoice).where(
-            Invoice.id == body.invoice_id, Invoice.business_id == business_id,
-            Invoice.status == "issued",
-        )).one_or_none()
-        if invoice is None:
-            raise WorkflowError("Issued invoice not found in this business")
-        ret = SalesReturn(business_id=business_id, invoice_id=invoice.id,
-                          status="draft", reason=(body.reason.strip() if body.reason else body.reason), total=ZERO)
-        session.add(ret)
-        session.flush()
-        discount_allocation_lines = session.scalars(select(InvoiceLine).where(
-            InvoiceLine.invoice_id == invoice.id,
-            InvoiceLine.business_id == business_id,
-        ).order_by(InvoiceLine.id)).all()
-        total = ZERO
-        for item in body.lines:
-            line = session.scalars(select(InvoiceLine).where(
-                InvoiceLine.id == item.invoice_line_id, InvoiceLine.invoice_id == invoice.id,
-                InvoiceLine.business_id == business_id,
-            )).one_or_none()
-            if line is None:
-                raise WorkflowError("Return line must reference a line on the original invoice")
-            previously_returned = session.scalar(select(func.coalesce(
-                func.sum(SalesReturnLine.quantity), 0
-            )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
-                SalesReturnLine.invoice_line_id == line.id, SalesReturn.business_id == business_id,
-                SalesReturn.status == "approved",
-            ))
-            if Decimal(str(previously_returned or 0)) + item.quantity > line.quantity:
-                raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
-            discounted_line_total = discounted_return_line_total(
-                invoice_subtotal=invoice.subtotal,
-                invoice_discount_total=invoice.discount_total,
-                invoice_lines=[(str(row.id), row.line_total) for row in discount_allocation_lines],
-                target_line_id=str(line.id),
-            )
-            amount = money(discounted_line_total * item.quantity / line.quantity)
-            total += amount
-            session.add(SalesReturnLine(business_id=business_id, sales_return_id=ret.id,
-                invoice_line_id=line.id, quantity=item.quantity, amount=amount))
-        ret.total = total
-        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
-            action="sales_return.created", target_type="sales_return", target_id=str(ret.id)))
-        session.flush()
-        return ret
-    ret = _commit(session, op)
-    currency_code = session.scalar(select(Invoice.currency_code).where(
-        Invoice.id == ret.invoice_id, Invoice.business_id == business_id,
-    ))
-    return {
-        **_dict(ret, ("id", "business_id", "invoice_id", "status", "reason", "total", "created_at")),
-        "currency_code": currency_code,
-    }
-
-
-@router.post("/sales-returns/{return_id}/approve")
-def approve_sales_return(business_id: UUID, return_id: UUID,
-                         session: Session = Depends(get_session),
-                         principal: AuthenticatedPrincipal = Depends(get_principal)):
-    def op():
-        _authorized(session, principal, business_id, owner_only=True)
-        ret = session.scalars(select(SalesReturn).where(
-            SalesReturn.id == return_id, SalesReturn.business_id == business_id,
-        ).with_for_update()).one_or_none()
-        if ret is None or ret.status != "draft":
-            raise WorkflowError("Only draft returns can be approved")
-        invoice = session.scalars(select(Invoice).where(
-            Invoice.id == ret.invoice_id, Invoice.business_id == business_id,
-        ).with_for_update()).one_or_none()
-        if invoice is None or invoice.status != "issued":
-            raise WorkflowError("Sales return must reference an issued invoice")
-        if not (ret.reason or "").strip():
-            raise WorkflowError("A return reason is required before approval")
-        lines = session.scalars(select(SalesReturnLine).where(
-            SalesReturnLine.sales_return_id == ret.id, SalesReturnLine.business_id == business_id,
-        ).order_by(SalesReturnLine.id)).all()
-
-        # Group duplicate line entries and lock the invoice header first. Concurrent
-        # approvals for the same invoice then serialize before checking approved returns.
-        requested_by_line: dict[UUID, dict[str, Decimal]] = {}
-        for returned in lines:
-            requested = requested_by_line.setdefault(
-                returned.invoice_line_id, {"quantity": ZERO}
-            )
-            requested["quantity"] += returned.quantity
-
-        discount_allocation_lines = session.scalars(select(InvoiceLine).where(
-            InvoiceLine.invoice_id == invoice.id,
-            InvoiceLine.business_id == business_id,
-        ).order_by(InvoiceLine.id)).all()
-        invoice_lines = {}
-        for invoice_line_id, requested in sorted(
-            requested_by_line.items(), key=lambda item: str(item[0])
-        ):
-            invoice_line = session.scalars(select(InvoiceLine).where(
-                InvoiceLine.id == invoice_line_id,
-                InvoiceLine.invoice_id == invoice.id,
-                InvoiceLine.business_id == business_id,
-            ).with_for_update()).one_or_none()
-            if invoice_line is None:
-                raise WorkflowError("Return line must reference a line on the original invoice")
-            previously_returned_quantity = session.scalar(select(func.coalesce(
-                func.sum(SalesReturnLine.quantity), 0
-            )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
-                SalesReturnLine.invoice_line_id == invoice_line.id,
-                SalesReturnLine.business_id == business_id,
-                SalesReturn.status == "approved",
-            ))
-            if Decimal(str(previously_returned_quantity or 0)) + requested["quantity"] > invoice_line.quantity:
-                raise WorkflowError("Return quantity exceeds the invoiced quantity remaining")
-            previously_returned_amount = session.scalar(select(func.coalesce(
-                func.sum(SalesReturnLine.amount), 0
-            )).join(SalesReturn, SalesReturn.id == SalesReturnLine.sales_return_id).where(
-                SalesReturnLine.invoice_line_id == invoice_line.id,
-                SalesReturnLine.business_id == business_id,
-                SalesReturn.status == "approved",
-            ))
-            invoiced_amount = discounted_return_line_total(
-                invoice_subtotal=invoice.subtotal,
-                invoice_discount_total=invoice.discount_total,
-                invoice_lines=[(str(row.id), row.line_total) for row in discount_allocation_lines],
-                target_line_id=str(invoice_line.id),
-            )
-            previous_quantity = Decimal(str(previously_returned_quantity or 0))
-            previous_amount = Decimal(str(previously_returned_amount or 0))
-            cumulative_amount = money(
-                invoiced_amount * (previous_quantity + requested["quantity"]) / invoice_line.quantity
-            )
-            allocated_amount = cumulative_amount - previous_amount
-            try:
-                validate_return_amount(
-                    invoiced_amount=invoiced_amount,
-                    previously_returned_amount=previous_amount,
-                    requested_return_amount=allocated_amount,
-                )
-            except ValueError as exc:
-                raise WorkflowError(str(exc)) from exc
-
-            # Allocate rounded cents against cumulative approved quantity, not each
-            # return independently. The final approved return reconciles exactly
-            # to the discounted source-line amount even for sub-cent unit shares.
-            running_quantity = previous_quantity
-            running_amount = previous_amount
-            for returned_line in (
-                row for row in lines if row.invoice_line_id == invoice_line_id
-            ):
-                running_quantity += returned_line.quantity
-                next_cumulative_amount = money(
-                    invoiced_amount * running_quantity / invoice_line.quantity
-                )
-                returned_line.amount = next_cumulative_amount - running_amount
-                running_amount = next_cumulative_amount
-            invoice_lines[invoice_line_id] = invoice_line
-
-        for returned in lines:
-            invoice_line = invoice_lines[returned.invoice_line_id]
-            if invoice_line.product_id:
-                product = session.scalars(select(Product).where(
-                    Product.id == invoice_line.product_id, Product.business_id == business_id,
-                    Product.is_stock_tracked.is_(True),
-                ).with_for_update()).one_or_none()
-                if product:
-                    # 3A-920 step 3: the returned quantity is in the line's
-                    # sold unit — convert it with the line's snapshotted
-                    # factor so the return is in base units like the sale.
-                    base_quantity = returned.quantity * (
-                        invoice_line.conversion_factor or Decimal(1)
-                    )
-                    session.add(StockMovement(business_id=business_id, product_id=product.id,
-                        movement_type="return", quantity_delta=base_quantity,
-                        reason=f"Approved sales return {ret.id}", reference_type="sales_return",
-                        reference_id=ret.id, created_by_subject=principal.subject))
-        ret.total = sum((returned.amount for returned in lines), ZERO)
-        ret.status = "approved"
-        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
-            action="sales_return.approved", target_type="sales_return", target_id=str(ret.id)))
-        session.flush()
-        return ret
-    ret = _commit(session, op)
-    currency_code = session.scalar(select(Invoice.currency_code).where(
-        Invoice.id == ret.invoice_id, Invoice.business_id == business_id,
-    ))
-    return {
-        **_dict(ret, ("id", "invoice_id", "status", "total", "created_at")),
-        "currency_code": currency_code,
-    }
-
-
-@router.post("/sales-returns/{return_id}/credit-note", status_code=201)
-def issue_credit_note_for_return(
-    business_id: UUID,
-    return_id: UUID,
-    session: Session = Depends(get_session),
-    principal: AuthenticatedPrincipal = Depends(get_principal),
-):
-    """Issue one immutable credit note for an approved return; no AR or cash posting."""
-
-    def op():
-        _authorized(session, principal, business_id, owner_only=True)
-        ret = session.scalars(
-            select(SalesReturn).where(
-                SalesReturn.id == return_id,
-                SalesReturn.business_id == business_id,
-            ).with_for_update()
-        ).one_or_none()
-        if ret is None:
-            raise WorkflowError("Sales return not found in this business")
-
-        existing = session.scalars(select(CreditNote).where(
-            CreditNote.business_id == business_id,
-            CreditNote.sales_return_id == ret.id,
-        ).with_for_update()).one_or_none()
-        if existing is not None:
-            return existing
-        if ret.status != "approved":
-            raise WorkflowError("Only an approved sales return can be credited")
-        if not (ret.reason or "").strip():
-            raise WorkflowError("A return reason is required before credit note issuance")
-
-        invoice = session.scalars(select(Invoice).where(
-            Invoice.id == ret.invoice_id,
-            Invoice.business_id == business_id,
-        ).with_for_update()).one_or_none()
-        if invoice is None or invoice.status != "issued":
-            raise WorkflowError("Credit note must reference an issued invoice")
-        if invoice.customer_id is None:
-            raise WorkflowError("Credit note requires an invoice linked to a customer")
-        if Decimal(str(invoice.tax_total or ZERO)) > ZERO:
-            raise WorkflowError(
-                "Credit note issuance for tax-bearing invoices is deferred until tax allocation is approved"
-            )
-
-        return_lines = session.scalars(select(SalesReturnLine).where(
-            SalesReturnLine.sales_return_id == ret.id,
-            SalesReturnLine.business_id == business_id,
-        ).order_by(SalesReturnLine.id)).all()
-        if not return_lines:
-            raise WorkflowError("An approved return must contain at least one line")
-        source_line_ids = {line.invoice_line_id for line in return_lines}
-        source_count = session.scalar(select(func.count(InvoiceLine.id)).where(
-            InvoiceLine.business_id == business_id,
-            InvoiceLine.invoice_id == invoice.id,
-            InvoiceLine.id.in_(source_line_ids),
-        ))
-        if int(source_count or 0) != len(source_line_ids):
-            raise WorkflowError("Every return line must reference the original invoice")
-
-        total = money(sum((Decimal(str(line.amount)) for line in return_lines), ZERO))
-        if total <= ZERO or money(Decimal(str(ret.total))) != total:
-            raise WorkflowError("Approved return total must reconcile to its persisted return lines")
-
-        note = CreditNote(
-            business_id=business_id,
-            sales_return_id=ret.id,
-            invoice_id=invoice.id,
-            customer_id=invoice.customer_id,
-            credit_note_number=f"CN-{ret.id.hex[:24].upper()}",
-            currency_code=invoice.currency_code,
-            total=total,
-            created_by_subject=principal.subject,
-        )
-        session.add(note)
-        session.flush()
-        session.add(AuditEvent(
-            business_id=business_id,
-            actor_subject=principal.subject,
-            action="credit_note.issued",
-            target_type="credit_note",
-            target_id=str(note.id),
-            change_summary=f"Credit note issued for approved sales return {ret.id}",
-        ))
-        session.flush()
-        return note
-
-    try:
-        note = _commit(session, op)
-    except HTTPException as exc:
-        if exc.status_code != 409:
-            raise
-        # A concurrent request may win the unique (business, return) constraint.
-        session.rollback()
-        existing = session.scalars(select(CreditNote).where(
-            CreditNote.business_id == business_id,
-            CreditNote.sales_return_id == return_id,
-        )).one_or_none()
-        if existing is None:
-            raise
-        note = existing
-
-    return _dict(note, (
-        "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
-        "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
-    ))
-
-
-@router.get("/credit-notes")
-def list_credit_notes(
-    business_id: UUID,
-    limit: int = Query(default=50, ge=1, le=100),
-    offset: int = Query(default=0, ge=0),
-    customer_id: UUID | None = Query(default=None),
-    session: Session = Depends(get_session),
-    principal: AuthenticatedPrincipal = Depends(get_principal),
-):
-    """List issued Stage-1 credit-note documents; does not imply applied credit or cash refund."""
-    try:
-        _authorized(session, principal, business_id)
-    except AuthorizationError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-    statement = select(CreditNote).where(CreditNote.business_id == business_id)
-    if customer_id is not None:
-        statement = statement.where(CreditNote.customer_id == customer_id)
-    notes = session.scalars(
-        statement.order_by(CreditNote.created_at.desc(), CreditNote.id.desc())
-        .limit(limit).offset(offset)
-    ).all()
-    return {
-        "items": [_dict(note, (
-            "id", "business_id", "sales_return_id", "invoice_id", "customer_id",
-            "credit_note_number", "currency_code", "total", "created_by_subject", "created_at",
-        )) for note in notes],
-        "limit": limit,
-        "offset": offset,
-    }
-
-
-@router.post("/recurring-invoices", status_code=201)
-def post_recurring_schedule(business_id: UUID, body: ScheduleInput,
-                             session: Session = Depends(get_session),
-                             principal: AuthenticatedPrincipal = Depends(get_principal)):
-    def op():
-        # Recurring schedules can trigger future financial documents; OWNER approval is required.
-        _authorized(session, principal, business_id, owner_only=True)
-        schedule_timezone = _validated_schedule_timezone(body.timezone)
-        if body.customer_id is not None:
-            # Customer existence is verified separately; it need not already have an invoice.
-            # The active-customer check applies regardless of invoice history:
-            # an inactive customer with past invoices must not get a schedule.
-            from app.models import Customer
-            customer = session.scalars(select(Customer).where(
-                Customer.id == body.customer_id, Customer.business_id == business_id,
-                Customer.is_active.is_(True),
-            )).one_or_none()
-            if customer is None:
-                raise WorkflowError("Customer not found in this business")
-        schedule = RecurringInvoiceSchedule(
-            business_id=business_id, customer_id=body.customer_id,
-            interval_days=body.interval_days, timezone=schedule_timezone,
-            next_run_at=body.next_run_at, is_active=True,
-        )
-        session.add(schedule)
-        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
-            action="recurring_invoice_schedule.created", target_type="recurring_invoice_schedule"))
-        session.flush()
-        return schedule
-    item = _commit(session, op)
-    return _dict(item, ("id", "business_id", "customer_id", "interval_days",
-                        "timezone", "next_run_at", "is_active", "created_at"))
-
-
-@router.post("/pricing-rules", status_code=201)
-def post_pricing_rule(business_id: UUID, body: PricingRuleInput,
-                      session: Session = Depends(get_session),
-                      principal: AuthenticatedPrincipal = Depends(get_principal)):
-    def op():
-        _authorized(session, principal, business_id, owner_only=True)
-        rule = PricingRule(business_id=business_id, name=body.name.strip(),
-                           rule_type=body.rule_type, rate=body.rate, is_active=True)
-        session.add(rule)
-        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
-            action="pricing_rule.created", target_type="pricing_rule"))
-        session.flush()
-        return rule
-    item = _commit(session, op)
-    return _dict(item, ("id", "business_id", "name", "rule_type", "rate", "is_active", "created_at"))
-
-
-@router.post("/notifications", status_code=201)
-def post_notification(business_id: UUID, body: NotificationInput,
-                      session: Session = Depends(get_session),
-                      principal: AuthenticatedPrincipal = Depends(get_principal)):
-    def op():
-        # Notifications may trigger downstream delivery; keep creation OWNER-only until roles are explicit.
-        _authorized(session, principal, business_id, owner_only=True)
-        item = Notification(business_id=business_id, kind=body.kind, title=body.title,
-            body=body.body, deduplication_key=body.deduplication_key,
-            scheduled_at=body.scheduled_at, status="pending")
-        session.add(item)
-        session.flush()
-        return item
-    item = _commit(session, op)
-    return _dict(item, ("id", "business_id", "kind", "title", "body", "status",
-                        "deduplication_key", "scheduled_at", "created_at"))
-
-
-@router.get("/notifications")
-def list_notifications(business_id: UUID, limit: int = Query(default=50, ge=1, le=200),
-                       session: Session = Depends(get_session),
-                       principal: AuthenticatedPrincipal = Depends(get_principal)):
-    try:
-        _authorized(session, principal, business_id)
-        items = session.scalars(select(Notification).where(
-            Notification.business_id == business_id).order_by(
-            Notification.created_at.desc()).limit(limit)).all()
-        return [_dict(x, ("id", "kind", "title", "body", "status", "scheduled_at", "created_at")) for x in items]
-    except AuthorizationError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-
-
-@router.get("/settings")
-def list_settings(business_id: UUID,
-                  session: Session = Depends(get_session),
-                  principal: AuthenticatedPrincipal = Depends(get_principal)):
-    """List the business's settings (Slice 4: the assistant tab reads
-    the dialect + morning-brief switch through this). Any member may
-    read — setting keys are restricted to safe identifiers and
-    secret-like keys are rejected at write time, so nothing sensitive
-    lives here; writes stay owner-only (PUT/DELETE below)."""
-    try:
-        _authorized(session, principal, business_id)
-        items = session.scalars(select(BusinessSetting).where(
-            BusinessSetting.business_id == business_id).order_by(
-            BusinessSetting.setting_key.asc())).all()
-        return [_dict(x, ("id", "setting_key", "setting_value", "updated_at")) for x in items]
-    except AuthorizationError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-
-
-@router.put("/settings/{setting_key}")
-def put_setting(business_id: UUID, setting_key: str, body: SettingInput,
-                session: Session = Depends(get_session),
-                principal: AuthenticatedPrincipal = Depends(get_principal)):
-    def op():
-        _authorized(session, principal, business_id, owner_only=True)
-        safe_key = _validated_setting_key(setting_key)
-        item = session.scalars(select(BusinessSetting).where(
-            BusinessSetting.business_id == business_id,
-            BusinessSetting.setting_key == safe_key,
-        ).with_for_update()).one_or_none()
-        created = item is None
-        if created:
-            item = BusinessSetting(business_id=business_id, setting_key=safe_key,
-                                   setting_value=body.setting_value)
-            session.add(item)
-        else:
-            item.setting_value = body.setting_value
-            item.updated_at = datetime.now(UTC)
-        session.flush()
-        # 3A-417: a setting change is a business change — record it in the
-        # audit trail like every other mutation. The summary names the key
-        # only; setting values are never copied into the audit trail.
-        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
-            action="setting.created" if created else "setting.updated",
-            target_type="business_setting", target_id=str(item.id),
-            change_summary=f"Setting {safe_key} {'created' if created else 'updated'}"))
-        session.flush()
-        return item
-    item = _commit(session, op)
-    return _dict(item, ("id", "setting_key", "setting_value", "updated_at"))
-
-
-@router.delete("/settings/{setting_key}", status_code=204)
-def delete_setting(business_id: UUID, setting_key: str,
-                   session: Session = Depends(get_session),
-                   principal: AuthenticatedPrincipal = Depends(get_principal)):
-    """Delete one setting (B7 one-tap rollback: remove a key a conversational-setup
-    proposal created). Owner-only; the audit event names the key only, never a value."""
-    def op():
-        _authorized(session, principal, business_id, owner_only=True)
-        safe_key = _validated_setting_key(setting_key)
-        item = session.scalars(select(BusinessSetting).where(
-            BusinessSetting.business_id == business_id,
-            BusinessSetting.setting_key == safe_key,
-        ).with_for_update()).one_or_none()
-        if item is None:
-            raise HTTPException(status_code=404, detail="Setting not found")
-        session.delete(item)
-        session.flush()
-        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
-                               action="setting.deleted",
-                               target_type="business_setting", target_id=str(item.id),
-                               change_summary=f"Setting {safe_key} deleted"))
-        session.flush()
-
-    _commit(session, op)
-    return Response(status_code=204)
-
-
-@router.get("/reports/summary")
-def report_summary(business_id: UUID,
-                   session: Session = Depends(get_session),
-                   principal: AuthenticatedPrincipal = Depends(get_principal)):
-    try:
-        membership = _authorized(session, principal, business_id)
-        invoices = session.execute(select(Invoice.currency_code, func.count(Invoice.id),
-            func.coalesce(func.sum(Invoice.total), 0)).where(
-            Invoice.business_id == business_id, Invoice.status == "issued"
-        ).group_by(Invoice.currency_code)).all()
-        expense_statement = select(Expense.currency_code, func.count(Expense.id),
-            func.coalesce(func.sum(Expense.amount), 0)).where(
-            Expense.business_id == business_id
-        )
-        expense_statement = apply_expense_visibility(
-            expense_statement, business_id=business_id, role=membership.role
-        )
-        expenses = session.execute(expense_statement.group_by(Expense.currency_code)).all()
-        return {
-            "issued_invoices_by_currency": [
-                {"currency_code": currency, "count": count, "total": str(total)}
-                for currency, count, total in invoices
-            ],
-            "expenses_by_currency": [
-                {"currency_code": currency, "count": count, "total": str(total)}
-                for currency, count, total in expenses
-            ],
-            "note": "Currency totals are intentionally not combined. These figures are totals, not profit or cash balance."
-        }
-    except AuthorizationError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-
-
-@router.get("/exports/{entity_type}.csv")
-def export_csv(business_id: UUID, entity_type: str,
-               ids: str | None = Query(default=None),
-               session: Session = Depends(get_session),
-               principal: AuthenticatedPrincipal = Depends(get_principal)):
-    try:
-        _authorized(session, principal, business_id, owner_only=True)
-        # Bulk export (C8 Part 2, 3A-686): an optional comma-separated ids
-        # filter narrows the export to the caller's multi-selection.
-        wanted_ids: set[UUID] | None = None
-        if ids:
-            try:
-                wanted_ids = {
-                    UUID(part.strip()) for part in ids.split(",") if part.strip()
-                }
-            except ValueError:
-                raise HTTPException(
-                    status_code=422,
-                    detail="ids must be comma-separated UUIDs",
-                ) from None
-        supported = {
-            "customers": ("customers", ("id", "name", "email", "phone", "address", "created_at")),
-            "products": ("products", ("id", "sku", "name", "unit", "unit_price", "is_stock_tracked", "created_at")),
-            "expenses": ("expenses", ("id", "category", "description", "amount", "currency_code", "incurred_at", "vendor_name", "reference")),
-        }
-        if entity_type not in supported:
-            raise HTTPException(status_code=404, detail="Unsupported export entity")
-        from app.models import Customer
-        _model_name, columns = supported[entity_type]
-        model = {"customers": Customer, "products": Product, "expenses": Expense}[entity_type]
-        rows = session.scalars(select(model).where(model.business_id == business_id)).all()
-        if wanted_ids is not None:
-            rows = [row for row in rows if row.id in wanted_ids]
-        buffer = io.StringIO(newline="")
-        writer = csv.writer(buffer)
-        writer.writerow(columns)
-        for row in rows:
-            values = []
-            for col in columns:
-                value = getattr(row, col)
-                if isinstance(value, datetime):
-                    value = value.isoformat()
-                elif isinstance(value, UUID):
-                    value = str(value)
-                elif isinstance(value, Decimal):
-                    value = format(value, "f")
-                text_value = "" if value is None else str(value)
-                values.append(spreadsheet_safe(text_value))
-            writer.writerow(values)
-        return Response(content=buffer.getvalue(), media_type="text/csv",
-                        headers={"Content-Disposition": f'attachment; filename="{entity_type}.csv"'})
-    except AuthorizationError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
-
-
-
-def _validate_import_rows(session: Session, business_id: UUID, entity_type: str,
-                          rows: list[dict[str, str]]) -> list[dict]:
-    errors: list[dict] = []
-    first_sku_row: dict[str, int] = {}
-    first_customer_email_row: dict[str, int] = {}
-    existing_skus: set[str] = set()
-    existing_customer_emails: set[str] = set()
-    if entity_type == "customers":
-        emails = [
-            row.get("email", "").strip().casefold()
-            for row in rows if row.get("email", "").strip()
-        ]
-        if emails:
-            existing_customer_emails = {
-                value.strip().casefold()
-                for value in session.scalars(select(Customer.email).where(
-                    Customer.business_id == business_id, Customer.email.is_not(None),
-                    func.lower(Customer.email).in_(emails),
-                )).all() if value
-            }
-    if entity_type == "products":
-        skus = [row.get("sku", "").strip().casefold() for row in rows if row.get("sku", "").strip()]
-        if skus:
-            existing_skus = {value.casefold() for value in session.scalars(select(Product.sku).where(
-                Product.business_id == business_id, Product.sku.is_not(None),
-                func.lower(Product.sku).in_(skus),
-            )).all() if value}
-    for index, row in enumerate(rows, start=2):
-        if entity_type == "customers":
-            limits = {"name": 160, "email": 254, "phone": 32, "address": 500, "notes": 1000}
-            for field, limit in limits.items():
-                if len(row.get(field, "")) > limit:
-                    errors.append({"row": index, "field": field, "code": "too_long", "max_length": limit})
-            if not row.get("name", "").strip():
-                errors.append({"row": index, "field": "name", "code": "required"})
-            email = row.get("email", "").strip()
-            key = email.casefold()
-            if key:
-                if key in first_customer_email_row:
-                    errors.append({"row": index, "field": "email", "code": "duplicate_in_file",
-                                   "first_row": first_customer_email_row[key]})
-                else:
-                    first_customer_email_row[key] = index
-                if key in existing_customer_emails:
-                    errors.append({"row": index, "field": "email", "code": "already_exists"})
-        elif entity_type == "products":
-            limits = {"sku": 80, "name": 160, "description": 1000, "unit": 32}
-            for field, limit in limits.items():
-                if len(row.get(field, "")) > limit:
-                    errors.append({"row": index, "field": field, "code": "too_long", "max_length": limit})
-            if not row.get("name", "").strip():
-                errors.append({"row": index, "field": "name", "code": "required"})
-            try:
-                price = Decimal(row.get("unit_price", ""))
-                if not price.is_finite() or price < ZERO or price.as_tuple().exponent < -2 or price.adjusted() > 11 or len(price.as_tuple().digits) > 14:
-                    raise ValueError()
-            except (InvalidOperation, TypeError, ValueError):
-                errors.append({"row": index, "field": "unit_price", "code": "invalid_decimal"})
-            tracked = row.get("is_stock_tracked", "").lower()
-            if tracked not in {"true", "false", "1", "0", "yes", "no", ""}:
-                errors.append({"row": index, "field": "is_stock_tracked", "code": "invalid_boolean"})
-            sku = row.get("sku", "").strip()
-            key = sku.casefold()
-            if key:
-                if key in first_sku_row:
-                    errors.append({"row": index, "field": "sku", "code": "duplicate_in_file",
-                                   "first_row": first_sku_row[key]})
-                else:
-                    first_sku_row[key] = index
-                if key in existing_skus:
-                    errors.append({"row": index, "field": "sku", "code": "already_exists"})
-        elif entity_type == "expenses":
-            limits = {"category": 80, "description": 500, "currency_code": 3,
-                      "vendor_name": 160, "reference": 128}
-            for field, limit in limits.items():
-                if len(row.get(field, "")) > limit:
-                    errors.append({"row": index, "field": field, "code": "too_long", "max_length": limit})
-            try:
-                amount = Decimal(row.get("amount", ""))
-                if not amount.is_finite() or amount <= ZERO or amount.as_tuple().exponent < -2 or amount.adjusted() > 11 or len(amount.as_tuple().digits) > 14:
-                    raise ValueError()
-            except (InvalidOperation, TypeError, ValueError):
-                errors.append({"row": index, "field": "amount", "code": "invalid_decimal"})
-            currency = row.get("currency_code", "").upper()
-            if len(currency) != 3 or not currency.isalpha():
-                errors.append({"row": index, "field": "currency_code", "code": "invalid_currency"})
-            try:
-                datetime.fromisoformat(row.get("incurred_at", ""))
-            except ValueError:
-                errors.append({"row": index, "field": "incurred_at", "code": "invalid_datetime"})
-    return errors
-
-
-@router.post("/imports/{entity_type}.csv/preview")
-def preview_import_csv(business_id: UUID, entity_type: str,
-                       csv_text: str = Body(media_type="text/csv", max_length=5 * 1024 * 1024),
-                       session: Session = Depends(get_session),
-                       principal: AuthenticatedPrincipal = Depends(get_principal)):
-    def op():
-        _authorized(session, principal, business_id, owner_only=True)
-        if entity_type not in {"customers", "products"}:
-            raise WorkflowError("CSV import supports customers and products only")
-        try:
-            rows = parse_import_csv(csv_text, entity_type=entity_type)
-        except CsvValidationError as exc:
-            raise WorkflowError(str(exc)) from exc
-        if not rows:
-            raise WorkflowError("CSV must contain at least one data row")
-        errors = _validate_import_rows(session, business_id, entity_type, rows)
-        return {"entity_type": entity_type, "row_count": len(rows), "valid": not errors,
-                "errors": errors, "write_performed": False}
-    return _commit(session, op)
-
-
-@router.post("/imports/{entity_type}.csv", status_code=202, dependencies=[Depends(rate_limit("CSV_IMPORT", default_limit=20, per_business=True))])
-def import_csv(business_id: UUID, entity_type: str,
-               csv_text: str = Body(media_type="text/csv", max_length=2_000_000),
-               session: Session = Depends(get_session),
-               principal: AuthenticatedPrincipal = Depends(get_principal)):
-    """Atomically import a small CSV batch. Large files belong in a background job."""
-    def op():
-        _authorized(session, principal, business_id, owner_only=True)
-        schemas = {
-            "customers": {"name", "email", "phone", "address", "notes"},
-            "products": {"name", "sku", "description", "unit", "unit_price", "is_stock_tracked"},
-        }
-        if entity_type not in schemas:
-            raise WorkflowError("CSV import supports customers and products only")
-        allowed = schemas[entity_type]
-        try:
-            rows = parse_import_csv(csv_text, entity_type=entity_type)
-        except CsvValidationError as exc:
-            raise WorkflowError(str(exc)) from exc
-        if not rows:
-            raise WorkflowError("CSV must contain at least one data row")
-        errors = _validate_import_rows(session, business_id, entity_type, rows)
-        if errors:
-            raise WorkflowError("CSV validation failed: " + "; ".join(
-                f"row {item['row']} {item['field']} {item['code']}" for item in errors
-            ))
-        if len(rows) > 2000:
-            raise WorkflowError("A single import is limited to 2000 rows")
-        job = ImportJob(business_id=business_id, job_type="import",
-                        entity_type=entity_type, status="processing", row_count=0)
-        session.add(job)
-        session.flush()
-        for index, row in enumerate(rows, start=2):
-            clean = row
-            if set(clean) - allowed:
-                raise WorkflowError(f"Unsupported column at CSV row {index}")
-            if not clean.get("name"):
-                raise WorkflowError(f"Name is required at CSV row {index}")
-            if entity_type == "customers":
-                session.add(Customer(
-                    business_id=business_id, name=clean["name"],
-                    email=clean.get("email") or None, phone=clean.get("phone") or None,
-                    address=clean.get("address") or None, notes=clean.get("notes") or None,
-                ))
-            else:
-                try:
-                    price = Decimal(clean.get("unit_price", "0") or "0")
-                except Exception as exc:
-                    raise WorkflowError(f"Invalid unit_price at CSV row {index}") from exc
-                if price < ZERO:
-                    raise WorkflowError(f"Negative unit_price at CSV row {index}")
-                tracked_text = clean.get("is_stock_tracked", "false").lower()
-                if tracked_text not in {"true", "false", "1", "0", "yes", "no", ""}:
-                    raise WorkflowError(f"Invalid is_stock_tracked at CSV row {index}")
-                session.add(Product(
-                    business_id=business_id, name=clean["name"], unit_price=price,
-                    sku=clean.get("sku") or None, description=clean.get("description") or None,
-                    unit=clean.get("unit") or "unit",
-                    is_stock_tracked=tracked_text in {"true", "1", "yes"},
-                ))
-        job.status = "completed"
-        job.row_count = len(rows)
-        session.add(AuditEvent(business_id=business_id, actor_subject=principal.subject,
-            action="data_import.completed", target_type="import_job", target_id=str(job.id),
-            change_summary=f"{entity_type}: {len(rows)} rows"))
-        session.flush()
-        return job
-    job = _commit(session, op)
-    return _dict(job, ("id", "job_type", "entity_type", "status", "row_count", "created_at"))
-
-
-
-
 
 @router.get("/customers")
 def list_customers(business_id: UUID, limit: int = Query(default=50, ge=1, le=200),
