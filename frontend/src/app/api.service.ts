@@ -32,10 +32,22 @@ export interface StockMovementRecord {
 export interface StockMovementPage {
   items: StockMovementRecord[]; limit: number; offset: number; has_more: boolean;
 }
-export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; outstanding_amount?: string; issue_date?: string | null; created_at?: string | null; due_date?: string | null; }
+export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; outstanding_amount?: string; issue_date?: string | null; created_at?: string | null; due_date?: string | null;
+  // 3A-920 step 4: operational transport block fields (never the wage).
+  driver_employee_id?: string | null; transport_trips?: number | null; transport_from?: string | null; transport_to?: string | null; transport_entitlement_status?: string | null; }
 export interface InvoiceDetail extends Invoice {
   notes?: string | null;
+  driver_name?: string | null;
+  // Owner-only on the server: the snapshotted wage, the proposed amount,
+  // and the payroll record a confirmed proposal created.
+  transport_trip_wage?: string | null; transport_entitlement_amount?: string | null; transport_entitlement_payroll_id?: string | null;
   lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; sold_unit?: string | null; conversion_factor?: string | null; unit_price: string; line_total: string }>;
+}
+/** A proposed driver entitlement waiting in the payroll queue (3A-920 step 4). */
+export interface TransportEntitlement {
+  invoice_id: string; invoice_number: string; issue_date: string | null;
+  driver_employee_id: string; driver_name: string | null; trips: number;
+  unit_name: string; trip_wage: string | null; amount: string | null; currency_code: string;
 }
 export interface SalesReturn {
   id: string; business_id: string; invoice_id: string; status: 'draft' | 'approved' | 'rejected';
@@ -747,6 +759,23 @@ export class ApiService {
       `/api/v1/businesses/${encodeURIComponent(businessId)}/payroll/${encodeURIComponent(payrollId)}/pay`, 'POST', {}
     );
   }
+  transportEntitlements(businessId: string): Promise<TransportEntitlement[]> {
+    return this.request<TransportEntitlement[]>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/transport-entitlements`
+    );
+  }
+  confirmTransportEntitlement(businessId: string, invoiceId: string, period?: string): Promise<EmployeePayrollRecord & { invoice_id: string }> {
+    return this.request<EmployeePayrollRecord & { invoice_id: string }>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/transport-entitlements/${encodeURIComponent(invoiceId)}/confirm`,
+      'POST', period ? { period } : {}
+    );
+  }
+  dismissTransportEntitlement(businessId: string, invoiceId: string): Promise<{ invoice_id: string; status: string }> {
+    return this.request<{ invoice_id: string; status: string }>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/transport-entitlements/${encodeURIComponent(invoiceId)}/dismiss`,
+      'POST', {}
+    );
+  }
   createExpense(businessId: string, body: {
     category: string; description: string; amount: string; currency_code: string;
     incurred_at: string; vendor_name?: string; reference?: string;
@@ -771,6 +800,8 @@ export class ApiService {
   createInvoice(businessId: string, body: {
     invoice_number: string; currency_code: string; customer_id?: string; lines: InvoiceLineInput[];
     discount_rate?: number | string; tax_rate?: number | string; notes?: string | null;
+    driver_employee_id?: string | null; transport_trips?: number | null;
+    transport_from?: string | null; transport_to?: string | null;
   }): Promise<Invoice> {
     return this.request<Invoice>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invoices`, 'POST', body);
   }
@@ -827,6 +858,8 @@ export class ApiService {
   updateDraftInvoice(businessId: string, invoiceId: string, body: {
     invoice_number: string; currency_code: string; customer_id?: string; lines: InvoiceLineInput[];
     discount_rate?: number | string; tax_rate?: number | string; notes?: string | null;
+    driver_employee_id?: string | null; transport_trips?: number | null;
+    transport_from?: string | null; transport_to?: string | null;
   }): Promise<Invoice> {
     return this.request<Invoice>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}`, 'PATCH', body

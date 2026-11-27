@@ -102,7 +102,8 @@ test('editor prices the line per the chosen unit and resets the unit on product 
 });
 
 test('shell loads the transport flag and passes it to the editor; detail shows the sold unit', () => {
-  assert.ok(shell.includes("import { transportEnabledFromSettings } from './transport-settings';"));
+  assert.ok(shell.includes("from './transport-settings';"));
+  assert.ok(shell.includes('transportEnabledFromSettings'));
   assert.ok(shell.includes('transportEnabled = false;'));
   assert.ok(shell.includes('this.api.listSettings(id).catch(() => []),'));
   assert.ok(shell.includes('this.transportEnabled = transportEnabledFromSettings(settings);'));

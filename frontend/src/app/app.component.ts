@@ -29,7 +29,7 @@ import { RecurringWorkspaceComponent } from './recurring-workspace.component';
 import { IntegrityWorkspaceComponent } from './integrity-workspace.component';
 import { NotificationsWorkspaceComponent } from './notifications-workspace.component';
 import { reportLimitationKey } from './report-labels';
-import { transportEnabledFromSettings } from './transport-settings';
+import { transportEnabledFromSettings, transportUnitNameFromSettings } from './transport-settings';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
 import { filterWorkspaceModules, selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
@@ -52,7 +52,7 @@ import { AbaMobileAppHeaderComponent } from './shared/ui/aba-mobile-app-header.c
 import { InvoiceDraftEditorComponent } from './invoice-draft-editor.component';
 import { WorkspaceInvitationsComponent } from './workspace-invitations.component';
 import { findInvoiceDraftRecoveryMatch, invoiceDraftLinesFromExisting } from './invoice-draft';
-import type { InvoiceDraftLine, InvoiceDraftPayload, InvoiceDraftServerSummary, InvoiceDraftOutcomeSnapshot } from './invoice-draft';
+import type { InvoiceDraftDriver, InvoiceDraftLine, InvoiceDraftPayload, InvoiceDraftServerSummary, InvoiceDraftOutcomeSnapshot } from './invoice-draft';
 import { InvoiceDraftOutcomeVault } from './invoice-draft';
 import { createPaymentRetrySnapshot, paymentRequestFromRetrySnapshot, PaymentRetryVault } from './payment-retry-snapshot';
 import type { PaymentRetrySnapshot } from './payment-retry-snapshot';
@@ -598,6 +598,9 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                         <aba-invoice-draft-editor
                           [language]="language" [products]="products" [customers]="customers"
                           [transportEnabled]="transportEnabled"
+                          [drivers]="invoiceDrivers" [transportUnitName]="transportUnitName"
+                          [initialDriverId]="invoiceDraftDriverId" [initialTransportTrips]="invoiceDraftTransportTrips"
+                          [initialTransportFrom]="invoiceDraftTransportFrom" [initialTransportTo]="invoiceDraftTransportTo"
                           [currencyCode]="business.currency_code" [invoiceNumber]="invoiceNumber"
                           [customerId]="invoiceCustomerId" [discountRate]="invoiceDiscountRate"
                           [taxRate]="invoiceTaxRate" [initialNotes]="invoiceDraftNotes"
@@ -838,6 +841,18 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       <div><dt>{{ t('app.invoiceList.tax') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.tax_total ?? '0') }} {{ detail.currency_code }}</bdi></dd></div>
                       <div class="invoice-detail-grand-total"><dt>{{ t('app.invoiceList.total') }}</dt><dd><bdi dir="ltr">{{ formatNumber(detail.total) }} {{ detail.currency_code }}</bdi></dd></div>
                     </dl>
+                    @if (detail.driver_employee_id) {
+                      <section class="invoice-detail-notes">
+                        <h3>{{ t('ui.invoices.transport.title') }}</h3>
+                        <p>{{ t('ui.invoices.transport.driver') }}: {{ detail.driver_name || '—' }}</p>
+                        <p>{{ t('ui.invoices.transport.trips', { unit: transportUnitName }) }}: <bdi dir="ltr">{{ detail.transport_trips ?? '—' }}</bdi></p>
+                        @if (detail.transport_from) { <p>{{ t('ui.invoices.transport.from') }}: {{ detail.transport_from }}</p> }
+                        @if (detail.transport_to) { <p>{{ t('ui.invoices.transport.to') }}: {{ detail.transport_to }}</p> }
+                        @if (detail.transport_entitlement_status) {
+                          <p>{{ t('ui.invoices.transport.entitlementStatus') }}: {{ transportStatusLabel(detail.transport_entitlement_status) }}@if (detail.transport_entitlement_amount) { — <bdi dir="ltr">{{ formatNumber(detail.transport_entitlement_amount) }} {{ detail.currency_code }}</bdi> }</p>
+                        }
+                      </section>
+                    }
                     @if (detail.notes) { <section class="invoice-detail-notes"><h3>{{ t('app.invoiceList.notes') }}</h3><p>{{ detail.notes }}</p></section> }
                     <footer class="invoice-detail-actions">
                       @if (detail.status === 'draft') {
@@ -1185,6 +1200,9 @@ export class AppComponent implements OnInit, OnDestroy {
   invoices: Invoice[] = [];
   /** 3A-920 step 3: the invoice editor's selling-unit selector renders only while the switch is on. */
   transportEnabled = false;
+  /** 3A-920 step 4: the company's own word for a trip + the flagged drivers. */
+  transportUnitName = '';
+  invoiceDrivers: InvoiceDraftDriver[] = [];
   customerSearch = '';
   productSearch = '';
   invoiceSearch = '';
@@ -1273,6 +1291,10 @@ export class AppComponent implements OnInit, OnDestroy {
   invoiceDraftSummary: InvoiceDraftServerSummary | null = null;
   invoiceDraftInitialLines: InvoiceDraftLine[] | null = null;
   invoiceDraftNotes = '';
+  invoiceDraftDriverId: string | null = null;
+  invoiceDraftTransportTrips = '';
+  invoiceDraftTransportFrom = '';
+  invoiceDraftTransportTo = '';
   invoiceDraftRevision = 0;
   invoiceDraftUncertain = false;
   private pendingInvoiceDraftOutcome: InvoiceDraftOutcomeSnapshot | null = null;
@@ -2044,6 +2066,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.invoiceDraftSaving = false;
     this.invoiceDraftSummary = null;
     this.invoiceDraftInitialLines = null;
+    this.setInvoiceDraftTransport(null);
     this.invoiceDraftUncertain = false;
     this.pendingInvoiceDraftOutcome = null;
     this.invoiceDraftRevision += 1;
@@ -2263,14 +2286,21 @@ export class AppComponent implements OnInit, OnDestroy {
     this.error = '';
     try {
       const paymentsRequest = this.canAccessTab('payments') ? this.api.payments(id) : Promise.resolve([]);
-      const [dashboard, customerPage, productPage, invoicePage, paymentPage, settings] = await Promise.all([
+      const [dashboard, customerPage, productPage, invoicePage, paymentPage, settings, employeePage] = await Promise.all([
         this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), paymentsRequest,
         this.api.listSettings(id).catch(() => []),
+        // 3A-920 step 4: the employees endpoint is owner-only; staff fail
+        // closed to an empty drivers list (the block never offers anyone).
+        this.api.employees(id).catch(() => []),
       ]);
       if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
       // 3A-920 step 3: the invoice editor's selling-unit selector renders
       // only while the switch is on; a failed settings read fails closed.
       this.transportEnabled = transportEnabledFromSettings(settings);
+      this.transportUnitName = transportUnitNameFromSettings(settings, this.t('ui.assistantSettings.transport.defaultUnitName'));
+      this.invoiceDrivers = employeePage
+        .filter(employee => employee.is_driver && employee.is_active)
+        .map(employee => ({ id: employee.id, name: employee.name }));
       this.dashboard = dashboard;
       this.homeDashboardError = '';
       this.setCustomerPage(customerPage);
@@ -3631,11 +3661,31 @@ export class AppComponent implements OnInit, OnDestroy {
     this.setTab('invoices');
   }
 
+  /** 3A-920 step 4: the proposed-entitlement lifecycle label for the drawer. */
+  transportStatusLabel(status: string | null | undefined): string {
+    switch (status) {
+      case 'proposed': return this.t('ui.invoices.transport.statusProposed');
+      case 'confirmed': return this.t('ui.invoices.transport.statusConfirmed');
+      case 'dismissed': return this.t('ui.invoices.transport.statusDismissed');
+      case 'cancelled': return this.t('ui.invoices.transport.statusCancelled');
+      default: return status ?? '';
+    }
+  }
+
+  /** 3A-920 step 4: seed (or clear) the editor's transport block from a detail. */
+  private setInvoiceDraftTransport(detail: InvoiceDetail | null): void {
+    this.invoiceDraftDriverId = detail?.driver_employee_id ?? null;
+    this.invoiceDraftTransportTrips = detail?.transport_trips != null ? String(detail.transport_trips) : '';
+    this.invoiceDraftTransportFrom = detail?.transport_from ?? '';
+    this.invoiceDraftTransportTo = detail?.transport_to ?? '';
+  }
+
   startNewInvoiceDraft(): void {
     if (this.invoiceDraftSaving || this.invoiceDraftUncertain) return;
     this.editingInvoiceId = null;
     this.invoiceDraftInitialLines = null;
     this.invoiceDraftNotes = '';
+    this.setInvoiceDraftTransport(null);
     this.invoiceDraftSummary = null;
     this.invoiceDraftRevision += 1;
     this.invoiceCreateOpen = true;
@@ -3771,6 +3821,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.invoiceNumber = detail.invoice_number;
       this.invoiceCustomerId = detail.customer_id || pending.customerId;
       this.invoiceDraftNotes = detail.notes ?? '';
+      this.setInvoiceDraftTransport(detail);
       this.invoiceDiscountRate = pending.discountRate;
       this.invoiceTaxRate = pending.taxRate;
       this.invoiceDraftInitialLines = invoiceDraftLinesFromExisting(detail.lines);
@@ -3901,6 +3952,7 @@ export class AppComponent implements OnInit, OnDestroy {
       this.invoiceNumber = detail.invoice_number;
       this.invoiceCustomerId = detail.customer_id || '';
       this.invoiceDraftNotes = detail.notes ?? '';
+      this.setInvoiceDraftTransport(detail);
       this.invoiceDiscountRate = this.deriveRate(detail.discount_total, detail.subtotal);
       const taxableBase = Number(detail.subtotal || 0) - Number(detail.discount_total || 0);
       this.invoiceTaxRate = this.deriveRate(detail.tax_total, taxableBase.toFixed(2));
@@ -3926,6 +3978,7 @@ export class AppComponent implements OnInit, OnDestroy {
     this.editingInvoiceId = null;
     this.invoiceDraftInitialLines = null;
     this.invoiceDraftNotes = '';
+    this.setInvoiceDraftTransport(null);
     this.invoiceDraftSummary = null;
     this.invoiceDraftRevision += 1;
     this.invoiceCreateOpen = false;

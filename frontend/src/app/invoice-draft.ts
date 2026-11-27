@@ -25,12 +25,23 @@ export interface InvoiceDraftCustomer {
   name: string;
 }
 
+/** 3A-920 step 4: an employee offered in the transport block's driver list. */
+export interface InvoiceDraftDriver {
+  id: string;
+  name: string;
+}
+
 export interface InvoiceDraftInput {
   invoice_number: string;
   currency_code: string;
   customer_id: string;
   lines: readonly InvoiceDraftLine[];
   notes?: string;
+  /** 3A-920 step 4: the optional transport block (driver + trips + route). */
+  driver_employee_id?: string | null;
+  transport_trips?: string | null;
+  transport_from?: string | null;
+  transport_to?: string | null;
 }
 
 export type InvoiceDraftLinePayload =
@@ -43,6 +54,10 @@ export interface InvoiceDraftPayload {
   customer_id: string;
   lines: InvoiceDraftLinePayload[];
   notes?: string | null;
+  driver_employee_id?: string | null;
+  transport_trips?: number | null;
+  transport_from?: string | null;
+  transport_to?: string | null;
 }
 
 export interface InvoiceDraftServerSummary {
@@ -76,6 +91,21 @@ export function validateInvoiceDraft(
     return "invoiceDraft.validation.currency";
   }
   if ((input.notes?.length ?? 0) > 2000) return "invoiceDraft.validation.notesLength";
+  // 3A-920 step 4: the transport block is all-or-nothing — a driver and a
+  // trip count travel together; a route alone still needs both.
+  const transportDriver = input.driver_employee_id?.trim() || '';
+  const transportTrips = (input.transport_trips ?? '').trim();
+  const transportFrom = input.transport_from?.trim() || '';
+  const transportTo = input.transport_to?.trim() || '';
+  if (transportDriver || transportTrips || transportFrom || transportTo) {
+    if (!transportDriver || !transportTrips) return "invoiceDraft.validation.transportPair";
+    if (!/^\d+$/.test(transportTrips) || Number(transportTrips) < 1) {
+      return "invoiceDraft.validation.transportTrips";
+    }
+    if (transportFrom.length > 200 || transportTo.length > 200) {
+      return "invoiceDraft.validation.transportPlaceLength";
+    }
+  }
   if (!input.lines.length) return "invoiceDraft.validation.atLeastOneLine";
   if (input.lines.length > 500) return "invoiceDraft.validation.lineLimit";
 
@@ -122,11 +152,18 @@ export function toInvoiceDraftPayload(
   const error = validateInvoiceDraft(input, products, customers);
   if (error) throw new RangeError(error);
 
+  const transportDriver = input.driver_employee_id?.trim() || '';
   return {
     invoice_number: input.invoice_number.trim(),
     currency_code: input.currency_code.trim().toUpperCase(),
     customer_id: input.customer_id,
     notes: input.notes?.trim() || null,
+    // 3A-920 step 4: always sent (nulls when unused) so a draft edit that
+    // clears the block clears it on the server too.
+    driver_employee_id: transportDriver || null,
+    transport_trips: transportDriver ? Number((input.transport_trips ?? '').trim()) : null,
+    transport_from: transportDriver ? (input.transport_from?.trim() || null) : null,
+    transport_to: transportDriver ? (input.transport_to?.trim() || null) : null,
     lines: input.lines.map(line => line.kind === 'manual'
       ? {
           description: line.description.trim(),

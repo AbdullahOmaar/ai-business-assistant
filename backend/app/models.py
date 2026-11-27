@@ -389,6 +389,25 @@ class Invoice(Base):
         CheckConstraint("subtotal >= 0 AND tax_total >= 0 AND discount_total >= 0 AND total >= 0",
                         name="ck_invoice_nonnegative_totals"),
         CheckConstraint("status IN ('draft', 'issued', 'void')", name="ck_invoice_status"),
+        # 3A-920 step 4: the optional transport/delivery block — the
+        # driver is a business-scoped employee reference, and a
+        # confirmed entitlement points at the payroll record it became.
+        ForeignKeyConstraint(
+            ["driver_employee_id", "business_id"], ["employees.id", "employees.business_id"],
+            name="fk_invoices_driver_business", ondelete="RESTRICT",
+        ),
+        ForeignKeyConstraint(
+            ["transport_entitlement_payroll_id", "business_id"],
+            ["payroll_records.id", "payroll_records.business_id"],
+            name="fk_invoices_entitlement_payroll_business", ondelete="RESTRICT",
+        ),
+        CheckConstraint("transport_trips IS NULL OR transport_trips >= 0",
+                        name="ck_invoice_transport_trips_nonnegative"),
+        CheckConstraint(
+            "transport_entitlement_status IS NULL OR transport_entitlement_status "
+            "IN ('proposed', 'confirmed', 'dismissed', 'cancelled')",
+            name="ck_invoice_transport_entitlement_status",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -406,6 +425,20 @@ class Invoice(Base):
     discount_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0))
     total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0))
     notes: Mapped[str | None] = mapped_column(String(2000), nullable=True)
+    # 3A-920 step 4: the transport/delivery block — all NULL unless the
+    # company filled it while the master switch was on. The trip wage
+    # is snapshotted at ISSUE time (the delivery moment) as the
+    # proposed entitlement's basis; the entitlement is a proposal for
+    # payroll confirmation only, never an automatic posting.
+    driver_employee_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
+    transport_trips: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    transport_from: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    transport_to: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    transport_trip_wage: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
+    transport_entitlement_status: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    transport_entitlement_payroll_id: Mapped[UUID | None] = mapped_column(
+        Uuid(as_uuid=True), nullable=True
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, server_default=func.now()
     )
@@ -1088,6 +1121,7 @@ class PayrollRecord(Base):
             ondelete="RESTRICT",
         ),
         UniqueConstraint("business_id", "employee_id", "period", name="uq_payroll_employee_period"),
+        UniqueConstraint("id", "business_id", name="uq_payroll_records_id_business"),
         UniqueConstraint("expense_id", name="uq_payroll_expense"),
         CheckConstraint("base_salary > 0", name="ck_payroll_base_salary_positive"),
         CheckConstraint("allowances >= 0", name="ck_payroll_allowances_nonnegative"),

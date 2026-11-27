@@ -634,8 +634,12 @@ def test_payroll_create_en(intent_client, business):
     assert proposal["action"] == "payroll.create"
     assert proposal["requires_second_approval"] is True
     assert proposal["payload"]["employee_id"] == ids["omar_khalil"]
+    # 3A-920 step 2 (2026-11-27): the payroll schema gained the
+    # optional trips / work-days units — a chat-built monthly payroll
+    # carries them as None.
     assert proposal["payload"]["payroll"] == {
         "period": "2026-11", "allowances": "0", "bonuses": "0", "deductions": "0",
+        "trips": None, "work_days": None,
     }
 
 
@@ -649,7 +653,7 @@ def test_payroll_create_en_with_components(intent_client, business):
     payroll = body["proposal"]["payload"]["payroll"]
     assert payroll == {
         "period": "2026-12", "allowances": "500", "bonuses": "0",
-        "deductions": "100",
+        "deductions": "100", "trips": None, "work_days": None,
     }
 
 

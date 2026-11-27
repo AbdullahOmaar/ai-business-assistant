@@ -88,6 +88,14 @@ class InvoiceCreate(BaseModel):
     discount_rate: Decimal = Field(default=Decimal(0), ge=0, le=100)
     tax_rate: Decimal = Field(default=Decimal(0), ge=0, le=100)
     notes: str | None = Field(default=None, max_length=2000)
+    # 3A-920 step 4: the optional transport/delivery block — driver +
+    # trip count + from/to free text, all absent for an ordinary
+    # invoice. The pair rule, the driver-tag check and the master
+    # switch gate live in the service (_apply_transport_block).
+    driver_employee_id: UUID | None = None
+    transport_trips: int | None = Field(default=None, ge=1)
+    transport_from: str | None = Field(default=None, max_length=200)
+    transport_to: str | None = Field(default=None, max_length=200)
 
 
 class IssueInvoiceInput(BaseModel):
@@ -162,6 +170,12 @@ def _record(obj) -> dict:
               "unit_price", "is_stock_tracked",
               "invoice_number", "status", "currency_code", "subtotal",
               "discount_total", "tax_total", "total", "customer_id",
+              # 3A-920 step 4: the transport block's operational fields.
+              # The trip-wage snapshot + payroll link are wage data and
+              # are deliberately NOT serialized here (owner surfaces
+              # only — see the entitlement endpoints + get_invoice).
+              "driver_employee_id", "transport_trips", "transport_from",
+              "transport_to", "transport_entitlement_status",
               "product_id", "movement_type", "quantity_delta", "amount",
               "idempotency_key", "created_at")
     result = {}

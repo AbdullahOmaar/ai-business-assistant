@@ -22,6 +22,7 @@ from app.models import (
     AuditEvent,
     BusinessMembership,
     Customer,
+    Employee,
     Expense,
     Invoice,
     InvoiceLine,
@@ -265,12 +266,58 @@ def _prepare_invoice_lines(
     return prepared
 
 
+def _apply_transport_block(
+    session: Session, *, business_id: UUID, invoice: Invoice,
+    driver_employee_id: UUID | None, transport_trips: int | None,
+    transport_from: str | None, transport_to: str | None,
+) -> None:
+    """Validate + store the optional transport/delivery block (3A-920
+    step 4) on a draft invoice.
+
+    All-absent clears the block (a full draft replacement that omits
+    it means the company removed it). Any value present requires the
+    master switch ON and the driver + trips pair together: the driver
+    must be an employee of this business carrying the driver tag —
+    that tag, never a job title, is what enrolls them. The trip wage
+    is NOT read here: it is snapshotted at issue time, the delivery
+    moment, so a draft never freezes a wage that later changes.
+    """
+    if (
+        driver_employee_id is None and transport_trips is None
+        and not (transport_from or "").strip() and not (transport_to or "").strip()
+    ):
+        invoice.driver_employee_id = None
+        invoice.transport_trips = None
+        invoice.transport_from = None
+        invoice.transport_to = None
+        return
+    if not transport_enabled(session, business_id=business_id):
+        raise WorkflowError("Transport is disabled for this business.")
+    if driver_employee_id is None or transport_trips is None:
+        raise WorkflowError("Transport details need both a driver and a trip count.")
+    if transport_trips < 1:
+        raise WorkflowError("Trip count must be at least 1.")
+    driver = session.scalars(select(Employee).where(
+        Employee.id == driver_employee_id, Employee.business_id == business_id,
+    )).one_or_none()
+    if driver is None:
+        raise WorkflowError("Driver not found in this business")
+    if not driver.is_driver:
+        raise WorkflowError("The selected employee is not a driver/delivery agent.")
+    invoice.driver_employee_id = driver.id
+    invoice.transport_trips = transport_trips
+    invoice.transport_from = (transport_from or "").strip()[:200] or None
+    invoice.transport_to = (transport_to or "").strip()[:200] or None
+
+
 def create_invoice(
     session: Session, *, principal: AuthenticatedPrincipal, business_id: UUID,
     invoice_number: str, currency_code: str,
     lines: Iterable[dict], customer_id: UUID | None = None,
     discount_rate: Decimal = ZERO, tax_rate: Decimal = ZERO,
     notes: str | None = None,
+    driver_employee_id: UUID | None = None, transport_trips: int | None = None,
+    transport_from: str | None = None, transport_to: str | None = None,
 ) -> Invoice:
     _membership(session, principal, business_id)
     if not invoice_number.strip():
@@ -297,6 +344,11 @@ def create_invoice(
         invoice_number=invoice_number.strip(), status="draft", currency_code=currency,
         subtotal=totals.subtotal, discount_total=totals.discount_total,
         tax_total=totals.tax_total, total=totals.total, notes=notes,
+    )
+    _apply_transport_block(
+        session, business_id=business_id, invoice=invoice,
+        driver_employee_id=driver_employee_id, transport_trips=transport_trips,
+        transport_from=transport_from, transport_to=transport_to,
     )
     session.add(invoice)
     session.flush()
@@ -386,6 +438,8 @@ def replace_draft_invoice(
     lines: Iterable[dict], customer_id: UUID | None = None,
     discount_rate: Decimal = ZERO, tax_rate: Decimal = ZERO,
     notes: str | None = None,
+    driver_employee_id: UUID | None = None, transport_trips: int | None = None,
+    transport_from: str | None = None, transport_to: str | None = None,
 ) -> Invoice:
     """Replace all lines/totals on a draft invoice in the caller's transaction."""
     _membership(session, principal, business_id)
@@ -424,6 +478,11 @@ def replace_draft_invoice(
     invoice.tax_total = totals.tax_total
     invoice.total = totals.total
     invoice.notes = notes
+    _apply_transport_block(
+        session, business_id=business_id, invoice=invoice,
+        driver_employee_id=driver_employee_id, transport_trips=transport_trips,
+        transport_from=transport_from, transport_to=transport_to,
+    )
     # Flush the header before deleting existing lines. In particular, a
     # business-scoped invoice-number conflict must fail before destructive
     # line replacement begins, even on SQLite's legacy transaction mode.
@@ -509,6 +568,11 @@ def void_invoice(
                     created_by_subject=principal.subject,
                 ))
     invoice.status = "void"
+    # 3A-920 step 4: voiding cancels a still-proposed entitlement. A
+    # confirmed one already became a payroll record, which stands on
+    # its own in payroll and is never touched from here.
+    if invoice.transport_entitlement_status == "proposed":
+        invoice.transport_entitlement_status = "cancelled"
     session.flush()
     _audit(session, business_id=business_id, principal=principal,
            action="invoice.voided", target_type="invoice", target_id=invoice.id,
@@ -607,6 +671,18 @@ def issue_invoice(
 
     invoice.status = "issued"
     invoice.issue_date = datetime.now(UTC)
+    # 3A-920 step 4: issuing an invoice that carries a transport block
+    # raises the PROPOSED driver entitlement — a proposal for payroll
+    # confirmation only, never an automatic posting. The driver's
+    # trip wage is snapshotted now (the delivery moment), so a later
+    # wage change never rewrites the proposal.
+    if invoice.driver_employee_id is not None and invoice.transport_trips:
+        driver = session.scalars(select(Employee).where(
+            Employee.id == invoice.driver_employee_id,
+            Employee.business_id == business_id,
+        )).one_or_none()
+        invoice.transport_trip_wage = driver.trip_wage if driver is not None else None
+        invoice.transport_entitlement_status = "proposed"
     session.flush()
     _audit(session, business_id=business_id, principal=principal,
            action="invoice.issued", target_type="invoice", target_id=invoice.id)

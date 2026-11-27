@@ -43,6 +43,7 @@ from app.models import (
     CashboxEntry,
     CreditNote,
     Customer,
+    Employee,
     Expense,
     ImportJob,
     Invoice,
@@ -2043,7 +2044,7 @@ def get_invoice(business_id: UUID, invoice_id: UUID,
                 session: Session = Depends(get_session),
                 principal: AuthenticatedPrincipal = Depends(get_principal)):
     try:
-        _authorized(session, principal, business_id)
+        membership = _authorized(session, principal, business_id)
         invoice = session.scalars(select(Invoice).where(
             Invoice.id == invoice_id, Invoice.business_id == business_id,
         )).one_or_none()
@@ -2052,14 +2053,37 @@ def get_invoice(business_id: UUID, invoice_id: UUID,
         lines = session.scalars(select(InvoiceLine).where(
             InvoiceLine.invoice_id == invoice.id, InvoiceLine.business_id == business_id
         )).all()
-        return {
+        result = {
             **_dict(invoice, ("id", "invoice_number", "customer_id", "status", "currency_code",
                               "subtotal", "discount_total", "tax_total", "total", "issue_date",
                               "due_date", "notes", "created_at")),
+            # 3A-920 step 4: the transport block's operational fields
+            # are visible to any member who can see the invoice; the
+            # wage snapshot + entitlement amount below are payroll data
+            # and stay owner-only (the payroll permissions rule).
+            **_dict(invoice, ("driver_employee_id", "transport_trips", "transport_from",
+                              "transport_to", "transport_entitlement_status")),
             "lines": [_dict(line, ("id", "product_id", "description", "quantity",
                                    "sold_unit", "conversion_factor",
                                    "unit_price", "line_total")) for line in lines],
         }
+        if invoice.driver_employee_id is not None:
+            result["driver_name"] = session.scalar(select(Employee.name).where(
+                Employee.id == invoice.driver_employee_id,
+                Employee.business_id == business_id,
+            ))
+        if membership.role == MembershipRole.OWNER:
+            wage = invoice.transport_trip_wage
+            result["transport_trip_wage"] = str(wage) if wage is not None else None
+            result["transport_entitlement_amount"] = (
+                str(wage * invoice.transport_trips)
+                if wage is not None and invoice.transport_trips else None
+            )
+            result["transport_entitlement_payroll_id"] = (
+                str(invoice.transport_entitlement_payroll_id)
+                if invoice.transport_entitlement_payroll_id else None
+            )
+        return result
     except AuthorizationError as exc:
         raise HTTPException(status_code=403, detail=str(exc)) from exc
 

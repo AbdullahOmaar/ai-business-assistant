@@ -281,10 +281,12 @@ def test_create_draft_invoice_en_returns_proposal(intent_client, business):
     assert proposal["payload"]["invoice_number"] == "INV-104"
     assert proposal["payload"]["currency_code"] == "EGP"
     assert proposal["payload"]["customer_id"] == ids["layla"]
+    # 3A-920 step 3 (2026-11-27): the line schema gained the optional
+    # selling unit — the payload carries it as None (base unit).
     assert proposal["payload"]["lines"] == [
         {
             "description": "Invoice INV-104", "quantity": "1",
-            "unit_price": "250", "product_id": None,
+            "unit_price": "250", "product_id": None, "unit": None,
         }
     ]
     assert proposal["payload"]["discount_rate"] == "0"
@@ -305,7 +307,7 @@ def test_create_draft_invoice_ar_returns_proposal(intent_client, business):
     assert proposal["payload"]["lines"] == [
         {
             "description": "فاتورة 105", "quantity": "1",
-            "unit_price": "500", "product_id": None,
+            "unit_price": "500", "product_id": None, "unit": None,
         }
     ]
 

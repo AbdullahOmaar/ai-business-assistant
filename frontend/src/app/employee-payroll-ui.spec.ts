@@ -234,7 +234,10 @@ test('mobile payroll keeps its period filter with history and restores focus aft
   const toolsEnd = component.indexOf('</div>', toolsStart);
   assert.ok(toolsStart >= 0 && toolsEnd > toolsStart);
   assert.doesNotMatch(component.slice(toolsStart, toolsEnd), /payrollFilterPeriod/);
-  const historyStart = component.indexOf('data-mobile-pane="history"');
+  // 3A-920 step 4: the proposed-entitlements queue shares the history
+  // pane and renders before the history section, so slice from the
+  // history section itself, not from the first history-pane marker.
+  const historyStart = component.indexOf('payroll-section payroll-history');
   const historyEnd = component.indexOf('</section>', historyStart);
   assert.ok(historyStart >= 0 && historyEnd > historyStart);
   const history = component.slice(historyStart, historyEnd);

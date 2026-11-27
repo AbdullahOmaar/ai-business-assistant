@@ -5,7 +5,7 @@ import { LocalizationService } from './localization.service';
 import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecordTableColumn, type AbaRecordTableRow } from './shared/ui/aba-record-table.component';
 import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';
 import { AbaSearchFieldComponent } from './shared/ui/aba-search-field.component';
-import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service';
+import { ApiService, EmployeePayrollRecord, EmployeeRecord, TransportEntitlement } from './api.service';
 import { DEFAULT_DAILY_DIVISOR, dailyDivisorFromSettings, transportEnabledFromSettings } from './transport-settings';
 
 @Component({
@@ -158,6 +158,36 @@ import { DEFAULT_DAILY_DIVISOR, dailyDivisorFromSettings, transportEnabledFromSe
         </div>
       </section>
 
+      @if (transportEnabled && entitlements.length) {
+      <section class="payroll-section entitlement-queue" data-mobile-pane="history">
+        <div class="section-head">
+          <div>
+            <h3>{{ t('ui.employees.transportEntitlements.title') }}</h3>
+            <p>{{ t('ui.employees.transportEntitlements.hint') }}</p>
+          </div>
+          <span class="count">{{ entitlements.length }}</span>
+        </div>
+        <div class="entitlement-list">
+          @for (item of entitlements; track item.invoice_id) {
+            <article class="entitlement-row">
+              <div class="entitlement-main">
+                <strong>{{ item.driver_name || '—' }}</strong>
+                <span>{{ t('ui.employees.transportEntitlements.invoice') }} <bdi dir="ltr">{{ item.invoice_number }}</bdi>@if (item.issue_date) { · <bdi dir="ltr">{{ item.issue_date }}</bdi> }</span>
+                <span><bdi dir="ltr">{{ item.trips }}</bdi> {{ item.unit_name }} × <bdi dir="ltr">{{ item.trip_wage ?? '—' }} {{ item.currency_code }}</bdi> = <bdi dir="ltr">{{ item.amount ?? '—' }} {{ item.currency_code }}</bdi></span>
+              </div>
+              <label class="entitlement-period">{{ t('ui.employees.transportEntitlements.period') }}
+                <input type="month" [name]="'entitlementPeriod-' + item.invoice_id" [(ngModel)]="entitlementPeriods[item.invoice_id]" [disabled]="busy">
+              </label>
+              <div class="entitlement-actions">
+                <button class="primary" type="button" (click)="confirmEntitlement(item)" [disabled]="busy">{{ t('ui.employees.transportEntitlements.confirm') }}</button>
+                <button class="secondary" type="button" (click)="dismissEntitlement(item)" [disabled]="busy">{{ t('ui.employees.transportEntitlements.dismiss') }}</button>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+      }
+
       <section class="payroll-section payroll-history" data-mobile-pane="history">
         <div class="section-head">
           <div>
@@ -249,6 +279,13 @@ import { DEFAULT_DAILY_DIVISOR, dailyDivisorFromSettings, transportEnabledFromSe
     .payslip-lines dd{margin:0;font-size:12px;font-weight:700}
     .employee-tools label,.payroll-history-filter label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155)}
     .payroll-section{margin-top:24px;padding-top:18px;border-top:1px solid var(--aba-color-border-subtle,#e5e7eb);min-width:0}
+    .entitlement-list{display:grid;gap:10px}
+    .entitlement-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:14px;background:var(--aba-color-surface,#fff)}
+    .entitlement-main{display:grid;gap:2px;min-width:0;font-size:13px}
+    .entitlement-main span{color:var(--aba-color-text-secondary,#475569)}
+    .entitlement-period{display:grid;gap:4px;font-size:12px;font-weight:700;color:var(--aba-color-text-secondary,#475569)}
+    .entitlement-actions{display:flex;gap:8px}
+    @media(max-width:600px){.entitlement-row{grid-template-columns:minmax(0,1fr)}.entitlement-actions{flex-wrap:wrap}}
     .employee-row,.payroll-row{grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:12px;min-width:0}
     .employee-mark{display:grid;place-items:center;width:36px;height:36px;background:var(--aba-color-info-soft,#e0f2fe);color:var(--aba-color-info-text,#075985);border-radius:11px;font-weight:800}
     .money-mark{background:var(--aba-color-success-soft,#dcfce7);color:var(--aba-color-success-text,#166534)}
@@ -315,6 +352,11 @@ export class EmployeePayrollComponent implements OnChanges {
   // own count, mirroring the backend read at payroll creation.
   dailyDivisor = DEFAULT_DAILY_DIVISOR;
   driversOnly = false;
+  // 3A-920 step 4: proposed driver entitlements from issued invoices —
+  // confirming creates an ordinary draft payroll record; nothing is
+  // ever posted automatically.
+  entitlements: TransportEntitlement[] = [];
+  entitlementPeriods: Record<string, string> = {};
   mobileSection: 'employees' | 'prepare' | 'history' = 'employees';
   employeeFormOpen = false;
   editingEmployeeId: string | null = null;
@@ -355,6 +397,8 @@ export class EmployeePayrollComponent implements OnChanges {
       this.cancelPayrollEdit();
       this.employeeSearch = '';
       this.driversOnly = false;
+      this.entitlements = [];
+      this.entitlementPeriods = {};
       this.transportEnabled = false;
       this.dailyDivisor = DEFAULT_DAILY_DIVISOR;
       this.mobileSection = 'employees';
@@ -529,6 +573,15 @@ export class EmployeePayrollComponent implements OnChanges {
       // read, no new endpoint.
       this.transportEnabled = transportEnabledFromSettings(settings);
       this.dailyDivisor = dailyDivisorFromSettings(settings);
+      // 3A-920 step 4: the proposed-entitlement queue loads only while
+      // the switch is on; while off, stored proposals wait untouched.
+      this.entitlements = this.transportEnabled ? await this.api.transportEntitlements(businessId) : [];
+      if (sequence !== this.loadSequence || this.businessId !== businessId) return;
+      for (const item of this.entitlements) {
+        if (!this.entitlementPeriods[item.invoice_id]) {
+          this.entitlementPeriods[item.invoice_id] = item.issue_date ? item.issue_date.slice(0, 7) : this.currentPeriod();
+        }
+      }
       if (!this.employees.some(item => item.id === this.payrollEmployeeId && item.is_active)) {
         this.payrollEmployeeId = this.employees.find(item => item.is_active)?.id || '';
       }
@@ -536,6 +589,39 @@ export class EmployeePayrollComponent implements OnChanges {
       if (sequence === this.loadSequence && this.businessId === businessId) this.error = this.errorMessage(error);
     } finally {
       if (sequence === this.loadSequence && this.businessId === businessId) this.busy = false;
+    }
+  }
+
+  /** 3A-920 step 4: confirm a proposal into an ordinary DRAFT payroll record. */
+  async confirmEntitlement(item: TransportEntitlement): Promise<void> {
+    if (!this.businessId || this.busy) return;
+    this.busy = true;
+    this.error = '';
+    this.message = '';
+    try {
+      const period = this.entitlementPeriods[item.invoice_id] || undefined;
+      await this.api.confirmTransportEntitlement(this.businessId, item.invoice_id, period);
+      this.message = this.t('ui.employees.transportEntitlements.confirmed');
+      await this.loadEmployeesAndPayroll();
+    } catch (error) {
+      this.error = this.errorMessage(error);
+      this.busy = false;
+    }
+  }
+
+  /** 3A-920 step 4: dismiss a proposal — the invoice keeps its block data. */
+  async dismissEntitlement(item: TransportEntitlement): Promise<void> {
+    if (!this.businessId || this.busy) return;
+    this.busy = true;
+    this.error = '';
+    this.message = '';
+    try {
+      await this.api.dismissTransportEntitlement(this.businessId, item.invoice_id);
+      this.message = this.t('ui.employees.transportEntitlements.dismissed');
+      await this.loadEmployeesAndPayroll();
+    } catch (error) {
+      this.error = this.errorMessage(error);
+      this.busy = false;
     }
   }
 

@@ -3,7 +3,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, injec
 import { FormsModule } from '@angular/forms';
 import { LocalizationService } from './localization.service';
 import { removeInvoiceDraftLine, toInvoiceDraftPayload } from './invoice-draft';
-import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, InvoiceDraftPayload, InvoiceDraftProduct, InvoiceDraftServerSummary } from './invoice-draft';
+import type { InvoiceDraftCustomer, InvoiceDraftDriver, InvoiceDraftLine, InvoiceDraftLineKind, InvoiceDraftPayload, InvoiceDraftProduct, InvoiceDraftServerSummary } from './invoice-draft';
 
 @Component({
   selector: 'aba-invoice-draft-editor',
@@ -132,6 +132,43 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
         </div>
       </section>
 
+      @if (transportEnabled) {
+        <section class="editor-card transport-card" aria-labelledby="invoice-transport-heading">
+          <div class="section-heading">
+            <div>
+              <h4 id="invoice-transport-heading">{{ t('ui.invoices.transport.title') }}</h4>
+              <p>{{ t('ui.invoices.transport.hint') }}</p>
+            </div>
+            <button type="button" class="subtle-action transport-toggle" (click)="transportOpen = !transportOpen" [attr.aria-expanded]="transportOpen" [disabled]="locked">
+              {{ transportOpen ? t('ui.invoices.transport.collapse') : t('ui.invoices.transport.expand') }}
+            </button>
+          </div>
+          @if (transportOpen) {
+            <div class="invoice-details-grid">
+              <label class="field">
+                <span>{{ t('ui.invoices.transport.driver') }}</span>
+                <select name="transportDriver" [(ngModel)]="driverId" (ngModelChange)="markDirty()" [disabled]="locked">
+                  <option value="">{{ t('ui.invoices.transport.noDriver') }}</option>
+                  @for (driver of drivers; track driver.id) { <option [value]="driver.id">{{ driver.name }}</option> }
+                </select>
+              </label>
+              <label class="field">
+                <span>{{ t('ui.invoices.transport.trips', { unit: transportUnitName }) }}</span>
+                <input name="transportTrips" inputmode="numeric" [(ngModel)]="transportTrips" (ngModelChange)="markDirty()" placeholder="1" [disabled]="locked" />
+              </label>
+              <label class="field">
+                <span>{{ t('ui.invoices.transport.from') }}</span>
+                <input name="transportFrom" [(ngModel)]="transportFrom" (ngModelChange)="markDirty()" maxlength="200" [disabled]="locked" />
+              </label>
+              <label class="field">
+                <span>{{ t('ui.invoices.transport.to') }}</span>
+                <input name="transportTo" [(ngModel)]="transportTo" (ngModelChange)="markDirty()" maxlength="200" [disabled]="locked" />
+              </label>
+            </div>
+          }
+        </section>
+      }
+
       @if (error) { <p class="editor-error" role="alert">{{ localize(error) }}</p> }
       @if (blocked) {
         <div class="editor-error blocked-message" role="alert">
@@ -211,7 +248,7 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
     .kind-option{min-height:36px;padding:7px 12px;border:0;border-radius:7px;background:transparent;color:var(--aba-color-text-secondary,#64748b);font:inherit;font-size:12px;font-weight:650;cursor:pointer}
     .kind-option.active{background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59);box-shadow:inset 0 0 0 1px var(--aba-color-primary-border,#99f6e4)}
     .line-fields{display:grid;gap:11px;min-width:0;align-items:end}.product-line{grid-template-columns:minmax(0,1.25fr) minmax(110px,.65fr) minmax(0,1.2fr) minmax(88px,.55fr) minmax(110px,.6fr)}.service-line{grid-template-columns:minmax(0,1.5fr) minmax(130px,.8fr) minmax(88px,.55fr)}
-    .line-list-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.add-line-action,.subtle-action{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:5px 2px;border:0;background:transparent;color:var(--aba-color-primary-strong,#115e59);font:inherit;font-size:12px;font-weight:700;cursor:pointer}.add-line-action span{font-size:18px;line-height:1}
+    .line-list-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.add-line-action,.subtle-action{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:5px 2px;border:0;background:transparent;color:var(--aba-color-primary-strong,#115e59);font:inherit;font-size:12px;font-weight:700;cursor:pointer}.add-line-action span{font-size:18px;line-height:1}.transport-toggle{white-space:nowrap;flex:none;padding-inline:6px}
     .readonly-rates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.rate-field{padding:11px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:11px;background:var(--aba-color-surface-subtle,#f8fafc)}.rate-field small{color:var(--aba-color-text-secondary,#64748b);font-size:11px;font-weight:500}
     .summary-row{display:flex;justify-content:space-between;gap:12px;padding-top:4px;color:var(--aba-color-text-secondary,#64748b);font-size:12px}.summary-row strong{color:var(--aba-color-text-primary,#172033);font-weight:700;font-variant-numeric:tabular-nums;text-align:end}
     .summary-total{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:2px;padding-top:13px;border-top:1px solid var(--aba-color-border-subtle,#e2e8f0);font-size:15px;font-weight:800}.summary-total strong{color:var(--aba-color-primary-strong,#115e59);font-size:19px;font-variant-numeric:tabular-nums;text-align:end}
@@ -231,6 +268,12 @@ export class InvoiceDraftEditorComponent implements OnChanges {
   @Input() language: 'ar' | 'en' = 'ar';
   /** 3A-920 step 3: the selling-unit selector renders only while the switch is on. */
   @Input() transportEnabled = false;
+  @Input() drivers: InvoiceDraftDriver[] = [];
+  @Input() transportUnitName = '';
+  @Input() initialDriverId: string | null = null;
+  @Input() initialTransportTrips = '';
+  @Input() initialTransportFrom = '';
+  @Input() initialTransportTo = '';
   @Input() products: InvoiceDraftProduct[] = [];
   @Input() customers: InvoiceDraftCustomer[] = [];
   @Input() currencyCode = '';
@@ -260,11 +303,21 @@ export class InvoiceDraftEditorComponent implements OnChanges {
   lines: InvoiceDraftLine[] = [this.newLine('product')];
   notes = '';
   error = '';
+  driverId = '';
+  transportTrips = '';
+  transportFrom = '';
+  transportTo = '';
+  transportOpen = false;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['draftRevision']) {
       this.lines = this.initialLines?.length ? this.initialLines.map(line => ({ ...line })) : [this.newLine('product')];
       this.notes = this.initialNotes ?? '';
+      this.driverId = this.initialDriverId ?? '';
+      this.transportTrips = this.initialTransportTrips ?? '';
+      this.transportFrom = this.initialTransportFrom ?? '';
+      this.transportTo = this.initialTransportTo ?? '';
+      this.transportOpen = !!this.driverId;
       this.error = '';
       this.serverSummary = null;
     }
@@ -295,6 +348,11 @@ export class InvoiceDraftEditorComponent implements OnChanges {
     this.invoiceNumber = '';
     this.customerId = '';
     this.notes = '';
+    this.driverId = '';
+    this.transportTrips = '';
+    this.transportFrom = '';
+    this.transportTo = '';
+    this.transportOpen = false;
     this.lines = [this.newLine('product')];
     this.error = '';
     this.serverSummary = null;
@@ -359,6 +417,10 @@ export class InvoiceDraftEditorComponent implements OnChanges {
         customer_id: this.customerId,
         lines: this.lines,
         notes: this.notes,
+        driver_employee_id: this.transportEnabled ? (this.driverId || null) : null,
+        transport_trips: this.transportEnabled ? (this.transportTrips || null) : null,
+        transport_from: this.transportEnabled ? (this.transportFrom || null) : null,
+        transport_to: this.transportEnabled ? (this.transportTo || null) : null,
       }, this.products, this.customers);
       this.saveDraft.emit(payload);
     } catch (error) {

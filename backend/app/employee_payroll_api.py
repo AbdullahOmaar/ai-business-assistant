@@ -20,6 +20,7 @@ from app.models import (
     Business,
     Employee,
     Expense,
+    Invoice,
     MembershipRole,
     PayrollRecord,
 )
@@ -32,6 +33,7 @@ from app.transport_settings import (
     DEFAULT_DAILY_DIVISOR,
     daily_divisor,
     transport_enabled,
+    transport_unit_name,
 )
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["employees and payroll"])
@@ -630,3 +632,171 @@ def pay_payroll(
 
     record, employee_name = _commit(session, operation)
     return _payroll_dict(record, employee_name)
+
+
+# ---------------------------------------------------------------------------
+# 3A-920 step 4 — proposed driver entitlements.
+#
+# Issuing an invoice with a transport block raises a PROPOSED
+# entitlement on the invoice (see app.services.issue_invoice). These
+# owner-only endpoints are the payroll side of it: list what is
+# awaiting a decision, confirm one into a DRAFT payroll record, or
+# dismiss it. Nothing here ever posts money on its own — confirmation
+# is an explicit owner action, and the record it creates is an
+# ordinary draft that still goes through approve + pay like any
+# other. Like payroll for an already per-trip employee, the queue
+# keeps working while the master switch is off: the switch governs
+# NEW transport enrolments, not the pay that follows from recorded
+# deliveries.
+# ---------------------------------------------------------------------------
+
+
+class EntitlementConfirm(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    # Defaults to the invoice's issue month; the owner may file the
+    # trips under a different period (e.g. the payroll run they
+    # belong to).
+    period: str | None = Field(default=None, pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+
+
+def _entitlement_dict(invoice: Invoice, driver_name: str, unit_name: str) -> dict:
+    wage = invoice.transport_trip_wage
+    amount = wage * invoice.transport_trips if wage is not None and invoice.transport_trips else None
+    return {
+        "invoice_id": str(invoice.id),
+        "invoice_number": invoice.invoice_number,
+        "issue_date": invoice.issue_date.isoformat() if invoice.issue_date else None,
+        "driver_employee_id": str(invoice.driver_employee_id),
+        "driver_name": driver_name,
+        "trips": invoice.transport_trips,
+        "unit_name": unit_name,
+        "trip_wage": str(wage) if wage is not None else None,
+        "amount": str(amount) if amount is not None else None,
+        "currency_code": invoice.currency_code,
+    }
+
+
+@router.get("/transport-entitlements")
+def list_transport_entitlements(
+    business_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    _owner(session, principal, business_id)
+    unit_name = transport_unit_name(session, business_id=business_id)
+    rows = session.execute(
+        select(Invoice, Employee.name)
+        .join(Employee, Employee.id == Invoice.driver_employee_id)
+        .where(
+            Invoice.business_id == business_id,
+            Invoice.transport_entitlement_status == "proposed",
+        )
+        .order_by(Invoice.issue_date, Invoice.id)
+    ).all()
+    return [_entitlement_dict(invoice, driver_name, unit_name) for invoice, driver_name in rows]
+
+
+@router.post("/transport-entitlements/{invoice_id}/confirm")
+def confirm_transport_entitlement(
+    business_id: UUID,
+    invoice_id: UUID,
+    body: EntitlementConfirm | None = None,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    def operation():
+        _owner(session, principal, business_id)
+        invoice = session.scalars(
+            select(Invoice).where(
+                Invoice.id == invoice_id, Invoice.business_id == business_id
+            ).with_for_update()
+        ).one_or_none()
+        if invoice is None:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        if invoice.transport_entitlement_status != "proposed":
+            raise HTTPException(
+                status_code=409, detail="This entitlement is not awaiting confirmation."
+            )
+        driver = session.scalars(select(Employee).where(
+            Employee.id == invoice.driver_employee_id, Employee.business_id == business_id
+        )).one_or_none()
+        if driver is None or not driver.is_active:
+            raise HTTPException(
+                status_code=422, detail="The driver is no longer an active employee."
+            )
+        if driver.wage_basis != "per_trip":
+            raise HTTPException(
+                status_code=422,
+                detail="The driver's wage basis is not per-trip; record the pay manually.",
+            )
+        if invoice.transport_trip_wage is None or not invoice.transport_trips:
+            raise HTTPException(status_code=422, detail="Trip wage is not set for this driver.")
+        period = body.period if body is not None else None
+        if period is None:
+            if invoice.issue_date is None:
+                raise HTTPException(status_code=422, detail="A payroll period is required.")
+            period = invoice.issue_date.strftime("%Y-%m")
+        # The base is the SNAPSHOT wage x trips — the delivery-moment
+        # wage, exactly the per-trip branch of _compute_payroll_base
+        # with the snapshotted inputs, so a later wage change never
+        # rewrites the proposal. The net formula is the same as any
+        # payroll record (base + allowances + bonuses - deductions,
+        # all zero here; the draft stays editable in payroll).
+        base_salary = _money(invoice.transport_trip_wage * invoice.transport_trips)
+        record = PayrollRecord(
+            business_id=business_id,
+            employee_id=driver.id,
+            period=period,
+            trips=invoice.transport_trips,
+            work_days=None,
+            base_salary=base_salary,
+            allowances=Decimal(0),
+            bonuses=Decimal(0),
+            deductions=Decimal(0),
+            net_pay=base_salary,
+            status="draft",
+            created_by_subject=principal.subject,
+        )
+        session.add(record)
+        session.flush()
+        invoice.transport_entitlement_status = "confirmed"
+        invoice.transport_entitlement_payroll_id = record.id
+        _audit(session, business_id, principal.subject, "transport.entitlement_confirmed",
+               "payroll", record.id,
+               f"Driver entitlement from invoice {invoice.invoice_number} "
+               f"confirmed as draft payroll for {period}.")
+        return record, driver.name, invoice.id
+
+    record, driver_name, confirmed_invoice_id = _commit(session, operation)
+    return {**_payroll_dict(record, driver_name), "invoice_id": str(confirmed_invoice_id)}
+
+
+@router.post("/transport-entitlements/{invoice_id}/dismiss")
+def dismiss_transport_entitlement(
+    business_id: UUID,
+    invoice_id: UUID,
+    session: Session = Depends(get_session),
+    principal: AuthenticatedPrincipal = Depends(get_principal),
+):
+    def operation():
+        _owner(session, principal, business_id)
+        invoice = session.scalars(
+            select(Invoice).where(
+                Invoice.id == invoice_id, Invoice.business_id == business_id
+            ).with_for_update()
+        ).one_or_none()
+        if invoice is None:
+            raise HTTPException(status_code=404, detail="Invoice not found")
+        if invoice.transport_entitlement_status != "proposed":
+            raise HTTPException(
+                status_code=409, detail="This entitlement is not awaiting confirmation."
+            )
+        invoice.transport_entitlement_status = "dismissed"
+        session.flush()
+        _audit(session, business_id, principal.subject, "transport.entitlement_dismissed",
+               "invoice", invoice.id,
+               f"Driver entitlement for invoice {invoice.invoice_number} dismissed.")
+        return {"invoice_id": str(invoice.id), "status": "dismissed"}
+
+    return _commit(session, operation)

@@ -1335,6 +1335,16 @@
         "tripWage": "Trip wage",
         "trips": "Trips",
         "workDays": "Work days"
+      },
+      "transportEntitlements": {
+        "title": "Proposed driver entitlements",
+        "hint": "From issued invoices carrying transport details — confirming turns one into an ordinary draft payroll record; nothing is posted automatically",
+        "invoice": "Invoice",
+        "period": "Period",
+        "confirm": "Confirm",
+        "dismiss": "Dismiss",
+        "confirmed": "Entitlement confirmed — recorded as a draft payroll record",
+        "dismissed": "Proposed entitlement dismissed"
       }
     },
     "products": {
@@ -1347,6 +1357,24 @@
         "factorHint": "How many base units are in each second unit",
         "invalid": "Enter the unit name and a positive factor (up to 3 decimals)",
         "sellUnit": "Selling unit"
+      }
+    },
+    "invoices": {
+      "transport": {
+        "title": "Transport & delivery",
+        "hint": "Optional — appears as a proposed driver entitlement in payroll once the invoice is issued; never posted automatically",
+        "expand": "Add",
+        "collapse": "Collapse",
+        "driver": "Driver / delivery agent",
+        "noDriver": "No driver",
+        "trips": "{{unit}} count",
+        "from": "From",
+        "to": "To",
+        "entitlementStatus": "Entitlement status",
+        "statusProposed": "Proposed — awaiting approval",
+        "statusConfirmed": "Confirmed in payroll",
+        "statusDismissed": "Dismissed",
+        "statusCancelled": "Cancelled with the invoice void"
       }
     }
   },
@@ -1768,7 +1796,10 @@
       "manualDescription": "Every manual line needs a description of 1 to 300 characters.",
       "manualPrice": "Every manual line needs a non-negative unit price with at most two decimal places.",
       "invalidDraft": "The invoice draft is invalid.",
-      "lineUnit": "The selected selling unit is not available for this product"
+      "lineUnit": "The selected selling unit is not available for this product",
+      "transportPair": "Transport details need a driver and a trip count together",
+      "transportTrips": "The trip count must be a whole number above zero",
+      "transportPlaceLength": "The origin or destination is longer than 200 characters"
     }
   },
   "customerDirectory": {
