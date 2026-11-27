@@ -1334,6 +1334,18 @@
         "trips": "Trips",
         "workDays": "Work days"
       }
+    },
+    "products": {
+      "secondUnit": {
+        "name": "Second selling unit",
+        "namePlaceholder": "e.g. carton",
+        "nameRequired": "Enter the second selling unit name",
+        "factor": "Conversion factor",
+        "factorPlaceholder": "e.g. 12",
+        "factorHint": "How many base units are in each second unit",
+        "invalid": "Enter the unit name and a positive factor (up to 3 decimals)",
+        "sellUnit": "Selling unit"
+      }
     }
   },
   "common": {
@@ -1753,7 +1765,8 @@
       "descriptionLength": "A line description cannot exceed 300 characters.",
       "manualDescription": "Every manual line needs a description of 1 to 300 characters.",
       "manualPrice": "Every manual line needs a non-negative unit price with at most two decimal places.",
-      "invalidDraft": "The invoice draft is invalid."
+      "invalidDraft": "The invoice draft is invalid.",
+      "lineUnit": "The selected selling unit is not available for this product"
     }
   },
   "customerDirectory": {
@@ -2189,7 +2202,8 @@
     "edit": "Edit details",
     "emptyDescription": "Choose a product from the catalogue to view its details.",
     "loading": "Loading product details…",
-    "emptyTitle": "No product selected"
+    "emptyTitle": "No product selected",
+    "secondUnit": "Second selling unit"
   },
   "purchasingWorkspace": {
     "approveConfirmationPrompt": "Approve this purchase order?",

@@ -205,6 +205,14 @@ class Product(Base):
         # Composite target lets stock movements enforce matching business ownership.
         UniqueConstraint("id", "business_id", name="uq_products_id_business"),
         CheckConstraint("unit_price >= 0", name="ck_products_unit_price_nonnegative"),
+        CheckConstraint(
+            "(second_unit_name IS NULL) = (conversion_factor IS NULL)",
+            name="ck_products_second_unit_pair",
+        ),
+        CheckConstraint(
+            "conversion_factor IS NULL OR conversion_factor > 0",
+            name="ck_products_conversion_factor_positive",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -215,6 +223,12 @@ class Product(Base):
     name: Mapped[str] = mapped_column(String(160), nullable=False)
     description: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     unit: Mapped[str] = mapped_column(String(32), nullable=False, default="unit")
+    # 3A-920 step 3: the second selling unit + how many base units one
+    # second unit holds (company data, never a code constant). Both set
+    # together or both null; only settable while transport.enabled is on
+    # (enforced in app.services / app.extended_api).
+    second_unit_name: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    conversion_factor: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
     unit_price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     is_stock_tracked: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
@@ -419,6 +433,10 @@ class InvoiceLine(Base):
         CheckConstraint("quantity > 0", name="ck_invoice_line_quantity_positive"),
         CheckConstraint("unit_price >= 0 AND line_total >= 0",
                         name="ck_invoice_line_amounts_nonnegative"),
+        CheckConstraint(
+            "conversion_factor IS NULL OR conversion_factor > 0",
+            name="ck_invoice_line_conversion_factor_positive",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
@@ -429,6 +447,11 @@ class InvoiceLine(Base):
     product_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
     description: Mapped[str] = mapped_column(String(300), nullable=False)
     quantity: Mapped[Decimal] = mapped_column(Numeric(14, 3), nullable=False)
+    # 3A-920 step 3: the unit the line was sold in + the factor applied,
+    # snapshotted at creation so issue / void / return math stays exact
+    # even if the product's factor changes later. Null = base unit.
+    sold_unit: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    conversion_factor: Mapped[Decimal | None] = mapped_column(Numeric(14, 3), nullable=True)
     unit_price: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     line_total: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     invoice: Mapped[Invoice] = relationship(back_populates="lines")

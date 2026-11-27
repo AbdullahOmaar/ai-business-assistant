@@ -13,7 +13,7 @@ test('product API exposes typed list, detail and safe descriptive PATCH fields',
   assert.match(api, /products\(businessId: string, offset = 0, limit = 100\)/);
   assert.match(api, /product\(businessId: string, productId: string\)/);
   assert.match(api, /createProduct\(businessId: string, body: \{[\s\S]*?sku\?: string; description\?: string; unit\?: string/);
-  assert.match(api, /updateProduct\([\s\S]*?Partial<Pick<Product, 'name' \| 'sku' \| 'description' \| 'unit'>>/);
+  assert.match(api, /updateProduct\([\s\S]*?Partial<Pick<Product, 'name' \| 'sku' \| 'description' \| 'unit' \| 'second_unit_name' \| 'conversion_factor'>>/);
   assert.ok(api.includes('/products/${encodeURIComponent(productId)}'));
 });
 
@@ -22,7 +22,7 @@ test('product editor never exposes price or stock mutation and validates require
   assert.match(editor, /name="unit"/);
   assert.match(editor, /name="sku"/);
   assert.match(editor, /name="description"/);
-  assert.match(editor, /if \(!this\.name\(\)\.trim\(\) \|\| !this\.unit\(\)\.trim\(\) \|\| this\.busy\(\)\) return/);
+  assert.match(editor, /if \(!this\.name\(\)\.trim\(\) \|\| !this\.unit\(\)\.trim\(\) \|\| !this\.secondUnitValid\(\) \|\| this\.busy\(\)\) return/);
   assert.doesNotMatch(editor, /unit_price|stock_quantity|is_stock_tracked/);
 });
 

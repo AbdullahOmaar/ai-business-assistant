@@ -61,6 +61,10 @@ class ProductCreate(BaseModel):
     sku: str | None = Field(default=None, max_length=80)
     description: str | None = Field(default=None, max_length=1000)
     unit: str = Field(default="unit", min_length=1, max_length=32)
+    # 3A-920 step 3: the second selling unit + its factor (company data,
+    # both together or both absent; the gate lives in create_product).
+    second_unit_name: str | None = Field(default=None, max_length=32)
+    conversion_factor: Decimal | None = Field(default=None, gt=0, max_digits=14, decimal_places=3)
     is_stock_tracked: bool = False
     opening_quantity: Decimal = Field(default=Decimal(0), ge=0, max_digits=14, decimal_places=3)
 
@@ -70,6 +74,10 @@ class InvoiceLineInput(BaseModel):
     quantity: Decimal = Field(gt=0, max_digits=14, decimal_places=3)
     unit_price: Decimal | None = Field(default=None, ge=0, max_digits=14, decimal_places=2)
     product_id: UUID | None = None
+    # 3A-920 step 3: the unit the line is sold in — the product's base
+    # unit or its second unit name; absent = base unit. Product lines
+    # only; the server prices from the catalogue.
+    unit: str | None = Field(default=None, max_length=32)
 
 
 class InvoiceCreate(BaseModel):
@@ -150,7 +158,8 @@ def _run(session: Session, operation):
 def _record(obj) -> dict:
     """Serialize a domain object without leaking ORM internals."""
     fields = ("id", "business_id", "name", "email", "phone", "address", "notes",
-              "sku", "description", "unit", "unit_price", "is_stock_tracked",
+              "sku", "description", "unit", "second_unit_name", "conversion_factor",
+              "unit_price", "is_stock_tracked",
               "invoice_number", "status", "currency_code", "subtotal",
               "discount_total", "tax_total", "total", "customer_id",
               "product_id", "movement_type", "quantity_delta", "amount",

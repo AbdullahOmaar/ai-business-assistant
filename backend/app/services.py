@@ -34,6 +34,7 @@ from app.models import (
     Supplier,
 )
 from app.security import AuthenticatedPrincipal, authorize_membership
+from app.transport_settings import transport_enabled
 
 ZERO = Decimal(0)
 
@@ -113,6 +114,8 @@ def create_product(
     name: str, unit_price: Decimal, sku: str | None = None,
     description: str | None = None, unit: str = "unit",
     is_stock_tracked: bool = False, opening_quantity: Decimal = ZERO,
+    second_unit_name: str | None = None,
+    conversion_factor: Decimal | None = None,
 ) -> Product:
     _membership(session, principal, business_id)
     if not name.strip() or unit_price < ZERO:
@@ -121,6 +124,16 @@ def create_product(
         raise WorkflowError("Opening stock quantity cannot be negative")
     if opening_quantity > ZERO and not is_stock_tracked:
         raise WorkflowError("Opening stock requires stock tracking to be enabled")
+    # 3A-920 step 3: the second unit is company data set together with
+    # its factor, and only while transport is on (off = the switch has
+    # not been turned on for this business at all).
+    second_unit = second_unit_name.strip() if second_unit_name else None
+    if (second_unit is None) != (conversion_factor is None):
+        raise WorkflowError("Second unit name and conversion factor must be set together")
+    if conversion_factor is not None and conversion_factor <= ZERO:
+        raise WorkflowError("Conversion factor must be positive")
+    if second_unit is not None and not transport_enabled(session, business_id=business_id):
+        raise WorkflowError("Transport is disabled for this business.")
     if opening_quantity > ZERO:
         # Authorize before any product/audit/stock writes to prevent STAFF side effects.
         _membership(session, principal, business_id, owner_only=True)
@@ -128,6 +141,7 @@ def create_product(
         business_id=business_id, name=name.strip(), unit_price=unit_price,
         sku=sku.strip() or None if sku else None, description=description,
         unit=unit.strip() or "unit", is_stock_tracked=is_stock_tracked,
+        second_unit_name=second_unit, conversion_factor=conversion_factor,
     )
     session.add(product)
     session.flush()
@@ -183,6 +197,74 @@ def record_stock_movement(
     return movement
 
 
+def _line_base_quantity(line: InvoiceLine) -> Decimal:
+    """Quantity of a line in the product's BASE unit (3A-920 step 3).
+
+    The movements ledger is base-unit only: a line sold in the second
+    unit deducts / returns quantity x factor. A base-unit line (factor
+    None) is unchanged.
+    """
+    factor = line.conversion_factor if line.conversion_factor is not None else Decimal(1)
+    return line.quantity * factor
+
+
+def _prepare_invoice_lines(
+    session: Session, *, business_id: UUID, lines: Iterable[dict],
+) -> list[tuple[Decimal, Decimal, str, UUID | None, str | None, Decimal | None]]:
+    """Validate + price invoice lines once, shared by create and replace.
+
+    Returns (quantity, unit_price, description, product_id, sold_unit,
+    conversion_factor) per line. Product lines are always priced from
+    the catalogue (never client-supplied); a line sold in the product's
+    second unit is priced at unit_price x factor, and the sold unit +
+    factor are snapshotted on the line so issue / void / return math
+    stays exact if the product's factor changes later. Selling in the
+    second unit while transport is off is rejected; manual (service)
+    lines take no unit.
+    """
+    requested_lines = list(lines)
+    if not requested_lines:
+        raise WorkflowError("At least one invoice line is required")
+    prepared: list[tuple[Decimal, Decimal, str, UUID | None, str | None, Decimal | None]] = []
+    for item in requested_lines:
+        quantity = Decimal(str(item["quantity"]))
+        product_id = UUID(str(item["product_id"])) if item.get("product_id") else None
+        if product_id:
+            product = session.scalars(select(Product).where(
+                Product.id == product_id, Product.business_id == business_id,
+                Product.is_active.is_(True),
+            )).one_or_none()
+            if product is None:
+                raise WorkflowError("Invoice product not found in this business")
+            requested_unit = str(item.get("unit") or "").strip() or None
+            if requested_unit is None or requested_unit == product.unit:
+                sold_unit = None
+                factor = None
+                unit_price = product.unit_price
+            elif product.second_unit_name and requested_unit == product.second_unit_name:
+                if not transport_enabled(session, business_id=business_id):
+                    raise WorkflowError("Transport is disabled for this business.")
+                sold_unit = product.second_unit_name
+                factor = product.conversion_factor
+                unit_price = money(product.unit_price * factor)
+            else:
+                raise WorkflowError("Unknown selling unit for this product")
+            description = str(item.get("description") or product.name).strip()
+        else:
+            if item.get("unit"):
+                raise WorkflowError("Only product lines take a selling unit")
+            if "unit_price" not in item:
+                raise WorkflowError("Manual invoice lines require a unit price")
+            unit_price = Decimal(str(item["unit_price"]))
+            description = str(item.get("description") or "").strip()
+            sold_unit = None
+            factor = None
+        if not description:
+            raise WorkflowError("Invoice line description is required")
+        prepared.append((quantity, unit_price, description, product_id, sold_unit, factor))
+    return prepared
+
+
 def create_invoice(
     session: Session, *, principal: AuthenticatedPrincipal, business_id: UUID,
     invoice_number: str, currency_code: str,
@@ -204,33 +286,10 @@ def create_invoice(
         if customer is None:
             raise WorkflowError("Active customer not found in this business")
 
-    requested_lines = list(lines)
-    if not requested_lines:
-        raise WorkflowError("At least one invoice line is required")
-    prepared: list[tuple[Decimal, Decimal, str, UUID | None]] = []
-    for item in requested_lines:
-        quantity = Decimal(str(item["quantity"]))
-        product_id = UUID(str(item["product_id"])) if item.get("product_id") else None
-        if product_id:
-            product = session.scalars(select(Product).where(
-                Product.id == product_id, Product.business_id == business_id,
-                Product.is_active.is_(True),
-            )).one_or_none()
-            if product is None:
-                raise WorkflowError("Invoice product not found in this business")
-            unit_price = product.unit_price
-            description = str(item.get("description") or product.name).strip()
-        else:
-            if "unit_price" not in item:
-                raise WorkflowError("Manual invoice lines require a unit price")
-            unit_price = Decimal(str(item["unit_price"]))
-            description = str(item.get("description") or "").strip()
-        if not description:
-            raise WorkflowError("Invoice line description is required")
-        prepared.append((quantity, unit_price, description, product_id))
+    prepared = _prepare_invoice_lines(session, business_id=business_id, lines=lines)
 
     totals = calculate_invoice_totals(
-        [(quantity, price) for quantity, price, _, _ in prepared],
+        [(quantity, price) for quantity, price, _, _, _, _ in prepared],
         discount_rate=discount_rate, tax_rate=tax_rate,
     )
     invoice = Invoice(
@@ -241,10 +300,11 @@ def create_invoice(
     )
     session.add(invoice)
     session.flush()
-    for quantity, price, description, product_id in prepared:
+    for quantity, price, description, product_id, sold_unit, factor in prepared:
         session.add(InvoiceLine(
             business_id=business_id, invoice_id=invoice.id, product_id=product_id,
             description=description, quantity=quantity, unit_price=price,
+            sold_unit=sold_unit, conversion_factor=factor,
             line_total=money(quantity * price),
         ))
     session.flush()
@@ -310,6 +370,7 @@ def duplicate_invoice(
                 "quantity": str(line.quantity),
                 "description": line.description,
                 **({"product_id": str(line.product_id)} if line.product_id else {}),
+                **({"unit": line.sold_unit} if line.product_id and line.sold_unit else {}),
                 **({"unit_price": str(line.unit_price)} if not line.product_id else {}),
             }
             for line in source_lines
@@ -349,33 +410,10 @@ def replace_draft_invoice(
         if customer is None:
             raise WorkflowError("Active customer not found in this business")
 
-    prepared: list[tuple[Decimal, Decimal, str, UUID | None]] = []
-    requested_lines = list(lines)
-    if not requested_lines:
-        raise WorkflowError("At least one invoice line is required")
-    for item in requested_lines:
-        quantity = Decimal(str(item["quantity"]))
-        product_id = UUID(str(item["product_id"])) if item.get("product_id") else None
-        if product_id:
-            product = session.scalars(select(Product).where(
-                Product.id == product_id, Product.business_id == business_id,
-                Product.is_active.is_(True),
-            )).one_or_none()
-            if product is None:
-                raise WorkflowError("Invoice product not found in this business")
-            unit_price = product.unit_price
-            description = str(item.get("description") or product.name).strip()
-        else:
-            if "unit_price" not in item:
-                raise WorkflowError("Manual invoice lines require a unit price")
-            unit_price = Decimal(str(item["unit_price"]))
-            description = str(item.get("description") or "").strip()
-        if not description:
-            raise WorkflowError("Invoice line description is required")
-        prepared.append((quantity, unit_price, description, product_id))
+    prepared = _prepare_invoice_lines(session, business_id=business_id, lines=lines)
 
     totals = calculate_invoice_totals(
-        [(quantity, price) for quantity, price, _, _ in prepared],
+        [(quantity, price) for quantity, price, _, _, _, _ in prepared],
         discount_rate=discount_rate, tax_rate=tax_rate,
     )
     invoice.invoice_number = clean_number
@@ -395,10 +433,11 @@ def replace_draft_invoice(
         InvoiceLine.business_id == business_id,
     ))
     session.flush()
-    for quantity, price, description, product_id in prepared:
+    for quantity, price, description, product_id, sold_unit, factor in prepared:
         session.add(InvoiceLine(
             business_id=business_id, invoice_id=invoice.id, product_id=product_id,
             description=description, quantity=quantity, unit_price=price,
+            sold_unit=sold_unit, conversion_factor=factor,
             line_total=money(quantity * price),
         ))
     session.flush()
@@ -461,7 +500,9 @@ def void_invoice(
                     business_id=business_id,
                     product_id=product.id,
                     movement_type="return",
-                    quantity_delta=line.quantity,
+                    # 3A-920 step 3: the return is in base units — a line
+                    # sold in the second unit returns quantity x factor.
+                    quantity_delta=_line_base_quantity(line),
                     reason=f"Void invoice {invoice.invoice_number}",
                     reference_type="invoice_void",
                     reference_id=invoice.id,
@@ -529,7 +570,7 @@ def issue_invoice(
         product = products.get(line.product_id)
         if product is not None and product.is_stock_tracked:
             required_by_product[product.id] = (
-                required_by_product.get(product.id, ZERO) + line.quantity
+                required_by_product.get(product.id, ZERO) + _line_base_quantity(line)
             )
 
     for product_id, required in required_by_product.items():
@@ -555,7 +596,9 @@ def issue_invoice(
             business_id=business_id,
             product_id=product.id,
             movement_type="sale",
-            quantity_delta=-line.quantity,
+            # 3A-920 step 3: the sale movement is in base units — a line
+            # sold in the second unit deducts quantity x factor.
+            quantity_delta=-_line_base_quantity(line),
             reason=f"Invoice {invoice.invoice_number}",
             reference_type="invoice",
             reference_id=invoice.id,

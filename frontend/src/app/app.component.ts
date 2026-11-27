@@ -29,6 +29,7 @@ import { RecurringWorkspaceComponent } from './recurring-workspace.component';
 import { IntegrityWorkspaceComponent } from './integrity-workspace.component';
 import { NotificationsWorkspaceComponent } from './notifications-workspace.component';
 import { reportLimitationKey } from './report-labels';
+import { transportEnabledFromSettings } from './transport-settings';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
 import { resolveWorkspacePath, workspacePathFor, workspaceUrlFor } from './core/navigation/workspace-route';
 import { filterWorkspaceModules, selectHomeQuickAccessModules, WORKSPACE_MODULE_CATALOG, WORKSPACE_MODULE_GROUPS, type WorkspaceModuleCard, type WorkspaceModuleGroup } from './workspace-module-catalog';
@@ -596,6 +597,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       @defer (when tab === 'invoices' && invoiceCreateOpen) {
                         <aba-invoice-draft-editor
                           [language]="language" [products]="products" [customers]="customers"
+                          [transportEnabled]="transportEnabled"
                           [currencyCode]="business.currency_code" [invoiceNumber]="invoiceNumber"
                           [customerId]="invoiceCustomerId" [discountRate]="invoiceDiscountRate"
                           [taxRate]="invoiceTaxRate" [initialNotes]="invoiceDraftNotes"
@@ -824,7 +826,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
                       <table class="invoice-detail-lines" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'">
                         <thead><tr><th scope="col">{{ t('app.invoiceList.lineItem') }}</th><th scope="col">{{ t('app.invoiceList.quantity') }}</th><th scope="col">{{ t('app.invoiceList.unitPrice') }}</th><th scope="col">{{ t('app.invoiceList.lineTotal') }}</th></tr></thead>
                         <tbody>@for (line of detail.lines; track line.id) {
-                          <tr><td>{{ line.description }}</td><td [attr.data-label]="t('app.invoiceList.quantity')"><bdi dir="ltr">{{ formatNumber(line.quantity) }}</bdi></td>
+                          <tr><td>{{ line.description }}</td><td [attr.data-label]="t('app.invoiceList.quantity')"><bdi dir="ltr">{{ formatNumber(line.quantity) }}@if (line.sold_unit) { {{ line.sold_unit }} }</bdi></td>
                             <td [attr.data-label]="t('app.invoiceList.unitPrice')"><bdi dir="ltr">{{ formatNumber(line.unit_price) }} {{ detail.currency_code }}</bdi></td>
                             <td [attr.data-label]="t('app.invoiceList.lineTotal')"><bdi dir="ltr">{{ formatNumber(line.line_total) }} {{ detail.currency_code }}</bdi></td></tr>
                         }</tbody>
@@ -1181,6 +1183,8 @@ export class AppComponent implements OnInit, OnDestroy {
   private paymentOffset = 0;
   products: Product[] = [];
   invoices: Invoice[] = [];
+  /** 3A-920 step 3: the invoice editor's selling-unit selector renders only while the switch is on. */
+  transportEnabled = false;
   customerSearch = '';
   productSearch = '';
   invoiceSearch = '';
@@ -2259,10 +2263,14 @@ export class AppComponent implements OnInit, OnDestroy {
     this.error = '';
     try {
       const paymentsRequest = this.canAccessTab('payments') ? this.api.payments(id) : Promise.resolve([]);
-      const [dashboard, customerPage, productPage, invoicePage, paymentPage] = await Promise.all([
-        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), paymentsRequest
+      const [dashboard, customerPage, productPage, invoicePage, paymentPage, settings] = await Promise.all([
+        this.api.dashboard(id), this.api.customers(id), this.api.products(id), this.api.invoices(id), paymentsRequest,
+        this.api.listSettings(id).catch(() => []),
       ]);
       if (!this.workspaceLoadGuard.isCurrent(loadVersion, this.business?.id, id)) return;
+      // 3A-920 step 3: the invoice editor's selling-unit selector renders
+      // only while the switch is on; a failed settings read fails closed.
+      this.transportEnabled = transportEnabledFromSettings(settings);
       this.dashboard = dashboard;
       this.homeDashboardError = '';
       this.setCustomerPage(customerPage);

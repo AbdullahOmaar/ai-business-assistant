@@ -21,7 +21,7 @@ export interface BusinessInvitationCreated extends BusinessInvitation { token: s
 export interface BusinessMembership { id: string; business_id: string; role: 'owner' | 'staff'; created_at: string | null; }
 export interface WorkspaceMembership { id: string; user_subject: string; role: 'owner' | 'staff'; created_at: string | null; }
 export interface Customer { id: string; name: string; email?: string | null; phone?: string | null; address?: string | null; notes?: string | null; created_at?: string | null; }
-export interface Product { id: string; name: string; sku?: string | null; description?: string | null; unit?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; created_at?: string | null; }
+export interface Product { id: string; name: string; sku?: string | null; description?: string | null; unit?: string | null; second_unit_name?: string | null; conversion_factor?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; created_at?: string | null; }
 export type StockMovementType = 'opening' | 'receipt' | 'sale' | 'return' | 'adjustment';
 export interface StockMovementRecord {
   id: string; product_id: string; movement_type: StockMovementType; quantity_delta: string;
@@ -35,7 +35,7 @@ export interface StockMovementPage {
 export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; outstanding_amount?: string; issue_date?: string | null; created_at?: string | null; due_date?: string | null; }
 export interface InvoiceDetail extends Invoice {
   notes?: string | null;
-  lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; unit_price: string; line_total: string }>;
+  lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; sold_unit?: string | null; conversion_factor?: string | null; unit_price: string; line_total: string }>;
 }
 export interface SalesReturn {
   id: string; business_id: string; invoice_id: string; status: 'draft' | 'approved' | 'rejected';
@@ -251,7 +251,7 @@ export class ApiRequestError extends Error {
 }
 
 export type InvoiceLineInput =
-  | { product_id: string; quantity: string; description?: string }
+  | { product_id: string; quantity: string; description?: string; unit?: string }
   | { description: string; quantity: string; unit_price: string };
 
 @Injectable({ providedIn: 'root' })
@@ -671,7 +671,7 @@ export class ApiService {
   updateProduct(
     businessId: string,
     productId: string,
-    body: Partial<Pick<Product, 'name' | 'sku' | 'description' | 'unit'>>,
+    body: Partial<Pick<Product, 'name' | 'sku' | 'description' | 'unit' | 'second_unit_name' | 'conversion_factor'>>,
   ): Promise<Product> {
     return this.request<Product>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/products/${encodeURIComponent(productId)}`,

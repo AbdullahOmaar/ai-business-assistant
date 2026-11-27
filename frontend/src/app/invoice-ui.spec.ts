@@ -107,7 +107,7 @@ test('invoice editor selectors, catalog prices and read-only rate fields are cle
   assert.match(appSource, /\.invoice-filter select\{width:100%;min-width:0;font-weight:400\}/);
   assert.match(editorSource, /class="invoice-customer-select"/);
   assert.match(editorSource, /class="readonly-field"/);
-  assert.match(editorSource, /productPrice\(line\.product_id\)/);
+  assert.match(editorSource, /linePrice\(line\)/);
   assert.match(editorSource, /name="invoiceDiscountRate"[^>]*readonly aria-readonly="true"/);
   assert.match(editorSource, /name="invoiceTaxRate"[^>]*readonly aria-readonly="true"/);
 });

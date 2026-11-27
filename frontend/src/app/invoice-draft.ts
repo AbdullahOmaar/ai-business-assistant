@@ -7,12 +7,17 @@ export interface InvoiceDraftLine {
   description: string;
   quantity: string;
   unit_price: string;
+  /** 3A-920 step 3: the unit the line is sold in — '' = the product's base unit. */
+  unit?: string;
 }
 
 export interface InvoiceDraftProduct {
   id: string;
   name: string;
   unit_price?: string;
+  unit?: string | null;
+  second_unit_name?: string | null;
+  conversion_factor?: string | null;
 }
 
 export interface InvoiceDraftCustomer {
@@ -29,7 +34,7 @@ export interface InvoiceDraftInput {
 }
 
 export type InvoiceDraftLinePayload =
-  | { product_id: string; quantity: string; description?: string }
+  | { product_id: string; quantity: string; description?: string; unit?: string }
   | { description: string; quantity: string; unit_price: string };
 
 export interface InvoiceDraftPayload {
@@ -81,8 +86,15 @@ export function validateInvoiceDraft(
       return "invoiceDraft.validation.quantity";
     }
     if (line.kind === 'product') {
-      if (!line.product_id || !products.some(product => product.id === line.product_id)) {
+      const product = products.find(candidate => candidate.id === line.product_id);
+      if (!line.product_id || !product) {
         return "invoiceDraft.validation.catalogProduct";
+      }
+      // 3A-920 step 3: a stale second unit (removed from the product
+      // after the draft loaded) is caught here, not by the server.
+      const unit = line.unit?.trim() || '';
+      if (unit && unit !== product.unit && unit !== (product.second_unit_name ?? '')) {
+        return "invoiceDraft.validation.lineUnit";
       }
       if (line.description.trim().length > 300) return "invoiceDraft.validation.descriptionLength";
       continue;
@@ -125,6 +137,7 @@ export function toInvoiceDraftPayload(
           product_id: line.product_id,
           quantity: line.quantity.trim(),
           ...(line.description.trim() ? { description: line.description.trim() } : {}),
+          ...(line.unit?.trim() ? { unit: line.unit.trim() } : {}),
         }),
   };
 }
@@ -140,6 +153,7 @@ export function invoiceDraftLinesFromExisting(lines: readonly {
   description: string;
   quantity: string;
   unit_price: string;
+  sold_unit?: string | null;
 }[]): InvoiceDraftLine[] {
   return lines.map((line, index) => ({
     id: 'existing-invoice-line-' + (index + 1),
@@ -148,6 +162,7 @@ export function invoiceDraftLinesFromExisting(lines: readonly {
     description: line.description || '',
     quantity: line.quantity,
     unit_price: line.product_id ? '' : line.unit_price,
+    unit: line.sold_unit || '',
   }));
 }
 

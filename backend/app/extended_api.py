@@ -70,6 +70,7 @@ from app.security import (
     authorize_membership,
 )
 from app.services import WorkflowError, create_expense
+from app.transport_settings import transport_enabled
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["extended workflows"])
 ZERO = Decimal(0)
@@ -232,6 +233,10 @@ class ProductPatch(BaseModel):
     sku: str | None = Field(default=None, max_length=80)
     description: str | None = Field(default=None, max_length=1000)
     unit: str | None = Field(default=None, min_length=1, max_length=32)
+    # 3A-920 step 3: the second selling unit + its factor (company data;
+    # null clears the pair — the merged validation lives in patch_product).
+    second_unit_name: str | None = Field(default=None, max_length=32)
+    conversion_factor: Decimal | None = Field(default=None, gt=0, max_digits=14, decimal_places=3)
     is_stock_tracked: bool | None = None
 
 
@@ -1162,8 +1167,14 @@ def approve_sales_return(business_id: UUID, return_id: UUID,
                     Product.is_stock_tracked.is_(True),
                 ).with_for_update()).one_or_none()
                 if product:
+                    # 3A-920 step 3: the returned quantity is in the line's
+                    # sold unit — convert it with the line's snapshotted
+                    # factor so the return is in base units like the sale.
+                    base_quantity = returned.quantity * (
+                        invoice_line.conversion_factor or Decimal(1)
+                    )
                     session.add(StockMovement(business_id=business_id, product_id=product.id,
-                        movement_type="return", quantity_delta=returned.quantity,
+                        movement_type="return", quantity_delta=base_quantity,
                         reason=f"Approved sales return {ret.id}", reference_type="sales_return",
                         reference_id=ret.id, created_by_subject=principal.subject))
         ret.total = sum((returned.amount for returned in lines), ZERO)
@@ -1864,7 +1875,8 @@ def list_products(business_id: UUID, limit: int = Query(default=50, ge=1, le=200
         for item in items:
             stock = session.scalar(select(func.coalesce(func.sum(StockMovement.quantity_delta), 0)).where(
                 StockMovement.business_id == business_id, StockMovement.product_id == item.id))
-            row = _dict(item, ("id", "name", "sku", "description", "unit", "unit_price",
+            row = _dict(item, ("id", "name", "sku", "description", "unit",
+                               "second_unit_name", "conversion_factor", "unit_price",
                                "is_stock_tracked", "created_at"))
             row["stock_quantity"] = str(stock or ZERO) if item.is_stock_tracked else None
             result.append(row)
@@ -1888,7 +1900,8 @@ def get_product(business_id: UUID, product_id: UUID,
         stock = session.scalar(select(func.coalesce(func.sum(StockMovement.quantity_delta), 0)).where(
             StockMovement.business_id == business_id, StockMovement.product_id == item.id
         ))
-        row = _dict(item, ("id", "name", "sku", "description", "unit", "unit_price",
+        row = _dict(item, ("id", "name", "sku", "description", "unit",
+                           "second_unit_name", "conversion_factor", "unit_price",
                            "is_stock_tracked", "created_at"))
         row["stock_quantity"] = str(stock or ZERO) if item.is_stock_tracked else None
         return row
@@ -1905,7 +1918,10 @@ def patch_product(business_id: UUID, product_id: UUID, body: ProductPatch,
         if not changes:
             raise WorkflowError("At least one product field must be provided")
         # Price and stock-tracking changes affect financial/inventory controls.
-        sensitive_fields = {"unit_price", "is_stock_tracked"}
+        # 3A-920 step 3: the second unit is a pricing change too
+        # (unit_price x factor), so it is owner-only as well.
+        sensitive_fields = {"unit_price", "is_stock_tracked",
+                            "second_unit_name", "conversion_factor"}
         _authorized(session, principal, business_id,
                     owner_only=bool(sensitive_fields.intersection(changes)))
         item = session.scalars(select(Product).where(
@@ -1914,6 +1930,21 @@ def patch_product(business_id: UUID, product_id: UUID, body: ProductPatch,
         ).with_for_update()).one_or_none()
         if item is None:
             raise HTTPException(status_code=404, detail="Product not found")
+        # 3A-920 step 3: validate the MERGED pair — a PATCH may set only
+        # one side when the other is already stored. The gate blocks a
+        # NEW second unit while transport is off; keeping, renaming or
+        # clearing a stored one stays allowed.
+        merged_unit = changes.get("second_unit_name", item.second_unit_name)
+        if isinstance(merged_unit, str):
+            merged_unit = merged_unit.strip() or None
+        merged_factor = changes.get("conversion_factor", item.conversion_factor)
+        if (merged_unit is None) != (merged_factor is None):
+            raise WorkflowError("Second unit name and conversion factor must be set together")
+        if merged_factor is not None and merged_factor <= ZERO:
+            raise WorkflowError("Conversion factor must be positive")
+        if (merged_unit is not None and item.second_unit_name is None
+                and not transport_enabled(session, business_id=business_id)):
+            raise WorkflowError("Transport is disabled for this business.")
         if changes.get("is_stock_tracked") is False and item.is_stock_tracked:
             movement_count = session.scalar(select(func.count()).select_from(StockMovement).where(
                 StockMovement.business_id == business_id, StockMovement.product_id == item.id
@@ -1935,7 +1966,8 @@ def patch_product(business_id: UUID, product_id: UUID, body: ProductPatch,
         session.flush()
         return item
     item = _commit(session, op)
-    return _dict(item, ("id", "name", "sku", "description", "unit", "unit_price",
+    return _dict(item, ("id", "name", "sku", "description", "unit",
+                        "second_unit_name", "conversion_factor", "unit_price",
                         "is_stock_tracked", "is_active", "created_at"))
 
 
@@ -2025,6 +2057,7 @@ def get_invoice(business_id: UUID, invoice_id: UUID,
                               "subtotal", "discount_total", "tax_total", "total", "issue_date",
                               "due_date", "notes", "created_at")),
             "lines": [_dict(line, ("id", "product_id", "description", "quantity",
+                                   "sold_unit", "conversion_factor",
                                    "unit_price", "line_total")) for line in lines],
         }
     except AuthorizationError as exc:

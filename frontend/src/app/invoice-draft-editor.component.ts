@@ -76,15 +76,24 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
                 <div class="line-fields product-line">
                   <label class="field product-picker">
                     <span>{{ t('ui.m_1kfbsbf') }} *</span>
-                    <select [name]="'product-' + line.id" [(ngModel)]="line.product_id" (ngModelChange)="markDirty()" [disabled]="locked">
+                    <select [name]="'product-' + line.id" [(ngModel)]="line.product_id" (ngModelChange)="selectProduct(line)" [disabled]="locked">
                       <option value="">{{ t('ui.m_1dttg5z') }}</option>
                       @for (product of products; track product.id) { <option [value]="product.id">{{ product.name }}</option> }
                     </select>
                   </label>
                   <label class="field catalog-price">
                     <span>{{ t('ui.m_1iz2xk3') }} ({{ currencyCode }})</span>
-                    <input class="readonly-field" [value]="productPrice(line.product_id) || '—'" readonly aria-readonly="true" />
+                    <input class="readonly-field" [value]="linePrice(line) || '—'" readonly aria-readonly="true" />
                   </label>
+                  @if (transportEnabled && lineProduct(line)?.second_unit_name) {
+                  <label class="field line-unit-field">
+                    <span>{{ t('ui.products.secondUnit.sellUnit') }}</span>
+                    <select [name]="'unit-' + line.id" [(ngModel)]="line.unit" (ngModelChange)="markDirty()" [disabled]="locked">
+                      <option value="">{{ lineProduct(line)?.unit || 'unit' }}</option>
+                      <option [value]="lineProduct(line)?.second_unit_name">{{ lineProduct(line)?.second_unit_name }}</option>
+                    </select>
+                  </label>
+                  }
                   <label class="field line-description-field">
                     <span>{{ t('ui.m_12gxjqg') }}</span>
                     <input [name]="'description-' + line.id" [(ngModel)]="line.description" (ngModelChange)="markDirty()" maxlength="300" [disabled]="locked" />
@@ -201,7 +210,7 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
     .line-kind-switch{display:inline-grid;grid-template-columns:1fr 1fr;width:min(100%,270px);gap:3px;padding:3px;border:1px solid var(--aba-color-border,#d0d5dd);border-radius:10px;background:var(--aba-color-surface,#fff)}
     .kind-option{min-height:36px;padding:7px 12px;border:0;border-radius:7px;background:transparent;color:var(--aba-color-text-secondary,#64748b);font:inherit;font-size:12px;font-weight:650;cursor:pointer}
     .kind-option.active{background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59);box-shadow:inset 0 0 0 1px var(--aba-color-primary-border,#99f6e4)}
-    .line-fields{display:grid;gap:11px;min-width:0;align-items:end}.product-line{grid-template-columns:minmax(0,1.25fr) minmax(110px,.65fr) minmax(0,1.2fr) minmax(88px,.55fr)}.service-line{grid-template-columns:minmax(0,1.5fr) minmax(130px,.8fr) minmax(88px,.55fr)}
+    .line-fields{display:grid;gap:11px;min-width:0;align-items:end}.product-line{grid-template-columns:minmax(0,1.25fr) minmax(110px,.65fr) minmax(0,1.2fr) minmax(88px,.55fr) minmax(110px,.6fr)}.service-line{grid-template-columns:minmax(0,1.5fr) minmax(130px,.8fr) minmax(88px,.55fr)}
     .line-list-footer{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}.add-line-action,.subtle-action{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:5px 2px;border:0;background:transparent;color:var(--aba-color-primary-strong,#115e59);font:inherit;font-size:12px;font-weight:700;cursor:pointer}.add-line-action span{font-size:18px;line-height:1}
     .readonly-rates{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.rate-field{padding:11px;border:1px solid var(--aba-color-border-subtle,#e2e8f0);border-radius:11px;background:var(--aba-color-surface-subtle,#f8fafc)}.rate-field small{color:var(--aba-color-text-secondary,#64748b);font-size:11px;font-weight:500}
     .summary-row{display:flex;justify-content:space-between;gap:12px;padding-top:4px;color:var(--aba-color-text-secondary,#64748b);font-size:12px}.summary-row strong{color:var(--aba-color-text-primary,#172033);font-weight:700;font-variant-numeric:tabular-nums;text-align:end}
@@ -213,13 +222,15 @@ import type { InvoiceDraftCustomer, InvoiceDraftLine, InvoiceDraftLineKind, Invo
     .primary-action{background:var(--aba-color-primary,#0f766e);color:#fff}.secondary-action{border-color:var(--aba-color-border,#d0d5dd);background:var(--aba-color-surface,#fff);color:var(--aba-color-text-primary,#172033)}
     .editor-error{margin:0;padding:12px 14px;border:1px solid var(--aba-color-danger-border,#fecdca);border-radius:10px;background:var(--aba-color-danger-soft,#fef3f2);color:var(--aba-color-danger-text,#b42318);font-size:12px;line-height:1.5}.blocked-message p{margin:0 0 8px}
     button:disabled,input:disabled,select:disabled,textarea:disabled{opacity:.58;cursor:not-allowed}
-    @media(max-width:760px){.invoice-details-grid{grid-template-columns:minmax(0,1fr) minmax(110px,.6fr)}.customer-field,.customer-more{grid-column:1/-1}.product-line{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.product-line .product-picker{grid-column:1/-1}.product-line .catalog-price{grid-column:1;grid-row:2}.product-line .quantity-field{grid-column:2;grid-row:2}.product-line .line-description-field{grid-column:1/-1;grid-row:3}.service-line{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.service-line .service-description-field{grid-column:1/-1}.service-line .unit-price-field{grid-column:1;grid-row:2}.service-line .quantity-field{grid-column:2;grid-row:2}.line-kind-switch{width:100%}.editor-actions{align-items:stretch;flex-direction:column}.action-buttons{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}.primary-action,.secondary-action{width:100%}}
+    @media(max-width:760px){.invoice-details-grid{grid-template-columns:minmax(0,1fr) minmax(110px,.6fr)}.customer-field,.customer-more{grid-column:1/-1}.product-line{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.product-line .product-picker{grid-column:1/-1}.product-line .catalog-price{grid-column:1;grid-row:2}.product-line .quantity-field{grid-column:2;grid-row:2}.product-line .line-unit-field{grid-column:1/-1;grid-row:3}.product-line .line-description-field{grid-column:1/-1;grid-row:3}.product-line:has(.line-unit-field) .line-description-field{grid-row:4}.service-line{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}.service-line .service-description-field{grid-column:1/-1}.service-line .unit-price-field{grid-column:1;grid-row:2}.service-line .quantity-field{grid-column:2;grid-row:2}.line-kind-switch{width:100%}.editor-actions{align-items:stretch;flex-direction:column}.action-buttons{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr)}.primary-action,.secondary-action{width:100%}}
     @media(max-width:380px){.editor-card{padding:13px}.editor-topbar{grid-template-columns:42px minmax(0,1fr)}.editor-title h3{font-size:16px;overflow-wrap:normal}.draft-status{grid-column:1/-1;justify-self:start;padding-inline:7px}.invoice-details-grid{grid-template-columns:minmax(0,1fr)}.line-card{padding:10px}.line-card-heading{flex-wrap:wrap}.remove-line{white-space:nowrap}.line-kind-switch{grid-template-columns:minmax(0,1fr)}.kind-option{padding:7px 8px;overflow-wrap:normal}.readonly-rates{grid-template-columns:minmax(0,1fr);gap:7px}.rate-field{padding:8px}.rate-field input{padding-inline:8px}.editor-actions{padding:12px}.action-buttons{grid-template-columns:minmax(0,1fr)}.primary-action,.secondary-action{white-space:normal}}
   @media(max-width:760px){.editor-actions{bottom:calc(102px + env(safe-area-inset-bottom));}}\n    `],
 })
 export class InvoiceDraftEditorComponent implements OnChanges {
   private readonly localization = inject(LocalizationService);
   @Input() language: 'ar' | 'en' = 'ar';
+  /** 3A-920 step 3: the selling-unit selector renders only while the switch is on. */
+  @Input() transportEnabled = false;
   @Input() products: InvoiceDraftProduct[] = [];
   @Input() customers: InvoiceDraftCustomer[] = [];
   @Input() currencyCode = '';
@@ -295,7 +306,24 @@ export class InvoiceDraftEditorComponent implements OnChanges {
   }
   localize(message: string): string { return this.localization.translate(message); }
   formatNumber(value: string | number | null | undefined): string { return this.localization.formatNumber(value, 2, 2); }
-  productPrice(productId: string): string { return this.products.find(product => product.id === productId)?.unit_price ?? ''; }
+  lineProduct(line: InvoiceDraftLine): InvoiceDraftProduct | undefined {
+    return this.products.find(product => product.id === line.product_id);
+  }
+  /** The catalog price follows the chosen unit: unit_price x factor for the second unit. */
+  linePrice(line: InvoiceDraftLine): string {
+    const product = this.lineProduct(line);
+    if (!product?.unit_price) return '';
+    if (line.unit && product.second_unit_name && line.unit === product.second_unit_name && product.conversion_factor) {
+      const priced = Number(product.unit_price) * Number(product.conversion_factor);
+      if (Number.isFinite(priced)) return priced.toFixed(2);
+    }
+    return product.unit_price;
+  }
+  /** A new product resets the selling unit — the old unit belongs to the old product. */
+  selectProduct(line: InvoiceDraftLine): void {
+    line.unit = '';
+    this.markDirty();
+  }
 
   addLine(kind: InvoiceDraftLineKind = 'product'): void {
     if (this.locked) return;
@@ -341,6 +369,6 @@ export class InvoiceDraftEditorComponent implements OnChanges {
 
   private newLine(kind: InvoiceDraftLineKind): InvoiceDraftLine {
     const id = 'invoice-line-' + this.lineSequence++;
-    return { id, kind, product_id: '', description: '', quantity: '1', unit_price: '' };
+    return { id, kind, product_id: '', description: '', quantity: '1', unit_price: '', unit: '' };
   }
 }
