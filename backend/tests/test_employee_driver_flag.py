@@ -146,6 +146,21 @@ def test_switch_off_preserves_the_stored_flag(driver_flag_environment):
     assert _get_employee(env, employee["id"])["is_driver"] is True
 
 
+def test_keeping_stored_flag_while_off_is_allowed(driver_flag_environment):
+    # The gate blocks NEW enrolments only — the form re-sends the stored
+    # flag on every save, so editing any other field of a stored driver
+    # must stay possible while the switch is off.
+    env = driver_flag_environment
+    _set_transport(env, True)
+    employee = _create_employee(env, is_driver=True).json()
+    _set_transport(env, False)
+    url = f"/api/v1/businesses/{env['business_id']}/employees/{employee['id']}"
+    kept = env["client"].patch(url, json={"name": "Mona Ali 2", "is_driver": True})
+    assert kept.status_code == 200
+    assert kept.json()["is_driver"] is True
+    assert kept.json()["name"] == "Mona Ali 2"
+
+
 def test_staff_cannot_set_the_driver_flag(driver_flag_environment):
     env = driver_flag_environment
     _set_transport(env, True)

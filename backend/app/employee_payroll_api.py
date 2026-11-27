@@ -47,6 +47,10 @@ class EmployeeCreate(BaseModel):
     # 3A-920 step 1: driver/delivery-agent enrolment. Only settable while
     # the transport switch is on (enforced in the endpoints below).
     is_driver: bool = False
+    # 3A-920 step 2: wage basis. 'per_trip' is only selectable while the
+    # transport switch is on (enforced in the endpoints below).
+    wage_basis: str = Field(default="monthly", pattern=r"^(monthly|daily|per_trip)$")
+    trip_wage: Decimal | None = Field(default=None, gt=0, max_digits=14, decimal_places=2)
     monthly_salary: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
 
     @field_validator("name")
@@ -86,6 +90,8 @@ class EmployeeUpdate(BaseModel):
     monthly_salary: Decimal | None = Field(default=None, gt=0, max_digits=14, decimal_places=2)
     is_active: bool | None = None
     is_driver: bool | None = None
+    wage_basis: str | None = Field(default=None, pattern=r"^(monthly|daily|per_trip)$")
+    trip_wage: Decimal | None = Field(default=None, gt=0, max_digits=14, decimal_places=2)
 
     @field_validator("name")
     @classmethod
@@ -120,6 +126,11 @@ class PayrollCreate(BaseModel):
     allowances: Decimal = Field(default=Decimal(0), ge=0, max_digits=14, decimal_places=2)
     bonuses: Decimal = Field(default=Decimal(0), ge=0, max_digits=14, decimal_places=2)
     deductions: Decimal = Field(default=Decimal(0), ge=0, max_digits=14, decimal_places=2)
+    # 3A-920 step 2: the units the base is computed from — trips for a
+    # per_trip basis, work_days for a daily basis. Monthly takes neither.
+    # (Manual entry for now; step 4 derives the trip count from invoices.)
+    trips: int | None = Field(default=None, ge=0)
+    work_days: int | None = Field(default=None, ge=0, le=31)
 
 
 class PayrollUpdate(BaseModel):
@@ -175,6 +186,30 @@ def _money(value: Decimal) -> Decimal:
     return value.quantize(CENT, rounding=ROUND_HALF_UP)
 
 
+def _compute_payroll_base(employee: Employee, body: "PayrollCreate") -> Decimal:
+    """Server-computed payroll base for one employee + period (3A-920
+    step 2). The units must match the basis — anything else is a 422,
+    so a record can never be ambiguous about how its base was built."""
+    basis = employee.wage_basis
+    if basis == "per_trip":
+        if body.trips is None:
+            raise HTTPException(status_code=422, detail="Trip count is required for per-trip pay.")
+        if body.work_days is not None:
+            raise HTTPException(status_code=422, detail="Work days do not apply to per-trip pay.")
+        if employee.trip_wage is None:
+            raise HTTPException(status_code=422, detail="Trip wage is not set for this employee.")
+        return _money(employee.trip_wage * body.trips)
+    if basis == "daily":
+        if body.work_days is None:
+            raise HTTPException(status_code=422, detail="Work days are required for daily pay.")
+        if body.trips is not None:
+            raise HTTPException(status_code=422, detail="Trip count does not apply to daily pay.")
+        return _money(employee.monthly_salary / Decimal(30) * body.work_days)
+    if body.trips is not None or body.work_days is not None:
+        raise HTTPException(status_code=422, detail="Trip count and work days do not apply to monthly pay.")
+    return _money(employee.monthly_salary)
+
+
 def _employee_dict(employee: Employee) -> dict:
     return {
         "id": str(employee.id),
@@ -186,6 +221,8 @@ def _employee_dict(employee: Employee) -> dict:
         "department": employee.department,
         "job_title": employee.job_title,
         "is_driver": employee.is_driver,
+        "wage_basis": employee.wage_basis,
+        "trip_wage": str(employee.trip_wage) if employee.trip_wage is not None else None,
         "monthly_salary": str(employee.monthly_salary),
         "is_active": employee.is_active,
         "created_at": employee.created_at.isoformat() if employee.created_at else None,
@@ -200,6 +237,8 @@ def _payroll_dict(record: PayrollRecord, employee_name: str) -> dict:
         "employee_id": str(record.employee_id),
         "employee_name": employee_name,
         "period": record.period,
+        "trips": record.trips,
+        "work_days": record.work_days,
         "base_salary": str(record.base_salary),
         "allowances": str(record.allowances),
         "bonuses": str(record.bonuses),
@@ -241,9 +280,11 @@ def create_employee(
 ):
     def operation():
         _owner(session, principal, business_id)
-        # 3A-920: enrolling a driver is a transport write — rejected while
-        # the switch is off. Stored flags are never cleared by this gate.
-        if body.is_driver and not transport_enabled(session, business_id=business_id):
+        # 3A-920: enrolling a driver / choosing the per-trip basis are
+        # transport writes — rejected while the switch is off. Stored
+        # flags and bases are never cleared by this gate; the trip_wage
+        # number itself is inert data and stays settable.
+        if (body.is_driver or body.wage_basis == "per_trip") and not transport_enabled(session, business_id=business_id):
             raise HTTPException(
                 status_code=422,
                 detail="Transport is disabled for this business.",
@@ -274,6 +315,8 @@ def create_employee(
             department=body.department.strip() if body.department and body.department.strip() else None,
             job_title=body.job_title.strip() if body.job_title and body.job_title.strip() else None,
             is_driver=body.is_driver,
+            wage_basis=body.wage_basis,
+            trip_wage=_money(body.trip_wage) if body.trip_wage is not None else None,
             monthly_salary=_money(body.monthly_salary),
             is_active=True,
         )
@@ -305,16 +348,11 @@ def update_employee(
         raise HTTPException(status_code=422, detail="Employee active status cannot be null.")
     if "is_driver" in changes and changes["is_driver"] is None:
         raise HTTPException(status_code=422, detail="Driver flag cannot be null.")
+    if "wage_basis" in changes and changes["wage_basis"] is None:
+        raise HTTPException(status_code=422, detail="Wage basis cannot be null.")
 
     def operation():
         _owner(session, principal, business_id)
-        # 3A-920: same gate as create — enrolling a driver is a transport
-        # write; clearing the flag (False) is always allowed.
-        if changes.get("is_driver") is True and not transport_enabled(session, business_id=business_id):
-            raise HTTPException(
-                status_code=422,
-                detail="Transport is disabled for this business.",
-            )
         employee = session.scalars(
             select(Employee).where(
                 Employee.id == employee_id, Employee.business_id == business_id
@@ -322,6 +360,23 @@ def update_employee(
         ).one_or_none()
         if employee is None:
             raise HTTPException(status_code=404, detail="Employee not found")
+        # 3A-920: the gate blocks NEW transport enrolments while the
+        # switch is off. Keeping the stored flag/basis is not a new
+        # enrolment — editing any other field of a stored driver or
+        # per-trip employee stays possible while off (the form always
+        # re-sends the stored values). Clearing either (False / monthly)
+        # is always allowed.
+        if not transport_enabled(session, business_id=business_id):
+            if changes.get("is_driver") is True and not employee.is_driver:
+                raise HTTPException(
+                    status_code=422,
+                    detail="Transport is disabled for this business.",
+                )
+            if changes.get("wage_basis") == "per_trip" and employee.wage_basis != "per_trip":
+                raise HTTPException(
+                    status_code=422,
+                    detail="Transport is disabled for this business.",
+                )
         if "employee_code" in changes:
             code = changes["employee_code"]
             if code and session.scalars(select(Employee.id).where(
@@ -394,14 +449,27 @@ def create_payroll(
         ).one_or_none()
         if employee is None:
             raise HTTPException(status_code=404, detail="Active employee not found")
-        net_pay = _money(employee.monthly_salary + body.allowances + body.bonuses - body.deductions)
+        # 3A-920 step 2: the base branches on the employee's wage basis —
+        # the net formula never changes (base + allowances + bonuses -
+        # deductions), and the base is always server-computed. Monthly is
+        # today's behavior, unchanged. Daily derives from the monthly
+        # salary (/ 30); per-trip multiplies the trip wage by the trip
+        # count (manual entry now; step 4 derives it from invoices).
+        # Payroll for an already per-trip employee keeps working while
+        # the switch is off — the basis is stored data, and blocking pay
+        # would strand the employee; the gate governs NEW transport
+        # enrolments (flag / per-trip basis), not the pay that follows.
+        base_salary = _compute_payroll_base(employee, body)
+        net_pay = _money(base_salary + body.allowances + body.bonuses - body.deductions)
         if net_pay <= 0:
             raise HTTPException(status_code=422, detail="Deductions must be lower than total earnings.")
         record = PayrollRecord(
             business_id=business_id,
             employee_id=employee.id,
             period=body.period,
-            base_salary=_money(employee.monthly_salary),
+            trips=body.trips,
+            work_days=body.work_days,
+            base_salary=base_salary,
             allowances=_money(body.allowances),
             bonuses=_money(body.bonuses),
             deductions=_money(body.deductions),

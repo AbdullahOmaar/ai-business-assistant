@@ -1002,6 +1002,10 @@ class Employee(Base):
         UniqueConstraint("business_id", "employee_code", name="uq_employees_business_code"),
         UniqueConstraint("business_id", "email", name="uq_employees_business_email"),
         CheckConstraint("monthly_salary > 0", name="ck_employees_salary_positive"),
+        CheckConstraint(
+            "wage_basis IN ('monthly', 'daily', 'per_trip')",
+            name="ck_employees_wage_basis",
+        ),
         Index("ix_employees_business_active_name", "business_id", "is_active", "name"),
     )
 
@@ -1027,6 +1031,12 @@ class Employee(Base):
     # (never a free-text job title) puts an employee in the invoice
     # drivers list; settable only while transport.enabled is on.
     is_driver: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
+    # 3A-920 step 2: wage basis — 'monthly' (default, today's behavior),
+    # 'daily' (monthly_salary / 30 per day) or 'per_trip' (trip_wage per
+    # trip). The per_trip option is only selectable while
+    # transport.enabled is on (enforced in app.employee_payroll_api).
+    wage_basis: Mapped[str] = mapped_column(String(16), nullable=False, default="monthly", server_default="monthly")
+    trip_wage: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), nullable=True)
     monthly_salary: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
     created_at: Mapped[datetime] = mapped_column(
@@ -1061,6 +1071,8 @@ class PayrollRecord(Base):
         CheckConstraint("bonuses >= 0", name="ck_payroll_bonuses_nonnegative"),
         CheckConstraint("deductions >= 0", name="ck_payroll_deductions_nonnegative"),
         CheckConstraint("net_pay > 0", name="ck_payroll_net_pay_positive"),
+        CheckConstraint("trips IS NULL OR trips >= 0", name="ck_payroll_trips_nonnegative"),
+        CheckConstraint("work_days IS NULL OR work_days >= 0", name="ck_payroll_work_days_nonnegative"),
         CheckConstraint("status IN ('draft', 'approved', 'paid')", name="ck_payroll_status"),
         Index("ix_payroll_business_period_status", "business_id", "period", "status"),
     )
@@ -1071,6 +1083,11 @@ class PayrollRecord(Base):
     )
     employee_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
     period: Mapped[str] = mapped_column(String(7), nullable=False)
+    # 3A-920 step 2: the units the base was computed from — the record
+    # stays self-explanatory after the employee's basis changes later.
+    # Only one is ever set (trips for per_trip, work_days for daily).
+    trips: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    work_days: Mapped[int | None] = mapped_column(Integer, nullable=True)
     base_salary: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     allowances: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0), server_default="0")
     bonuses: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False, default=Decimal(0), server_default="0")

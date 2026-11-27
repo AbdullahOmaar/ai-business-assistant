@@ -50,11 +50,13 @@ export interface Payment { id: string; amount: string; currency_code: string; re
 export interface Expense { id: string; category: string; description: string; amount: string; currency_code: string; incurred_at: string; vendor_name?: string | null; reference?: string | null; created_at?: string | null; }
 export interface EmployeeRecord {
   id: string; business_id: string; employee_code: string | null; name: string; email: string | null;
-  phone: string | null; department: string | null; job_title: string | null; is_driver: boolean; monthly_salary: string;
+  phone: string | null; department: string | null; job_title: string | null; is_driver: boolean;
+  wage_basis: string; trip_wage: string | null; monthly_salary: string;
   is_active: boolean; created_at: string | null; updated_at: string | null;
 }
 export interface EmployeePayrollRecord {
   id: string; business_id: string; employee_id: string; employee_name: string; period: string;
+  trips: number | null; work_days: number | null;
   base_salary: string; allowances: string; bonuses: string; deductions: string; net_pay: string;
   status: 'draft' | 'approved' | 'paid'; expense_id: string | null; approved_by_subject: string | null;
   approved_at: string | null; paid_by_subject: string | null; paid_at: string | null; created_at: string | null;
@@ -698,6 +700,7 @@ export class ApiService {
   createEmployee(businessId: string, body: {
     name: string; monthly_salary: string; employee_code?: string; email?: string;
     phone?: string; department?: string; job_title?: string; is_driver?: boolean;
+    wage_basis?: string; trip_wage?: string | null;
   }): Promise<EmployeeRecord> {
     return this.request<EmployeeRecord>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/employees`, 'POST', body
@@ -706,7 +709,7 @@ export class ApiService {
   updateEmployee(businessId: string, employeeId: string, body: {
     name?: string; monthly_salary?: string; employee_code?: string | null; email?: string | null;
     phone?: string | null; department?: string | null; job_title?: string | null; is_active?: boolean;
-    is_driver?: boolean;
+    is_driver?: boolean; wage_basis?: string; trip_wage?: string | null;
   }): Promise<EmployeeRecord> {
     return this.request<EmployeeRecord>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/employees/${encodeURIComponent(employeeId)}`, 'PATCH', body
@@ -721,6 +724,7 @@ export class ApiService {
   }
   createPayroll(businessId: string, employeeId: string, body: {
     period: string; allowances?: string; bonuses?: string; deductions?: string;
+    trips?: number; work_days?: number;
   }): Promise<EmployeePayrollRecord> {
     return this.request<EmployeePayrollRecord>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/employees/${encodeURIComponent(employeeId)}/payroll`, 'POST', body

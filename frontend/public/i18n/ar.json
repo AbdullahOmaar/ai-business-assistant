@@ -1324,6 +1324,15 @@
       "transport": {
         "driverTag": "سائق/مندوب توصيل",
         "driversOnly": "سائقون فقط"
+      },
+      "wageBasis": {
+        "label": "أساس الأجر",
+        "monthly": "شهري",
+        "daily": "باليومية",
+        "perTrip": "بالمشوار/بالتوصيلة",
+        "tripWage": "أجر المشوار",
+        "trips": "عدد المشاوير",
+        "workDays": "أيام العمل"
       }
     }
   },

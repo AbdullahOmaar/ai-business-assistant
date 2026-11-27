@@ -61,11 +61,25 @@ import { transportEnabledFromSettings } from './transport-settings';
           <input name="employeeIsDriver" type="checkbox" [disabled]="busy" [(ngModel)]="employeeIsDriver">
         </label>
         }
+        <label>{{ t('ui.employees.wageBasis.label') }}
+          <select name="employeeWageBasis" [disabled]="busy" [(ngModel)]="employeeWageBasis">
+            <option value="monthly">{{ t('ui.employees.wageBasis.monthly') }}</option>
+            <option value="daily">{{ t('ui.employees.wageBasis.daily') }}</option>
+            @if (transportEnabled || employeeWageBasis === 'per_trip') {
+            <option value="per_trip" [disabled]="!transportEnabled">{{ t('ui.employees.wageBasis.perTrip') }}</option>
+            }
+          </select>
+        </label>
+        @if (transportEnabled && employeeWageBasis === 'per_trip') {
+        <label>{{ t('ui.employees.wageBasis.tripWage') }} · {{ currencyCode }}
+          <input name="employeeTripWage" type="number" inputmode="decimal" min="0.01" step="0.01" required [disabled]="busy" [(ngModel)]="employeeTripWage">
+        </label>
+        }
         <label>{{ t('ui.m_fzbln8') }} · {{ currencyCode }}
           <input name="employeeMonthlySalary" type="number" inputmode="decimal" min="0.01" step="0.01" required [disabled]="busy" [(ngModel)]="employeeMonthlySalary">
         </label>
         <div class="form-actions">
-          <button class="primary" type="submit" [disabled]="busy || !employeeName.trim() || !employeeSalaryValid">
+          <button class="primary" type="submit" [disabled]="busy || !employeeName.trim() || !employeeSalaryValid || !employeeWageValid">
             {{ editingEmployeeId ? t('ui.m_suv5n') : t('ui.m_ze7lpa') }}
           </button>
           @if (editingEmployeeId) {
@@ -107,6 +121,20 @@ import { transportEnabledFromSettings } from './transport-settings';
           <label>{{ t('ui.m_jcps75') }}
             <input name="payrollPeriod" type="month" required [disabled]="busy || !!editingPayrollId" [(ngModel)]="payrollPeriod">
           </label>
+          @if (selectedPayrollEmployee?.wage_basis === 'per_trip') {
+          <label>{{ t('ui.employees.wageBasis.trips') }}
+            <input name="payrollTrips" type="number" inputmode="numeric" min="0" step="1" required [disabled]="busy || !!editingPayrollId" [(ngModel)]="payrollTrips">
+          </label>
+          @if (selectedPayrollEmployee?.trip_wage) {
+          <p class="field-hint">{{ t('ui.employees.wageBasis.tripWage') }}: <bdi dir="ltr">{{ selectedPayrollEmployee?.trip_wage }} {{ currencyCode }}</bdi></p>
+          }
+          }
+          @if (selectedPayrollEmployee?.wage_basis === 'daily') {
+          <label>{{ t('ui.employees.wageBasis.workDays') }}
+            <input name="payrollWorkDays" type="number" inputmode="numeric" min="0" max="31" step="1" required [disabled]="busy || !!editingPayrollId" [(ngModel)]="payrollWorkDays">
+          </label>
+          <p class="field-hint">{{ t('ui.employees.wageBasis.daily') }}: <bdi dir="ltr">{{ dailyWageOf(selectedPayrollEmployee!) }} {{ currencyCode }}</bdi></p>
+          }
           <label>{{ t('ui.m_v1202z') }}
             <input name="payrollAllowances" type="number" inputmode="decimal" min="0" step="0.01" required [disabled]="busy" [(ngModel)]="payrollAllowances">
           </label>
@@ -154,6 +182,12 @@ import { transportEnabledFromSettings } from './transport-settings';
             </div>
             <dl class="payslip-lines">
               <div><dt>{{ t('ui.m_ziwhp0') }}</dt><dd>{{ selectedPayroll.period }}</dd></div>
+              @if (selectedPayroll.trips !== null) {
+              <div><dt>{{ t('ui.employees.wageBasis.trips') }}</dt><dd>{{ selectedPayroll.trips }}</dd></div>
+              }
+              @if (selectedPayroll.work_days !== null) {
+              <div><dt>{{ t('ui.employees.wageBasis.workDays') }}</dt><dd>{{ selectedPayroll.work_days }}</dd></div>
+              }
               <div><dt>{{ t('ui.m_7go201') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.base_salary }} {{ currencyCode }}</bdi></dd></div>
               <div><dt>{{ t('ui.m_s8dmdz') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.allowances }} + {{ selectedPayroll.bonuses }} {{ currencyCode }}</bdi></dd></div>
               <div><dt>{{ t('ui.m_oxttnb') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.deductions }} {{ currencyCode }}</bdi></dd></div>
@@ -200,6 +234,7 @@ import { transportEnabledFromSettings } from './transport-settings';
     .employee-driver-filter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
     .driver-filter{min-height:44px;padding:8px 14px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:999px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-secondary,#475569);font-size:12px;font-weight:800}
     .driver-filter[aria-pressed="true"]{border-color:var(--aba-color-primary-border,#99f6e4);background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59)}
+    .payroll-form .field-hint{font-size:11px;line-height:1.6;color:var(--aba-color-text-tertiary,#6b7280);margin:-6px 0 0}
     input,select{width:100%;max-width:100%;min-width:0}
     .form-actions{display:flex;align-items:end;flex-wrap:wrap;gap:8px}
     .employee-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;margin:16px 0;min-width:0}
@@ -286,9 +321,16 @@ export class EmployeePayrollComponent implements OnChanges {
   employeeDepartment = '';
   employeeJobTitle = '';
   employeeIsDriver = false;
+  // 3A-920 step 2: the wage basis + the per-trip wage. Monthly is the
+  // default and today's behavior; the per-trip option only exists while
+  // the transport switch is on.
+  employeeWageBasis = 'monthly';
+  employeeTripWage = '';
   employeeMonthlySalary = '';
   payrollEmployeeId = '';
   payrollPeriod = this.currentPeriod();
+  payrollTrips = '';
+  payrollWorkDays = '';
   payrollFilterPeriod = '';
   payrollAllowances = '0.00';
   payrollBonuses = '0.00';
@@ -346,6 +388,20 @@ export class EmployeePayrollComponent implements OnChanges {
   get employeeSalaryValid(): boolean {
     const salary = Number(String(this.employeeMonthlySalary ?? '').trim());
     return Number.isFinite(salary) && salary > 0;
+  }
+
+  get employeeWageValid(): boolean {
+    if (this.employeeWageBasis !== 'per_trip') return true;
+    const wage = Number(String(this.employeeTripWage ?? '').trim());
+    return Number.isFinite(wage) && wage > 0;
+  }
+
+  get selectedPayrollEmployee(): EmployeeRecord | undefined {
+    return this.employees.find(employee => employee.id === this.payrollEmployeeId);
+  }
+
+  dailyWageOf(employee: EmployeeRecord): string {
+    return (Number(employee.monthly_salary) / 30).toFixed(2);
   }
 
   get filteredEmployees(): EmployeeRecord[] {
@@ -490,6 +546,8 @@ export class EmployeePayrollComponent implements OnChanges {
     this.employeeDepartment = '';
     this.employeeJobTitle = '';
     this.employeeIsDriver = false;
+    this.employeeWageBasis = 'monthly';
+    this.employeeTripWage = '';
     this.employeeMonthlySalary = '';
   }
 
@@ -504,6 +562,8 @@ export class EmployeePayrollComponent implements OnChanges {
     this.employeeDepartment = employee.department || '';
     this.employeeJobTitle = employee.job_title || '';
     this.employeeIsDriver = employee.is_driver;
+    this.employeeWageBasis = employee.wage_basis;
+    this.employeeTripWage = employee.trip_wage ?? '';
     this.employeeMonthlySalary = employee.monthly_salary;
     this.message = '';
     this.error = '';
@@ -518,7 +578,7 @@ export class EmployeePayrollComponent implements OnChanges {
   async saveEmployee(): Promise<void> {
     const name = this.employeeName.trim();
     const monthlySalary = String(this.employeeMonthlySalary ?? '').trim();
-    if (!this.businessId || !name || !this.employeeSalaryValid) {
+    if (!this.businessId || !name || !this.employeeSalaryValid || !this.employeeWageValid) {
       this.error = this.t('ui.m_1cpyz98');
       return;
     }
@@ -537,6 +597,10 @@ export class EmployeePayrollComponent implements OnChanges {
           department: this.employeeDepartment.trim() || null,
           job_title: this.employeeJobTitle.trim() || null,
           is_driver: this.employeeIsDriver,
+          wage_basis: this.employeeWageBasis,
+          // The trip wage is only sent while the basis is per-trip — a
+          // stored wage stays stored (hidden, never deleted) otherwise.
+          ...(this.employeeWageBasis === 'per_trip' ? {trip_wage: this.employeeTripWage.trim() || null} : {}),
           monthly_salary: monthlySalary
         });
       } else {
@@ -548,6 +612,8 @@ export class EmployeePayrollComponent implements OnChanges {
           department: this.employeeDepartment.trim() || undefined,
           job_title: this.employeeJobTitle.trim() || undefined,
           is_driver: this.employeeIsDriver,
+          wage_basis: this.employeeWageBasis,
+          ...(this.employeeWageBasis === 'per_trip' ? {trip_wage: this.employeeTripWage.trim() || undefined} : {}),
           monthly_salary: monthlySalary
         });
       }
@@ -590,6 +656,8 @@ export class EmployeePayrollComponent implements OnChanges {
     this.payrollEmployeeId = employee.id;
     this.editingPayrollId = null;
     this.payrollPeriod = this.currentPeriod();
+    this.payrollTrips = '';
+    this.payrollWorkDays = '';
     this.payrollAllowances = '0.00';
     this.payrollBonuses = '0.00';
     this.payrollDeductions = '0.00';
@@ -613,6 +681,8 @@ export class EmployeePayrollComponent implements OnChanges {
 
   cancelPayrollEdit(): void {
     this.editingPayrollId = null;
+    this.payrollTrips = '';
+    this.payrollWorkDays = '';
     this.payrollAllowances = '0.00';
     this.payrollBonuses = '0.00';
     this.payrollDeductions = '0.00';
@@ -627,6 +697,21 @@ export class EmployeePayrollComponent implements OnChanges {
     const amounts = [this.payrollAllowances, this.payrollBonuses, this.payrollDeductions]
       .map(value => Number(String(value ?? '').trim()));
     if (amounts.some(value => !Number.isFinite(value) || value < 0)) {
+      this.error = this.t('ui.m_18po2rz');
+      return;
+    }
+    // 3A-920 step 2: the units the base is computed from — required by
+    // the server for the matching basis, rejected for any other basis.
+    // (Editing an existing record never touches the units: they are
+    // creation-time facts, so a closed period can never be recomputed.)
+    const basis = this.selectedPayrollEmployee?.wage_basis;
+    const trips = Number(String(this.payrollTrips ?? '').trim());
+    const workDays = Number(String(this.payrollWorkDays ?? '').trim());
+    if (basis === 'per_trip' && (!Number.isInteger(trips) || trips < 0)) {
+      this.error = this.t('ui.m_18po2rz');
+      return;
+    }
+    if (basis === 'daily' && (!Number.isInteger(workDays) || workDays < 0 || workDays > 31)) {
       this.error = this.t('ui.m_18po2rz');
       return;
     }
@@ -647,7 +732,9 @@ export class EmployeePayrollComponent implements OnChanges {
           period: this.payrollPeriod,
           allowances: String(this.payrollAllowances).trim(),
           bonuses: String(this.payrollBonuses).trim(),
-          deductions: String(this.payrollDeductions).trim()
+          deductions: String(this.payrollDeductions).trim(),
+          ...(basis === 'per_trip' ? {trips} : {}),
+          ...(basis === 'daily' ? {work_days: workDays} : {})
         });
         this.message = this.t('ui.m_1nhx55s');
       }

@@ -1324,6 +1324,15 @@
       "transport": {
         "driverTag": "Driver / delivery agent",
         "driversOnly": "Drivers only"
+      },
+      "wageBasis": {
+        "label": "Wage basis",
+        "monthly": "Monthly",
+        "daily": "Daily",
+        "perTrip": "Per trip / delivery",
+        "tripWage": "Trip wage",
+        "trips": "Trips",
+        "workDays": "Work days"
       }
     }
   },
