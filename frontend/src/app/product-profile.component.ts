@@ -26,6 +26,9 @@ import { AbaSkeletonComponent } from './shared/ui/aba-skeleton.component';
       <section class="product-profile__grid">
         <div><span>{{ t('productProfile.sku') }}</span><strong><bdi dir="ltr">{{ record.sku || '—' }}</bdi></strong></div>
         <div><span>{{ t('productProfile.unit') }}</span><strong>{{ record.unit || '—' }}</strong></div>
+        @if (record.second_unit_name) {
+        <div><span>{{ t('productProfile.secondUnit') }}</span><strong><bdi dir="ltr">{{ record.second_unit_name }} × {{ record.conversion_factor }} {{ record.unit }}</bdi></strong></div>
+        }
         <div class="product-profile__wide"><span>{{ t('productProfile.description') }}</span><p>{{ record.description || t('productProfile.emptyDescription') }}</p></div>
         <div><span>{{ t('productProfile.price') }}</span><strong class="product-profile__price"><bdi dir="ltr">{{ record.unit_price }} {{ record.currency_code || currencyCode() }}</bdi></strong></div>
         <div><span>{{ t('productProfile.stock') }}</span><strong class="product-profile__stock">@if (record.is_stock_tracked) { <bdi dir="ltr">{{ record.stock_quantity ?? '—' }}</bdi> } @else { {{ t('productProfile.notTracked') }} }</strong></div>

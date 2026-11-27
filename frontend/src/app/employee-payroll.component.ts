@@ -5,7 +5,8 @@ import { LocalizationService } from './localization.service';
 import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecordTableColumn, type AbaRecordTableRow } from './shared/ui/aba-record-table.component';
 import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';
 import { AbaSearchFieldComponent } from './shared/ui/aba-search-field.component';
-import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service';
+import { ApiService, DriverTripRow, EmployeePayrollRecord, EmployeeRecord, TransportEntitlement } from './api.service';
+import { DEFAULT_DAILY_DIVISOR, dailyDivisorFromSettings, transportEnabledFromSettings } from './transport-settings';
 
 @Component({
   selector: 'aba-employee-payroll',
@@ -55,11 +56,30 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
         <label>{{ t('ui.m_qfhcd5') }}
           <input name="employeeJobTitle" maxlength="120" autocomplete="off" [disabled]="busy" [(ngModel)]="employeeJobTitle">
         </label>
+        @if (transportEnabled) {
+        <label class="check-row">{{ t('ui.employees.transport.driverTag') }}
+          <input name="employeeIsDriver" type="checkbox" [disabled]="busy" [(ngModel)]="employeeIsDriver">
+        </label>
+        }
+        <label>{{ t('ui.employees.wageBasis.label') }}
+          <select name="employeeWageBasis" [disabled]="busy" [(ngModel)]="employeeWageBasis">
+            <option value="monthly">{{ t('ui.employees.wageBasis.monthly') }}</option>
+            <option value="daily">{{ t('ui.employees.wageBasis.daily') }}</option>
+            @if (transportEnabled || employeeWageBasis === 'per_trip') {
+            <option value="per_trip" [disabled]="!transportEnabled">{{ t('ui.employees.wageBasis.perTrip') }}</option>
+            }
+          </select>
+        </label>
+        @if (transportEnabled && employeeWageBasis === 'per_trip') {
+        <label>{{ t('ui.employees.wageBasis.tripWage') }} · {{ currencyCode }}
+          <input name="employeeTripWage" type="number" inputmode="decimal" min="0.01" step="0.01" required [disabled]="busy" [(ngModel)]="employeeTripWage">
+        </label>
+        }
         <label>{{ t('ui.m_fzbln8') }} · {{ currencyCode }}
           <input name="employeeMonthlySalary" type="number" inputmode="decimal" min="0.01" step="0.01" required [disabled]="busy" [(ngModel)]="employeeMonthlySalary">
         </label>
         <div class="form-actions">
-          <button class="primary" type="submit" [disabled]="busy || !employeeName.trim() || !employeeSalaryValid">
+          <button class="primary" type="submit" [disabled]="busy || !employeeName.trim() || !employeeSalaryValid || !employeeWageValid">
             {{ editingEmployeeId ? t('ui.m_suv5n') : t('ui.m_ze7lpa') }}
           </button>
           @if (editingEmployeeId) {
@@ -69,10 +89,49 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           </form>
         </div>
 
+      @if (transportEnabled && driverTripsEmployeeId) {
+      <section class="payroll-section driver-trips">
+        <div class="section-head">
+          <div>
+            <h3>{{ t('ui.employees.driverTrips.title') }}</h3>
+            <p>{{ t('ui.employees.driverTrips.hint') }}</p>
+          </div>
+          <span class="count">{{ filteredDriverTrips.length }}</span>
+        </div>
+        <div class="trip-filters">
+          <label>{{ t('ui.employees.driverTrips.from') }}
+            <input type="date" name="tripFrom" [disabled]="busy" [(ngModel)]="tripFrom">
+          </label>
+          <label>{{ t('ui.employees.driverTrips.to') }}
+            <input type="date" name="tripTo" [disabled]="busy" [(ngModel)]="tripTo">
+          </label>
+        </div>
+        <div class="entitlement-list">
+          @for (row of filteredDriverTrips; track row.invoice_id) {
+          <article class="entitlement-row trip-row">
+            <div class="entitlement-main">
+              <strong>{{ row.customer_name }}</strong>
+              <span>{{ t('ui.employees.driverTrips.invoice') }} {{ row.invoice_number }} · {{ (row.issue_date ?? '').slice(0, 10) }}</span>
+              <span>{{ row.trips }} {{ row.unit_name }} — {{ t('ui.employees.driverTrips.due') }} {{ row.due }} {{ row.currency_code }} · {{ t('ui.employees.driverTrips.paid') }} {{ row.paid }} · {{ t('ui.employees.driverTrips.remaining') }} {{ row.remaining }}</span>
+            </div>
+            <span class="count">{{ driverTripStatusLabel(row) }}</span>
+          </article>
+          } @empty {
+          <p class="empty">{{ t('ui.employees.driverTrips.empty') }}</p>
+          }
+        </div>
+      </section>
+      }
+
       <div class="employee-tools">
         <aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="employeeSearch" [hasActiveFilter]="employeeSearch.trim() !== ''" (clear)="employeeSearch = ''"><aba-search-field name="employeeSearch" [ariaLabel]="t('ui.m_k10p5m')" [placeholder]="t('ui.m_1s1lu82')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="employeeSearch" /></aba-filter-bar>
         <span class="count">{{ filteredEmployees.length }} {{ t('ui.m_1jg5410') }}</span>
       </div>
+      @if (transportEnabled) {
+      <div class="employee-driver-filter">
+        <button class="driver-filter" type="button" [attr.aria-pressed]="driversOnly" (click)="driversOnly = !driversOnly">{{ t('ui.employees.transport.driversOnly') }}</button>
+      </div>
+      }
 
       <aba-record-table [ariaLabel]="t('ui.m_1isrfeo')" [columns]="employeeTableColumns" [rows]="employeeTableRows" [loading]="busy && !employees.length" [loadingDescription]="t('ui.m_zwe2q6')" [actionsHeading]="t('ui.m_1dbhmlo')" [emptyTitle]="t('ui.m_q8ks9z')" [emptyDescription]="employeeSearch.trim() ? t('ui.m_mdi6vd') : t('ui.m_ej4qvb')" (rowAction)="onEmployeeRecordAction($event)" />
       </section>
@@ -96,6 +155,20 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           <label>{{ t('ui.m_jcps75') }}
             <input name="payrollPeriod" type="month" required [disabled]="busy || !!editingPayrollId" [(ngModel)]="payrollPeriod">
           </label>
+          @if (selectedPayrollEmployee?.wage_basis === 'per_trip') {
+          <label>{{ t('ui.employees.wageBasis.trips') }}
+            <input name="payrollTrips" type="number" inputmode="numeric" min="0" step="1" required [disabled]="busy || !!editingPayrollId" [(ngModel)]="payrollTrips">
+          </label>
+          @if (selectedPayrollEmployee?.trip_wage) {
+          <p class="field-hint">{{ t('ui.employees.wageBasis.tripWage') }}: <bdi dir="ltr">{{ selectedPayrollEmployee?.trip_wage }} {{ currencyCode }}</bdi></p>
+          }
+          }
+          @if (selectedPayrollEmployee?.wage_basis === 'daily') {
+          <label>{{ t('ui.employees.wageBasis.workDays') }}
+            <input name="payrollWorkDays" type="number" inputmode="numeric" min="0" max="31" step="1" required [disabled]="busy || !!editingPayrollId" [(ngModel)]="payrollWorkDays">
+          </label>
+          <p class="field-hint">{{ t('ui.employees.wageBasis.daily') }}: <bdi dir="ltr">{{ dailyWageOf(selectedPayrollEmployee!) }} {{ currencyCode }}</bdi></p>
+          }
           <label>{{ t('ui.m_v1202z') }}
             <input name="payrollAllowances" type="number" inputmode="decimal" min="0" step="0.01" required [disabled]="busy" [(ngModel)]="payrollAllowances">
           </label>
@@ -118,6 +191,36 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
           {{ t('ui.m_1giayo7') }}
         </div>
       </section>
+
+      @if (transportEnabled && entitlements.length) {
+      <section class="payroll-section entitlement-queue" data-mobile-pane="history">
+        <div class="section-head">
+          <div>
+            <h3>{{ t('ui.employees.transportEntitlements.title') }}</h3>
+            <p>{{ t('ui.employees.transportEntitlements.hint') }}</p>
+          </div>
+          <span class="count">{{ entitlements.length }}</span>
+        </div>
+        <div class="entitlement-list">
+          @for (item of entitlements; track item.invoice_id) {
+            <article class="entitlement-row">
+              <div class="entitlement-main">
+                <strong>{{ item.driver_name || '—' }}</strong>
+                <span>{{ t('ui.employees.transportEntitlements.invoice') }} <bdi dir="ltr">{{ item.invoice_number }}</bdi>@if (item.issue_date) { · <bdi dir="ltr">{{ item.issue_date }}</bdi> }</span>
+                <span><bdi dir="ltr">{{ item.trips }}</bdi> {{ item.unit_name }} × <bdi dir="ltr">{{ item.trip_wage ?? '—' }} {{ item.currency_code }}</bdi> = <bdi dir="ltr">{{ item.amount ?? '—' }} {{ item.currency_code }}</bdi></span>
+              </div>
+              <label class="entitlement-period">{{ t('ui.employees.transportEntitlements.period') }}
+                <input type="month" [name]="'entitlementPeriod-' + item.invoice_id" [(ngModel)]="entitlementPeriods[item.invoice_id]" [disabled]="busy">
+              </label>
+              <div class="entitlement-actions">
+                <button class="primary" type="button" (click)="confirmEntitlement(item)" [disabled]="busy">{{ t('ui.employees.transportEntitlements.confirm') }}</button>
+                <button class="secondary" type="button" (click)="dismissEntitlement(item)" [disabled]="busy">{{ t('ui.employees.transportEntitlements.dismiss') }}</button>
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+      }
 
       <section class="payroll-section payroll-history" data-mobile-pane="history">
         <div class="section-head">
@@ -143,13 +246,32 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
             </div>
             <dl class="payslip-lines">
               <div><dt>{{ t('ui.m_ziwhp0') }}</dt><dd>{{ selectedPayroll.period }}</dd></div>
+              @if (selectedPayroll.trips !== null) {
+              <div><dt>{{ t('ui.employees.wageBasis.trips') }}</dt><dd>{{ selectedPayroll.trips }}</dd></div>
+              }
+              @if (selectedPayroll.work_days !== null) {
+              <div><dt>{{ t('ui.employees.wageBasis.workDays') }}</dt><dd>{{ selectedPayroll.work_days }}</dd></div>
+              }
               <div><dt>{{ t('ui.m_7go201') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.base_salary }} {{ currencyCode }}</bdi></dd></div>
               <div><dt>{{ t('ui.m_s8dmdz') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.allowances }} + {{ selectedPayroll.bonuses }} {{ currencyCode }}</bdi></dd></div>
               <div><dt>{{ t('ui.m_oxttnb') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.deductions }} {{ currencyCode }}</bdi></dd></div>
               <div><dt>{{ t('ui.m_rym52c') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.net_pay }} {{ currencyCode }}</bdi></dd></div>
+              @if (selectedPayroll.paid_amount && selectedPayroll.paid_amount !== '0.00') {
+              <div><dt>{{ t('ui.employees.partialPayment.paidSoFar') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.paid_amount }} {{ currencyCode }}</bdi></dd></div>
+              <div><dt>{{ t('ui.employees.partialPayment.remaining') }}</dt><dd><bdi dir="ltr">{{ selectedPayroll.remaining_amount }} {{ currencyCode }}</bdi></dd></div>
+              }
               <div><dt>{{ t('ui.m_jnmvwl') }}</dt><dd>{{ payrollStatusLabel(selectedPayroll.status) }}</dd></div>
               <div><dt>{{ t('ui.m_y96e6r') }}</dt><dd>{{ formatPayrollPayoutDate(selectedPayroll.paid_at) }}</dd></div>
             </dl>
+            @if (selectedPayroll.status === 'approved') {
+            <form class="partial-pay-form" (ngSubmit)="payPart(selectedPayroll)">
+              <label>{{ t('ui.employees.partialPayment.amount') }}
+                <input name="partialPayAmount" type="number" inputmode="decimal" min="0.01" step="0.01" required [disabled]="busy" [(ngModel)]="partialPayAmount">
+              </label>
+              <button class="primary" type="submit" [disabled]="busy || !partialPayAmount">{{ t('ui.employees.partialPayment.payPart') }}</button>
+              <p class="field-hint">{{ t('ui.employees.partialPayment.hint') }}</p>
+            </form>
+            }
           </section>
         }
       </section>
@@ -184,6 +306,12 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     .empty{padding:20px;text-align:center;color:var(--aba-color-text-tertiary,#9ca3af);font-size:12px}
     .employee-form,.payroll-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;min-width:0;margin:14px 0}
     .employee-form label,.payroll-form label,.employee-tools label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155)}
+    .employee-form label.check-row{display:flex;flex-direction:row;align-items:center;gap:8px}
+    .employee-form label.check-row input[type="checkbox"]{width:20px;height:20px;accent-color:var(--aba-color-primary,#0f766e)}
+    .employee-driver-filter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+    .driver-filter{min-height:44px;padding:8px 14px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:999px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-secondary,#475569);font-size:12px;font-weight:800}
+    .driver-filter[aria-pressed="true"]{border-color:var(--aba-color-primary-border,#99f6e4);background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59)}
+    .payroll-form .field-hint{font-size:11px;line-height:1.6;color:var(--aba-color-text-tertiary,#6b7280);margin:-6px 0 0}
     input,select{width:100%;max-width:100%;min-width:0}
     .form-actions{display:flex;align-items:end;flex-wrap:wrap;gap:8px}
     .employee-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;margin:16px 0;min-width:0}
@@ -198,6 +326,18 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     .payslip-lines dd{margin:0;font-size:12px;font-weight:700}
     .employee-tools label,.payroll-history-filter label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155)}
     .payroll-section{margin-top:24px;padding-top:18px;border-top:1px solid var(--aba-color-border-subtle,#e5e7eb);min-width:0}
+    .entitlement-list{display:grid;gap:10px}
+    .entitlement-row{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:12px;align-items:center;padding:12px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:14px;background:var(--aba-color-surface,#fff)}
+    .entitlement-main{display:grid;gap:2px;min-width:0;font-size:13px}
+    .entitlement-main span{color:var(--aba-color-text-secondary,#475569)}
+    .entitlement-period{display:grid;gap:4px;font-size:12px;font-weight:700;color:var(--aba-color-text-secondary,#475569)}
+    .entitlement-actions{display:flex;gap:8px}
+    @media(max-width:600px){.entitlement-row{grid-template-columns:minmax(0,1fr)}.entitlement-actions{flex-wrap:wrap}}
+    .trip-filters{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+    .trip-filters label{display:grid;gap:5px;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155)}
+    .partial-pay-form{display:flex;align-items:end;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .partial-pay-form label{display:grid;gap:5px;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155);min-width:180px;flex:1}
+    .partial-pay-form .field-hint{flex-basis:100%;font-size:11px;line-height:1.6;color:var(--aba-color-text-tertiary,#6b7280);margin:0}
     .employee-row,.payroll-row{grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:12px;min-width:0}
     .employee-mark{display:grid;place-items:center;width:36px;height:36px;background:var(--aba-color-info-soft,#e0f2fe);color:var(--aba-color-info-text,#075985);border-radius:11px;font-weight:800}
     .money-mark{background:var(--aba-color-success-soft,#dcfce7);color:var(--aba-color-success-text,#166534)}
@@ -256,6 +396,27 @@ export class EmployeePayrollComponent implements OnChanges {
   error = '';
   message = '';
   employeeSearch = '';
+  // 3A-920 step 1: the driver tag + list filter render only while the
+  // transport switch is on (DEFAULT OFF — no tag, no chip, no column).
+  transportEnabled = false;
+  // 3A-920 (manager ruling 2026-11-27): the daily-wage divisor is a
+  // company setting (default 30) — the hint divides by the company's
+  // own count, mirroring the backend read at payroll creation.
+  dailyDivisor = DEFAULT_DAILY_DIVISOR;
+  driversOnly = false;
+  // 3A-920 step 4: proposed driver entitlements from issued invoices —
+  // confirming creates an ordinary draft payroll record; nothing is
+  // ever posted automatically.
+  entitlements: TransportEntitlement[] = [];
+  entitlementPeriods: Record<string, string> = {};
+  // 3A-920 step 5: the partial-payment amount in the payslip view,
+  // prefilled with the remainder due.
+  partialPayAmount = '';
+  // 3A-920 step 6: the trips table of the driver being edited.
+  driverTrips: DriverTripRow[] = [];
+  driverTripsEmployeeId: string | null = null;
+  tripFrom = '';
+  tripTo = '';
   mobileSection: 'employees' | 'prepare' | 'history' = 'employees';
   employeeFormOpen = false;
   editingEmployeeId: string | null = null;
@@ -265,9 +426,17 @@ export class EmployeePayrollComponent implements OnChanges {
   employeePhone = '';
   employeeDepartment = '';
   employeeJobTitle = '';
+  employeeIsDriver = false;
+  // 3A-920 step 2: the wage basis + the per-trip wage. Monthly is the
+  // default and today's behavior; the per-trip option only exists while
+  // the transport switch is on.
+  employeeWageBasis = 'monthly';
+  employeeTripWage = '';
   employeeMonthlySalary = '';
   payrollEmployeeId = '';
   payrollPeriod = this.currentPeriod();
+  payrollTrips = '';
+  payrollWorkDays = '';
   payrollFilterPeriod = '';
   payrollAllowances = '0.00';
   payrollBonuses = '0.00';
@@ -287,6 +456,11 @@ export class EmployeePayrollComponent implements OnChanges {
       this.clearEmployeeForm();
       this.cancelPayrollEdit();
       this.employeeSearch = '';
+      this.driversOnly = false;
+      this.entitlements = [];
+      this.entitlementPeriods = {};
+      this.transportEnabled = false;
+      this.dailyDivisor = DEFAULT_DAILY_DIVISOR;
       this.mobileSection = 'employees';
       this.employeeFormOpen = false;
       this.payrollEmployeeId = '';
@@ -325,10 +499,26 @@ export class EmployeePayrollComponent implements OnChanges {
     return Number.isFinite(salary) && salary > 0;
   }
 
+  get employeeWageValid(): boolean {
+    if (this.employeeWageBasis !== 'per_trip') return true;
+    const wage = Number(String(this.employeeTripWage ?? '').trim());
+    return Number.isFinite(wage) && wage > 0;
+  }
+
+  get selectedPayrollEmployee(): EmployeeRecord | undefined {
+    return this.employees.find(employee => employee.id === this.payrollEmployeeId);
+  }
+
+  dailyWageOf(employee: EmployeeRecord): string {
+    return (Number(employee.monthly_salary) / this.dailyDivisor).toFixed(2);
+  }
+
   get filteredEmployees(): EmployeeRecord[] {
     const query = this.employeeSearch.trim().normalize('NFKC').toLocaleLowerCase(this.localization.locale);
-    if (!query) return this.employees;
-    return this.employees.filter(employee =>
+    let rows = this.employees;
+    if (this.driversOnly) rows = rows.filter(employee => employee.is_driver);
+    if (!query) return rows;
+    return rows.filter(employee =>
       [employee.name, employee.employee_code, employee.email, employee.department, employee.job_title]
         .some(value => (value || '').normalize('NFKC').toLocaleLowerCase(this.localization.locale).includes(query))
     );
@@ -354,12 +544,14 @@ export class EmployeePayrollComponent implements OnChanges {
     {key:'code',label:this.t('ui.m_13ed6g7')},
     {key:'department',label:this.t('ui.m_fcawum')},
     {key:'jobTitle',label:this.t('ui.m_qfhcd5')},
+    ...(this.transportEnabled ? [{key:'driver',label:this.t('ui.employees.transport.driverTag'),kind:'status'} as const] : []),
     {key:'contact',label:this.t('ui.m_oj3j6c')},
     {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
   ]; }
   get employeeTableRows(): readonly AbaRecordTableRow[] { return this.filteredEmployees.map(employee=>({id:employee.id,cells:{
     name:employee.name,code:employee.employee_code||'—',department:employee.department||'—',
-    jobTitle:employee.job_title||'—',contact:[employee.email,employee.phone].filter(Boolean).join(' · ')||'—',
+    jobTitle:employee.job_title||'—',driver:employee.is_driver?this.t('ui.employees.transport.driverTag'):'',
+    contact:[employee.email,employee.phone].filter(Boolean).join(' · ')||'—',
     status:employee.is_active?this.t('ui.m_sjpv56'):this.t('ui.m_1200s7g'),
   },actions:[
     {id:'edit',label:this.t('ui.m_s21yyp'),disabled:this.busy},
@@ -400,7 +592,7 @@ export class EmployeePayrollComponent implements OnChanges {
     const payroll=this.payrollRecords.find(item=>item.id===action.rowId); if(!payroll)return;
     // 3A-699 (U12): the payslip is a read-only view of the record — it stays
     // available while an operation runs and never mutates payroll state.
-    if(action.actionId==='view'){ this.selectedPayroll = payroll; return; }
+    if(action.actionId==='view'){ this.selectedPayroll = payroll; this.partialPayAmount = payroll.remaining_amount ?? payroll.net_pay; return; }
     if(this.busy||this.operationId)return;
     if(action.actionId==='edit'&&payroll.status==='draft')this.editPayroll(payroll);
     else if(action.actionId==='approve'&&payroll.status==='draft')void this.approvePayroll(payroll);
@@ -429,13 +621,27 @@ export class EmployeePayrollComponent implements OnChanges {
     this.busy = true;
     this.error = '';
     try {
-      const [employees, payrollRecords] = await Promise.all([
+      const [employees, payrollRecords, settings] = await Promise.all([
         this.api.employees(businessId),
-        this.api.payroll(businessId, this.payrollFilterPeriod || undefined)
+        this.api.payroll(businessId, this.payrollFilterPeriod || undefined),
+        this.api.listSettings(businessId),
       ]);
       if (sequence !== this.loadSequence || this.businessId !== businessId) return;
       this.employees = employees;
       this.payrollRecords = payrollRecords;
+      // 3A-920: the transport switch rides the same load — one extra
+      // read, no new endpoint.
+      this.transportEnabled = transportEnabledFromSettings(settings);
+      this.dailyDivisor = dailyDivisorFromSettings(settings);
+      // 3A-920 step 4: the proposed-entitlement queue loads only while
+      // the switch is on; while off, stored proposals wait untouched.
+      this.entitlements = this.transportEnabled ? await this.api.transportEntitlements(businessId) : [];
+      if (sequence !== this.loadSequence || this.businessId !== businessId) return;
+      for (const item of this.entitlements) {
+        if (!this.entitlementPeriods[item.invoice_id]) {
+          this.entitlementPeriods[item.invoice_id] = item.issue_date ? item.issue_date.slice(0, 7) : this.currentPeriod();
+        }
+      }
       if (!this.employees.some(item => item.id === this.payrollEmployeeId && item.is_active)) {
         this.payrollEmployeeId = this.employees.find(item => item.is_active)?.id || '';
       }
@@ -443,6 +649,39 @@ export class EmployeePayrollComponent implements OnChanges {
       if (sequence === this.loadSequence && this.businessId === businessId) this.error = this.errorMessage(error);
     } finally {
       if (sequence === this.loadSequence && this.businessId === businessId) this.busy = false;
+    }
+  }
+
+  /** 3A-920 step 4: confirm a proposal into an ordinary DRAFT payroll record. */
+  async confirmEntitlement(item: TransportEntitlement): Promise<void> {
+    if (!this.businessId || this.busy) return;
+    this.busy = true;
+    this.error = '';
+    this.message = '';
+    try {
+      const period = this.entitlementPeriods[item.invoice_id] || undefined;
+      await this.api.confirmTransportEntitlement(this.businessId, item.invoice_id, period);
+      this.message = this.t('ui.employees.transportEntitlements.confirmed');
+      await this.loadEmployeesAndPayroll();
+    } catch (error) {
+      this.error = this.errorMessage(error);
+      this.busy = false;
+    }
+  }
+
+  /** 3A-920 step 4: dismiss a proposal — the invoice keeps its block data. */
+  async dismissEntitlement(item: TransportEntitlement): Promise<void> {
+    if (!this.businessId || this.busy) return;
+    this.busy = true;
+    this.error = '';
+    this.message = '';
+    try {
+      await this.api.dismissTransportEntitlement(this.businessId, item.invoice_id);
+      this.message = this.t('ui.employees.transportEntitlements.dismissed');
+      await this.loadEmployeesAndPayroll();
+    } catch (error) {
+      this.error = this.errorMessage(error);
+      this.busy = false;
     }
   }
 
@@ -458,7 +697,14 @@ export class EmployeePayrollComponent implements OnChanges {
     this.employeePhone = '';
     this.employeeDepartment = '';
     this.employeeJobTitle = '';
+    this.employeeIsDriver = false;
+    this.employeeWageBasis = 'monthly';
+    this.employeeTripWage = '';
     this.employeeMonthlySalary = '';
+    this.driverTrips = [];
+    this.driverTripsEmployeeId = null;
+    this.tripFrom = '';
+    this.tripTo = '';
   }
 
   editEmployee(employee: EmployeeRecord): void {
@@ -471,9 +717,55 @@ export class EmployeePayrollComponent implements OnChanges {
     this.employeePhone = employee.phone || '';
     this.employeeDepartment = employee.department || '';
     this.employeeJobTitle = employee.job_title || '';
+    this.employeeIsDriver = employee.is_driver;
+    this.employeeWageBasis = employee.wage_basis;
+    this.employeeTripWage = employee.trip_wage ?? '';
     this.employeeMonthlySalary = employee.monthly_salary;
     this.message = '';
     this.error = '';
+    // 3A-920 step 6: a driver's profile carries their trips table.
+    this.driverTrips = [];
+    this.driverTripsEmployeeId = null;
+    this.tripFrom = '';
+    this.tripTo = '';
+    if (this.transportEnabled && employee.is_driver) {
+      this.driverTripsEmployeeId = employee.id;
+      void this.loadDriverTrips(employee.id);
+    }
+  }
+
+  async loadDriverTrips(employeeId: string): Promise<void> {
+    const businessId = this.businessId;
+    try {
+      const rows = await this.api.driverTrips(businessId, employeeId);
+      if (this.businessId === businessId && this.driverTripsEmployeeId === employeeId) {
+        this.driverTrips = rows;
+      }
+    } catch {
+      if (this.businessId === businessId && this.driverTripsEmployeeId === employeeId) {
+        this.driverTrips = [];
+      }
+    }
+  }
+
+  get filteredDriverTrips(): DriverTripRow[] {
+    return this.driverTrips.filter((row) => {
+      const day = (row.issue_date ?? '').slice(0, 10);
+      if (this.tripFrom && day < this.tripFrom) return false;
+      if (this.tripTo && day > this.tripTo) return false;
+      return true;
+    });
+  }
+
+  driverTripStatusLabel(row: DriverTripRow): string {
+    if (row.entitlement_status === 'proposed') return this.t('ui.invoices.transport.statusProposed');
+    if (row.entitlement_status === 'dismissed') return this.t('ui.invoices.transport.statusDismissed');
+    if (row.entitlement_status === 'cancelled') return this.t('ui.invoices.transport.statusCancelled');
+    const due = Number(row.due ?? '0');
+    const paid = Number(row.paid ?? '0');
+    if (due > 0 && paid >= due) return this.t('ui.employees.driverTrips.fullyPaid');
+    if (paid > 0) return this.t('ui.employees.driverTrips.partiallyPaid');
+    return this.t('ui.invoices.transport.statusConfirmed');
   }
 
   cancelEmployeeEdit(): void {
@@ -485,7 +777,7 @@ export class EmployeePayrollComponent implements OnChanges {
   async saveEmployee(): Promise<void> {
     const name = this.employeeName.trim();
     const monthlySalary = String(this.employeeMonthlySalary ?? '').trim();
-    if (!this.businessId || !name || !this.employeeSalaryValid) {
+    if (!this.businessId || !name || !this.employeeSalaryValid || !this.employeeWageValid) {
       this.error = this.t('ui.m_1cpyz98');
       return;
     }
@@ -503,6 +795,11 @@ export class EmployeePayrollComponent implements OnChanges {
           phone: this.employeePhone.trim() || null,
           department: this.employeeDepartment.trim() || null,
           job_title: this.employeeJobTitle.trim() || null,
+          is_driver: this.employeeIsDriver,
+          wage_basis: this.employeeWageBasis,
+          // The trip wage is only sent while the basis is per-trip — a
+          // stored wage stays stored (hidden, never deleted) otherwise.
+          ...(this.employeeWageBasis === 'per_trip' ? {trip_wage: this.employeeTripWage.trim() || null} : {}),
           monthly_salary: monthlySalary
         });
       } else {
@@ -513,6 +810,9 @@ export class EmployeePayrollComponent implements OnChanges {
           phone: this.employeePhone.trim() || undefined,
           department: this.employeeDepartment.trim() || undefined,
           job_title: this.employeeJobTitle.trim() || undefined,
+          is_driver: this.employeeIsDriver,
+          wage_basis: this.employeeWageBasis,
+          ...(this.employeeWageBasis === 'per_trip' ? {trip_wage: this.employeeTripWage.trim() || undefined} : {}),
           monthly_salary: monthlySalary
         });
       }
@@ -555,6 +855,8 @@ export class EmployeePayrollComponent implements OnChanges {
     this.payrollEmployeeId = employee.id;
     this.editingPayrollId = null;
     this.payrollPeriod = this.currentPeriod();
+    this.payrollTrips = '';
+    this.payrollWorkDays = '';
     this.payrollAllowances = '0.00';
     this.payrollBonuses = '0.00';
     this.payrollDeductions = '0.00';
@@ -578,6 +880,8 @@ export class EmployeePayrollComponent implements OnChanges {
 
   cancelPayrollEdit(): void {
     this.editingPayrollId = null;
+    this.payrollTrips = '';
+    this.payrollWorkDays = '';
     this.payrollAllowances = '0.00';
     this.payrollBonuses = '0.00';
     this.payrollDeductions = '0.00';
@@ -592,6 +896,21 @@ export class EmployeePayrollComponent implements OnChanges {
     const amounts = [this.payrollAllowances, this.payrollBonuses, this.payrollDeductions]
       .map(value => Number(String(value ?? '').trim()));
     if (amounts.some(value => !Number.isFinite(value) || value < 0)) {
+      this.error = this.t('ui.m_18po2rz');
+      return;
+    }
+    // 3A-920 step 2: the units the base is computed from — required by
+    // the server for the matching basis, rejected for any other basis.
+    // (Editing an existing record never touches the units: they are
+    // creation-time facts, so a closed period can never be recomputed.)
+    const basis = this.selectedPayrollEmployee?.wage_basis;
+    const trips = Number(String(this.payrollTrips ?? '').trim());
+    const workDays = Number(String(this.payrollWorkDays ?? '').trim());
+    if (basis === 'per_trip' && (!Number.isInteger(trips) || trips < 0)) {
+      this.error = this.t('ui.m_18po2rz');
+      return;
+    }
+    if (basis === 'daily' && (!Number.isInteger(workDays) || workDays < 0 || workDays > 31)) {
       this.error = this.t('ui.m_18po2rz');
       return;
     }
@@ -612,7 +931,9 @@ export class EmployeePayrollComponent implements OnChanges {
           period: this.payrollPeriod,
           allowances: String(this.payrollAllowances).trim(),
           bonuses: String(this.payrollBonuses).trim(),
-          deductions: String(this.payrollDeductions).trim()
+          deductions: String(this.payrollDeductions).trim(),
+          ...(basis === 'per_trip' ? {trips} : {}),
+          ...(basis === 'daily' ? {work_days: workDays} : {})
         });
         this.message = this.t('ui.m_1nhx55s');
       }
@@ -642,6 +963,42 @@ export class EmployeePayrollComponent implements OnChanges {
       if (this.businessId === businessId) {
         const failure = this.errorMessage(error);
         // A timeout may occur after the transaction committed; reload to reconcile the visible status.
+        await this.loadEmployeesAndPayroll();
+        if (this.businessId === businessId) this.error = failure;
+      }
+    } finally {
+      if (this.operationId === record.id) this.operationId = '';
+    }
+  }
+
+  // 3A-920 step 5: record one partial payment; the remainder stays
+  // due and the record flips to paid only when the payments sum
+  // reaches the net (decided server-side).
+  async payPart(record: EmployeePayrollRecord): Promise<void> {
+    const businessId = this.businessId;
+    const amount = this.partialPayAmount.trim();
+    if (!amount || this.busy) return;
+    this.operationId = record.id;
+    this.error = '';
+    this.message = '';
+    try {
+      const updated = await this.api.recordPayrollPayment(businessId, record.id, amount);
+      if (this.businessId !== businessId) return;
+      this.message = this.t(
+        updated.status === 'paid'
+          ? 'ui.employees.partialPayment.completed'
+          : 'ui.employees.partialPayment.recorded'
+      );
+      this.payrollPaid.emit();
+      await this.loadEmployeesAndPayroll();
+      if (this.businessId === businessId) {
+        const fresh = this.payrollRecords.find((item) => item.id === record.id) ?? null;
+        this.selectedPayroll = fresh;
+        this.partialPayAmount = fresh ? (fresh.remaining_amount ?? fresh.net_pay) : '';
+      }
+    } catch (error) {
+      if (this.businessId === businessId) {
+        const failure = this.errorMessage(error);
         await this.loadEmployeesAndPayroll();
         if (this.businessId === businessId) this.error = failure;
       }

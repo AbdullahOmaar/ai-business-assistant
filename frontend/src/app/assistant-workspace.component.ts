@@ -20,6 +20,13 @@ import {
   settingsValue, toChatMessages,
   type AssistantChatMessage, type AssistantDialect,
 } from './assistant-persistence';
+import {
+  DAILY_DIVISOR_SETTING_KEY, DEFAULT_DAILY_DIVISOR,
+  MAX_DAILY_DIVISOR, MAX_TRANSPORT_UNIT_NAME_LENGTH, MIN_DAILY_DIVISOR,
+  TRANSPORT_ENABLED_SETTING_KEY, TRANSPORT_UNIT_NAME_SETTING_KEY,
+  dailyDivisorFromSettings, transportEnabledFromSettings,
+  transportUnitNameFromSettings,
+} from './transport-settings';
 import { LocalizationService } from './localization.service';
 import { WorkspaceLoadGuard, runTenantScopedRequest, type TenantRequestContext } from './workspace-load-guard';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
@@ -193,6 +200,26 @@ interface SpeechRecognitionLike {
               <small class="assistant-setting-hint">{{ t('ui.assistantWhatsapp.comingSoon') }}</small>
             }
             <small class="assistant-setting-hint">{{ t('ui.assistantWhatsapp.hint') }}</small>
+          </div>
+          <div class="assistant-transport">
+            <strong>{{ t('ui.assistantSettings.transport.title') }}</strong>
+            <label class="assistant-setting-row">
+              <span>{{ t('ui.assistantSettings.transport.enable') }}</span>
+              <input type="checkbox" [checked]="transportEnabled" (change)="toggleTransport($any($event.target).checked)" [disabled]="!isOwner" />
+            </label>
+            <small class="assistant-setting-hint">{{ t('ui.assistantSettings.transport.enableHint') }}</small>
+            <label class="assistant-setting-row">
+              <span>{{ t('ui.assistantSettings.transport.dailyDivisor') }}</span>
+              <input type="number" min="1" max="31" step="1" [value]="dailyDivisor" (change)="changeDailyDivisor($any($event.target).value)" [disabled]="!isOwner" />
+            </label>
+            <small class="assistant-setting-hint">{{ t('ui.assistantSettings.transport.dailyDivisorHint') }}</small>
+            @if (transportEnabled) {
+              <label class="assistant-setting-row">
+                <span>{{ t('ui.assistantSettings.transport.unitName') }}</span>
+                <input type="text" [value]="transportUnitName" (change)="changeTransportUnitName($any($event.target).value)" [disabled]="!isOwner" maxlength="40" />
+              </label>
+              <small class="assistant-setting-hint">{{ t('ui.assistantSettings.transport.unitNameHint') }}</small>
+            }
           </div>
           @if (settingsSaved) { <small class="assistant-setting-saved">{{ t('ui.assistantSettings.saved') }}</small> }
         }
@@ -472,6 +499,7 @@ interface SpeechRecognitionLike {
 .assistant-history-list li{margin-top:6px}
 .assistant-setting-row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:10px;font-size:12px;font-weight:700}
 .assistant-setting-row select{min-height:36px;border:1px solid var(--aba-color-border,#d1d5db);border-radius:8px;background:var(--aba-color-surface,#fff);font-size:12px}
+.assistant-setting-row input[type="text"],.assistant-setting-row input[type="number"]{min-height:36px;max-width:160px;padding:0 8px;border:1px solid var(--aba-color-border,#d1d5db);border-radius:8px;background:var(--aba-color-surface,#fff);font-size:12px}
 .assistant-setting-row input[type="checkbox"]{width:20px;height:20px;accent-color:var(--aba-color-primary,#0f766e)}
 .assistant-setting-hint{display:block;margin-top:4px}
 .assistant-optouts{display:grid;gap:6px;margin-top:12px}
@@ -480,6 +508,8 @@ interface SpeechRecognitionLike {
 .assistant-optouts li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--aba-color-border-subtle,#e2e8f0);font-size:12px}
 .assistant-whatsapp{display:grid;gap:6px;margin-top:12px}
 .assistant-whatsapp strong{font-size:12px}
+.assistant-transport{display:grid;gap:6px;margin-top:12px}
+.assistant-transport strong{font-size:12px}
 .assistant-whatsapp ul{list-style:none;margin:0;padding:0}
 .assistant-whatsapp li{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--aba-color-border-subtle,#e2e8f0);font-size:12px}
 .assistant-whatsapp-code{font-size:20px;font-weight:700;letter-spacing:4px;margin:2px 0}
@@ -531,6 +561,13 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
   whatsappChannelEnabled = false;
   whatsappCode = '';
   whatsappBusy = false;
+  // 3A-920 (transport/delivery foundation): the per-business master
+  // switch + unit name. DEFAULT OFF — when off, no transport piece
+  // renders anywhere else in the app (the pieces are not rendered at
+  // all, not a "coming soon" state).
+  transportEnabled = false;
+  transportUnitName = '';
+  dailyDivisor = DEFAULT_DAILY_DIVISOR;
   brief: AssistantBrief | null = null;
   briefLoading = false;
   briefError = '';
@@ -633,6 +670,9 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
     this.whatsappChannelEnabled = false;
     this.whatsappCode = '';
     this.whatsappBusy = false;
+    this.transportEnabled = false;
+    this.transportUnitName = '';
+    this.dailyDivisor = DEFAULT_DAILY_DIVISOR;
     this.brief = null;
     this.briefLoading = false;
     this.briefError = '';
@@ -821,6 +861,11 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
           const dialect = settingsValue(settings, DIALECT_SETTING_KEY, 'egyptian');
           this.dialect = isAssistantDialect(dialect) ? dialect : 'egyptian';
           this.briefEnabled = settingsValue(settings, MORNING_BRIEF_SETTING_KEY, 'true').trim().toLowerCase() !== 'false';
+          // 3A-920: transport master switch (DEFAULT OFF) + the
+          // company's own unit name (catalog default when never set).
+          this.transportEnabled = transportEnabledFromSettings(settings);
+          this.transportUnitName = transportUnitNameFromSettings(settings, this.t('ui.assistantSettings.transport.defaultUnitName'));
+          this.dailyDivisor = dailyDivisorFromSettings(settings);
           this.optOuts = optOuts;
           this.whatsappLinks = whatsappLinks;
           this.whatsappChannelEnabled = whatsappStatus.channel_enabled;
@@ -861,6 +906,79 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
       this.settingsError = '';
       if (checked) await this.loadBrief();
       else this.brief = null;
+    } catch (error) {
+      this.settingsError = this.message(error);
+    }
+  }
+
+  // 3A-920 — transport master switch. Owner-only, through the
+  // existing PUT /settings/{key} endpoint. Turning it off is safe by
+  // design: rows stay stored (nothing is deleted here), past payroll
+  // stays as recorded, and re-enabling restores everything.
+  async toggleTransport(checked: boolean): Promise<void> {
+    if (!this.isOwner) return;
+    const requestContext = this.chatRequestContext();
+    if (!requestContext.signedIn || !requestContext.workspaceId) return;
+    try {
+      await this.api.updateSetting(
+        requestContext.workspaceId, TRANSPORT_ENABLED_SETTING_KEY, checked ? 'true' : 'false',
+      );
+      this.transportEnabled = checked;
+      this.settingsSaved = true;
+      this.settingsError = '';
+    } catch (error) {
+      this.settingsError = this.message(error);
+    }
+  }
+
+  // 3A-920 — transport unit name (the company's own label for a
+  // trip/delivery). Owner-only. A blank value deletes the stored row
+  // so the read falls back to the catalog default; the name is only
+  // ever a display label.
+  async changeTransportUnitName(value: string): Promise<void> {
+    if (!this.isOwner) return;
+    const requestContext = this.chatRequestContext();
+    if (!requestContext.signedIn || !requestContext.workspaceId) return;
+    const next = (value ?? '').trim().slice(0, MAX_TRANSPORT_UNIT_NAME_LENGTH);
+    try {
+      if (!next) {
+        await this.api.deleteSetting(requestContext.workspaceId, TRANSPORT_UNIT_NAME_SETTING_KEY);
+        this.transportUnitName = this.t('ui.assistantSettings.transport.defaultUnitName');
+      } else if (next !== this.transportUnitName) {
+        await this.api.updateSetting(requestContext.workspaceId, TRANSPORT_UNIT_NAME_SETTING_KEY, next);
+        this.transportUnitName = next;
+      } else {
+        return;
+      }
+      this.settingsSaved = true;
+      this.settingsError = '';
+    } catch (error) {
+      this.settingsError = this.message(error);
+    }
+  }
+
+  // 3A-920 — daily-wage divisor (manager ruling 2026-11-27): daily
+  // pay = monthly salary / this count, a company setting with the
+  // default 30. Owner-only. Choosing the default deletes the stored
+  // row so the read falls back cleanly; an out-of-range value is
+  // ignored here and falls back on the backend read as well. Only
+  // payroll creation reads it — stored records never change.
+  async changeDailyDivisor(value: string): Promise<void> {
+    if (!this.isOwner) return;
+    const requestContext = this.chatRequestContext();
+    if (!requestContext.signedIn || !requestContext.workspaceId) return;
+    const parsed = Number.parseInt((value ?? '').trim(), 10);
+    if (!Number.isInteger(parsed) || parsed < MIN_DAILY_DIVISOR || parsed > MAX_DAILY_DIVISOR) return;
+    if (parsed === this.dailyDivisor) return;
+    try {
+      if (parsed === DEFAULT_DAILY_DIVISOR) {
+        await this.api.deleteSetting(requestContext.workspaceId, DAILY_DIVISOR_SETTING_KEY);
+      } else {
+        await this.api.updateSetting(requestContext.workspaceId, DAILY_DIVISOR_SETTING_KEY, String(parsed));
+      }
+      this.dailyDivisor = parsed;
+      this.settingsSaved = true;
+      this.settingsError = '';
     } catch (error) {
       this.settingsError = this.message(error);
     }

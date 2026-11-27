@@ -1270,7 +1270,17 @@
       "ownerOnly": "Owner only",
       "saved": "Saved",
       "loadError": "Couldn't load the settings.",
-      "saveError": "Couldn't save. Try again."
+      "saveError": "Couldn't save. Try again.",
+      "transport": {
+        "title": "Transport & delivery",
+        "enable": "Enable transport & delivery",
+        "enableHint": "While off, nothing transport-related appears in invoices, employees or payroll — as if it did not exist. Recorded data stays stored and reappears when it is turned back on.",
+        "unitName": "Transport unit name",
+        "unitNameHint": "The name shown on the invoice, the product and the payroll — e.g. a trip or a delivery.",
+        "defaultUnitName": "delivery",
+        "dailyDivisor": "Days per month for daily pay",
+        "dailyDivisorHint": "Daily pay = monthly salary ÷ this number — default 30. Applies to new payroll only; recorded payroll never changes."
+      }
     },
     "assistantWhatsapp": {
       "title": "WhatsApp linking",
@@ -1311,6 +1321,83 @@
       "proposalExpired": "Expired",
       "proposalRejected": "Cancelled",
       "proposalUnknown": "Unknown state"
+    },
+    "employees": {
+      "transport": {
+        "driverTag": "Driver / delivery agent",
+        "driversOnly": "Drivers only"
+      },
+      "wageBasis": {
+        "label": "Wage basis",
+        "monthly": "Monthly",
+        "daily": "Daily",
+        "perTrip": "Per trip / delivery",
+        "tripWage": "Trip wage",
+        "trips": "Trips",
+        "workDays": "Work days"
+      },
+      "transportEntitlements": {
+        "title": "Proposed driver entitlements",
+        "hint": "From issued invoices carrying transport details — confirming turns one into an ordinary draft payroll record; nothing is posted automatically",
+        "invoice": "Invoice",
+        "period": "Period",
+        "confirm": "Confirm",
+        "dismiss": "Dismiss",
+        "confirmed": "Entitlement confirmed — recorded as a draft payroll record",
+        "dismissed": "Proposed entitlement dismissed"
+      },
+      "partialPayment": {
+        "paidSoFar": "Paid so far",
+        "remaining": "Remaining",
+        "amount": "Payment amount",
+        "payPart": "Pay part",
+        "hint": "Recorded as a payroll expense; the remainder stays due until it is fully settled.",
+        "recorded": "Payment recorded — the remainder is still due",
+        "completed": "Salary fully paid"
+      },
+      "driverTrips": {
+        "title": "Driver trips",
+        "hint": "Every issued invoice carrying transport data for this driver — due from the trip wage recorded at issue, paid from payroll.",
+        "from": "From date",
+        "to": "To date",
+        "invoice": "Invoice",
+        "due": "Due",
+        "paid": "Paid",
+        "remaining": "Remaining",
+        "partiallyPaid": "Partially paid",
+        "fullyPaid": "Fully paid",
+        "empty": "No trips recorded in this period"
+      }
+    },
+    "products": {
+      "secondUnit": {
+        "name": "Second selling unit",
+        "namePlaceholder": "e.g. carton",
+        "nameRequired": "Enter the second selling unit name",
+        "factor": "Conversion factor",
+        "factorPlaceholder": "e.g. 12",
+        "factorHint": "How many base units are in each second unit",
+        "invalid": "Enter the unit name and a positive factor (up to 3 decimals)",
+        "sellUnit": "Selling unit"
+      }
+    },
+    "invoices": {
+      "transport": {
+        "title": "Transport & delivery",
+        "hint": "Optional — appears as a proposed driver entitlement in payroll once the invoice is issued; never posted automatically",
+        "expand": "Add",
+        "collapse": "Collapse",
+        "driver": "Driver / delivery agent",
+        "noDriver": "No driver",
+        "trips": "{{unit}} count",
+        "from": "From",
+        "to": "To",
+        "entitlementStatus": "Entitlement status",
+        "statusProposed": "Proposed — awaiting approval",
+        "statusConfirmed": "Confirmed in payroll",
+        "statusDismissed": "Dismissed",
+        "statusCancelled": "Cancelled with the invoice void"
+      }
     }
   },
   "common": {
@@ -1581,7 +1668,17 @@
       "v1160_title": "Version 1.16.0",
       "v1150_title": "Version 1.15.0",
       "v1140_title": "Version 1.14.0",
-      "v1130_title": "Version 1.13.0"
+      "v1130_title": "Version 1.13.0",
+      "m_2mgknk": "Transaction and payment methods",
+      "m_45rsqd": "Customers can pay in cash, by transfer, card or wallet, or on credit through partial payments against the invoice until it settles; transport costs are recorded as expenses under the transport category.",
+      "m_jx3v0u": "Transport & delivery details",
+      "m_bcijx0": "An optional invoice block (driver/delivery agent, trip count, from/to) shown only when the company enables Transport & delivery in its settings; it raises a proposed driver entitlement in payroll — never posted automatically.",
+      "m_lxm18n": "Second selling unit with a conversion factor",
+      "m_ac72sn": "A product can sell in a second company-named unit (the conversion factor is product data), while stock is deducted in the base unit in the current movements ledger. Appears when Transport & delivery is enabled.",
+      "m_5rw0bd": "Per-trip pay and driver entitlements",
+      "m_ili3u1": "With Transport & delivery enabled: a driver/delivery-agent tag on the employee card, a monthly, daily or per-trip wage basis, proposed entitlements from invoices confirmed manually in payroll, and the driver's trips table inside their profile (due, paid, remaining).",
+      "m_60s80r": "Partial salary payment",
+      "m_737in0": "An approved payroll record can be settled in parts — each payment is recorded as a payroll expense and the remainder stays due until the net is complete."
     }
   },
   "catalog": {
@@ -1730,7 +1827,11 @@
       "descriptionLength": "A line description cannot exceed 300 characters.",
       "manualDescription": "Every manual line needs a description of 1 to 300 characters.",
       "manualPrice": "Every manual line needs a non-negative unit price with at most two decimal places.",
-      "invalidDraft": "The invoice draft is invalid."
+      "invalidDraft": "The invoice draft is invalid.",
+      "lineUnit": "The selected selling unit is not available for this product",
+      "transportPair": "Transport details need a driver and a trip count together",
+      "transportTrips": "The trip count must be a whole number above zero",
+      "transportPlaceLength": "The origin or destination is longer than 200 characters"
     }
   },
   "customerDirectory": {
@@ -2166,7 +2267,8 @@
     "edit": "Edit details",
     "emptyDescription": "Choose a product from the catalogue to view its details.",
     "loading": "Loading product details…",
-    "emptyTitle": "No product selected"
+    "emptyTitle": "No product selected",
+    "secondUnit": "Second selling unit"
   },
   "purchasingWorkspace": {
     "approveConfirmationPrompt": "Approve this purchase order?",

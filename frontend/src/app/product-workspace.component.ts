@@ -6,6 +6,7 @@ import { ProductEditorComponent } from './product-editor.component';
 import { ProductProfileComponent } from './product-profile.component';
 import { WorkspaceLoadGuard } from './workspace-load-guard';
 import { LocalizationService } from './localization.service';
+import { transportEnabledFromSettings } from './transport-settings';
 
 type ProductWorkspaceContext = { businessId: string; userId: string; role: 'owner' | 'staff' };
 
@@ -39,6 +40,7 @@ type ProductWorkspaceContext = { businessId: string; userId: string; role: 'owne
           [product]="selectedProduct()"
           [busy]="saving()"
           [error]="editorError()"
+          [transportEnabled]="transportEnabled()"
           (save)="saveProduct($event)"
           (cancel)="cancelEditor()" />
       } @else {
@@ -90,6 +92,8 @@ export class ProductWorkspaceComponent {
   readonly detailError = signal('');
   readonly editorError = signal('');
   readonly hasMore = signal(false);
+  /** 3A-920 step 3: the second-unit fields render only while the switch is on. */
+  readonly transportEnabled = signal(false);
 
   private offset = 0;
   private readonly pageSize = 50;
@@ -127,7 +131,10 @@ export class ProductWorkspaceComponent {
         this.error.set('');
         this.detailError.set('');
         this.editorError.set('');
-        if (context.businessId && context.userId) void this.loadProducts(true);
+        if (context.businessId && context.userId) {
+          void this.loadProducts(true);
+          void this.loadTransportFlag(context.businessId);
+        }
       });
     });
     effect(() => {
@@ -179,6 +186,17 @@ export class ProductWorkspaceComponent {
         this.loading.set(false);
         this.loadingMore.set(false);
       }
+    }
+  }
+
+  private async loadTransportFlag(businessId: string): Promise<void> {
+    try {
+      const settings = await this.api.listSettings(businessId);
+      if (this.businessId() === businessId) {
+        this.transportEnabled.set(transportEnabledFromSettings(settings));
+      }
+    } catch {
+      if (this.businessId() === businessId) this.transportEnabled.set(false);
     }
   }
 

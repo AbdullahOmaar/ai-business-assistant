@@ -2,7 +2,12 @@ import { ChangeDetectionStrategy, Component, effect, inject, input, output, sign
 import type { Product } from './api.service';
 import { LocalizationService } from './localization.service';
 
-export interface ProductEditorValue { name: string; sku?: string; description?: string; unit: string; }
+export interface ProductEditorValue {
+  name: string; sku?: string; description?: string; unit: string;
+  // 3A-920 step 3: only sent while the transport switch is on — the
+  // editor never clears stored config while off. Null clears the pair.
+  second_unit_name?: string | null; conversion_factor?: string | null;
+}
 
 /** Safe descriptive product fields only. Price and stock controls remain outside this editor. */
 @Component({
@@ -18,6 +23,10 @@ export interface ProductEditorValue { name: string; sku?: string; description?: 
         <label><span>{{ t('productEditor.name') }} *</span><input name="name" required maxlength="160" [value]="name()" (input)="name.set(readValue($event))" [placeholder]="t('productEditor.namePlaceholder')" [attr.aria-invalid]="submitted() && !name().trim() ? 'true' : null">@if (submitted() && !name().trim()) { <small role="alert">{{ t('productEditor.nameRequired') }}</small> }</label>
         <label><span>{{ t('productEditor.sku') }}</span><input name="sku" maxlength="80" [value]="sku()" (input)="sku.set(readValue($event))" [placeholder]="t('productEditor.skuPlaceholder')" dir="ltr"></label>
         <label><span>{{ t('productEditor.unit') }} *</span><input name="unit" required maxlength="32" [value]="unit()" (input)="unit.set(readValue($event))" [placeholder]="t('productEditor.unitPlaceholder')" [attr.aria-invalid]="submitted() && !unit().trim() ? 'true' : null">@if (submitted() && !unit().trim()) { <small role="alert">{{ t('productEditor.unitRequired') }}</small> }</label>
+        @if (transportEnabled()) {
+        <label><span>{{ t('ui.products.secondUnit.name') }}</span><input name="secondUnitName" maxlength="32" [value]="secondUnitName()" (input)="secondUnitName.set(readValue($event))" [placeholder]="t('ui.products.secondUnit.namePlaceholder')">@if (submitted() && !secondUnitName().trim() && conversionFactor().trim()) { <small role="alert">{{ t('ui.products.secondUnit.nameRequired') }}</small> }</label>
+        <label><span>{{ t('ui.products.secondUnit.factor') }}</span><input name="conversionFactor" inputmode="decimal" [value]="conversionFactor()" (input)="conversionFactor.set(readValue($event))" [placeholder]="t('ui.products.secondUnit.factorPlaceholder')"><small>{{ t('ui.products.secondUnit.factorHint') }}</small>@if (submitted() && !secondUnitValid()) { <small role="alert">{{ t('ui.products.secondUnit.invalid') }}</small> }</label>
+        }
         <label><span>{{ t('productEditor.descriptionLabel') }}</span><textarea name="description" maxlength="1000" rows="3" [value]="description()" (input)="description.set(readValue($event))" [placeholder]="t('productEditor.descriptionPlaceholder')"></textarea><small>{{ description().length }}/1000</small></label>
         @if (error()) { <p class="product-editor__error" role="alert">{{ error() }}</p> }
         <footer><button type="button" (click)="cancel.emit()" [disabled]="busy()">{{ t('productEditor.cancel') }}</button><button class="product-editor__primary" type="submit" [disabled]="busy()">{{ busy() ? t('productEditor.saving') : t('productEditor.save') }}</button></footer>
@@ -42,12 +51,16 @@ export class ProductEditorComponent {
   readonly product = input<Product | null>(null);
   readonly busy = input(false);
   readonly error = input('');
+  /** 3A-920 step 3: the second-unit fields render only while the switch is on. */
+  readonly transportEnabled = input(false);
   readonly cancel = output<void>();
   readonly save = output<ProductEditorValue>();
   readonly name = signal('');
   readonly sku = signal('');
   readonly description = signal('');
   readonly unit = signal('unit');
+  readonly secondUnitName = signal('');
+  readonly conversionFactor = signal('');
   readonly submitted = signal(false);
 
   constructor() {
@@ -57,15 +70,40 @@ export class ProductEditorComponent {
       this.sku.set(product?.sku ?? '');
       this.description.set(product?.description ?? '');
       this.unit.set(product?.unit ?? 'unit');
+      this.secondUnitName.set(product?.second_unit_name ?? '');
+      this.conversionFactor.set(product?.conversion_factor ?? '');
       this.submitted.set(false);
     });
   }
   readValue(event: Event): string { return (event.currentTarget as HTMLInputElement | HTMLTextAreaElement | null)?.value ?? ''; }
+  /** The pair is all-or-nothing: both empty clears it, both set keeps it. */
+  secondUnitValid(): boolean {
+    const name = this.secondUnitName().trim();
+    const factor = this.conversionFactor().trim();
+    if (!name && !factor) return true;
+    if (!name || !factor) return false;
+    const normalized = factor
+      .replace(/[٠-٩]/g, digit => String('٠١٢٣٤٥٦٧٨٩'.indexOf(digit)))
+      .replace(/[۰-۹]/g, digit => String('۰۱۲۳۴۵۶۷۸۹'.indexOf(digit)))
+      .replace(/[٫]/g, '.');
+    if (!/^\d+(\.\d{1,3})?$/.test(normalized)) return false;
+    const parsed = Number(normalized);
+    return Number.isFinite(parsed) && parsed > 0;
+  }
   submit(event: Event): void {
     event.preventDefault();
     this.submitted.set(true);
-    if (!this.name().trim() || !this.unit().trim() || this.busy()) return;
+    if (!this.name().trim() || !this.unit().trim() || !this.secondUnitValid() || this.busy()) return;
     const optional = (value: string) => value.trim() || undefined;
-    this.save.emit({ name: this.name().trim(), unit: this.unit().trim(), sku: optional(this.sku()), description: optional(this.description()) });
+    this.save.emit({
+      name: this.name().trim(), unit: this.unit().trim(),
+      sku: optional(this.sku()), description: optional(this.description()),
+      // While the switch is off the editor sends neither key, so the
+      // stored pair is never cleared by an unrelated edit.
+      ...(this.transportEnabled() ? {
+        second_unit_name: this.secondUnitName().trim() || null,
+        conversion_factor: this.conversionFactor().trim() || null,
+      } : {}),
+    });
   }
 }

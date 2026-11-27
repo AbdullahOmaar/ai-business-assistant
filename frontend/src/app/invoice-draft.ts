@@ -7,15 +7,26 @@ export interface InvoiceDraftLine {
   description: string;
   quantity: string;
   unit_price: string;
+  /** 3A-920 step 3: the unit the line is sold in — '' = the product's base unit. */
+  unit?: string;
 }
 
 export interface InvoiceDraftProduct {
   id: string;
   name: string;
   unit_price?: string;
+  unit?: string | null;
+  second_unit_name?: string | null;
+  conversion_factor?: string | null;
 }
 
 export interface InvoiceDraftCustomer {
+  id: string;
+  name: string;
+}
+
+/** 3A-920 step 4: an employee offered in the transport block's driver list. */
+export interface InvoiceDraftDriver {
   id: string;
   name: string;
 }
@@ -26,10 +37,15 @@ export interface InvoiceDraftInput {
   customer_id: string;
   lines: readonly InvoiceDraftLine[];
   notes?: string;
+  /** 3A-920 step 4: the optional transport block (driver + trips + route). */
+  driver_employee_id?: string | null;
+  transport_trips?: string | null;
+  transport_from?: string | null;
+  transport_to?: string | null;
 }
 
 export type InvoiceDraftLinePayload =
-  | { product_id: string; quantity: string; description?: string }
+  | { product_id: string; quantity: string; description?: string; unit?: string }
   | { description: string; quantity: string; unit_price: string };
 
 export interface InvoiceDraftPayload {
@@ -38,6 +54,10 @@ export interface InvoiceDraftPayload {
   customer_id: string;
   lines: InvoiceDraftLinePayload[];
   notes?: string | null;
+  driver_employee_id?: string | null;
+  transport_trips?: number | null;
+  transport_from?: string | null;
+  transport_to?: string | null;
 }
 
 export interface InvoiceDraftServerSummary {
@@ -71,6 +91,21 @@ export function validateInvoiceDraft(
     return "invoiceDraft.validation.currency";
   }
   if ((input.notes?.length ?? 0) > 2000) return "invoiceDraft.validation.notesLength";
+  // 3A-920 step 4: the transport block is all-or-nothing — a driver and a
+  // trip count travel together; a route alone still needs both.
+  const transportDriver = input.driver_employee_id?.trim() || '';
+  const transportTrips = (input.transport_trips ?? '').trim();
+  const transportFrom = input.transport_from?.trim() || '';
+  const transportTo = input.transport_to?.trim() || '';
+  if (transportDriver || transportTrips || transportFrom || transportTo) {
+    if (!transportDriver || !transportTrips) return "invoiceDraft.validation.transportPair";
+    if (!/^\d+$/.test(transportTrips) || Number(transportTrips) < 1) {
+      return "invoiceDraft.validation.transportTrips";
+    }
+    if (transportFrom.length > 200 || transportTo.length > 200) {
+      return "invoiceDraft.validation.transportPlaceLength";
+    }
+  }
   if (!input.lines.length) return "invoiceDraft.validation.atLeastOneLine";
   if (input.lines.length > 500) return "invoiceDraft.validation.lineLimit";
 
@@ -81,8 +116,15 @@ export function validateInvoiceDraft(
       return "invoiceDraft.validation.quantity";
     }
     if (line.kind === 'product') {
-      if (!line.product_id || !products.some(product => product.id === line.product_id)) {
+      const product = products.find(candidate => candidate.id === line.product_id);
+      if (!line.product_id || !product) {
         return "invoiceDraft.validation.catalogProduct";
+      }
+      // 3A-920 step 3: a stale second unit (removed from the product
+      // after the draft loaded) is caught here, not by the server.
+      const unit = line.unit?.trim() || '';
+      if (unit && unit !== product.unit && unit !== (product.second_unit_name ?? '')) {
+        return "invoiceDraft.validation.lineUnit";
       }
       if (line.description.trim().length > 300) return "invoiceDraft.validation.descriptionLength";
       continue;
@@ -110,11 +152,18 @@ export function toInvoiceDraftPayload(
   const error = validateInvoiceDraft(input, products, customers);
   if (error) throw new RangeError(error);
 
+  const transportDriver = input.driver_employee_id?.trim() || '';
   return {
     invoice_number: input.invoice_number.trim(),
     currency_code: input.currency_code.trim().toUpperCase(),
     customer_id: input.customer_id,
     notes: input.notes?.trim() || null,
+    // 3A-920 step 4: always sent (nulls when unused) so a draft edit that
+    // clears the block clears it on the server too.
+    driver_employee_id: transportDriver || null,
+    transport_trips: transportDriver ? Number((input.transport_trips ?? '').trim()) : null,
+    transport_from: transportDriver ? (input.transport_from?.trim() || null) : null,
+    transport_to: transportDriver ? (input.transport_to?.trim() || null) : null,
     lines: input.lines.map(line => line.kind === 'manual'
       ? {
           description: line.description.trim(),
@@ -125,6 +174,7 @@ export function toInvoiceDraftPayload(
           product_id: line.product_id,
           quantity: line.quantity.trim(),
           ...(line.description.trim() ? { description: line.description.trim() } : {}),
+          ...(line.unit?.trim() ? { unit: line.unit.trim() } : {}),
         }),
   };
 }
@@ -140,6 +190,7 @@ export function invoiceDraftLinesFromExisting(lines: readonly {
   description: string;
   quantity: string;
   unit_price: string;
+  sold_unit?: string | null;
 }[]): InvoiceDraftLine[] {
   return lines.map((line, index) => ({
     id: 'existing-invoice-line-' + (index + 1),
@@ -148,6 +199,7 @@ export function invoiceDraftLinesFromExisting(lines: readonly {
     description: line.description || '',
     quantity: line.quantity,
     unit_price: line.product_id ? '' : line.unit_price,
+    unit: line.sold_unit || '',
   }));
 }
 

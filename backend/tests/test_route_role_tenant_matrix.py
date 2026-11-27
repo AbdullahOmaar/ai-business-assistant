@@ -163,11 +163,24 @@ MATRIX = [
     ("GET", "/api/v1/businesses/{business_id}/employees", "deny"),
     ("POST", "/api/v1/businesses/{business_id}/employees", "deny"),
     ("PATCH", "/api/v1/businesses/{business_id}/employees/{employee_id}", "deny"),
+    # 3A-920 step 6: the driver trips table reads payroll-grade data
+    # (wage snapshots) — owner-only like the rest of this surface.
+    ("GET", "/api/v1/businesses/{business_id}/employees/{employee_id}/driver-trips", "deny"),
     ("GET", "/api/v1/businesses/{business_id}/payroll", "deny"),
     ("POST", "/api/v1/businesses/{business_id}/employees/{employee_id}/payroll", "deny"),
     ("PATCH", "/api/v1/businesses/{business_id}/payroll/{payroll_id}", "deny"),
     ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/approve", "deny"),
+    # 3A-920 step 5: partial salary payments are payroll data too —
+    # owner-only. The row sits between approve and pay on purpose: in
+    # the positive pass it records a 1.00 partial payment against the
+    # freshly approved record, and the pay row then settles the rest.
+    ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/payments", "deny"),
     ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/pay", "deny"),
+    # 3A-920 step 4: proposed driver entitlements are payroll data —
+    # owner-only like the rest of the payroll surface.
+    ("GET", "/api/v1/businesses/{business_id}/transport-entitlements", "deny"),
+    ("POST", "/api/v1/businesses/{business_id}/transport-entitlements/{invoice_id}/confirm", "deny"),
+    ("POST", "/api/v1/businesses/{business_id}/transport-entitlements/{invoice_id}/dismiss", "deny"),
     ("GET", "/api/v1/platform-admin/access", "deny"),
     ("GET", "/api/v1/platform-admin/system-status", "deny"),
     ("GET", "/api/v1/platform-admin/overview", "deny"),
@@ -550,6 +563,7 @@ def test_full_route_role_tenant_denial_matrix():
             ("PATCH", "/api/v1/businesses/{business_id}/employees/{employee_id}"): {"name": "Probe 2"},
             ("POST", "/api/v1/businesses/{business_id}/employees/{employee_id}/payroll"): {"period": "2026-02"},
             ("PATCH", "/api/v1/businesses/{business_id}/payroll/{payroll_id}"): {"allowances": "1.00"},
+            ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/payments"): {"amount": "1.00"},
             ("PATCH", "/api/v1/platform-admin/businesses/{business_id}/status"): {
                 "is_active": False, "reason": "matrix probe",
             },
@@ -821,6 +835,33 @@ def test_owner_positive_matrix():
         payroll_id = client.post(
             f"{base}/employees/{employee_id}/payroll", json={"period": "2026-01"}
         ).json()["id"]
+        # 3A-920 step 4: two issued invoices carrying a transport block
+        # raise two PROPOSED driver entitlements — one feeds the
+        # confirm row, one the dismiss row (each consumes its own
+        # proposal, and the loop's order is not guaranteed).
+        client.put(f"{base}/settings/transport.enabled", json={"setting_value": "true"})
+        driver_id = client.post(
+            f"{base}/employees",
+            json={"name": "Driver A", "monthly_salary": "1000",
+                  "is_driver": True, "wage_basis": "per_trip", "trip_wage": "10.00"},
+        ).json()["id"]
+
+        def make_proposed_invoice(number: str) -> str:
+            response = client.post(
+                f"{base}/invoices",
+                json={"invoice_number": number, "currency_code": "EGP",
+                      "customer_id": customer_id,
+                      "lines": [{"product_id": product_id, "quantity": "1", "unit_price": "10.00"}],
+                      "driver_employee_id": driver_id, "transport_trips": 1},
+            )
+            assert response.status_code == 201, response.text
+            invoice_id = response.json()["id"]
+            issue = client.post(f"{base}/invoices/{invoice_id}/issue", json={})
+            assert issue.status_code == 200, issue.text
+            return invoice_id
+
+        proposed_confirm_id = make_proposed_invoice("INV-TRANSPORT-CONFIRM")
+        proposed_dismiss_id = make_proposed_invoice("INV-TRANSPORT-DISMISS")
 
         # Assistant execution proposals (Slice 1): P1 needs a second
         # approval (expense.create, requested by owner-a); P2 is a plain
@@ -1000,6 +1041,7 @@ def test_owner_positive_matrix():
             ("PATCH", "/api/v1/businesses/{business_id}/employees/{employee_id}"): {"name": "Probe 2"},
             ("POST", "/api/v1/businesses/{business_id}/employees/{employee_id}/payroll"): {"period": "2026-02"},
             ("PATCH", "/api/v1/businesses/{business_id}/payroll/{payroll_id}"): {"allowances": "1.00"},
+            ("POST", "/api/v1/businesses/{business_id}/payroll/{payroll_id}/payments"): {"amount": "1.00"},
             ("PATCH", "/api/v1/platform-admin/businesses/{business_id}/status"): {
                 "is_active": False, "reason": "matrix probe",
             },
@@ -1064,6 +1106,10 @@ def test_owner_positive_matrix():
                 ids["invoice_id"] = draft_b_id
             if (method, template) == ("POST", "/api/v1/businesses/{business_id}/invoices/{invoice_id}/void"):
                 ids["invoice_id"] = issued_id
+            if (method, template) == ("POST", "/api/v1/businesses/{business_id}/transport-entitlements/{invoice_id}/confirm"):
+                ids["invoice_id"] = proposed_confirm_id
+            if (method, template) == ("POST", "/api/v1/businesses/{business_id}/transport-entitlements/{invoice_id}/dismiss"):
+                ids["invoice_id"] = proposed_dismiss_id
             if (method, template) == ("PUT", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}"):
                 ids["order_id"] = po_b_id
             if (method, template) == ("POST", "/api/v1/businesses/{business_id}/purchase-orders/{order_id}/cancel"):

@@ -21,7 +21,7 @@ export interface BusinessInvitationCreated extends BusinessInvitation { token: s
 export interface BusinessMembership { id: string; business_id: string; role: 'owner' | 'staff'; created_at: string | null; }
 export interface WorkspaceMembership { id: string; user_subject: string; role: 'owner' | 'staff'; created_at: string | null; }
 export interface Customer { id: string; name: string; email?: string | null; phone?: string | null; address?: string | null; notes?: string | null; created_at?: string | null; }
-export interface Product { id: string; name: string; sku?: string | null; description?: string | null; unit?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; created_at?: string | null; }
+export interface Product { id: string; name: string; sku?: string | null; description?: string | null; unit?: string | null; second_unit_name?: string | null; conversion_factor?: string | null; unit_price: string; currency_code?: string; is_stock_tracked: boolean; stock_quantity?: string | null; created_at?: string | null; }
 export type StockMovementType = 'opening' | 'receipt' | 'sale' | 'return' | 'adjustment';
 export interface StockMovementRecord {
   id: string; product_id: string; movement_type: StockMovementType; quantity_delta: string;
@@ -32,10 +32,30 @@ export interface StockMovementRecord {
 export interface StockMovementPage {
   items: StockMovementRecord[]; limit: number; offset: number; has_more: boolean;
 }
-export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; outstanding_amount?: string; issue_date?: string | null; created_at?: string | null; due_date?: string | null; }
+export interface Invoice { id: string; invoice_number: string; status: string; currency_code: string; total: string; subtotal?: string; discount_total?: string; tax_total?: string; customer_id?: string | null; allocated_payments?: string; outstanding_amount?: string; issue_date?: string | null; created_at?: string | null; due_date?: string | null;
+  // 3A-920 step 4: operational transport block fields (never the wage).
+  driver_employee_id?: string | null; transport_trips?: number | null; transport_from?: string | null; transport_to?: string | null; transport_entitlement_status?: string | null; }
 export interface InvoiceDetail extends Invoice {
   notes?: string | null;
-  lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; unit_price: string; line_total: string }>;
+  driver_name?: string | null;
+  // Owner-only on the server: the snapshotted wage, the proposed amount,
+  // and the payroll record a confirmed proposal created.
+  transport_trip_wage?: string | null; transport_entitlement_amount?: string | null; transport_entitlement_payroll_id?: string | null;
+  lines: Array<{ id: string; product_id: string | null; description: string; quantity: string; sold_unit?: string | null; conversion_factor?: string | null; unit_price: string; line_total: string }>;
+}
+/** One row of the driver's trips table in the employee profile (3A-920 step 6). */
+export interface DriverTripRow {
+  invoice_id: string; invoice_number: string; issue_date: string | null;
+  customer_name: string | null; trips: number | null; unit_name: string;
+  trip_wage: string | null; due: string | null; paid: string; remaining: string | null;
+  entitlement_status: 'proposed' | 'confirmed' | 'dismissed' | 'cancelled';
+  payroll_id: string | null; currency_code: string;
+}
+/** A proposed driver entitlement waiting in the payroll queue (3A-920 step 4). */
+export interface TransportEntitlement {
+  invoice_id: string; invoice_number: string; issue_date: string | null;
+  driver_employee_id: string; driver_name: string | null; trips: number;
+  unit_name: string; trip_wage: string | null; amount: string | null; currency_code: string;
 }
 export interface SalesReturn {
   id: string; business_id: string; invoice_id: string; status: 'draft' | 'approved' | 'rejected';
@@ -50,12 +70,16 @@ export interface Payment { id: string; amount: string; currency_code: string; re
 export interface Expense { id: string; category: string; description: string; amount: string; currency_code: string; incurred_at: string; vendor_name?: string | null; reference?: string | null; created_at?: string | null; }
 export interface EmployeeRecord {
   id: string; business_id: string; employee_code: string | null; name: string; email: string | null;
-  phone: string | null; department: string | null; job_title: string | null; monthly_salary: string;
+  phone: string | null; department: string | null; job_title: string | null; is_driver: boolean;
+  wage_basis: string; trip_wage: string | null; monthly_salary: string;
   is_active: boolean; created_at: string | null; updated_at: string | null;
 }
 export interface EmployeePayrollRecord {
   id: string; business_id: string; employee_id: string; employee_name: string; period: string;
+  trips: number | null; work_days: number | null;
   base_salary: string; allowances: string; bonuses: string; deductions: string; net_pay: string;
+  // 3A-920 step 5: partial-payment progress from the payments ledger.
+  paid_amount?: string; remaining_amount?: string;
   status: 'draft' | 'approved' | 'paid'; expense_id: string | null; approved_by_subject: string | null;
   approved_at: string | null; paid_by_subject: string | null; paid_at: string | null; created_at: string | null;
 }
@@ -249,7 +273,7 @@ export class ApiRequestError extends Error {
 }
 
 export type InvoiceLineInput =
-  | { product_id: string; quantity: string; description?: string }
+  | { product_id: string; quantity: string; description?: string; unit?: string }
   | { description: string; quantity: string; unit_price: string };
 
 @Injectable({ providedIn: 'root' })
@@ -669,7 +693,7 @@ export class ApiService {
   updateProduct(
     businessId: string,
     productId: string,
-    body: Partial<Pick<Product, 'name' | 'sku' | 'description' | 'unit'>>,
+    body: Partial<Pick<Product, 'name' | 'sku' | 'description' | 'unit' | 'second_unit_name' | 'conversion_factor'>>,
   ): Promise<Product> {
     return this.request<Product>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/products/${encodeURIComponent(productId)}`,
@@ -697,7 +721,8 @@ export class ApiService {
   }
   createEmployee(businessId: string, body: {
     name: string; monthly_salary: string; employee_code?: string; email?: string;
-    phone?: string; department?: string; job_title?: string;
+    phone?: string; department?: string; job_title?: string; is_driver?: boolean;
+    wage_basis?: string; trip_wage?: string | null;
   }): Promise<EmployeeRecord> {
     return this.request<EmployeeRecord>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/employees`, 'POST', body
@@ -706,6 +731,7 @@ export class ApiService {
   updateEmployee(businessId: string, employeeId: string, body: {
     name?: string; monthly_salary?: string; employee_code?: string | null; email?: string | null;
     phone?: string | null; department?: string | null; job_title?: string | null; is_active?: boolean;
+    is_driver?: boolean; wage_basis?: string; trip_wage?: string | null;
   }): Promise<EmployeeRecord> {
     return this.request<EmployeeRecord>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/employees/${encodeURIComponent(employeeId)}`, 'PATCH', body
@@ -720,6 +746,7 @@ export class ApiService {
   }
   createPayroll(businessId: string, employeeId: string, body: {
     period: string; allowances?: string; bonuses?: string; deductions?: string;
+    trips?: number; work_days?: number;
   }): Promise<EmployeePayrollRecord> {
     return this.request<EmployeePayrollRecord>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/employees/${encodeURIComponent(employeeId)}/payroll`, 'POST', body
@@ -740,6 +767,34 @@ export class ApiService {
   payPayroll(businessId: string, payrollId: string): Promise<EmployeePayrollRecord> {
     return this.request<EmployeePayrollRecord>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/payroll/${encodeURIComponent(payrollId)}/pay`, 'POST', {}
+    );
+  }
+  recordPayrollPayment(businessId: string, payrollId: string, amount: string): Promise<EmployeePayrollRecord> {
+    return this.request<EmployeePayrollRecord>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/payroll/${encodeURIComponent(payrollId)}/payments`,
+      'POST', { amount }
+    );
+  }
+  transportEntitlements(businessId: string): Promise<TransportEntitlement[]> {
+    return this.request<TransportEntitlement[]>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/transport-entitlements`
+    );
+  }
+  confirmTransportEntitlement(businessId: string, invoiceId: string, period?: string): Promise<EmployeePayrollRecord & { invoice_id: string }> {
+    return this.request<EmployeePayrollRecord & { invoice_id: string }>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/transport-entitlements/${encodeURIComponent(invoiceId)}/confirm`,
+      'POST', period ? { period } : {}
+    );
+  }
+  driverTrips(businessId: string, employeeId: string): Promise<DriverTripRow[]> {
+    return this.request<DriverTripRow[]>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/employees/${encodeURIComponent(employeeId)}/driver-trips`, 'GET'
+    );
+  }
+  dismissTransportEntitlement(businessId: string, invoiceId: string): Promise<{ invoice_id: string; status: string }> {
+    return this.request<{ invoice_id: string; status: string }>(
+      `/api/v1/businesses/${encodeURIComponent(businessId)}/transport-entitlements/${encodeURIComponent(invoiceId)}/dismiss`,
+      'POST', {}
     );
   }
   createExpense(businessId: string, body: {
@@ -766,6 +821,8 @@ export class ApiService {
   createInvoice(businessId: string, body: {
     invoice_number: string; currency_code: string; customer_id?: string; lines: InvoiceLineInput[];
     discount_rate?: number | string; tax_rate?: number | string; notes?: string | null;
+    driver_employee_id?: string | null; transport_trips?: number | null;
+    transport_from?: string | null; transport_to?: string | null;
   }): Promise<Invoice> {
     return this.request<Invoice>(`/api/v1/businesses/${encodeURIComponent(businessId)}/invoices`, 'POST', body);
   }
@@ -822,6 +879,8 @@ export class ApiService {
   updateDraftInvoice(businessId: string, invoiceId: string, body: {
     invoice_number: string; currency_code: string; customer_id?: string; lines: InvoiceLineInput[];
     discount_rate?: number | string; tax_rate?: number | string; notes?: string | null;
+    driver_employee_id?: string | null; transport_trips?: number | null;
+    transport_from?: string | null; transport_to?: string | null;
   }): Promise<Invoice> {
     return this.request<Invoice>(
       `/api/v1/businesses/${encodeURIComponent(businessId)}/invoices/${encodeURIComponent(invoiceId)}`, 'PATCH', body

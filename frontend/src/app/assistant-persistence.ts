@@ -17,6 +17,9 @@ export const ASSISTANT_DIALECTS = ['egyptian', 'formal', 'english'] as const;
 export type AssistantDialect = (typeof ASSISTANT_DIALECTS)[number];
 export const DIALECT_SETTING_KEY = 'assistant.dialect';
 export const MORNING_BRIEF_SETTING_KEY = 'assistant.morning_brief.enabled';
+// 3A-920: the transport keys + derivation helpers moved to
+// ./transport-settings (shared by every surface that gates on the
+// switch); this module keeps only the generic settingsValue reader.
 
 /** One chat log entry, extended with the resumed proposal state. */
 export interface AssistantChatMessage {
