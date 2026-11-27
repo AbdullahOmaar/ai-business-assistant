@@ -28,6 +28,7 @@ from app.security import (
     AuthorizationError,
     authorize_membership,
 )
+from app.transport_settings import transport_enabled
 
 router = APIRouter(prefix="/api/v1/businesses/{business_id}", tags=["employees and payroll"])
 CENT = Decimal("0.01")
@@ -43,6 +44,9 @@ class EmployeeCreate(BaseModel):
     phone: str | None = Field(default=None, max_length=32)
     department: str | None = Field(default=None, max_length=120)
     job_title: str | None = Field(default=None, max_length=120)
+    # 3A-920 step 1: driver/delivery-agent enrolment. Only settable while
+    # the transport switch is on (enforced in the endpoints below).
+    is_driver: bool = False
     monthly_salary: Decimal = Field(gt=0, max_digits=14, decimal_places=2)
 
     @field_validator("name")
@@ -81,6 +85,7 @@ class EmployeeUpdate(BaseModel):
     job_title: str | None = Field(default=None, max_length=120)
     monthly_salary: Decimal | None = Field(default=None, gt=0, max_digits=14, decimal_places=2)
     is_active: bool | None = None
+    is_driver: bool | None = None
 
     @field_validator("name")
     @classmethod
@@ -180,6 +185,7 @@ def _employee_dict(employee: Employee) -> dict:
         "phone": employee.phone,
         "department": employee.department,
         "job_title": employee.job_title,
+        "is_driver": employee.is_driver,
         "monthly_salary": str(employee.monthly_salary),
         "is_active": employee.is_active,
         "created_at": employee.created_at.isoformat() if employee.created_at else None,
@@ -235,6 +241,13 @@ def create_employee(
 ):
     def operation():
         _owner(session, principal, business_id)
+        # 3A-920: enrolling a driver is a transport write — rejected while
+        # the switch is off. Stored flags are never cleared by this gate.
+        if body.is_driver and not transport_enabled(session, business_id=business_id):
+            raise HTTPException(
+                status_code=422,
+                detail="Transport is disabled for this business.",
+            )
         business = session.scalars(
             select(Business).where(Business.id == business_id, Business.is_active.is_(True))
         ).one_or_none()
@@ -260,6 +273,7 @@ def create_employee(
             phone=body.phone.strip() if body.phone and body.phone.strip() else None,
             department=body.department.strip() if body.department and body.department.strip() else None,
             job_title=body.job_title.strip() if body.job_title and body.job_title.strip() else None,
+            is_driver=body.is_driver,
             monthly_salary=_money(body.monthly_salary),
             is_active=True,
         )
@@ -289,9 +303,18 @@ def update_employee(
         raise HTTPException(status_code=422, detail="Monthly salary cannot be null.")
     if "is_active" in changes and changes["is_active"] is None:
         raise HTTPException(status_code=422, detail="Employee active status cannot be null.")
+    if "is_driver" in changes and changes["is_driver"] is None:
+        raise HTTPException(status_code=422, detail="Driver flag cannot be null.")
 
     def operation():
         _owner(session, principal, business_id)
+        # 3A-920: same gate as create — enrolling a driver is a transport
+        # write; clearing the flag (False) is always allowed.
+        if changes.get("is_driver") is True and not transport_enabled(session, business_id=business_id):
+            raise HTTPException(
+                status_code=422,
+                detail="Transport is disabled for this business.",
+            )
         employee = session.scalars(
             select(Employee).where(
                 Employee.id == employee_id, Employee.business_id == business_id

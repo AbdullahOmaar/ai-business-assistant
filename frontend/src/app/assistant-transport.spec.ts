@@ -15,6 +15,7 @@ import test from 'node:test';
 const appDirectory = dirname(fileURLToPath(import.meta.url));
 const component = readFileSync(resolve(appDirectory, 'assistant-workspace.component.ts'), 'utf8');
 const persistence = readFileSync(resolve(appDirectory, 'assistant-persistence.ts'), 'utf8');
+const transportSettings = readFileSync(resolve(appDirectory, 'transport-settings.ts'), 'utf8');
 const apiService = readFileSync(resolve(appDirectory, 'api.service.ts'), 'utf8');
 const backend = readFileSync(resolve(appDirectory, '../../../backend/app/transport_settings.py'), 'utf8');
 const publicDirectory = resolve(appDirectory, '../../public/i18n');
@@ -48,16 +49,19 @@ test('settings panel renders the transport section (owner-only)', () => {
 });
 
 test('transport load defaults OFF and derives the unit name', () => {
-  // The switch loads with the rest of the settings panel (one load);
-  // only an explicit "true" enables it — absence means off.
-  assert.ok(component.includes("settingsValue(settings, TRANSPORT_ENABLED_SETTING_KEY, 'false')"));
-  assert.ok(component.includes(".trim().toLowerCase() === 'true'"));
+  // The switch loads with the rest of the settings panel (one load)
+  // through the shared derivation helpers — only an explicit "true"
+  // enables it; absence means off.
+  assert.ok(component.includes('transportEnabledFromSettings(settings)'));
+  assert.ok(component.includes("transportUnitNameFromSettings(settings, this.t('ui.assistantSettings.transport.defaultUnitName'))"));
   assert.ok(component.includes('this.transportEnabled = '));
-  // A stored unit name is used; a blank one falls back to the
-  // catalog default (no user-visible copy in source).
-  assert.ok(component.includes("settingsValue(settings, TRANSPORT_UNIT_NAME_SETTING_KEY, '')"));
-  assert.ok(component.includes("this.t('ui.assistantSettings.transport.defaultUnitName')"));
-  assert.ok(!persistence.includes('توصيلة'), 'Arabic default must live in the i18n catalog, not in source');
+  assert.ok(transportSettings.includes("settingsValue([...settings], TRANSPORT_ENABLED_SETTING_KEY, 'false')"));
+  assert.ok(transportSettings.includes(".trim().toLowerCase() === 'true'"));
+  assert.ok(transportSettings.includes("settingsValue([...settings], TRANSPORT_UNIT_NAME_SETTING_KEY, '')"));
+  // No user-visible copy in source: the display default lives in the
+  // i18n catalog.
+  assert.ok(!transportSettings.includes('توصيلة'), 'Arabic default must live in the i18n catalog, not in source');
+  assert.ok(!persistence.includes('توصيلة'));
 });
 
 test('transport actions use the existing owner-only settings endpoints', () => {
@@ -71,12 +75,12 @@ test('transport actions use the existing owner-only settings endpoints', () => {
 });
 
 test('frontend and backend agree on the transport keys and defaults', () => {
-  assert.ok(persistence.includes("TRANSPORT_ENABLED_SETTING_KEY = 'transport.enabled'"));
-  assert.ok(persistence.includes("TRANSPORT_UNIT_NAME_SETTING_KEY = 'transport.unit_name'"));
+  assert.ok(transportSettings.includes("TRANSPORT_ENABLED_SETTING_KEY = 'transport.enabled'"));
+  assert.ok(transportSettings.includes("TRANSPORT_UNIT_NAME_SETTING_KEY = 'transport.unit_name'"));
   assert.ok(backend.includes('TRANSPORT_ENABLED_KEY = "transport.enabled"'));
   assert.ok(backend.includes('TRANSPORT_UNIT_NAME_KEY = "transport.unit_name"'));
   assert.ok(backend.includes('DEFAULT_TRANSPORT_UNIT_NAME = "توصيلة"'));
-  assert.ok(persistence.includes('MAX_TRANSPORT_UNIT_NAME_LENGTH = 40'));
+  assert.ok(transportSettings.includes('MAX_TRANSPORT_UNIT_NAME_LENGTH = 40'));
   assert.ok(backend.includes('MAX_TRANSPORT_UNIT_NAME_LENGTH = 40'));
 });
 

@@ -14,14 +14,17 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiRequestError, ApiService, type AssistantBrief, type AssistantConversationSummary, type AssistantOptOut, type AssistantProposalSummary, type AssistantProposalView, type AssistantWhatsappLink, type ChatReply, type SettingSuggestion } from './api.service';
 import {
-  ASSISTANT_DIALECTS, DIALECT_SETTING_KEY, MAX_TRANSPORT_UNIT_NAME_LENGTH,
-  MORNING_BRIEF_SETTING_KEY, TRANSPORT_ENABLED_SETTING_KEY,
-  TRANSPORT_UNIT_NAME_SETTING_KEY,
+  ASSISTANT_DIALECTS, DIALECT_SETTING_KEY, MORNING_BRIEF_SETTING_KEY,
   briefHasAttention, conversationTitleOrFallback, dialectLabelKey,
   formatConversationDate, formatGrowth, isAssistantDialect, proposalStateKey,
   settingsValue, toChatMessages,
   type AssistantChatMessage, type AssistantDialect,
 } from './assistant-persistence';
+import {
+  MAX_TRANSPORT_UNIT_NAME_LENGTH, TRANSPORT_ENABLED_SETTING_KEY,
+  TRANSPORT_UNIT_NAME_SETTING_KEY, transportEnabledFromSettings,
+  transportUnitNameFromSettings,
+} from './transport-settings';
 import { LocalizationService } from './localization.service';
 import { WorkspaceLoadGuard, runTenantScopedRequest, type TenantRequestContext } from './workspace-load-guard';
 import { AbaCardComponent } from './shared/ui/aba-card.component';
@@ -849,13 +852,10 @@ export class AssistantWorkspaceComponent implements OnChanges, OnDestroy {
           const dialect = settingsValue(settings, DIALECT_SETTING_KEY, 'egyptian');
           this.dialect = isAssistantDialect(dialect) ? dialect : 'egyptian';
           this.briefEnabled = settingsValue(settings, MORNING_BRIEF_SETTING_KEY, 'true').trim().toLowerCase() !== 'false';
-          // 3A-920: transport master switch (DEFAULT OFF — only an
-          // explicit "true" enables it) + the company's own unit name,
-          // falling back to the catalog default when never set.
-          this.transportEnabled = settingsValue(settings, TRANSPORT_ENABLED_SETTING_KEY, 'false').trim().toLowerCase() === 'true';
-          const storedUnitName = settingsValue(settings, TRANSPORT_UNIT_NAME_SETTING_KEY, '').trim();
-          this.transportUnitName = storedUnitName
-            || this.t('ui.assistantSettings.transport.defaultUnitName');
+          // 3A-920: transport master switch (DEFAULT OFF) + the
+          // company's own unit name (catalog default when never set).
+          this.transportEnabled = transportEnabledFromSettings(settings);
+          this.transportUnitName = transportUnitNameFromSettings(settings, this.t('ui.assistantSettings.transport.defaultUnitName'));
           this.optOuts = optOuts;
           this.whatsappLinks = whatsappLinks;
           this.whatsappChannelEnabled = whatsappStatus.channel_enabled;

@@ -1023,6 +1023,10 @@ class Employee(Base):
         Uuid(as_uuid=True), ForeignKey("teams.id", ondelete="SET NULL"), nullable=True
     )
     job_title: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    # 3A-920 step 1: enrolled as a driver/delivery agent. Only this flag
+    # (never a free-text job title) puts an employee in the invoice
+    # drivers list; settable only while transport.enabled is on.
+    is_driver: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     monthly_salary: Mapped[Decimal] = mapped_column(Numeric(14, 2), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default="true")
     created_at: Mapped[datetime] = mapped_column(

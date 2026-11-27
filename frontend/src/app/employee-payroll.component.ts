@@ -6,6 +6,7 @@ import { AbaRecordTableComponent, type AbaRecordTableActionEvent, type AbaRecord
 import { AbaFilterBarComponent } from './shared/ui/aba-filter-bar.component';
 import { AbaSearchFieldComponent } from './shared/ui/aba-search-field.component';
 import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service';
+import { transportEnabledFromSettings } from './transport-settings';
 
 @Component({
   selector: 'aba-employee-payroll',
@@ -55,6 +56,11 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
         <label>{{ t('ui.m_qfhcd5') }}
           <input name="employeeJobTitle" maxlength="120" autocomplete="off" [disabled]="busy" [(ngModel)]="employeeJobTitle">
         </label>
+        @if (transportEnabled) {
+        <label class="check-row">{{ t('ui.employees.transport.driverTag') }}
+          <input name="employeeIsDriver" type="checkbox" [disabled]="busy" [(ngModel)]="employeeIsDriver">
+        </label>
+        }
         <label>{{ t('ui.m_fzbln8') }} · {{ currencyCode }}
           <input name="employeeMonthlySalary" type="number" inputmode="decimal" min="0.01" step="0.01" required [disabled]="busy" [(ngModel)]="employeeMonthlySalary">
         </label>
@@ -73,6 +79,11 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
         <aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="employeeSearch" [hasActiveFilter]="employeeSearch.trim() !== ''" (clear)="employeeSearch = ''"><aba-search-field name="employeeSearch" [ariaLabel]="t('ui.m_k10p5m')" [placeholder]="t('ui.m_1s1lu82')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="employeeSearch" /></aba-filter-bar>
         <span class="count">{{ filteredEmployees.length }} {{ t('ui.m_1jg5410') }}</span>
       </div>
+      @if (transportEnabled) {
+      <div class="employee-driver-filter">
+        <button class="driver-filter" type="button" [attr.aria-pressed]="driversOnly" (click)="driversOnly = !driversOnly">{{ t('ui.employees.transport.driversOnly') }}</button>
+      </div>
+      }
 
       <aba-record-table [ariaLabel]="t('ui.m_1isrfeo')" [columns]="employeeTableColumns" [rows]="employeeTableRows" [loading]="busy && !employees.length" [loadingDescription]="t('ui.m_zwe2q6')" [actionsHeading]="t('ui.m_1dbhmlo')" [emptyTitle]="t('ui.m_q8ks9z')" [emptyDescription]="employeeSearch.trim() ? t('ui.m_mdi6vd') : t('ui.m_ej4qvb')" (rowAction)="onEmployeeRecordAction($event)" />
       </section>
@@ -184,6 +195,11 @@ import { ApiService, EmployeePayrollRecord, EmployeeRecord } from './api.service
     .empty{padding:20px;text-align:center;color:var(--aba-color-text-tertiary,#9ca3af);font-size:12px}
     .employee-form,.payroll-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;min-width:0;margin:14px 0}
     .employee-form label,.payroll-form label,.employee-tools label{display:grid;gap:5px;min-width:0;font-size:12px;font-weight:700;color:var(--aba-color-text-muted,#334155)}
+    .employee-form label.check-row{display:flex;flex-direction:row;align-items:center;gap:8px}
+    .employee-form label.check-row input[type="checkbox"]{width:20px;height:20px;accent-color:var(--aba-color-primary,#0f766e)}
+    .employee-driver-filter{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 16px}
+    .driver-filter{min-height:44px;padding:8px 14px;border:1px solid var(--aba-color-border,#e5eaf1);border-radius:999px;background:var(--aba-color-surface,#fff);color:var(--aba-color-text-secondary,#475569);font-size:12px;font-weight:800}
+    .driver-filter[aria-pressed="true"]{border-color:var(--aba-color-primary-border,#99f6e4);background:var(--aba-color-primary-soft,#ecfdf5);color:var(--aba-color-primary-strong,#115e59)}
     input,select{width:100%;max-width:100%;min-width:0}
     .form-actions{display:flex;align-items:end;flex-wrap:wrap;gap:8px}
     .employee-tools{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;align-items:end;margin:16px 0;min-width:0}
@@ -256,6 +272,10 @@ export class EmployeePayrollComponent implements OnChanges {
   error = '';
   message = '';
   employeeSearch = '';
+  // 3A-920 step 1: the driver tag + list filter render only while the
+  // transport switch is on (DEFAULT OFF — no tag, no chip, no column).
+  transportEnabled = false;
+  driversOnly = false;
   mobileSection: 'employees' | 'prepare' | 'history' = 'employees';
   employeeFormOpen = false;
   editingEmployeeId: string | null = null;
@@ -265,6 +285,7 @@ export class EmployeePayrollComponent implements OnChanges {
   employeePhone = '';
   employeeDepartment = '';
   employeeJobTitle = '';
+  employeeIsDriver = false;
   employeeMonthlySalary = '';
   payrollEmployeeId = '';
   payrollPeriod = this.currentPeriod();
@@ -287,6 +308,8 @@ export class EmployeePayrollComponent implements OnChanges {
       this.clearEmployeeForm();
       this.cancelPayrollEdit();
       this.employeeSearch = '';
+      this.driversOnly = false;
+      this.transportEnabled = false;
       this.mobileSection = 'employees';
       this.employeeFormOpen = false;
       this.payrollEmployeeId = '';
@@ -327,8 +350,10 @@ export class EmployeePayrollComponent implements OnChanges {
 
   get filteredEmployees(): EmployeeRecord[] {
     const query = this.employeeSearch.trim().normalize('NFKC').toLocaleLowerCase(this.localization.locale);
-    if (!query) return this.employees;
-    return this.employees.filter(employee =>
+    let rows = this.employees;
+    if (this.driversOnly) rows = rows.filter(employee => employee.is_driver);
+    if (!query) return rows;
+    return rows.filter(employee =>
       [employee.name, employee.employee_code, employee.email, employee.department, employee.job_title]
         .some(value => (value || '').normalize('NFKC').toLocaleLowerCase(this.localization.locale).includes(query))
     );
@@ -354,12 +379,14 @@ export class EmployeePayrollComponent implements OnChanges {
     {key:'code',label:this.t('ui.m_13ed6g7')},
     {key:'department',label:this.t('ui.m_fcawum')},
     {key:'jobTitle',label:this.t('ui.m_qfhcd5')},
+    ...(this.transportEnabled ? [{key:'driver',label:this.t('ui.employees.transport.driverTag'),kind:'status'} as const] : []),
     {key:'contact',label:this.t('ui.m_oj3j6c')},
     {key:'status',label:this.t('ui.m_jnmvwl'),kind:'status'},
   ]; }
   get employeeTableRows(): readonly AbaRecordTableRow[] { return this.filteredEmployees.map(employee=>({id:employee.id,cells:{
     name:employee.name,code:employee.employee_code||'—',department:employee.department||'—',
-    jobTitle:employee.job_title||'—',contact:[employee.email,employee.phone].filter(Boolean).join(' · ')||'—',
+    jobTitle:employee.job_title||'—',driver:employee.is_driver?this.t('ui.employees.transport.driverTag'):'',
+    contact:[employee.email,employee.phone].filter(Boolean).join(' · ')||'—',
     status:employee.is_active?this.t('ui.m_sjpv56'):this.t('ui.m_1200s7g'),
   },actions:[
     {id:'edit',label:this.t('ui.m_s21yyp'),disabled:this.busy},
@@ -429,13 +456,17 @@ export class EmployeePayrollComponent implements OnChanges {
     this.busy = true;
     this.error = '';
     try {
-      const [employees, payrollRecords] = await Promise.all([
+      const [employees, payrollRecords, settings] = await Promise.all([
         this.api.employees(businessId),
-        this.api.payroll(businessId, this.payrollFilterPeriod || undefined)
+        this.api.payroll(businessId, this.payrollFilterPeriod || undefined),
+        this.api.listSettings(businessId),
       ]);
       if (sequence !== this.loadSequence || this.businessId !== businessId) return;
       this.employees = employees;
       this.payrollRecords = payrollRecords;
+      // 3A-920: the transport switch rides the same load — one extra
+      // read, no new endpoint.
+      this.transportEnabled = transportEnabledFromSettings(settings);
       if (!this.employees.some(item => item.id === this.payrollEmployeeId && item.is_active)) {
         this.payrollEmployeeId = this.employees.find(item => item.is_active)?.id || '';
       }
@@ -458,6 +489,7 @@ export class EmployeePayrollComponent implements OnChanges {
     this.employeePhone = '';
     this.employeeDepartment = '';
     this.employeeJobTitle = '';
+    this.employeeIsDriver = false;
     this.employeeMonthlySalary = '';
   }
 
@@ -471,6 +503,7 @@ export class EmployeePayrollComponent implements OnChanges {
     this.employeePhone = employee.phone || '';
     this.employeeDepartment = employee.department || '';
     this.employeeJobTitle = employee.job_title || '';
+    this.employeeIsDriver = employee.is_driver;
     this.employeeMonthlySalary = employee.monthly_salary;
     this.message = '';
     this.error = '';
@@ -503,6 +536,7 @@ export class EmployeePayrollComponent implements OnChanges {
           phone: this.employeePhone.trim() || null,
           department: this.employeeDepartment.trim() || null,
           job_title: this.employeeJobTitle.trim() || null,
+          is_driver: this.employeeIsDriver,
           monthly_salary: monthlySalary
         });
       } else {
@@ -513,6 +547,7 @@ export class EmployeePayrollComponent implements OnChanges {
           phone: this.employeePhone.trim() || undefined,
           department: this.employeeDepartment.trim() || undefined,
           job_title: this.employeeJobTitle.trim() || undefined,
+          is_driver: this.employeeIsDriver,
           monthly_salary: monthlySalary
         });
       }

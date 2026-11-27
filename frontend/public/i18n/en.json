@@ -1319,6 +1319,12 @@
       "proposalExpired": "Expired",
       "proposalRejected": "Cancelled",
       "proposalUnknown": "Unknown state"
+    },
+    "employees": {
+      "transport": {
+        "driverTag": "Driver / delivery agent",
+        "driversOnly": "Drivers only"
+      }
     }
   },
   "common": {

@@ -1319,6 +1319,12 @@
       "proposalExpired": "منتهي الصلاحية",
       "proposalRejected": "ملغي",
       "proposalUnknown": "حالة غير معروفة"
+    },
+    "employees": {
+      "transport": {
+        "driverTag": "سائق/مندوب توصيل",
+        "driversOnly": "سائقون فقط"
+      }
     }
   },
   "common": {
