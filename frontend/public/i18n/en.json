@@ -1731,7 +1731,9 @@
       "m_5rw0bd": "Per-trip pay and driver entitlements",
       "m_ili3u1": "With Transport & delivery enabled: a driver/delivery-agent tag on the employee card, a monthly, daily or per-trip wage basis, proposed entitlements from invoices confirmed manually in payroll, and the driver's trips table inside their profile (due, paid, remaining).",
       "m_60s80r": "Partial salary payment",
-      "m_737in0": "An approved payroll record can be settled in parts — each payment is recorded as a payroll expense and the remainder stays due until the net is complete."
+      "m_737in0": "An approved payroll record can be settled in parts — each payment is recorded as a payroll expense and the remainder stays due until the net is complete.",
+      "m_cqt8jk": "Customer orders",
+      "m_szprfk": "A pre-invoice order inside the invoices tab: the customer orders by product lines (a second unit when enabled), and the order itself never moves stock or money — the owner confirms it, and conversion creates an ordinary draft invoice with the same lines and delivery details; stock is deducted only when the invoice is issued. Delivery details appear only when the business enables “Transport & delivery”."
     }
   },
   "catalog": {
