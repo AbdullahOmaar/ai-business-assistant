@@ -121,12 +121,15 @@ const notificationsSource = readFileSync(new URL('./notifications-workspace.comp
 // 3A-376: the supplier search moved into the suppliers workspace.
 const suppliersSource = readFileSync(new URL('./suppliers-workspace.component.ts', import.meta.url), 'utf8');
 const recurringSource = readFileSync(new URL('./recurring-workspace.component.ts', import.meta.url), 'utf8');
+// 3A-921 F1c: the payment search moved with the payments workspace.
+const paymentsSource = readFileSync(new URL('./payments-workspace.component.ts', import.meta.url), 'utf8');
 const shellSearches: Array<{ name: string; ariaKey: string; placeholderKey: string; binding: string }> = [
   { name: 'invoiceSearch', ariaKey: 'ui.m_qwjq9v', placeholderKey: 'ui.m_2onysz', binding: 'invoiceSearch' },
-  { name: 'paymentSearch', ariaKey: 'ui.m_nmj0be', placeholderKey: 'ui.m_hoei9y', binding: 'paymentSearch' },
 ];
 // 3A-351: the expense and notification searches live in their workspaces now.
 const movedSearches: Array<{ name: string; ariaKey: string; placeholderKey: string; binding: string; source: string }> = [
+  // 3A-921 F1c: the payment search moved with the payments workspace.
+  { name: 'paymentSearch', ariaKey: 'ui.m_nmj0be', placeholderKey: 'ui.m_hoei9y', binding: 'paymentSearch', source: paymentsSource },
   { name: 'expenseSearch', ariaKey: 'ui.m_qat44q', placeholderKey: 'ui.m_34prmq', binding: 'expenseSearch', source: expensesSource },
   { name: 'notificationSearch', ariaKey: 'ui.m_1qze32v', placeholderKey: 'ui.m_1aqo4qr', binding: 'notificationSearch', source: notificationsSource },
   { name: 'supplierSearch', ariaKey: 'ui.m_1mc30sn', placeholderKey: 'ui.m_jtec0a', binding: 'supplierSearch', source: suppliersSource },
@@ -139,8 +142,9 @@ test('all 7 search inputs use aba-search-field with their original name, aria-la
   // their own workspaces, pinned separately below.
   // 3A-376: the supplier search moved too — 3 searches stay in the shell.
   // 3A-376: the recurring search moved as well — 2 stay in the shell.
-  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 2,
-    'exactly the 2 shell searches migrate; no more, no fewer');
+  // 3A-921 F1c: payments moved too — only the invoice search stays.
+  assert.equal((appSourceRaw.match(/<aba-search-field /g) ?? []).length, 1,
+    'exactly the 1 shell search migrates; no more, no fewer');
   assert.ok(overviewSource.includes('<aba-search-field class="module-directory-search" name="homeModuleSearch" autocomplete="off"'),
     'the overview search keeps its module-directory-search hook and autocomplete="off"');
   assert.ok(overviewSource.includes("[ariaLabel]=\"t('ui.m_1yd5km1')\""),
@@ -228,7 +232,8 @@ test('filter-bar look is unchanged: the component host takes the old input flex 
     'the host must go full-width in the mobile single-column filter layout');
   // The old rules stay: the filter-bar look is unchanged for now (Slice F owns the bar).
   assert.match(designSystem, /\.list-tools > input,[\s\S]*?min-height: var\(--aiba-control-md\)/);
-  assert.ok(appSourceRaw.includes('class="list-tools operations-search aba-record-toolbar"'),
+  // 3A-921 F1c: the last .list-tools wrapper lives in the payments workspace now.
+  assert.ok(paymentsSource.includes('class="list-tools operations-search aba-record-toolbar"'),
     'the .list-tools wrapper class itself is not renamed');
 });
 

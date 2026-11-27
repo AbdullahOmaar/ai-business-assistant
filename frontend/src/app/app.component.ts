@@ -9,7 +9,7 @@ import { WorkspaceLoadGuard, isCurrentTenantRequest, type TenantRequestContext, 
 import { APP_BUILD_INFO } from './build-info';
 import { buildCsv } from './csv-export';
 import { auditActionLabel as formatAuditActionLabel, auditTargetLabel as formatAuditTargetLabel } from './audit-labels';
-import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterPayments, filterProducts, filterPurchaseOrders, filterRecurringSchedules, firstRecordPage, mergeRecordPage } from './record-filters';
+import { filterCustomers, filterExpenses, filterInvoices, filterNotifications, filterProducts, filterPurchaseOrders, filterRecurringSchedules, firstRecordPage, mergeRecordPage } from './record-filters';
 import { countInvoiceStatuses, paginateInvoiceRecords, sortInvoiceRecords, type InvoiceSortDirection, type InvoiceSortKey, type InvoiceStatusCounts } from './invoice-list';
 import { PlatformAdminComponent } from './platform-admin.component';
 import { EmployeePayrollComponent } from './employee-payroll.component';
@@ -29,6 +29,7 @@ import { RecurringWorkspaceComponent } from './recurring-workspace.component';
 import { IntegrityWorkspaceComponent } from './integrity-workspace.component';
 import { TaxesWorkspaceComponent } from './taxes-workspace.component';
 import { InvoiceDetailDrawerComponent } from './invoice-detail-drawer.component';
+import { PaymentsWorkspaceComponent } from './payments-workspace.component';
 import { NotificationsWorkspaceComponent } from './notifications-workspace.component';
 import { transportEnabledFromSettings, transportUnitNameFromSettings } from './transport-settings';
 import { canAccessWorkspaceTab, isMobileMoreTab as isMobileMoreTabValue } from './module-access';
@@ -66,7 +67,7 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
 @Component({
   selector: 'aba-root',
   standalone: true,
-  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, SuppliersWorkspaceComponent, RecurringWorkspaceComponent, IntegrityWorkspaceComponent, TaxesWorkspaceComponent, InvoiceDetailDrawerComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
+  imports: [CommonModule, FormsModule, PlatformAdminComponent, EmployeePayrollComponent, ReleaseGuideComponent, CustomerWorkspaceComponent, ProductWorkspaceComponent, InventoryMovementLedgerComponent, PurchasingWorkspaceComponent, CreditNoteIssuanceComponent, AuditEventsWorkspaceComponent, ReportsWorkspaceComponent, AssistantWorkspaceComponent, OverviewWorkspaceComponent, ExpensesWorkspaceComponent, SuppliersWorkspaceComponent, RecurringWorkspaceComponent, IntegrityWorkspaceComponent, TaxesWorkspaceComponent, InvoiceDetailDrawerComponent, PaymentsWorkspaceComponent, NotificationsWorkspaceComponent, InvoiceDraftEditorComponent, WorkspaceInvitationsComponent, AbaConfirmDialogComponent, AbaCardComponent, AbaMetricCardComponent, AbaQuickAccessCardComponent, AbaSectionHeaderComponent, AbaRecordTableComponent, AbaStateMessageComponent, AbaLoadingLogoComponent, AbaSkeletonComponent, AbaDateRangeComponent, AbaFilterBarComponent, AbaSearchFieldComponent, AbaIconComponent, AbaMobileAppHeaderComponent, AbaDeferPlaceholderComponent],
   template: `
     <div class="shell" [class.auth-shell]="!signedIn" [class.english]="language === 'en'" [class.keyboard-open]="keyboardOpen" [attr.lang]="language" [attr.dir]="language === 'ar' ? 'rtl' : 'ltr'" (keydown.escape)="closeMobileMoreOnEscape()">
       @if (initialized && signedIn && !startupFailed && !setupNeeded) {
@@ -821,32 +822,33 @@ const WORKSPACE_RECORD_PAGE_SIZE = 100;
               }
             }
 
-            @if (tab === 'payments' && business?.role !== 'owner') {
-              <section abaCard class="panel"><aba-state-message kind="error" [description]="t('ui.m_1ju8ouz')" /></section>
-            }
-            @if (tab === 'payments' && business.role === 'owner') {
-              <section abaCard class="panel"><aba-section-header [title]="t('ui.m_3k0fux')" [description]="t('ui.m_cj3m99')">
-                  <div class="section-actions"><span class="count">{{ filteredPayments.length }} / {{ payments.length }} {{ t('ui.m_1ouah2m') }}</span><button class="secondary" type="button" (click)="exportPaymentsCsv()" [disabled]="!payments.length"><aba-icon name="export" />{{ t('ui.m_nbsw3y') }}</button><button class="secondary" type="button" (click)="showPaymentForm = !showPaymentForm" [disabled]="paymentRetryPending">{{ showPaymentForm ? t('ui.m_pw64as') : t('ui.m_3k0fux') }}</button></div>
-                </aba-section-header>
-                @if (showPaymentForm || paymentRetryPending) {
-                <form #paymentForm="ngForm" class="inline-form payment-form" (ngSubmit)="(paymentRetryPending || paymentForm.valid) && createPayment()">
-                  <select #paymentCustomerModel="ngModel" [attr.aria-label]="t('ui.m_edaho8')" name="paymentCustomer" required [(ngModel)]="paymentCustomerId" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted) ? 'payment-customer-error' : null"><option value="" disabled>{{ t('ui.m_p0vza7') }}</option>@for (customer of customers; track customer.id) { <option [value]="customer.id">{{ customer.name }}</option> }</select>@if (paymentCustomerModel.invalid && (paymentCustomerModel.touched || paymentForm.submitted)) { <small id="payment-customer-error" class="field-error" aria-live="polite">{{ t('ui.m_5b5dll') }}</small> }
-                  <input #paymentAmountModel="ngModel" [attr.aria-label]="t('ui.m_q9mxbb')" name="paymentAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_1smcjxm')" required [(ngModel)]="paymentAmount" [disabled]="paymentRetryPending" [attr.aria-invalid]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'true' : null" [attr.aria-describedby]="paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted) ? 'payment-amount-error' : null">@if (paymentAmountModel.invalid && (paymentAmountModel.touched || paymentForm.submitted)) { <small id="payment-amount-error" class="field-error" aria-live="polite">{{ t('ui.m_me0lkl') }}</small> }
-                  <select [attr.aria-label]="t('ui.m_h7ngs9')" name="paymentMethod" [(ngModel)]="paymentMethod" [disabled]="paymentRetryPending"><option value="cash">{{ t('ui.m_1xk4i7j') }}</option><option value="bank_transfer">{{ t('ui.m_bof380') }}</option><option value="card">{{ t('ui.m_tq9n36') }}</option><option value="wallet">{{ t('ui.m_1bho9og') }}</option><option value="other">{{ t('ui.m_47rh1w') }}</option></select>
-                  <select [attr.aria-label]="t('ui.m_vkei9c')" name="paymentInvoiceId" [(ngModel)]="paymentInvoiceId" [disabled]="paymentRetryPending" (ngModelChange)="syncPaymentCustomer()"><option value="">{{ t('ui.m_1xrgrqj') }}</option>@for (invoice of invoices; track invoice.id) { @if (invoice.status === 'issued') { <option [value]="invoice.id">{{ invoice.invoice_number }} · {{ invoice.total }} {{ invoice.currency_code }}</option> } }</select>
-                  @if (invoicesHasMore) { <button type="button" class="secondary" (click)="loadMoreInvoices()" [disabled]="invoicesLoadingMore || paymentRetryPending">{{ invoicesLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_14d2jh7') }}</button> }
-                  @if (paymentInvoiceId) { <input [attr.aria-label]="t('ui.m_lc0rf5')" name="paymentAllocationAmount" type="number" min="0.01" step="0.01" [placeholder]="t('ui.m_1okokqi')" [(ngModel)]="paymentAllocationAmount" [disabled]="paymentRetryPending"> }
-                  <input [attr.aria-label]="t('ui.m_15jj1na')" name="paymentReference" maxlength="128" [placeholder]="t('ui.m_v160u1')" [(ngModel)]="paymentReference" [disabled]="paymentRetryPending">
-                  <button class="primary" type="submit" [disabled]="paymentLoading">{{ paymentLoading ? t('ui.m_1ty0fxd') : paymentRetryPending ? t('ui.m_1pvlpdc') : t('ui.m_3k0fux') }}</button>
-                </form>
-                }
-                @if (paymentRetryPending) { <p class="footnote" role="status">{{ t('ui.m_1yhgb5f') }}</p> }
-                @if (paymentMessage) { <aba-state-message [kind]="paymentMessageKind" [description]="paymentMessage" /> }
-                <p class="footnote">{{ t('ui.m_1c93fyv') }} {{ business.currency_code }} {{ t('ui.m_1sweklr') }}</p>
-                <div class="list-tools operations-search aba-record-toolbar"><aba-filter-bar [filterLabel]="t('ui.m_11q6v6c')" [clearLabel]="t('ui.m_1np7zc4')" [filterSummary]="paymentSearch" [hasActiveFilter]="paymentSearch.trim() !== ''" (clear)="paymentSearch = ''"><aba-search-field name="paymentSearch" [ariaLabel]="t('ui.m_nmj0be')" [placeholder]="t('ui.m_hoei9y')" [placeholderNarrow]="t('ui.m_11ucx5t')" [clearLabel]="t('ui.m_4k8q2zr')" [(ngModel)]="paymentSearch" /></aba-filter-bar></div>
-                <aba-record-table [ariaLabel]="t('ui.m_mxsp4b')" [columns]="paymentTableColumns" [rows]="paymentTableRows" [loading]="paymentLoading && !payments.length" [loadingDescription]="t('ui.m_1kn1f7h')" [emptyTitle]="t('ui.m_1c2srea')" [emptyDescription]="paymentSearch.trim() ? t('ui.m_1igz78g') : t('ui.m_1nttjd')" />
-                @if (paymentsHasMore) { <button class="secondary" type="button" (click)="loadMorePayments()" [disabled]="paymentsLoadingMore">{{ paymentsLoadingMore ? t('ui.m_1dwk1vm') : t('ui.m_1olqej1') }}</button> }
-              </section>
+            @if (tab === 'payments') {
+              <aba-payments-workspace
+                [role]="business.role"
+                [currencyCode]="business.currency_code"
+                [customers]="customers"
+                [invoices]="invoices"
+                [invoicesHasMore]="invoicesHasMore"
+                [invoicesLoadingMore]="invoicesLoadingMore"
+                [payments]="payments"
+                [paymentsHasMore]="paymentsHasMore"
+                [paymentsLoadingMore]="paymentsLoadingMore"
+                [paymentLoading]="paymentLoading"
+                [paymentRetryPending]="paymentRetryPending"
+                [paymentMessage]="paymentMessage"
+                [paymentMessageKind]="paymentMessageKind"
+                [(showPaymentForm)]="showPaymentForm"
+                [(paymentCustomerId)]="paymentCustomerId"
+                [(paymentAmount)]="paymentAmount"
+                [(paymentAllocationAmount)]="paymentAllocationAmount"
+                [(paymentInvoiceId)]="paymentInvoiceId"
+                [(paymentMethod)]="paymentMethod"
+                [(paymentReference)]="paymentReference"
+                [(paymentSearch)]="paymentSearch"
+                (invoiceSelectionChange)="syncPaymentCustomer()"
+                (createRequest)="createPayment()"
+                (loadMorePaymentsRequest)="loadMorePayments()"
+                (loadMoreInvoicesRequest)="loadMoreInvoices()" />
             }
 
             @if (tab === 'taxes' && business.role === 'owner') {
@@ -1592,31 +1594,6 @@ export class AppComponent implements OnInit, OnDestroy {
 
 
 
-  get filteredPayments(): Payment[] {
-    return filterPayments(
-      this.payments,
-      this.paymentSearch,
-      id => this.customerNameForInvoice(id),
-      method => this.paymentMethodLabel(method),
-      allocated => this.t(allocated ? 'app.paymentAllocation.allocated' : 'app.paymentAllocation.unallocated'),
-      this.localization.locale,
-    );
-  }
-
-
-  get paymentTableColumns(): readonly AbaRecordTableColumn[] { return [
-    {key:'customer',label:this.t('ui.m_ubgrc2'),primary:true},
-    {key:'amount',label:this.t('ui.m_i3lh6b'),kind:'numeric'},
-    {key:'received',label:this.t('ui.m_10i3wh4')},
-    {key:'method',label:this.t('ui.m_nic0dr')},
-    {key:'reference',label:this.t('ui.m_eimrhe')},
-    {key:'allocation',label:this.t('ui.m_1s2dqci'),kind:'status'},
-  ]; }
-  get paymentTableRows(): readonly AbaRecordTableRow[] { return this.filteredPayments.map(item=>({id:item.id,cells:{
-    customer:this.customerNameForInvoice(item.customer_id),amount:`${item.amount} ${item.currency_code}`,
-    received:this.formatRecordDate(item.received_at),method:item.method?this.paymentMethodLabel(item.method):this.t('ui.m_1q43mlw'),
-    reference:item.reference||'—',allocation:item.allocations.length?`${item.allocations.length} ${this.t('ui.m_3fih4j')}`:this.t('ui.m_lcn3j8'),
-  }})); }
   get auditTableColumns(): readonly AbaRecordTableColumn[] { return [
     {key:'date',label:this.t('ui.m_1fcm91o')},
     {key:'action',label:this.t('ui.m_bnvfl5'),primary:true},
@@ -2531,14 +2508,6 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-
-  paymentMethodLabel(method: string): string {
-    const keys: Record<string, string> = {
-      cash: 'app.paymentMethod.cash', bank_transfer: 'app.paymentMethod.bank_transfer',
-      card: 'app.paymentMethod.card', wallet: 'app.paymentMethod.wallet', other: 'app.paymentMethod.other',
-    };
-    return keys[method] ? this.t(keys[method]) : method;
-  }
 
   currencyName(code: string): string {
     const normalized = code.toUpperCase();
@@ -3960,27 +3929,6 @@ export class AppComponent implements OnInit, OnDestroy {
   }
 
 
-
-  exportPaymentsCsv(): void {
-    if (!this.business || this.business.role !== 'owner' || !this.payments.length) return;
-    const headers = ['received_at', 'amount', 'currency_code', 'method', 'reference', 'allocation_count'];
-    const rows = this.payments.map(payment => [
-      payment.received_at,
-      payment.amount,
-      payment.currency_code,
-      payment.method || '',
-      payment.reference || '',
-      payment.allocations.length,
-    ]);
-    const csv = buildCsv(headers, rows);
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = 'payments-' + new Date().toISOString().slice(0, 10) + '.csv';
-    link.click();
-    URL.revokeObjectURL(url);
-  }
 
   async createPayment(): Promise<void> {
     const businessSnapshot = this.business;

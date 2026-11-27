@@ -6,6 +6,8 @@ import { firstRecordPage, mergeRecordPage } from './record-filters.ts';
 import test from 'node:test';
 
 const source = readFileSync(new URL('./app.component.ts', import.meta.url), 'utf8');
+// 3A-921 F1c: the payment history load-more lives in the payments workspace now.
+const paymentsSource = readFileSync(new URL('./payments-workspace.component.ts', import.meta.url), 'utf8');
 
 function methodBetween(startMarker: string, endMarker: string): string {
   const start = source.indexOf(startMarker);
@@ -62,7 +64,9 @@ test('invoice outcome recovery is restored only for the same authenticated user 
   assert.match(source, /this\.invoiceDraftUncertain = true/);
   // 3A-351: createExpense moved into the expenses workspace; the next
   // method after payInvoice in the shell is the payments CSV export.
-  const pay = methodBetween('payInvoice(invoice: Invoice)', 'exportPaymentsCsv(): void {');
+  // 3A-921 F1c: the CSV export moved into the payments workspace; the
+  // next shell method after payInvoice is now createPayment.
+  const pay = methodBetween('payInvoice(invoice: Invoice)', 'async createPayment(): Promise<void>');
   assert.match(pay, /this\.paymentRetryPending/);
 });
 
@@ -240,5 +244,8 @@ test('invoice editor, invoice list and payment history expose load-more controls
   assert.ok(source.includes('[hasMoreProducts]="productsHasMore"'));
   assert.ok(source.includes('(loadMoreProducts)="loadMoreInvoiceProducts()"'));
   assert.ok(source.includes('(click)="loadMoreInvoices()"'));
-  assert.ok(source.includes('(click)="loadMorePayments()"'));
+  // 3A-921 F1c: the history load-more button emits from the payments workspace;
+  // the shell still runs loadMorePayments itself.
+  assert.ok(source.includes('(loadMorePaymentsRequest)="loadMorePayments()"'));
+  assert.ok(paymentsSource.includes('(click)="loadMorePaymentsRequest.emit()"'));
 });

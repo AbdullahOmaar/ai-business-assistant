@@ -15,6 +15,8 @@ const component = expandTranslationCalls(readFileSync(new URL('./employee-payrol
 // 3A-351: the expenses list (and its loading description) moved into the
 // deferred expenses workspace.
 const expensesWorkspace = expandTranslationCalls(readFileSync(new URL('./expenses-workspace.component.ts', import.meta.url), 'utf8'));
+// 3A-921 F1c: the payments loading description lives in the payments workspace now.
+const paymentsWorkspace = expandTranslationCalls(readFileSync(new URL('./payments-workspace.component.ts', import.meta.url), 'utf8'));
 // 3A-351: the notifications list (and its loading description) moved into
 // the deferred notifications workspace too.
 const notificationsWorkspace = expandTranslationCalls(readFileSync(new URL('./notifications-workspace.component.ts', import.meta.url), 'utf8'));
@@ -254,9 +256,11 @@ test('mobile payroll keeps its period filter with history and restores focus aft
 test('employee table action heading and remaining record loading descriptions respect Arabic locale', () => {
   assert.match(component, /\[actionsHeading\]="t\('الإجراءات',\s*'Actions'\)"/);
   for (const fragment of [
-    "[loadingDescription]=\"t('جارٍ تحميل المدفوعات…', 'Loading payments…')\"",
+    
     "[loadingDescription]=\"t('جارٍ تحميل سجل النشاط…', 'Loading activity log…')\"",
   ]) assert.ok(app.includes(fragment), 'missing localized record UX: '+fragment);
+  // 3A-921 F1c: the payments loading description lives in the payments workspace now.
+  assert.ok(paymentsWorkspace.includes('[loadingDescription]="t(\'جارٍ تحميل المدفوعات…\', \'Loading payments…\')"'), 'missing localized record UX: payments loading description');
   // 3A-351: the expenses loading description lives in the expenses workspace now.
   assert.ok(expensesWorkspace.includes("[loadingDescription]=\"t('جارٍ تحميل المصروفات…', 'Loading expenses…')\""),
     'missing localized record UX: expenses loading description');
